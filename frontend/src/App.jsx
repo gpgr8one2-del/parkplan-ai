@@ -3,8 +3,7 @@ import { CloudSun, MapPin, MessageCircle, RefreshCw, Send } from "lucide-react";
 import { fetchParkData, fetchWeather, sendChatMessage } from "./api";
 import { FreshnessBadge } from "./components/FreshnessBadge";
 import { DataStatusBanner } from "./components/DataStatusBanner";
-
-const PARKS = [
+import { getNextBestRides } from "./utils/rideRecommendations";const PARKS = [
   { id: "magic_kingdom", name: "Magic Kingdom" },
   { id: "epcot", name: "EPCOT" },
   { id: "hollywood", name: "Hollywood Studios" },
@@ -58,7 +57,13 @@ function App() {
   
 
   const sortedRides = useMemo(() => {
-    return [...(parkData?.rides || [])].sort((a, b) => (b.waitTime || 0) - (a.waitTime || 0));
+   const recommendations = useMemo(() => {
+  return getNextBestRides({
+    parkId: activePark,
+    rides: parkData?.rides || [],
+    weather,
+  });
+}, [activePark, parkData, weather]);    return [...(parkData?.rides || [])].sort((a, b) => (b.waitTime || 0) - (a.waitTime || 0));
   }, [parkData]);
 
   async function handleChatSubmit(e) {
@@ -110,8 +115,85 @@ function App() {
           <DataStatusBanner source={parkData?.source} />
           {error && <p style={{ color: "#b91c1c", fontWeight: 700 }}>{error}</p>}
         </section>
+<section style={card}>
+  <h3 style={{ marginTop: 0 }}>Best Move Right Now</h3>
 
-        <section style={card}>
+  {recommendations.bestMove ? (
+    <div style={{ display: "grid", gap: 10 }}>
+      <div
+        style={{
+          padding: 14,
+          borderRadius: 18,
+          border: "1px solid #bbf7d0",
+          background: "#f0fdf4",
+        }}
+      >
+        <div style={{ fontSize: 12, color: "#166534", fontWeight: 900 }}>
+          BEST MOVE
+        </div>
+        <h4 style={{ margin: "4px 0", fontSize: 20 }}>
+          {recommendations.bestMove.name}
+        </h4>
+        <p style={{ margin: 0, color: "#166534", fontWeight: 800 }}>
+          {recommendations.bestMove.waitTime} min wait
+        </p>
+        <p style={{ margin: "8px 0 0", color: "#334155" }}>
+          Why: {recommendations.bestMove.reason}.
+        </p>
+      </div>
+
+      {recommendations.backup && (
+        <div
+          style={{
+            padding: 14,
+            borderRadius: 18,
+            border: "1px solid #bfdbfe",
+            background: "#eff6ff",
+          }}
+        >
+          <div style={{ fontSize: 12, color: "#1d4ed8", fontWeight: 900 }}>
+            SMART BACKUP
+          </div>
+          <h4 style={{ margin: "4px 0", fontSize: 18 }}>
+            {recommendations.backup.name}
+          </h4>
+          <p style={{ margin: 0, color: "#1d4ed8", fontWeight: 800 }}>
+            {recommendations.backup.waitTime} min wait
+          </p>
+          <p style={{ margin: "8px 0 0", color: "#334155" }}>
+            Why: {recommendations.backup.reason}.
+          </p>
+        </div>
+      )}
+
+      {recommendations.waitOnThis && (
+        <div
+          style={{
+            padding: 14,
+            borderRadius: 18,
+            border: "1px solid #fed7aa",
+            background: "#fff7ed",
+          }}
+        >
+          <div style={{ fontSize: 12, color: "#9a3412", fontWeight: 900 }}>
+            WAIT ON THIS
+          </div>
+          <h4 style={{ margin: "4px 0", fontSize: 18 }}>
+            {recommendations.waitOnThis.name}
+          </h4>
+          <p style={{ margin: 0, color: "#9a3412", fontWeight: 800 }}>
+            {recommendations.waitOnThis.waitTime} min wait
+          </p>
+          <p style={{ margin: "8px 0 0", color: "#334155" }}>
+            Great ride, but the current wait makes it a weaker value right now.
+          </p>
+        </div>
+      )}
+    </div>
+  ) : (
+    <p style={{ color: "#64748b" }}>Loading recommendations...</p>
+  )}
+</section>        <section style={card}>
           <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
             {PARKS.map((park) => (
               <button
