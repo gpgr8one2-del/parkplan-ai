@@ -52,10 +52,10 @@ function App() {
     }
   }
 
-  useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activePark]);
+ useEffect(() => {
+  loadData();
+}, [activePark]);   
+  
 
   const sortedRides = useMemo(() => {
     return [...(parkData?.rides || [])].sort((a, b) => (b.waitTime || 0) - (a.waitTime || 0));
