@@ -58,7 +58,9 @@ function App() {
   
 
 const sortedRides = useMemo(() => {
-  return [...(parkData?.rides || [])].sort((a, b) => (b.waitTime || 0) - (a.waitTime || 0));
+  return [...(parkData?.rides || [])].sort(
+    (a, b) => (b.waitTime || 0) - (a.waitTime || 0)
+  );
 }, [parkData]);
 
 const recommendations = useMemo(() => {
@@ -67,6 +69,7 @@ const recommendations = useMemo(() => {
     rides: parkData?.rides || [],
     weather,
   });
+}, [activePark, parkData, weather]);  });
 }, [activePark, parkData, weather]);  });
 }, [activePark, parkData, weather]);    return [...(parkData?.rides || [])].sort((a, b) => (b.waitTime || 0) - (a.waitTime || 0));
   }, [parkData]);
