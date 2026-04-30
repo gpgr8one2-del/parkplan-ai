@@ -57,13 +57,17 @@ function App() {
 }, [activePark]);   
   
 
-  const sortedRides = useMemo(() => {
-   const recommendations = useMemo(() => {
+const sortedRides = useMemo(() => {
+  return [...(parkData?.rides || [])].sort((a, b) => (b.waitTime || 0) - (a.waitTime || 0));
+}, [parkData]);
+
+const recommendations = useMemo(() => {
   return getNextBestRides({
     parkId: activePark,
     rides: parkData?.rides || [],
     weather,
   });
+}, [activePark, parkData, weather]);  });
 }, [activePark, parkData, weather]);    return [...(parkData?.rides || [])].sort((a, b) => (b.waitTime || 0) - (a.waitTime || 0));
   }, [parkData]);
 
