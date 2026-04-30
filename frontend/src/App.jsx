@@ -3,8 +3,8 @@ import { CloudSun, MapPin, MessageCircle, RefreshCw, Send } from "lucide-react";
 import { fetchParkData, fetchWeather, sendChatMessage } from "./api";
 import { FreshnessBadge } from "./components/FreshnessBadge";
 import { DataStatusBanner } from "./components/DataStatusBanner";
-import { getNextBestRides } from "./utils/rideRecommendations";const PARKS = [
-  { id: "magic_kingdom", name: "Magic Kingdom" },
+import { getNextBestRides } from "./rideRecommendations";
+{ id: "magic_kingdom", name: "Magic Kingdom" },
   { id: "epcot", name: "EPCOT" },
   { id: "hollywood", name: "Hollywood Studios" },
   { id: "animal_kingdom", name: "Animal Kingdom" },
