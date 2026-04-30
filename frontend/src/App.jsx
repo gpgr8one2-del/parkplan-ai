@@ -4,7 +4,9 @@ import { fetchParkData, fetchWeather, sendChatMessage } from "./api";
 import { FreshnessBadge } from "./components/FreshnessBadge";
 import { DataStatusBanner } from "./components/DataStatusBanner";
 import { getNextBestRides } from "./rideRecommendations";
-{ id: "magic_kingdom", name: "Magic Kingdom" },
+
+const PARKS = [
+  { id: "magic_kingdom", name: "Magic Kingdom" },
   { id: "epcot", name: "EPCOT" },
   { id: "hollywood", name: "Hollywood Studios" },
   { id: "animal_kingdom", name: "Animal Kingdom" },
@@ -12,7 +14,6 @@ import { getNextBestRides } from "./rideRecommendations";
   { id: "islands", name: "Islands of Adventure" },
   { id: "epic_universe", name: "Epic Universe" },
 ];
-
 const page = {
   minHeight: "100vh",
   background: "linear-gradient(180deg, #fff7ed 0%, #f8fafc 100%)",
