@@ -7,7 +7,6 @@ export function getWeatherMode(weather) {
     return {
       mode: "storm",
       label: "Storm Smart Mode",
-      severity: "high",
       message:
         "Storms may affect outdoor attractions. Prioritize indoor rides, shows, food breaks, and covered queues.",
     };
@@ -17,7 +16,6 @@ export function getWeatherMode(weather) {
     return {
       mode: "rain",
       label: "Rain Watch",
-      severity: "medium",
       message:
         "Rain chances are elevated. Keep outdoor rides flexible and prioritize indoor options nearby.",
     };
@@ -27,7 +25,6 @@ export function getWeatherMode(weather) {
     return {
       mode: "extreme_heat",
       label: "Extreme Heat Mode",
-      severity: "high",
       message:
         "This is a recovery-first window. Prioritize AC, indoor seating, water breaks, and consider a resort/pool break if staying onsite.",
     };
@@ -37,7 +34,6 @@ export function getWeatherMode(weather) {
     return {
       mode: "hot",
       label: "Beat the Heat Mode",
-      severity: "medium",
       message:
         "Heat is high. Mix in indoor attractions, AC shows, and water breaks before pushing more outdoor rides.",
     };
@@ -47,7 +43,6 @@ export function getWeatherMode(weather) {
     return {
       mode: "warm",
       label: "Hydration Reminder",
-      severity: "low",
       message:
         "It is warm. Build in water and shade breaks between attractions.",
     };
@@ -56,7 +51,6 @@ export function getWeatherMode(weather) {
   return {
     mode: "normal",
     label: "Good Conditions",
-    severity: "low",
     message: "Weather looks manageable right now.",
   };
 }
@@ -107,7 +101,7 @@ export function getRecoverySuggestions({ parkId, weather }) {
     magic_kingdom: [
       {
         title: "Magic Kingdom cool-down picks",
-        text: "Carousel of Progress, PhilharMagic, Monsters Inc. Laugh Floor, Pirates, or Hall of Presidents are strong recovery options.",
+        text: "Carousel of Progress, PhilharMagic, Pirates, and Hall of Presidents are strong recovery options.",
       },
       {
         title: "Resort break option",
