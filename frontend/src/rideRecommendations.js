@@ -1,5 +1,8 @@
-import { getWeatherRideModifier } from "./utils/weatherAdvice";
 import { getRideMeta } from "./rideMetadata";
+import {
+  resolveCurrentLand,
+  getProximityModifier,
+} from "./parkProximity";
 
 const DEFAULT_POPULARITY = 40;
 
@@ -7,10 +10,6 @@ const DEFAULT_POPULARITY = 40;
 /* Score components                                                           */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Pull a ride's baseline popularity from the metadata layer.
- * Prefers ride.id (exact join with queue-times); falls back to ride.name.
- */
 function getBaseScore(parkId, ride) {
   const meta = getRideMeta(parkId, ride.id ?? ride.name);
   return meta?.popularity ?? DEFAULT_POPULARITY;
@@ -35,46 +34,23 @@ function getLowWaitBonus(waitTime) {
 }
 
 /**
- * Trend modifier captures *guest demand momentum* — rides trending up or
- * underrated by raw popularity alone. NOT for situational/contextual value
- * (e.g. PeopleMover for heat). That belongs in getContextModifier.
- *
- * Both apostrophe variants are listed because queue-times sometimes returns
- * straight ' and sometimes smart ’.
+ * Trend modifier — guest demand momentum, NOT contextual value.
+ * Both apostrophe variants listed because API formatting can vary.
  */
 function getTrendModifier(rideName) {
   const trends = {
     "Buzz Lightyear's Space Ranger Spin": 8,
-    "Buzz Lightyear\u2019s Space Ranger Spin": 8,
+    "Buzz Lightyear’s Space Ranger Spin": 8,
     "Peter Pan's Flight": 4,
     "Tomorrowland Transit Authority PeopleMover": 1,
   };
+
   return trends[rideName] ?? 0;
 }
 
 /**
- * Legacy weather modifier (kept for backward compatibility with existing
- * weatherAdvice.js logic). Eventually getContextModifier should subsume this.
- */
-function getWeatherModifier(ride, weather) {
-  return getWeatherRideModifier(ride, weather);
-}
-
-/* -------------------------------------------------------------------------- */
-/* Context modifier — V1: weather-driven (heat / rain / storm)                */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Adjusts a ride's score based on current conditions and (eventually)
- * user mode. Reads ride attributes from metadata, not hardcoded names —
- * so this works for any park once metadata is filled in.
- *
- * Weather shape expected:
- *   { tempF, rainRisk (0-1), stormMode (bool), summary, ... }
- *
- * V1 implements heat / rain / storm only.
- * User modes (toddler, thrill, recovery, low_walking) are accepted in the
- * signature but not yet active — see TODO blocks below.
+ * Context modifier — V1: weather only.
+ * Uses rideMetadata, not raw live ride data.
  */
 function getContextModifier(meta, weather, mode = "default") {
   if (!meta || !weather) return 0;
@@ -82,14 +58,14 @@ function getContextModifier(meta, weather, mode = "default") {
   const { tempF, rainRisk = 0, stormMode = false } = weather;
   let mod = 0;
 
-  // -------- STORM MODE (active severe weather) --------
-  // Outdoor rides likely to close mid-queue. Push hard toward indoor.
+  // Storm mode
   if (stormMode) {
     if (meta.closesInRain) mod -= 40;
     if (meta.environment === "indoor") mod += 12;
     else if (meta.environment === "outdoor") mod -= 8;
   }
-  // -------- RAIN RISK (probabilistic, no active storm) --------
+
+  // Rain risk
   else if (rainRisk >= 0.7) {
     if (meta.closesInRain) mod -= 15;
     if (meta.environment === "indoor") mod += 8;
@@ -99,8 +75,7 @@ function getContextModifier(meta, weather, mode = "default") {
     if (meta.closesInRain) mod -= 3;
   }
 
-  // -------- HEAT --------
-  // Florida-calibrated thresholds: 95+ extreme, 88+ hot, 82+ warm.
+  // Heat
   if (tempF != null) {
     if (tempF >= 95) {
       if (meta.hasAC) mod += 10;
@@ -117,11 +92,11 @@ function getContextModifier(meta, weather, mode = "default") {
     }
   }
 
-  // -------- USER MODES (V2 — not yet active) --------
-  // TODO: if (mode === "toddler") boost when minHeightInches === 0 && intensity <= 2
-  // TODO: if (mode === "thrill") boost when intensity >= 4
-  // TODO: if (mode === "recovery") boost when tags.includes("recovery")
-  // TODO: if (mode === "low_walking") boost when tags.includes("relaxing")
+  // Future modes:
+  // if (mode === "toddler") ...
+  // if (mode === "thrill") ...
+  // if (mode === "recovery") ...
+  // if (mode === "low_walking") ...
 
   return mod;
 }
@@ -132,28 +107,37 @@ function getContextModifier(meta, weather, mode = "default") {
 
 function buildReason(ride, parts) {
   const reasons = [];
+
   if (ride.waitTime <= 10) {
     reasons.push("low wait right now");
   } else if (ride.waitTime <= 25) {
     reasons.push("reasonable wait");
   }
+
   if (parts.baseScore >= 85) {
     reasons.push("high-priority attraction");
   }
+
+  if (parts.proximityModifier > 0) {
+    reasons.push("near you");
+  } else if (parts.proximityModifier < -8) {
+    reasons.push("worth considering, but farther away");
+  }
+
   if (parts.trendModifier > 0) {
     reasons.push("strong guest demand");
   }
+
   if (parts.contextModifier >= 8) {
     reasons.push("great fit for current conditions");
-  } else if (
-    parts.contextModifier > 0 ||
-    parts.weatherModifier > 0
-  ) {
+  } else if (parts.contextModifier > 0) {
     reasons.push("good weather-safe option");
   }
+
   if (!reasons.length) {
     reasons.push("solid value based on current conditions");
   }
+
   return reasons.join(", ");
 }
 
@@ -161,39 +145,41 @@ function buildReason(ride, parts) {
 /* Public API                                                                 */
 /* -------------------------------------------------------------------------- */
 
-/**
- * V1 signature accepts mode, completedRideIds, and skippedRideIds for
- * forward compatibility, but does not yet act on them. Filtering by
- * completed/skipped will land in V2 alongside user modes.
- */
 export function getNextBestRides({
   parkId,
   rides = [],
   weather = null,
   mode = "default",
-  // eslint-disable-next-line no-unused-vars
+  locationContext = null,
   completedRideIds = [],
-  // eslint-disable-next-line no-unused-vars
   skippedRideIds = [],
 }) {
-  const openRides = rides.filter((r) => r.isOpen);
+  const currentLand = resolveCurrentLand(parkId, locationContext);
 
-  const scored = openRides.map((ride) => {
+  const completed = new Set(completedRideIds);
+  const skipped = new Set(skippedRideIds);
+
+  const eligibleRides = rides.filter(
+    (ride) => ride.isOpen && !completed.has(ride.id) && !skipped.has(ride.id)
+  );
+
+  const scored = eligibleRides.map((ride) => {
     const meta = getRideMeta(parkId, ride.id ?? ride.name);
+
     const baseScore = meta?.popularity ?? DEFAULT_POPULARITY;
     const waitPenalty = getWaitPenalty(ride.waitTime);
     const lowWaitBonus = getLowWaitBonus(ride.waitTime);
     const trendModifier = getTrendModifier(ride.name);
-    const weatherModifier = getWeatherModifier(ride, weather);
     const contextModifier = getContextModifier(meta, weather, mode);
+    const proximityModifier = getProximityModifier(meta, currentLand, parkId);
 
     const finalScore =
       baseScore -
       waitPenalty +
       lowWaitBonus +
       trendModifier +
-      weatherModifier +
-      contextModifier;
+      contextModifier +
+      proximityModifier;
 
     return {
       ...ride,
@@ -201,8 +187,8 @@ export function getNextBestRides({
       reason: buildReason(ride, {
         baseScore,
         trendModifier,
-        weatherModifier,
         contextModifier,
+        proximityModifier,
       }),
     };
   });
@@ -213,9 +199,16 @@ export function getNextBestRides({
 
   const bestMove = sorted[0] || null;
   const backup = sorted[1] || null;
+
   const waitOnThis =
     rides
-      .filter((r) => r.isOpen && getBaseScore(parkId, r) >= 85)
+      .filter(
+        (ride) =>
+          ride.isOpen &&
+          !completed.has(ride.id) &&
+          !skipped.has(ride.id) &&
+          getBaseScore(parkId, ride) >= 85
+      )
       .sort((a, b) => (b.waitTime || 0) - (a.waitTime || 0))[0] || null;
 
   return {
