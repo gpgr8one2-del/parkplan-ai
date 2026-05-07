@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CloudSun, MapPin, MessageCircle, RefreshCw, Send } from "lucide-react";
 import { fetchParkData, fetchWeather, sendChatMessage } from "./api";
 import { FreshnessBadge } from "./components/FreshnessBadge";
@@ -16,6 +16,20 @@ const PARKS = [
   { id: "epic_universe", name: "Epic Universe" },
 ];
 
+const LAND_OPTIONS = {
+  magic_kingdom: [
+    { value: "not_sure", label: "Not sure" },
+    { value: "main_street", label: "Main Street, U.S.A." },
+    { value: "adventureland", label: "Adventureland" },
+    { value: "frontierland", label: "Frontierland" },
+    { value: "liberty_square", label: "Liberty Square" },
+    { value: "fantasyland", label: "Fantasyland" },
+    { value: "tomorrowland", label: "Tomorrowland" },
+  ],
+};
+
+const STORAGE_KEY = "parkplan.state";
+
 const page = {
   minHeight: "100vh",
   background: "linear-gradient(180deg, #fff7ed 0%, #f8fafc 100%)",
@@ -24,6 +38,7 @@ const page = {
 };
 
 const shell = { maxWidth: 900, margin: "0 auto", padding: 18 };
+
 const card = {
   background: "rgba(255,255,255,.92)",
   border: "1px solid #e2e8f0",
@@ -32,6 +47,7 @@ const card = {
   boxShadow: "0 10px 30px rgba(15,23,42,.08)",
   marginBottom: 14,
 };
+
 const button = {
   border: "1px solid #e2e8f0",
   background: "white",
@@ -40,6 +56,37 @@ const button = {
   fontWeight: 800,
   cursor: "pointer",
 };
+
+const actionButton = {
+  background: "rgba(255,255,255,.72)",
+  border: "1px solid #dbeafe",
+  borderRadius: 999,
+  padding: "7px 10px",
+  fontSize: 12,
+  fontWeight: 800,
+  cursor: "pointer",
+};
+
+function readStoredParkState(parkId) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const stored = raw ? JSON.parse(raw) : {};
+    return stored[parkId] || {};
+  } catch {
+    return {};
+  }
+}
+
+function writeStoredParkState(parkId, parkState) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const stored = raw ? JSON.parse(raw) : {};
+    stored[parkId] = parkState;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+  } catch (err) {
+    console.warn("ParkPlan: could not save state", err);
+  }
+}
 
 function App() {
   const [activePark, setActivePark] = useState("magic_kingdom");
@@ -50,6 +97,12 @@ function App() {
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
   const [chatLoading, setChatLoading] = useState(false);
+
+  const [currentLand, setCurrentLand] = useState("not_sure");
+  const [completedRideIds, setCompletedRideIds] = useState([]);
+  const [skippedRideIds, setSkippedRideIds] = useState([]);
+
+  const isRestoringParkState = useRef(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -74,6 +127,30 @@ function App() {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    isRestoringParkState.current = true;
+
+    const saved = readStoredParkState(activePark);
+
+    setCurrentLand(saved.currentLand || "not_sure");
+    setCompletedRideIds(saved.completedRideIds || []);
+    setSkippedRideIds(saved.skippedRideIds || []);
+
+    setTimeout(() => {
+      isRestoringParkState.current = false;
+    }, 0);
+  }, [activePark]);
+
+  useEffect(() => {
+    if (isRestoringParkState.current) return;
+
+    writeStoredParkState(activePark, {
+      currentLand,
+      completedRideIds,
+      skippedRideIds,
+    });
+  }, [activePark, currentLand, completedRideIds, skippedRideIds]);
+
   const sortedRides = useMemo(() => {
     return [...(parkData?.rides || [])].sort(
       (a, b) => (b.waitTime || 0) - (a.waitTime || 0)
@@ -85,8 +162,14 @@ function App() {
       parkId: activePark,
       rides: parkData?.rides || [],
       weather,
+      locationContext: {
+        type: "manual_land",
+        land: currentLand,
+      },
+      completedRideIds,
+      skippedRideIds,
     });
-  }, [activePark, parkData, weather]);
+  }, [activePark, parkData, weather, currentLand, completedRideIds, skippedRideIds]);
 
   const weatherMode = useMemo(() => {
     return getWeatherMode(weather);
@@ -98,6 +181,56 @@ function App() {
       weather,
     });
   }, [activePark, weather]);
+
+  function handleDone(rideId) {
+    if (rideId == null) return;
+    const id = String(rideId);
+
+    setCompletedRideIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    setSkippedRideIds((prev) => prev.filter((existingId) => existingId !== id));
+  }
+
+  function handleSkip(rideId) {
+    if (rideId == null) return;
+    const id = String(rideId);
+
+    setSkippedRideIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    setCompletedRideIds((prev) => prev.filter((existingId) => existingId !== id));
+  }
+
+  function handleResetRecs() {
+    setCompletedRideIds([]);
+    setSkippedRideIds([]);
+  }
+
+  function renderRideActions(ride) {
+    if (!ride?.id) return null;
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          justifyContent: "flex-end",
+          marginTop: 10,
+          flexWrap: "wrap",
+        }}
+      >
+        <button
+          onClick={() => handleDone(ride.id)}
+          style={{ ...actionButton, color: "#166534" }}
+        >
+          ✓ Done
+        </button>
+        <button
+          onClick={() => handleSkip(ride.id)}
+          style={{ ...actionButton, color: "#64748b" }}
+        >
+          Skip
+        </button>
+      </div>
+    );
+  }
 
   async function handleChatSubmit(e) {
     e.preventDefault();
@@ -130,6 +263,9 @@ function App() {
       setChatLoading(false);
     }
   }
+
+  const landOptions = LAND_OPTIONS[activePark] || [{ value: "not_sure", label: "Not sure" }];
+  const hiddenRideCount = completedRideIds.length + skippedRideIds.length;
 
   return (
     <main style={page}>
@@ -270,6 +406,59 @@ function App() {
         <section style={card}>
           <h3 style={{ marginTop: 0 }}>Best Move Right Now</h3>
 
+          <div style={{ marginBottom: 12 }}>
+            <label
+              htmlFor="current-land"
+              style={{
+                display: "block",
+                fontSize: 13,
+                fontWeight: 800,
+                color: "#475569",
+                marginBottom: 6,
+              }}
+            >
+              Where are you now?
+            </label>
+            <select
+              id="current-land"
+              value={currentLand}
+              onChange={(e) => setCurrentLand(e.target.value)}
+              style={{
+                width: "100%",
+                border: "1px solid #cbd5e1",
+                borderRadius: 14,
+                padding: "10px 12px",
+                fontWeight: 700,
+                background: "white",
+                color: "#0f172a",
+              }}
+            >
+              {landOptions.map((land) => (
+                <option key={land.value} value={land.value}>
+                  {land.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {hiddenRideCount > 0 && (
+            <button
+              onClick={handleResetRecs}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#64748b",
+                fontSize: 12,
+                textDecoration: "underline",
+                cursor: "pointer",
+                marginBottom: 12,
+                padding: 0,
+              }}
+            >
+              Reset recommendations ({hiddenRideCount} hidden)
+            </button>
+          )}
+
           {recommendations.bestMove ? (
             <div style={{ display: "grid", gap: 10 }}>
               <div
@@ -292,6 +481,7 @@ function App() {
                 <p style={{ margin: "8px 0 0", color: "#334155" }}>
                   Why: {recommendations.bestMove.reason}.
                 </p>
+                {renderRideActions(recommendations.bestMove)}
               </div>
 
               {recommendations.backup && (
@@ -315,6 +505,7 @@ function App() {
                   <p style={{ margin: "8px 0 0", color: "#334155" }}>
                     Why: {recommendations.backup.reason}.
                   </p>
+                  {renderRideActions(recommendations.backup)}
                 </div>
               )}
 
@@ -339,6 +530,7 @@ function App() {
                   <p style={{ margin: "8px 0 0", color: "#334155" }}>
                     Great ride, but the current wait makes it a weaker value right now.
                   </p>
+                  {renderRideActions(recommendations.waitOnThis)}
                 </div>
               )}
             </div>
