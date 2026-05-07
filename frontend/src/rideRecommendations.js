@@ -1,35 +1,15 @@
 import { getWeatherRideModifier } from "./utils/weatherAdvice";
+import { getRideMeta } from "./rideMetadata";
 
-const MAGIC_KINGDOM_BASE_SCORES = {
-  "TRON Lightcycle / Run": 98,
-  "Seven Dwarfs Mine Train": 96,
-  "Tiana's Bayou Adventure": 92,
-  "Peter Pan's Flight": 89,
-  "Space Mountain": 88,
-  "Big Thunder Mountain Railroad": 85,
-  "Haunted Mansion": 84,
-  "Pirates of the Caribbean": 78,
-  "Jungle Cruise": 76,
-  "Buzz Lightyear’s Space Ranger Spin": 75,
-  "Tomorrowland Transit Authority PeopleMover": 75,
-  "The Many Adventures of Winnie the Pooh": 65,
-  "Under the Sea - Journey of The Little Mermaid": 63,
-  "Walt Disney's Carousel of Progress": 55,
-  "Mickey's PhilharMagic": 52,
-  "Dumbo the Flying Elephant": 50,
-  "\"it's a small world\"": 48,
-  "The Barnstormer": 45,
-  "Mad Tea Party": 42,
-  "The Magic Carpets of Aladdin": 40,
-  "Walt Disney's Enchanted Tiki Room": 35,
-  "Country Bear Musical Jamboree": 34,
-};
+const DEFAULT_POPULARITY = 40;
 
-function getBaseScore(parkId, rideName) {
-  if (parkId === "magic_kingdom") {
-    return MAGIC_KINGDOM_BASE_SCORES[rideName] ?? 40;
-  }
-  return 40;
+/**
+ * Pull a ride's baseline popularity from the metadata layer.
+ * Prefers ride.id (exact join with queue-times data); falls back to ride.name.
+ */
+function getBaseScore(parkId, ride) {
+  const meta = getRideMeta(parkId, ride.id ?? ride.name);
+  return meta?.popularity ?? DEFAULT_POPULARITY;
 }
 
 function getWaitPenalty(waitTime) {
@@ -52,7 +32,7 @@ function getLowWaitBonus(waitTime) {
 
 function getTrendModifier(rideName) {
   const trends = {
-    "Buzz Lightyear’s Space Ranger Spin": 8,
+    "Buzz Lightyear's Space Ranger Spin": 8,
     "Tomorrowland Transit Authority PeopleMover": 5,
     "Peter Pan's Flight": 4,
   };
@@ -89,7 +69,7 @@ export function getNextBestRides({ parkId, rides = [], weather = null }) {
   const openRides = rides.filter((r) => r.isOpen);
 
   const scored = openRides.map((ride) => {
-    const baseScore = getBaseScore(parkId, ride.name);
+    const baseScore = getBaseScore(parkId, ride);
     const waitPenalty = getWaitPenalty(ride.waitTime);
     const lowWaitBonus = getLowWaitBonus(ride.waitTime);
     const trendModifier = getTrendModifier(ride.name);
@@ -119,7 +99,7 @@ export function getNextBestRides({ parkId, rides = [], weather = null }) {
   const backup = sorted[1] || null;
   const waitOnThis =
     rides
-      .filter((r) => r.isOpen && getBaseScore(parkId, r.name) >= 85)
+      .filter((r) => r.isOpen && getBaseScore(parkId, r) >= 85)
       .sort((a, b) => (b.waitTime || 0) - (a.waitTime || 0))[0] || null;
 
   return {
