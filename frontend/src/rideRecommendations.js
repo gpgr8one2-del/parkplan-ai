@@ -1,3 +1,4 @@
+import { getWeatherRideModifier } from "./utils/weatherAdvice";
 const MAGIC_KINGDOM_BASE_SCORES = {
   "TRON Lightcycle / Run": 98,
   "Seven Dwarfs Mine Train": 96,
@@ -62,11 +63,9 @@ function getTrendModifier(rideName) {
 }
 
 function getWeatherModifier(ride, weather) {
-  if (!weather?.stormMode) return 0;
-  if (ride.outdoor) return -25;
-  return 6;
+  function getWeatherModifier(ride, weather) {
+  return getWeatherRideModifier(ride, weather);
 }
-
 function buildReason(ride, parts) {
   const reasons = [];
 
