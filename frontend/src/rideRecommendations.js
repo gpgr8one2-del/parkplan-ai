@@ -1,24 +1,21 @@
 import { getWeatherRideModifier } from "./utils/weatherAdvice";
+
 const MAGIC_KINGDOM_BASE_SCORES = {
   "TRON Lightcycle / Run": 98,
   "Seven Dwarfs Mine Train": 96,
   "Tiana's Bayou Adventure": 92,
-
   "Peter Pan's Flight": 89,
   "Space Mountain": 88,
   "Big Thunder Mountain Railroad": 85,
   "Haunted Mansion": 84,
-
   "Pirates of the Caribbean": 78,
   "Jungle Cruise": 76,
   "Buzz Lightyear’s Space Ranger Spin": 75,
   "Tomorrowland Transit Authority PeopleMover": 75,
-
   "The Many Adventures of Winnie the Pooh": 65,
   "Under the Sea - Journey of The Little Mermaid": 63,
   "Walt Disney's Carousel of Progress": 55,
   "Mickey's PhilharMagic": 52,
-
   "Dumbo the Flying Elephant": 50,
   "\"it's a small world\"": 48,
   "The Barnstormer": 45,
@@ -63,34 +60,28 @@ function getTrendModifier(rideName) {
 }
 
 function getWeatherModifier(ride, weather) {
-  function getWeatherModifier(ride, weather) {
   return getWeatherRideModifier(ride, weather);
 }
+
 function buildReason(ride, parts) {
   const reasons = [];
-
   if (ride.waitTime <= 10) {
     reasons.push("low wait right now");
   } else if (ride.waitTime <= 25) {
     reasons.push("reasonable wait");
   }
-
   if (parts.baseScore >= 85) {
     reasons.push("high-priority attraction");
   }
-
   if (parts.trendModifier > 0) {
     reasons.push("strong guest demand");
   }
-
   if (parts.weatherModifier > 0) {
     reasons.push("good weather-safe option");
   }
-
   if (!reasons.length) {
     reasons.push("solid value based on current conditions");
   }
-
   return reasons.join(", ");
 }
 
@@ -103,14 +94,12 @@ export function getNextBestRides({ parkId, rides = [], weather = null }) {
     const lowWaitBonus = getLowWaitBonus(ride.waitTime);
     const trendModifier = getTrendModifier(ride.name);
     const weatherModifier = getWeatherModifier(ride, weather);
-
     const finalScore =
       baseScore -
       waitPenalty +
       lowWaitBonus +
       trendModifier +
       weatherModifier;
-
     return {
       ...ride,
       recommendationScore: finalScore,
@@ -128,7 +117,6 @@ export function getNextBestRides({ parkId, rides = [], weather = null }) {
 
   const bestMove = sorted[0] || null;
   const backup = sorted[1] || null;
-
   const waitOnThis =
     rides
       .filter((r) => r.isOpen && getBaseScore(parkId, r.name) >= 85)
