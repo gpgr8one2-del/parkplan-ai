@@ -94,6 +94,67 @@ function getContextModifier(meta, weather, mode = "default") {
   return mod;
 }
 
+/**
+ * Wet ride timing modifier.
+ *
+ * Real guest behavior:
+ * - Morning: guests often avoid getting wet early.
+ * - Midday heat: water rides become more desirable.
+ * - Evening/night: guests often avoid getting wet with less drying time.
+ *
+ * This applies to any ride with getsWet: true, not just Tiana's.
+ */
+function getWetRideTimingModifier(meta, weather) {
+  if (!meta?.getsWet) return 0;
+
+  const tempF = weather?.tempF ?? null;
+  const hour = new Date().getHours();
+
+  let mod = 0;
+
+  // Morning penalty: people often do not want to start the day wet.
+  if (hour < 11) {
+    mod -= 10;
+  }
+
+  // Prime water ride window: hot part of the day with time left to dry.
+  if (hour >= 12 && hour <= 16) {
+    mod += 10;
+  }
+
+  // Late afternoon is still okay if it is hot, but less powerful than midday.
+  if (hour >= 17 && hour < 18) {
+    mod += 2;
+  }
+
+  // Evening penalty: less drying time and cooler air.
+  if (hour >= 18) {
+    mod -= 12;
+  }
+
+  // Temperature adjustment.
+  if (tempF != null) {
+    if (tempF >= 92) {
+      mod += 10;
+    } else if (tempF >= 86) {
+      mod += 5;
+    } else if (tempF <= 75) {
+      mod -= 10;
+    } else if (tempF <= 80) {
+      mod -= 5;
+    }
+  }
+
+  // Storm/rain risk makes a wet ride less attractive unless it is already a soaking-hot day.
+  if (weather?.stormMode) {
+    mod -= 12;
+  } else if ((weather?.rainRisk ?? 0) >= 0.6) {
+    mod -= 6;
+  }
+
+  return mod;
+}
+
 function getPlanningPriority(meta, waitValueStatus) {
   const category = meta?.planningProfile?.category;
 
@@ -147,6 +208,12 @@ function buildReason(ride, parts) {
     reasons.push("great fit for current conditions");
   } else if (parts.contextModifier > 0) {
     reasons.push("good weather-safe option");
+  }
+
+  if (parts.wetRideModifier >= 8) {
+    reasons.push("good water-ride timing");
+  } else if (parts.wetRideModifier <= -8) {
+    reasons.push("water-ride timing is less ideal");
   }
 
   if (!reasons.length) {
@@ -204,6 +271,7 @@ export function getNextBestRides({
     const proximityModifier = getProximityModifier(meta, currentLand, parkId);
     const waitValueStatus = getWaitValueStatus(meta, ride.waitTime);
     const waitValueModifier = waitValueStatus.modifier || 0;
+    const wetRideModifier = getWetRideTimingModifier(meta, weather);
 
     const finalScore =
       baseScore -
@@ -212,7 +280,8 @@ export function getNextBestRides({
       trendModifier +
       contextModifier +
       proximityModifier +
-      waitValueModifier;
+      waitValueModifier +
+      wetRideModifier;
 
     const proximityDistance =
       proximityModifier > 0
@@ -228,12 +297,14 @@ export function getNextBestRides({
       waitValueStatus,
       planningProfile: meta?.planningProfile || null,
       strategyNote: meta?.waitProfile?.strategyNote || null,
+      wetRideModifier,
       reason: buildReason(ride, {
         baseScore,
         trendModifier,
         contextModifier,
         proximityModifier,
         waitValueStatus,
+        wetRideModifier,
       }),
     };
   });
