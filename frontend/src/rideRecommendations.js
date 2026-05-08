@@ -62,15 +62,11 @@ function getContextModifier(meta, weather, mode = "default") {
   const { tempF, rainRisk = 0, stormMode = false } = weather;
   let mod = 0;
 
-  // Storm mode
   if (stormMode) {
     if (meta.closesInRain) mod -= 40;
     if (meta.environment === "indoor") mod += 12;
     else if (meta.environment === "outdoor") mod -= 8;
-  }
-
-  // Rain risk
-  else if (rainRisk >= 0.7) {
+  } else if (rainRisk >= 0.7) {
     if (meta.closesInRain) mod -= 15;
     if (meta.environment === "indoor") mod += 8;
     if (meta.getsWet) mod -= 3;
@@ -79,7 +75,6 @@ function getContextModifier(meta, weather, mode = "default") {
     if (meta.closesInRain) mod -= 3;
   }
 
-  // Heat
   if (tempF != null) {
     if (tempF >= 95) {
       if (meta.hasAC) mod += 10;
@@ -96,12 +91,6 @@ function getContextModifier(meta, weather, mode = "default") {
     }
   }
 
-  // Future modes:
-  // if (mode === "toddler") ...
-  // if (mode === "thrill") ...
-  // if (mode === "recovery") ...
-  // if (mode === "low_walking") ...
-
   return mod;
 }
 
@@ -114,7 +103,6 @@ function getPlanningPriority(meta, waitValueStatus) {
   if (category === "plan_ahead_multi_pass") return 90;
   if (category === "plan_ahead_standby_only") return 70;
 
-  // If the ride is usually high and currently above normal/bad, keep it visible.
   if (waitValueStatus?.status === "plan_ahead") return 80;
 
   return 0;
@@ -268,11 +256,6 @@ export function getNextBestRides({
   const worthTheWalk =
     farRides.find((ride) => ride.recommendationScore >= 60) || null;
 
-  /**
-   * Plan Ahead:
-   * These are rides where a long wait is often normal and the guest needs strategy,
-   * not just "wait on this."
-   */
   const planAheadCandidates = scored
     .filter((ride) => {
       const meta = getRideMeta(parkId, ride.id ?? ride.name);
@@ -301,9 +284,8 @@ export function getNextBestRides({
 
   /**
    * Wait On This:
-   * Do NOT let plan-ahead rides like TRON/Seven Dwarfs own this slot all day.
-   * This slot should highlight rides where the current wait is a poor value
-   * compared with that ride's normal profile.
+   * Only show rides where the current wait is actually poor versus its own profile.
+   * Do not show a ride just because it belongs to "wait_for_drop."
    */
   const waitOnThisCandidates = scored
     .filter((ride) => {
@@ -318,11 +300,7 @@ export function getNextBestRides({
 
       if (isPlanAheadCategory) return false;
 
-      return (
-        status === "bad_value" ||
-        status === "above_normal" ||
-        meta?.planningProfile?.category === "wait_for_drop"
-      );
+      return status === "bad_value" || status === "above_normal";
     })
     .map((ride) => {
       const status = ride.waitValueStatus?.status;
@@ -330,9 +308,6 @@ export function getNextBestRides({
 
       if (status === "bad_value") waitOnThisPriority += 40;
       if (status === "above_normal") waitOnThisPriority += 20;
-      if (ride.planningProfile?.category === "wait_for_drop") {
-        waitOnThisPriority += 10;
-      }
 
       return {
         ...ride,
