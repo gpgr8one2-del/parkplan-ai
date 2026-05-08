@@ -1,4 +1,4 @@
-import { getRideMeta } from "./rideMetadata";
+import { getRideMeta, getWaitValueStatus } from "./rideMetadata";
 import {
   resolveCurrentLand,
   getProximityModifier,
@@ -15,6 +15,10 @@ function getBaseScore(parkId, ride) {
   return meta?.popularity ?? DEFAULT_POPULARITY;
 }
 
+/**
+ * Generic wait penalty is still useful, but the new waitProfile modifier
+ * gives the app ride-specific intelligence.
+ */
 function getWaitPenalty(waitTime) {
   if (waitTime == null) return 15;
   if (waitTime <= 10) return 0;
@@ -101,6 +105,21 @@ function getContextModifier(meta, weather, mode = "default") {
   return mod;
 }
 
+function getPlanningPriority(meta, waitValueStatus) {
+  const category = meta?.planningProfile?.category;
+
+  if (!category) return 0;
+
+  if (category === "plan_ahead_single_pass") return 100;
+  if (category === "plan_ahead_multi_pass") return 90;
+  if (category === "plan_ahead_standby_only") return 70;
+
+  // If the ride is usually high and currently above normal/bad, keep it visible.
+  if (waitValueStatus?.status === "plan_ahead") return 80;
+
+  return 0;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Reason builder                                                             */
 /* -------------------------------------------------------------------------- */
@@ -108,7 +127,15 @@ function getContextModifier(meta, weather, mode = "default") {
 function buildReason(ride, parts) {
   const reasons = [];
 
-  if (ride.waitTime <= 10) {
+  if (parts.waitValueStatus?.status === "great_value") {
+    reasons.push("well below its usual wait");
+  } else if (parts.waitValueStatus?.status === "good_value") {
+    reasons.push("better than usual for this ride");
+  } else if (parts.waitValueStatus?.status === "bad_value") {
+    reasons.push("higher than it is usually worth");
+  } else if (parts.waitValueStatus?.status === "plan_ahead") {
+    reasons.push("this ride usually runs high");
+  } else if (ride.waitTime <= 10) {
     reasons.push("low wait right now");
   } else if (ride.waitTime <= 25) {
     reasons.push("reasonable wait");
@@ -139,6 +166,21 @@ function buildReason(ride, parts) {
   }
 
   return reasons.join(", ");
+}
+
+function buildPlanAheadReason(meta, ride, waitValueStatus) {
+  const strategy = meta?.planningProfile?.strategy;
+  const label = waitValueStatus?.label;
+
+  if (strategy && label) {
+    return `${label}. ${strategy}`;
+  }
+
+  if (strategy) {
+    return strategy;
+  }
+
+  return "This ride usually requires planning. Consider paid access, rope drop, late night, or watching for a rare dip.";
 }
 
 /* -------------------------------------------------------------------------- */
@@ -172,6 +214,8 @@ export function getNextBestRides({
     const trendModifier = getTrendModifier(ride.name);
     const contextModifier = getContextModifier(meta, weather, mode);
     const proximityModifier = getProximityModifier(meta, currentLand, parkId);
+    const waitValueStatus = getWaitValueStatus(meta, ride.waitTime);
+    const waitValueModifier = waitValueStatus.modifier || 0;
 
     const finalScore =
       baseScore -
@@ -179,7 +223,8 @@ export function getNextBestRides({
       lowWaitBonus +
       trendModifier +
       contextModifier +
-      proximityModifier;
+      proximityModifier +
+      waitValueModifier;
 
     const proximityDistance =
       proximityModifier > 0
@@ -192,11 +237,15 @@ export function getNextBestRides({
       ...ride,
       recommendationScore: finalScore,
       proximityDistance,
+      waitValueStatus,
+      planningProfile: meta?.planningProfile || null,
+      strategyNote: meta?.waitProfile?.strategyNote || null,
       reason: buildReason(ride, {
         baseScore,
         trendModifier,
         contextModifier,
         proximityModifier,
+        waitValueStatus,
       }),
     };
   });
@@ -219,21 +268,86 @@ export function getNextBestRides({
   const worthTheWalk =
     farRides.find((ride) => ride.recommendationScore >= 60) || null;
 
-  const waitOnThis =
-    rides
-      .filter(
-        (ride) =>
-          ride.isOpen &&
-          !completed.has(ride.id) &&
-          !skipped.has(ride.id) &&
-          getBaseScore(parkId, ride) >= 85
-      )
-      .sort((a, b) => (b.waitTime || 0) - (a.waitTime || 0))[0] || null;
+  /**
+   * Plan Ahead:
+   * These are rides where a long wait is often normal and the guest needs strategy,
+   * not just "wait on this."
+   */
+  const planAheadCandidates = scored
+    .filter((ride) => {
+      const meta = getRideMeta(parkId, ride.id ?? ride.name);
+      const category = meta?.planningProfile?.category;
+
+      return (
+        category === "plan_ahead_single_pass" ||
+        category === "plan_ahead_multi_pass" ||
+        category === "plan_ahead_standby_only"
+      );
+    })
+    .map((ride) => {
+      const meta = getRideMeta(parkId, ride.id ?? ride.name);
+      const waitValueStatus = getWaitValueStatus(meta, ride.waitTime);
+
+      return {
+        ...ride,
+        planAheadPriority:
+          getPlanningPriority(meta, waitValueStatus) + (ride.waitTime || 0),
+        planAheadReason: buildPlanAheadReason(meta, ride, waitValueStatus),
+      };
+    })
+    .sort((a, b) => b.planAheadPriority - a.planAheadPriority);
+
+  const planAhead = planAheadCandidates[0] || null;
+
+  /**
+   * Wait On This:
+   * Do NOT let plan-ahead rides like TRON/Seven Dwarfs own this slot all day.
+   * This slot should highlight rides where the current wait is a poor value
+   * compared with that ride's normal profile.
+   */
+  const waitOnThisCandidates = scored
+    .filter((ride) => {
+      const meta = getRideMeta(parkId, ride.id ?? ride.name);
+      const category = meta?.planningProfile?.category;
+      const status = ride.waitValueStatus?.status;
+
+      const isPlanAheadCategory =
+        category === "plan_ahead_single_pass" ||
+        category === "plan_ahead_multi_pass" ||
+        category === "plan_ahead_standby_only";
+
+      if (isPlanAheadCategory) return false;
+
+      return (
+        status === "bad_value" ||
+        status === "above_normal" ||
+        meta?.planningProfile?.category === "wait_for_drop"
+      );
+    })
+    .map((ride) => {
+      const status = ride.waitValueStatus?.status;
+      let waitOnThisPriority = ride.waitTime || 0;
+
+      if (status === "bad_value") waitOnThisPriority += 40;
+      if (status === "above_normal") waitOnThisPriority += 20;
+      if (ride.planningProfile?.category === "wait_for_drop") {
+        waitOnThisPriority += 10;
+      }
+
+      return {
+        ...ride,
+        waitOnThisPriority,
+      };
+    })
+    .sort((a, b) => b.waitOnThisPriority - a.waitOnThisPriority);
+
+  const waitOnThis = waitOnThisCandidates[0] || null;
 
   return {
     bestMove,
     backup,
     worthTheWalk,
+    planAhead,
     waitOnThis,
   };
 }
