@@ -104,23 +104,28 @@ export function getLandDistance(parkId, fromLand, toLand) {
 }
 
 /**
- * Score modifier for walking distance. Tuned so that:
- *   - same-land rides get a small bonus (favor staying put)
- *   - adjacent lands get a small penalty
- *   - far lands get a meaningful penalty, but not so large that it
- *     overrides a much-better ride (e.g. TRON from Adventureland)
+ * Score modifier for walking distance.
  *
- * If currentLand is null (guest hasn't selected a land), returns 0
- * for every ride — no proximity influence on scoring.
+ * Updated tuning:
+ *   - same land gets a stronger bonus so nearby rides feel prioritized
+ *   - adjacent lands stay viable because MK flows naturally between lands
+ *   - far lands get a larger penalty so cross-park options don't hijack backups
+ *
+ * If currentLand is null, returns 0 for every ride — no proximity influence.
  */
 export function getProximityModifier(meta, currentLand, parkId) {
   if (!meta || !currentLand) return 0;
 
   const distance = getLandDistance(parkId, currentLand, meta.land);
+
   switch (distance) {
-    case "same":     return 4;
-    case "adjacent": return -5;
-    case "far":      return -12;
-    default:         return 0;
+    case "same":
+      return 8;
+    case "adjacent":
+      return -2;
+    case "far":
+      return -16;
+    default:
+      return 0;
   }
 }
