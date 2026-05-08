@@ -534,6 +534,32 @@ function App() {
                 </div>
               )}
 
+              {recommendations.planAhead && (
+                <div
+                  style={{
+                    padding: 14,
+                    borderRadius: 18,
+                    border: "1px solid #fecaca",
+                    background: "#fef2f2",
+                  }}
+                >
+                  <div style={{ fontSize: 12, color: "#991b1b", fontWeight: 900 }}>
+                    PLAN AHEAD
+                  </div>
+                  <h4 style={{ margin: "4px 0", fontSize: 18 }}>
+                    {recommendations.planAhead.name}
+                  </h4>
+                  <p style={{ margin: 0, color: "#991b1b", fontWeight: 800 }}>
+                    {recommendations.planAhead.waitTime} min wait
+                  </p>
+                  <p style={{ margin: "8px 0 0", color: "#334155" }}>
+                    {recommendations.planAhead.planAheadReason ||
+                      "This ride usually needs a strategy. Consider Lightning Lane, rope drop, late night, or watching for a rare dip."}
+                  </p>
+                  {renderRideActions(recommendations.planAhead)}
+                </div>
+              )}
+
               {recommendations.waitOnThis && (
                 <div
                   style={{
