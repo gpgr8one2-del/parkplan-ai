@@ -3,21 +3,12 @@
  *
  * Single source of truth for ride attributes.
  *
- * Keys are queue-times.com ride IDs (as strings) so this file can be joined
- * directly with live wait-time data from the backend without any name
- * normalization. Display names are stored on each entry for UI use.
+ * Keys are queue-times.com ride IDs as strings so this file can be joined
+ * directly with live wait-time data from the backend.
  *
- * Schema (all fields required for V1):
- *   displayName       string   Human-readable name (matches queue-times exactly)
- *   land              string   Land/area within the park (snake_case)
- *   minHeightInches   number   Minimum rider height in inches; 0 = no requirement
- *   environment       enum     "outdoor" | "indoor" | "mixed"
- *   hasAC             boolean  True if queue AND ride are climate-controlled
- *   getsWet           boolean  Riders may get wet
- *   closesInRain      boolean  Closed in lightning / heavy rain
- *   intensity         number   1 (gentle) -> 5 (extreme thrill)
- *   popularity        number   1-100 baseline desirability
- *   tags              string[] Free-form filter labels
+ * New intelligence fields:
+ *   waitProfile      ride-specific wait value thresholds
+ *   planningProfile  how guests should think about this attraction strategically
  */
 
 export const RIDE_METADATA = {
@@ -33,8 +24,25 @@ export const RIDE_METADATA = {
       closesInRain: true,
       intensity: 1,
       popularity: 76,
-      tags: ["classic", "boat", "family"],
+      waitProfile: {
+        averageWait: 45,
+        goodDealUnder: 35,
+        normalRange: [40, 55],
+        badValueOver: 60,
+        usuallyHighAllDay: true,
+        strategyNote:
+          "Lines peak mid-day. Best during the afternoon parade or late at night.",
+      },
+      planningProfile: {
+        category: "plan_ahead_multi_pass",
+        paidAccess: "LLMP",
+        appStatus: "plan_ahead",
+        strategy:
+          "Secure Lightning Lane Multi Pass if this is a must-do, or watch for dips during the afternoon parade.",
+      },
+      tags: ["classic", "boat", "family", "plan-ahead"],
     },
+
     "137": {
       displayName: "Pirates of the Caribbean",
       land: "adventureland",
@@ -45,8 +53,25 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 2,
       popularity: 78,
-      tags: ["classic", "boat", "family"],
+      waitProfile: {
+        averageWait: 27,
+        goodDealUnder: 20,
+        normalRange: [25, 35],
+        badValueOver: 45,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "High-capacity people eater. If it spikes around midday, check again later.",
+      },
+      planningProfile: {
+        category: "wait_for_drop",
+        paidAccess: "LLMP",
+        appStatus: "wait_for_drop",
+        strategy:
+          "Great value when low. If it is high around noon, wait for late afternoon or evening.",
+      },
+      tags: ["classic", "boat", "family", "indoor"],
     },
+
     "141": {
       displayName: "The Magic Carpets of Aladdin",
       land: "adventureland",
@@ -57,8 +82,25 @@ export const RIDE_METADATA = {
       closesInRain: true,
       intensity: 1,
       popularity: 40,
+      waitProfile: {
+        averageWait: 17,
+        goodDealUnder: 15,
+        normalRange: [15, 25],
+        badValueOver: 35,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Slow loading spinner. Skip it if the wait gets long.",
+      },
+      planningProfile: {
+        category: "normal_standby",
+        paidAccess: "LLMP",
+        appStatus: "go_now_if_low",
+        strategy:
+          "Use as a nearby filler only when the wait is reasonable.",
+      },
       tags: ["spinner", "toddler", "family"],
     },
+
     "334": {
       displayName: "Walt Disney's Enchanted Tiki Room",
       land: "adventureland",
@@ -69,7 +111,23 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 35,
-      tags: ["classic", "show", "recovery"],
+      waitProfile: {
+        averageWait: 11,
+        goodDealUnder: 10,
+        normalRange: [10, 15],
+        badValueOver: 20,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Usually just waiting for the next show. Great shaded recovery stop near Dole Whip.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "recovery",
+        strategy:
+          "Use as an AC/shade reset when nearby, especially during heat.",
+      },
+      tags: ["classic", "show", "recovery", "ac"],
     },
 
     // ---------- Fantasyland ----------
@@ -83,8 +141,25 @@ export const RIDE_METADATA = {
       closesInRain: true,
       intensity: 2,
       popularity: 45,
+      waitProfile: {
+        averageWait: 15,
+        goodDealUnder: 15,
+        normalRange: [15, 25],
+        badValueOver: 35,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Very short ride. Not worth a long wait unless it is a must-do for young kids.",
+      },
+      planningProfile: {
+        category: "normal_standby",
+        paidAccess: "LLMP",
+        appStatus: "go_now_if_low",
+        strategy:
+          "Ride if nearby and low. Skip if it is over 25–30 minutes.",
+      },
       tags: ["coaster", "kid-coaster", "family"],
     },
+
     "127": {
       displayName: "Under the Sea - Journey of The Little Mermaid",
       land: "fantasyland",
@@ -95,8 +170,25 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 63,
-      tags: ["dark-ride", "toddler", "family"],
+      waitProfile: {
+        averageWait: 16,
+        goodDealUnder: 15,
+        normalRange: [15, 25],
+        badValueOver: 30,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Omnimover with steady loading. A posted 20-minute wait often moves well.",
+      },
+      planningProfile: {
+        category: "normal_standby",
+        paidAccess: "LLMP",
+        appStatus: "go_now",
+        strategy:
+          "Good family filler when nearby, especially if you want indoor time.",
+      },
+      tags: ["dark-ride", "toddler", "family", "indoor"],
     },
+
     "128": {
       displayName: "Enchanted Tales with Belle",
       land: "fantasyland",
@@ -107,8 +199,25 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 50,
-      tags: ["show", "interactive", "kids"],
+      waitProfile: {
+        averageWait: 28,
+        goodDealUnder: 15,
+        normalRange: [20, 35],
+        badValueOver: 45,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Interactive experience with lower capacity. Best before 10:30 AM or after 5 PM.",
+      },
+      planningProfile: {
+        category: "plan_ahead_standby_only",
+        paidAccess: "none",
+        appStatus: "plan_ahead",
+        strategy:
+          "Do early or later. Avoid the mid-day family surge.",
+      },
+      tags: ["show", "interactive", "kids", "plan-ahead"],
     },
+
     "129": {
       displayName: "Seven Dwarfs Mine Train",
       land: "fantasyland",
@@ -119,8 +228,25 @@ export const RIDE_METADATA = {
       closesInRain: true,
       intensity: 3,
       popularity: 96,
-      tags: ["headliner", "coaster", "family"],
+      waitProfile: {
+        averageWait: 68,
+        goodDealUnder: 60,
+        normalRange: [65, 85],
+        badValueOver: 90,
+        usuallyHighAllDay: true,
+        strategyNote:
+          "Rarely a good deal except Early Entry, park close, or after downtime.",
+      },
+      planningProfile: {
+        category: "plan_ahead_single_pass",
+        paidAccess: "LLSP",
+        appStatus: "plan_ahead",
+        strategy:
+          "Buy Single Pass, rope drop during Early Entry, or ride during fireworks/near park close.",
+      },
+      tags: ["headliner", "coaster", "family", "single-pass", "plan-ahead"],
     },
+
     "132": {
       displayName: "Dumbo the Flying Elephant",
       land: "fantasyland",
@@ -131,8 +257,25 @@ export const RIDE_METADATA = {
       closesInRain: true,
       intensity: 1,
       popularity: 50,
+      waitProfile: {
+        averageWait: 14,
+        goodDealUnder: 15,
+        normalRange: [15, 25],
+        badValueOver: 35,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Indoor play area makes the wait less painful for kids, but still better early or late.",
+      },
+      planningProfile: {
+        category: "normal_standby",
+        paidAccess: "LLMP",
+        appStatus: "go_now_if_low",
+        strategy:
+          "Good young-kid option when nearby and reasonable.",
+      },
       tags: ["spinner", "toddler", "family"],
     },
+
     "133": {
       displayName: "\"it's a small world\"",
       land: "fantasyland",
@@ -143,8 +286,25 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 48,
-      tags: ["classic", "boat", "toddler", "recovery"],
+      waitProfile: {
+        averageWait: 18,
+        goodDealUnder: 15,
+        normalRange: [15, 25],
+        badValueOver: 35,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Massive people eater. Line can look long but usually moves continuously.",
+      },
+      planningProfile: {
+        category: "normal_standby",
+        paidAccess: "LLMP",
+        appStatus: "go_now",
+        strategy:
+          "Great indoor family filler, especially afternoon or evening.",
+      },
+      tags: ["classic", "boat", "toddler", "recovery", "indoor"],
     },
+
     "135": {
       displayName: "Mad Tea Party",
       land: "fantasyland",
@@ -155,8 +315,25 @@ export const RIDE_METADATA = {
       closesInRain: true,
       intensity: 2,
       popularity: 42,
-      tags: ["spinner", "motion-sickness", "family"],
+      waitProfile: {
+        averageWait: 10,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 25,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Fast loading. Easy filler during parades, fireworks, or later evening.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "LLMP",
+        appStatus: "filler",
+        strategy:
+          "Use as a quick nearby filler if your group likes spinning.",
+      },
+      tags: ["spinner", "motion-sickness", "family", "filler"],
     },
+
     "136": {
       displayName: "Peter Pan's Flight",
       land: "fantasyland",
@@ -167,8 +344,25 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 89,
-      tags: ["classic", "dark-ride", "family"],
+      waitProfile: {
+        averageWait: 52,
+        goodDealUnder: 40,
+        normalRange: [45, 65],
+        badValueOver: 70,
+        usuallyHighAllDay: true,
+        strategyNote:
+          "Low capacity. If it is under 40 minutes during the day, strongly consider riding.",
+      },
+      planningProfile: {
+        category: "plan_ahead_multi_pass",
+        paidAccess: "LLMP",
+        appStatus: "plan_ahead",
+        strategy:
+          "Book Multi Pass, make it a first stop, or save for the final hour.",
+      },
+      tags: ["classic", "dark-ride", "family", "plan-ahead"],
     },
+
     "142": {
       displayName: "The Many Adventures of Winnie the Pooh",
       land: "fantasyland",
@@ -179,8 +373,25 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 65,
-      tags: ["dark-ride", "toddler", "family"],
+      waitProfile: {
+        averageWait: 27,
+        goodDealUnder: 20,
+        normalRange: [25, 35],
+        badValueOver: 40,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Peaks mid-day with families. Better early or late.",
+      },
+      planningProfile: {
+        category: "normal_standby",
+        paidAccess: "LLMP",
+        appStatus: "go_now_if_low",
+        strategy:
+          "Ride under 30 minutes, especially if nearby with young kids.",
+      },
+      tags: ["dark-ride", "toddler", "family", "indoor"],
     },
+
     "161": {
       displayName: "Prince Charming Regal Carrousel",
       land: "fantasyland",
@@ -191,8 +402,25 @@ export const RIDE_METADATA = {
       closesInRain: true,
       intensity: 1,
       popularity: 38,
-      tags: ["classic", "toddler", "family"],
+      waitProfile: {
+        averageWait: 9,
+        goodDealUnder: 10,
+        normalRange: [10, 15],
+        badValueOver: 20,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Loads quickly. Best as a filler while passing through Fantasyland.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "filler",
+        strategy:
+          "Use as a quick gap-filler with young kids.",
+      },
+      tags: ["classic", "toddler", "family", "filler"],
     },
+
     "171": {
       displayName: "Mickey's PhilharMagic",
       land: "fantasyland",
@@ -203,7 +431,23 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 52,
-      tags: ["show", "recovery", "family"],
+      waitProfile: {
+        averageWait: 13,
+        goodDealUnder: 10,
+        normalRange: [10, 15],
+        badValueOver: 20,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Large theater. Usually just waiting for the next show. Excellent AC escape.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "LLMP_not_needed",
+        appStatus: "recovery",
+        strategy:
+          "Great AC break when nearby or when the group needs to sit.",
+      },
+      tags: ["show", "recovery", "family", "ac"],
     },
 
     // ---------- Frontierland ----------
@@ -217,8 +461,25 @@ export const RIDE_METADATA = {
       closesInRain: true,
       intensity: 3,
       popularity: 85,
-      tags: ["coaster", "family"],
+      waitProfile: {
+        averageWait: 36,
+        goodDealUnder: 25,
+        normalRange: [30, 45],
+        badValueOver: 50,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Susceptible to crowd surges. Often drops during parade or late evening.",
+      },
+      planningProfile: {
+        category: "wait_for_drop",
+        paidAccess: "LLMP",
+        appStatus: "wait_for_drop",
+        strategy:
+          "If it spikes, check again during the parade or late evening.",
+      },
+      tags: ["coaster", "family", "wait-for-drop"],
     },
+
     "1214": {
       displayName: "Country Bear Musical Jamboree",
       land: "frontierland",
@@ -229,8 +490,25 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 34,
-      tags: ["classic", "show", "recovery"],
+      waitProfile: {
+        averageWait: 13,
+        goodDealUnder: 10,
+        normalRange: [10, 15],
+        badValueOver: 20,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "High-capacity theater. Usually just waiting for the prior show.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "recovery",
+        strategy:
+          "Use as an easy AC break in Frontierland.",
+      },
+      tags: ["classic", "show", "recovery", "ac"],
     },
+
     "13630": {
       displayName: "Tiana's Bayou Adventure",
       land: "frontierland",
@@ -241,7 +519,23 @@ export const RIDE_METADATA = {
       closesInRain: true,
       intensity: 3,
       popularity: 92,
-      tags: ["headliner", "water", "family"],
+      waitProfile: {
+        averageWait: 33,
+        goodDealUnder: 25,
+        normalRange: [30, 45],
+        badValueOver: 55,
+        usuallyHighAllDay: true,
+        strategyNote:
+          "High demand, especially on warm days. Better late evening if missed earlier.",
+      },
+      planningProfile: {
+        category: "plan_ahead_multi_pass",
+        paidAccess: "LLMP",
+        appStatus: "plan_ahead",
+        strategy:
+          "Prioritize as a top Multi Pass selection. If missed, rope drop or try late evening.",
+      },
+      tags: ["headliner", "water", "family", "plan-ahead"],
     },
 
     // ---------- Liberty Square ----------
@@ -255,8 +549,25 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 2,
       popularity: 84,
-      tags: ["classic", "dark-ride", "spooky"],
+      waitProfile: {
+        averageWait: 34,
+        goodDealUnder: 25,
+        normalRange: [30, 45],
+        badValueOver: 50,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Line moves continuously. If it spikes over 45–50, check again later.",
+      },
+      planningProfile: {
+        category: "wait_for_drop",
+        paidAccess: "LLMP",
+        appStatus: "wait_for_drop",
+        strategy:
+          "Avoid the noon to mid-afternoon surge. Usually improves later.",
+      },
+      tags: ["classic", "dark-ride", "spooky", "indoor"],
     },
+
     "356": {
       displayName: "The Hall of Presidents",
       land: "liberty_square",
@@ -267,7 +578,23 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 30,
-      tags: ["show", "recovery"],
+      waitProfile: {
+        averageWait: 14,
+        goodDealUnder: 10,
+        normalRange: [10, 25],
+        badValueOver: 30,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Shows run on a schedule. Time arrival around show start instead of waiting around.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "recovery",
+        strategy:
+          "Good long AC rest if you time the next show correctly.",
+      },
+      tags: ["show", "recovery", "ac"],
     },
 
     // ---------- Tomorrowland ----------
@@ -281,8 +608,25 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 40,
-      tags: ["show", "interactive", "recovery"],
+      waitProfile: {
+        averageWait: 14,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 25,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "High-capacity theater show. Usually not more than a show-cycle wait.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "LLMP_not_needed",
+        appStatus: "recovery",
+        strategy:
+          "Good AC break in Tomorrowland when nearby.",
+      },
+      tags: ["show", "interactive", "recovery", "ac"],
     },
+
     "131": {
       displayName: "Buzz Lightyear's Space Ranger Spin",
       land: "tomorrowland",
@@ -293,8 +637,25 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 75,
-      tags: ["interactive", "dark-ride", "family"],
+      waitProfile: {
+        averageWait: 26,
+        goodDealUnder: 20,
+        normalRange: [25, 35],
+        badValueOver: 40,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Omnimover-style flow. Under 20 often means a quick moving queue.",
+      },
+      planningProfile: {
+        category: "normal_standby",
+        paidAccess: "LLMP",
+        appStatus: "go_now",
+        strategy:
+          "Good Tomorrowland move when under 30 minutes or nearby.",
+      },
+      tags: ["interactive", "dark-ride", "family", "indoor"],
     },
+
     "138": {
       displayName: "Space Mountain",
       land: "tomorrowland",
@@ -305,8 +666,25 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 4,
       popularity: 88,
-      tags: ["coaster", "thrill", "dark-ride"],
+      waitProfile: {
+        averageWait: 43,
+        goodDealUnder: 30,
+        normalRange: [35, 50],
+        badValueOver: 55,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Peaks mid-day but clears out well in the evening.",
+      },
+      planningProfile: {
+        category: "wait_for_drop",
+        paidAccess: "LLMP",
+        appStatus: "wait_for_drop",
+        strategy:
+          "Avoid mid-day spikes. Try after 8 PM or use Multi Pass.",
+      },
+      tags: ["coaster", "thrill", "dark-ride", "wait-for-drop"],
     },
+
     "143": {
       displayName: "Tomorrowland Speedway",
       land: "tomorrowland",
@@ -317,8 +695,25 @@ export const RIDE_METADATA = {
       closesInRain: true,
       intensity: 1,
       popularity: 38,
-      tags: ["family", "kids"],
+      waitProfile: {
+        averageWait: 17,
+        goodDealUnder: 15,
+        normalRange: [15, 30],
+        badValueOver: 40,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Uncovered queue is miserable in midday heat. Better morning or after sunset.",
+      },
+      planningProfile: {
+        category: "normal_standby",
+        paidAccess: "LLMP",
+        appStatus: "go_now_if_low",
+        strategy:
+          "Avoid in heat unless wait is low or kids really want it.",
+      },
+      tags: ["family", "kids", "outdoor"],
     },
+
     "248": {
       displayName: "Astro Orbiter",
       land: "tomorrowland",
@@ -329,8 +724,25 @@ export const RIDE_METADATA = {
       closesInRain: true,
       intensity: 2,
       popularity: 36,
-      tags: ["spinner", "family"],
+      waitProfile: {
+        averageWait: 23,
+        goodDealUnder: 20,
+        normalRange: [25, 40],
+        badValueOver: 45,
+        usuallyHighAllDay: true,
+        strategyNote:
+          "Elevator bottleneck makes the line painful. Best first hour or final hour.",
+      },
+      planningProfile: {
+        category: "plan_ahead_standby_only",
+        paidAccess: "none",
+        appStatus: "plan_ahead",
+        strategy:
+          "Ride very early or very late. Avoid mid-day unless the wait is unusually low.",
+      },
+      tags: ["spinner", "family", "plan-ahead"],
     },
+
     "457": {
       displayName: "Walt Disney's Carousel of Progress",
       land: "tomorrowland",
@@ -341,8 +753,25 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 55,
-      tags: ["classic", "show", "recovery"],
+      waitProfile: {
+        averageWait: 6,
+        goodDealUnder: 5,
+        normalRange: [5, 10],
+        badValueOver: 15,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Usually just waiting for the rotating theater cycle. Excellent AC recovery.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "recovery",
+        strategy:
+          "Excellent sit-down AC break in Tomorrowland.",
+      },
+      tags: ["classic", "show", "recovery", "ac"],
     },
+
     "1190": {
       displayName: "Tomorrowland Transit Authority PeopleMover",
       land: "tomorrowland",
@@ -352,9 +781,26 @@ export const RIDE_METADATA = {
       getsWet: false,
       closesInRain: true,
       intensity: 1,
-      popularity: 75,
-      tags: ["classic", "relaxing", "low-wait"],
+      popularity: 68,
+      waitProfile: {
+        averageWait: 11,
+        goodDealUnder: 10,
+        normalRange: [10, 15],
+        badValueOver: 20,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Usually walk-on except afternoon spikes when guests want shade and seats.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "recovery",
+        strategy:
+          "Great low-stress break. Best as a recovery/chill pick, not a default headliner.",
+      },
+      tags: ["classic", "relaxing", "low-wait", "recovery"],
     },
+
     "11527": {
       displayName: "TRON Lightcycle / Run",
       land: "tomorrowland",
@@ -365,7 +811,23 @@ export const RIDE_METADATA = {
       closesInRain: true,
       intensity: 5,
       popularity: 98,
-      tags: ["headliner", "coaster", "thrill"],
+      waitProfile: {
+        averageWait: 62,
+        goodDealUnder: 45,
+        normalRange: [50, 70],
+        badValueOver: 75,
+        usuallyHighAllDay: true,
+        strategyNote:
+          "High-demand premium thrill ride. Use Single Pass, rope drop, or late night.",
+      },
+      planningProfile: {
+        category: "plan_ahead_single_pass",
+        paidAccess: "LLSP",
+        appStatus: "plan_ahead",
+        strategy:
+          "Purchase Single Pass in advance, rope drop during Early Entry, or ride near park close.",
+      },
+      tags: ["headliner", "coaster", "thrill", "single-pass", "plan-ahead"],
     },
   },
 
@@ -377,60 +839,120 @@ export const RIDE_METADATA = {
 /* Lookup helpers                                                             */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Get metadata for a single ride.
- *
- * Accepts either a queue-times ride ID (number or string) or a display name.
- * ID lookup is preferred — it's exact. Name fallback exists so older code
- * that only has ride.name still works during the transition.
- */
 export function getRideMeta(parkId, rideIdOrName) {
   const park = RIDE_METADATA[parkId];
   if (!park) return null;
 
-  // ID lookup — JS coerces number keys to strings for property access
   if (rideIdOrName != null && park[rideIdOrName]) {
     return park[rideIdOrName];
   }
 
-  // Name fallback
   const match = Object.values(park).find(
     (m) => m.displayName === rideIdOrName
   );
+
   return match || null;
 }
 
-/** Get all rides for a park as [id, meta] pairs. */
 export function getParkRides(parkId) {
   const park = RIDE_METADATA[parkId];
   return park ? Object.entries(park) : [];
 }
 
 /* -------------------------------------------------------------------------- */
-/* Derived properties — compute from metadata, do not store separately        */
+/* Derived properties                                                         */
 /* -------------------------------------------------------------------------- */
 
-/** Suitable for toddlers and young kids. */
 export function isKidFriendly(meta) {
   return meta.minHeightInches === 0 && meta.intensity <= 2;
 }
 
-/** Good as a sit-down break (AC, indoor, low intensity). */
 export function isRecoveryRide(meta) {
   return meta.hasAC && meta.environment === "indoor" && meta.intensity <= 2;
 }
 
-/** Won't close and won't soak you in a storm. */
 export function isRainSafe(meta) {
   return !meta.closesInRain && !meta.getsWet;
 }
 
-/** Good for cooling off on a hot day. */
 export function isHeatRelief(meta) {
   return meta.hasAC || meta.getsWet;
 }
 
-/** Real thrill ride for adrenaline-seekers. */
 export function isThrillRide(meta) {
   return meta.intensity >= 4;
+}
+
+export function isPlanAheadRide(meta) {
+  return meta?.planningProfile?.appStatus === "plan_ahead";
+}
+
+export function isWaitForDropRide(meta) {
+  return meta?.planningProfile?.appStatus === "wait_for_drop";
+}
+
+export function isFillerOrRecoveryRide(meta) {
+  return meta?.planningProfile?.category === "filler_or_recovery";
+}
+
+export function getWaitValueStatus(meta, waitTime) {
+  const profile = meta?.waitProfile;
+
+  if (!profile || waitTime == null) {
+    return {
+      status: "unknown",
+      label: "Unknown wait value",
+      modifier: 0,
+    };
+  }
+
+  const [normalLow, normalHigh] = profile.normalRange;
+
+  if (waitTime <= profile.goodDealUnder) {
+    return {
+      status: "great_value",
+      label: "Great value right now",
+      modifier: 14,
+    };
+  }
+
+  if (waitTime >= profile.badValueOver) {
+    return {
+      status: profile.usuallyHighAllDay ? "plan_ahead" : "bad_value",
+      label: profile.usuallyHighAllDay
+        ? "Usually runs high"
+        : "Poor value right now",
+      modifier: profile.usuallyHighAllDay ? -6 : -16,
+    };
+  }
+
+  if (waitTime >= normalLow && waitTime <= normalHigh) {
+    return {
+      status: "normal",
+      label: "Normal wait for this ride",
+      modifier: profile.usuallyHighAllDay ? 0 : -4,
+    };
+  }
+
+  if (waitTime < normalLow) {
+    return {
+      status: "good_value",
+      label: "Better than usual",
+      modifier: 8,
+    };
+  }
+
+  if (waitTime > normalHigh) {
+    return {
+      status: "above_normal",
+      label: "Higher than usual",
+      modifier: profile.usuallyHighAllDay ? -4 : -10,
+    };
+  }
+
+  return {
+    status: "normal",
+    label: "Normal wait for this ride",
+    modifier: 0,
+  };
 }
