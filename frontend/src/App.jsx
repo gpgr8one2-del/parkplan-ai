@@ -509,6 +509,31 @@ function App() {
                 </div>
               )}
 
+              {recommendations.worthTheWalk && (
+                <div
+                  style={{
+                    padding: 14,
+                    borderRadius: 18,
+                    border: "1px solid #ddd6fe",
+                    background: "#f5f3ff",
+                  }}
+                >
+                  <div style={{ fontSize: 12, color: "#6d28d9", fontWeight: 900 }}>
+                    WORTH THE WALK
+                  </div>
+                  <h4 style={{ margin: "4px 0", fontSize: 18 }}>
+                    {recommendations.worthTheWalk.name}
+                  </h4>
+                  <p style={{ margin: 0, color: "#6d28d9", fontWeight: 800 }}>
+                    {recommendations.worthTheWalk.waitTime} min wait
+                  </p>
+                  <p style={{ margin: "8px 0 0", color: "#334155" }}>
+                    Not the closest option, but strong enough to consider if you're willing to move.
+                  </p>
+                  {renderRideActions(recommendations.worthTheWalk)}
+                </div>
+              )}
+
               {recommendations.waitOnThis && (
                 <div
                   style={{
