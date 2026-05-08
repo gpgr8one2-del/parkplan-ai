@@ -181,9 +181,17 @@ export function getNextBestRides({
       contextModifier +
       proximityModifier;
 
+    const proximityDistance =
+      proximityModifier > 0
+        ? "same"
+        : proximityModifier < -8
+        ? "far"
+        : "adjacent";
+
     return {
       ...ride,
       recommendationScore: finalScore,
+      proximityDistance,
       reason: buildReason(ride, {
         baseScore,
         trendModifier,
@@ -197,8 +205,19 @@ export function getNextBestRides({
     (a, b) => b.recommendationScore - a.recommendationScore
   );
 
-  const bestMove = sorted[0] || null;
-  const backup = sorted[1] || null;
+  const nearbyRides = sorted.filter((ride) => {
+    return ride.proximityDistance !== "far";
+  });
+
+  const farRides = sorted.filter((ride) => {
+    return ride.proximityDistance === "far";
+  });
+
+  const bestMove = nearbyRides[0] || sorted[0] || null;
+  const backup = nearbyRides[1] || sorted[1] || null;
+
+  const worthTheWalk =
+    farRides.find((ride) => ride.recommendationScore >= 60) || null;
 
   const waitOnThis =
     rides
@@ -214,6 +233,7 @@ export function getNextBestRides({
   return {
     bestMove,
     backup,
+    worthTheWalk,
     waitOnThis,
   };
 }
