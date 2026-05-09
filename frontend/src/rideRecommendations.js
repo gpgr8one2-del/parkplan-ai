@@ -3,8 +3,10 @@ import {
   resolveCurrentLand,
   getProximityModifier,
 } from "./parkProximity";
+import { getParkCloseTime } from "./parkHours";
 
 const DEFAULT_POPULARITY = 40;
+const WALK_BUFFER_MINUTES = 15;
 
 /* -------------------------------------------------------------------------- */
 /* Score components                                                           */
@@ -195,6 +197,25 @@ function isFillerOrRecovery(ride) {
   return ride?.planningProfile?.category === "filler_or_recovery";
 }
 
+/**
+ * Will the guest realistically be able to enter this ride's queue and
+ * finish before park close? Returns true if there's enough time left,
+ * false if they'd be queueing past close.
+ *
+ * If close time is unknown (no schedule data), returns true and lets
+ * other logic handle it.
+ */
+function fitsBeforeClose(waitTime, closeTime, now) {
+  if (!closeTime) return true;
+
+  const wait = waitTime || 0;
+  const projectedEntry = new Date(
+    now.getTime() + (wait + WALK_BUFFER_MINUTES) * 60 * 1000
+  );
+
+  return projectedEntry <= closeTime;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Reason builder                                                             */
 /* -------------------------------------------------------------------------- */
@@ -290,12 +311,21 @@ export function getNextBestRides({
   // out of every positive recommendation slot.
   const isStormActive = weather?.stormMode === true;
 
-  const eligibleRides = rides.filter(
-    (ride) =>
-      ride.isOpen &&
-      !completed.has(String(ride.id)) &&
-      !skipped.has(String(ride.id))
-  );
+  // Park close awareness — filter out rides that won't fit
+  // before close, so we don't recommend a 70-min wait when
+  // the park closes in 60.
+  const now = new Date();
+  const closeTime = getParkCloseTime(parkId, now);
+
+  const eligibleRides = rides.filter((ride) => {
+    if (!ride.isOpen) return false;
+    if (completed.has(String(ride.id))) return false;
+    if (skipped.has(String(ride.id))) return false;
+
+    if (!fitsBeforeClose(ride.waitTime, closeTime, now)) return false;
+
+    return true;
+  });
 
   const scored = eligibleRides.map((ride) => {
     const meta = getRideMeta(parkId, ride.id ?? ride.name);
