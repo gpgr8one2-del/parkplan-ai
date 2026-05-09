@@ -5,6 +5,7 @@ import { FreshnessBadge } from "./components/FreshnessBadge";
 import { DataStatusBanner } from "./components/DataStatusBanner";
 import { getNextBestRides } from "./rideRecommendations";
 import { getWeatherMode, getRecoverySuggestions } from "./utils/weatherAdvice";
+import { formatCloseTimeLabel } from "./parkHours";
 
 const PARKS = [
   { id: "magic_kingdom", name: "Magic Kingdom" },
@@ -29,6 +30,11 @@ const LAND_OPTIONS = {
 };
 
 const STORAGE_KEY = "parkplan.state";
+
+// Auto-refresh interval (ms). 6 minutes — slightly above queue-times'
+// own update cadence (~5 min) so we're not over-fetching, and well
+// inside the backend cache TTL so most refreshes are cheap.
+const AUTO_REFRESH_MS = 6 * 60 * 1000;
 
 const page = {
   minHeight: "100vh",
@@ -127,6 +133,30 @@ function App() {
     loadData();
   }, [loadData]);
 
+  // Auto-refresh wait times + weather every AUTO_REFRESH_MS while the tab
+  // is visible. Also refresh whenever the user switches back to the tab
+  // after it's been hidden (mobile users tab-switching through the day).
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        loadData();
+      }
+    }, AUTO_REFRESH_MS);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        loadData();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [loadData]);
+
   useEffect(() => {
     isRestoringParkState.current = true;
 
@@ -181,6 +211,10 @@ function App() {
       weather,
     });
   }, [activePark, weather]);
+
+  const closeTimeLabel = useMemo(() => {
+    return formatCloseTimeLabel(activePark);
+  }, [activePark]);
 
   function handleDone(rideId) {
     if (rideId == null) return;
@@ -248,6 +282,9 @@ function App() {
         activePark,
         weather,
         conversationHistory: nextChat.slice(-6),
+        completedRideIds,
+        skippedRideIds,
+        currentLand,
       });
 
       setChat([...nextChat, { role: "assistant", content: res.reply }]);
@@ -309,6 +346,7 @@ function App() {
               </div>
               <p style={{ margin: "7px 0 0", color: "#64748b", fontSize: 13 }}>
                 {sortedRides.length} rides loaded
+                {closeTimeLabel ? ` · closes ${closeTimeLabel}` : ""}
               </p>
             </div>
 
