@@ -55,6 +55,9 @@ function getTrendModifier(rideName) {
 /**
  * Context modifier — V1: weather only.
  * Uses rideMetadata, not raw live ride data.
+ *
+ * Storm mode is intentionally severe. closesInRain rides take a -90 hit
+ * so even very high popularity can't drag them into a positive slot.
  */
 function getContextModifier(meta, weather, mode = "default") {
   if (!meta || !weather) return 0;
@@ -63,9 +66,10 @@ function getContextModifier(meta, weather, mode = "default") {
   let mod = 0;
 
   if (stormMode) {
-    if (meta.closesInRain) mod -= 40;
-    if (meta.environment === "indoor") mod += 12;
-    else if (meta.environment === "outdoor") mod -= 8;
+    if (meta.closesInRain) mod -= 90;
+    if (meta.environment === "indoor") mod += 18;
+    else if (meta.environment === "outdoor") mod -= 20;
+    else if (meta.environment === "mixed") mod -= 12;
   } else if (rainRisk >= 0.7) {
     if (meta.closesInRain) mod -= 15;
     if (meta.environment === "indoor") mod += 8;
@@ -145,9 +149,11 @@ function getWetRideTimingModifier(meta, weather, waitValueStatus) {
     }
   }
 
-  // Storm/rain risk makes a wet ride less attractive unless it is already a soaking-hot day.
+  // Storm/rain risk makes a wet ride less attractive. During an active
+  // storm we apply a brutal penalty — a water ride during lightning is
+  // a category error, no amount of heat boost should overcome it.
   if (weather?.stormMode) {
-    mod -= 12;
+    mod -= 50;
   } else if ((weather?.rainRisk ?? 0) >= 0.6) {
     mod -= 6;
   }
@@ -280,6 +286,10 @@ export function getNextBestRides({
   const completed = new Set(completedRideIds.map(String));
   const skipped = new Set(skippedRideIds.map(String));
 
+  // Storm guardrail flag — used to keep storm-sensitive rides
+  // out of every positive recommendation slot.
+  const isStormActive = weather?.stormMode === true;
+
   const eligibleRides = rides.filter(
     (ride) =>
       ride.isOpen &&
@@ -364,12 +374,20 @@ export function getNextBestRides({
   const usedAfterBackup = getUsedRideIds(bestMove, backup);
 
   const worthTheWalk =
-    farRides.find(
-      (ride) =>
-        !usedAfterBackup.has(String(ride.id)) &&
-        !isFillerOrRecovery(ride) &&
-        ride.recommendationScore >= 60
-    ) || null;
+    farRides.find((ride) => {
+      if (usedAfterBackup.has(String(ride.id))) return false;
+      if (isFillerOrRecovery(ride)) return false;
+      if (ride.recommendationScore < 60) return false;
+
+      // Storm guardrail: never tell people to walk farther for a ride
+      // that is about to close in lightning.
+      if (isStormActive) {
+        const meta = getRideMeta(parkId, ride.id ?? ride.name);
+        if (meta?.closesInRain) return false;
+      }
+
+      return true;
+    }) || null;
 
   const usedAfterWorth = getUsedRideIds(bestMove, backup, worthTheWalk);
 
@@ -379,6 +397,11 @@ export function getNextBestRides({
 
       const meta = getRideMeta(parkId, ride.id ?? ride.name);
       const category = meta?.planningProfile?.category;
+
+      // Storm guardrail: closesInRain rides do NOT belong in Plan Ahead
+      // during an active storm — Plan Ahead implies "head there with a
+      // strategy," and that's not safe advice during lightning.
+      if (isStormActive && meta?.closesInRain) return false;
 
       return (
         category === "plan_ahead_single_pass" ||
@@ -422,6 +445,12 @@ export function getNextBestRides({
         category === "plan_ahead_standby_only";
 
       if (isPlanAheadCategory) return false;
+
+      // Storm guardrail: storm-sensitive rides have unreliable waits
+      // during active storms (they may be paused or about to close).
+      // "Wait on this" implies the wait is the issue, when really the
+      // weather is. Hide them entirely.
+      if (isStormActive && meta?.closesInRain) return false;
 
       return status === "bad_value" || status === "above_normal";
     })
