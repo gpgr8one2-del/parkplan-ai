@@ -104,7 +104,7 @@ function getContextModifier(meta, weather, mode = "default") {
  *
  * This applies to any ride with getsWet: true, not just Tiana's.
  */
-function getWetRideTimingModifier(meta, weather) {
+function getWetRideTimingModifier(meta, weather, waitValueStatus) {
   if (!meta?.getsWet) return 0;
 
   const tempF = weather?.tempF ?? null;
@@ -152,6 +152,14 @@ function getWetRideTimingModifier(meta, weather) {
     mod -= 6;
   }
 
+  // Guardrail: heat can help a wet ride, but it should not overrule bad wait value.
+  if (
+    waitValueStatus?.status === "above_normal" ||
+    waitValueStatus?.status === "bad_value"
+  ) {
+    mod = Math.min(mod, 4);
+  }
+
   return mod;
 }
 
@@ -167,6 +175,18 @@ function getPlanningPriority(meta, waitValueStatus) {
   if (waitValueStatus?.status === "plan_ahead") return 80;
 
   return 0;
+}
+
+function getUsedRideIds(...rides) {
+  return new Set(
+    rides
+      .filter(Boolean)
+      .map((ride) => String(ride.id))
+  );
+}
+
+function isFillerOrRecovery(ride) {
+  return ride?.planningProfile?.category === "filler_or_recovery";
 }
 
 /* -------------------------------------------------------------------------- */
@@ -227,6 +247,10 @@ function buildPlanAheadReason(meta, ride, waitValueStatus) {
   const strategy = meta?.planningProfile?.strategy;
   const label = waitValueStatus?.label;
 
+  if (waitValueStatus?.status === "great_value" && strategy) {
+    return `Great value right now. If this is on your list, this is a strong time to ride. Normal strategy: ${strategy}`;
+  }
+
   if (strategy && label) {
     return `${label}. ${strategy}`;
   }
@@ -253,11 +277,14 @@ export function getNextBestRides({
 }) {
   const currentLand = resolveCurrentLand(parkId, locationContext);
 
-  const completed = new Set(completedRideIds);
-  const skipped = new Set(skippedRideIds);
+  const completed = new Set(completedRideIds.map(String));
+  const skipped = new Set(skippedRideIds.map(String));
 
   const eligibleRides = rides.filter(
-    (ride) => ride.isOpen && !completed.has(ride.id) && !skipped.has(ride.id)
+    (ride) =>
+      ride.isOpen &&
+      !completed.has(String(ride.id)) &&
+      !skipped.has(String(ride.id))
   );
 
   const scored = eligibleRides.map((ride) => {
@@ -271,7 +298,11 @@ export function getNextBestRides({
     const proximityModifier = getProximityModifier(meta, currentLand, parkId);
     const waitValueStatus = getWaitValueStatus(meta, ride.waitTime);
     const waitValueModifier = waitValueStatus.modifier || 0;
-    const wetRideModifier = getWetRideTimingModifier(meta, weather);
+    const wetRideModifier = getWetRideTimingModifier(
+      meta,
+      weather,
+      waitValueStatus
+    );
 
     const finalScore =
       baseScore -
@@ -322,13 +353,30 @@ export function getNextBestRides({
   });
 
   const bestMove = nearbyRides[0] || sorted[0] || null;
-  const backup = nearbyRides[1] || sorted[1] || null;
+
+  const usedAfterBest = getUsedRideIds(bestMove);
+
+  const backup =
+    nearbyRides.find((ride) => !usedAfterBest.has(String(ride.id))) ||
+    sorted.find((ride) => !usedAfterBest.has(String(ride.id))) ||
+    null;
+
+  const usedAfterBackup = getUsedRideIds(bestMove, backup);
 
   const worthTheWalk =
-    farRides.find((ride) => ride.recommendationScore >= 60) || null;
+    farRides.find(
+      (ride) =>
+        !usedAfterBackup.has(String(ride.id)) &&
+        !isFillerOrRecovery(ride) &&
+        ride.recommendationScore >= 60
+    ) || null;
+
+  const usedAfterWorth = getUsedRideIds(bestMove, backup, worthTheWalk);
 
   const planAheadCandidates = scored
     .filter((ride) => {
+      if (usedAfterWorth.has(String(ride.id))) return false;
+
       const meta = getRideMeta(parkId, ride.id ?? ride.name);
       const category = meta?.planningProfile?.category;
 
@@ -353,13 +401,17 @@ export function getNextBestRides({
 
   const planAhead = planAheadCandidates[0] || null;
 
-  /**
-   * Wait On This:
-   * Only show rides where the current wait is actually poor versus its own profile.
-   * Do not show a ride just because it belongs to "wait_for_drop."
-   */
+  const usedAfterPlanAhead = getUsedRideIds(
+    bestMove,
+    backup,
+    worthTheWalk,
+    planAhead
+  );
+
   const waitOnThisCandidates = scored
     .filter((ride) => {
+      if (usedAfterPlanAhead.has(String(ride.id))) return false;
+
       const meta = getRideMeta(parkId, ride.id ?? ride.name);
       const category = meta?.planningProfile?.category;
       const status = ride.waitValueStatus?.status;
