@@ -564,7 +564,7 @@ function App() {
                     {recommendations.worthTheWalk.waitTime} min wait
                   </p>
                   <p style={{ margin: "8px 0 0", color: "#334155" }}>
-                    Not the closest option, but strong enough to consider if you're willing to move.
+                    Not nearby, but the current wait is strong enough that it may be worth crossing over for.
                   </p>
                   {renderRideActions(recommendations.worthTheWalk)}
                 </div>
@@ -615,7 +615,7 @@ function App() {
                     {recommendations.waitOnThis.waitTime} min wait
                   </p>
                   <p style={{ margin: "8px 0 0", color: "#334155" }}>
-                    Great ride, but the current wait makes it a weaker value right now.
+                    This wait is higher than this ride is usually worth. Check again later when crowds shift.
                   </p>
                   {renderRideActions(recommendations.waitOnThis)}
                 </div>
