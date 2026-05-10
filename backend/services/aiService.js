@@ -1,6 +1,8 @@
 const Anthropic = require("@anthropic-ai/sdk");
 const logger = require("../logger");
 
+const ANTHROPIC_MODEL = "claude-sonnet-4-5-20250929";
+
 const STATIC_SYSTEM_PROMPT = `You are ParkPlan AI, a mobile-first Disney World and Universal Orlando park assistant.
 
 You help guests make practical in-park decisions using the live context provided.
@@ -114,6 +116,7 @@ async function getAIResponse(message, sessionData = {}) {
       activePark: sessionData.activePark,
       currentLand: sessionData.currentLand,
       weatherMode: sessionData.weatherMode?.mode,
+      model: ANTHROPIC_MODEL,
     },
     "AI chat request"
   );
@@ -130,7 +133,7 @@ async function getAIResponse(message, sessionData = {}) {
   const history = summarizeHistory(sessionData.conversationHistory || []);
 
   const response = await anthropic.messages.create({
-    model: "claude-3-5-sonnet-latest",
+    model: ANTHROPIC_MODEL,
     max_tokens: 400,
     temperature: 0.35,
     system: STATIC_SYSTEM_PROMPT,
