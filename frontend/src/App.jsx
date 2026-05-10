@@ -479,4 +479,234 @@ function App() {
 
           {hiddenRideCount > 0 && (
             <button
-              onClick={handle
+              onClick={handleResetRecs}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#64748b",
+                fontSize: 12,
+                textDecoration: "underline",
+                cursor: "pointer",
+                marginBottom: 12,
+                padding: 0,
+              }}
+            >
+              Reset recommendations ({hiddenRideCount} hidden)
+            </button>
+          )}
+
+          {recommendations.bestMove ? (
+            <div style={{ display: "grid", gap: 10 }}>
+              <div
+                style={{
+                  padding: 14,
+                  borderRadius: 18,
+                  border: "1px solid #bbf7d0",
+                  background: "#f0fdf4",
+                }}
+              >
+                <div style={{ fontSize: 12, color: "#166534", fontWeight: 900 }}>
+                  BEST MOVE
+                </div>
+                <h4 style={{ margin: "4px 0", fontSize: 20 }}>
+                  {recommendations.bestMove.name}
+                </h4>
+                <p style={{ margin: 0, color: "#166534", fontWeight: 800 }}>
+                  {recommendations.bestMove.waitTime} min wait
+                </p>
+                <p style={{ margin: "8px 0 0", color: "#334155" }}>
+                  Why: {recommendations.bestMove.reason}.
+                </p>
+                {renderRideActions(recommendations.bestMove)}
+              </div>
+
+              {recommendations.backup && (
+                <div
+                  style={{
+                    padding: 14,
+                    borderRadius: 18,
+                    border: "1px solid #bfdbfe",
+                    background: "#eff6ff",
+                  }}
+                >
+                  <div style={{ fontSize: 12, color: "#1d4ed8", fontWeight: 900 }}>
+                    SMART BACKUP
+                  </div>
+                  <h4 style={{ margin: "4px 0", fontSize: 18 }}>
+                    {recommendations.backup.name}
+                  </h4>
+                  <p style={{ margin: 0, color: "#1d4ed8", fontWeight: 800 }}>
+                    {recommendations.backup.waitTime} min wait
+                  </p>
+                  <p style={{ margin: "8px 0 0", color: "#334155" }}>
+                    Why: {recommendations.backup.reason}.
+                  </p>
+                  {renderRideActions(recommendations.backup)}
+                </div>
+              )}
+
+              {recommendations.worthTheWalk && (
+                <div
+                  style={{
+                    padding: 14,
+                    borderRadius: 18,
+                    border: "1px solid #ddd6fe",
+                    background: "#f5f3ff",
+                  }}
+                >
+                  <div style={{ fontSize: 12, color: "#6d28d9", fontWeight: 900 }}>
+                    WORTH THE WALK
+                  </div>
+                  <h4 style={{ margin: "4px 0", fontSize: 18 }}>
+                    {recommendations.worthTheWalk.name}
+                  </h4>
+                  <p style={{ margin: 0, color: "#6d28d9", fontWeight: 800 }}>
+                    {recommendations.worthTheWalk.waitTime} min wait
+                  </p>
+                  <p style={{ margin: "8px 0 0", color: "#334155" }}>
+                    Not the closest option, but strong enough to consider if you're willing to move.
+                  </p>
+                  {renderRideActions(recommendations.worthTheWalk)}
+                </div>
+              )}
+
+              {recommendations.planAhead && (
+                <div
+                  style={{
+                    padding: 14,
+                    borderRadius: 18,
+                    border: "1px solid #fecaca",
+                    background: "#fef2f2",
+                  }}
+                >
+                  <div style={{ fontSize: 12, color: "#991b1b", fontWeight: 900 }}>
+                    PLAN AHEAD
+                  </div>
+                  <h4 style={{ margin: "4px 0", fontSize: 18 }}>
+                    {recommendations.planAhead.name}
+                  </h4>
+                  <p style={{ margin: 0, color: "#991b1b", fontWeight: 800 }}>
+                    {recommendations.planAhead.waitTime} min wait
+                  </p>
+                  <p style={{ margin: "8px 0 0", color: "#334155" }}>
+                    {recommendations.planAhead.planAheadReason ||
+                      "This ride usually needs a strategy. Consider Lightning Lane, rope drop, late night, or watching for a rare dip."}
+                  </p>
+                  {renderRideActions(recommendations.planAhead)}
+                </div>
+              )}
+
+              {recommendations.waitOnThis && (
+                <div
+                  style={{
+                    padding: 14,
+                    borderRadius: 18,
+                    border: "1px solid #fed7aa",
+                    background: "#fff7ed",
+                  }}
+                >
+                  <div style={{ fontSize: 12, color: "#9a3412", fontWeight: 900 }}>
+                    WAIT ON THIS
+                  </div>
+                  <h4 style={{ margin: "4px 0", fontSize: 18 }}>
+                    {recommendations.waitOnThis.name}
+                  </h4>
+                  <p style={{ margin: 0, color: "#9a3412", fontWeight: 800 }}>
+                    {recommendations.waitOnThis.waitTime} min wait
+                  </p>
+                  <p style={{ margin: "8px 0 0", color: "#334155" }}>
+                    Great ride, but the current wait makes it a weaker value right now.
+                  </p>
+                  {renderRideActions(recommendations.waitOnThis)}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p style={{ color: "#64748b" }}>Loading recommendations...</p>
+          )}
+        </section>
+
+        <section style={card}>
+          <h3 style={{ marginTop: 0 }}>Wait Times</h3>
+
+          <div style={{ display: "grid", gap: 10 }}>
+            {sortedRides.map((ride) => (
+              <div
+                key={ride.id}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  padding: 12,
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 16,
+                }}
+              >
+                <div>
+                  <strong>{ride.name}</strong>
+                  <div style={{ color: "#64748b", fontSize: 12 }}>
+                    {ride.land} · {ride.isOpen ? "Open" : "Closed"}
+                  </div>
+                </div>
+
+                <div style={{ fontWeight: 900 }}>{ride.waitTime} min</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section style={card}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <MessageCircle size={18} />
+            <h3 style={{ margin: 0 }}>AI Park Assistant</h3>
+          </div>
+
+          <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+            {chat.length === 0 && (
+              <p style={{ color: "#64748b" }}>
+                Ask what to ride next, how to handle weather, or how to plan your
+                afternoon.
+              </p>
+            )}
+
+            {chat.map((msg, idx) => (
+              <div
+                key={idx}
+                style={{
+                  padding: 10,
+                  borderRadius: 14,
+                  background: msg.role === "user" ? "#e0f2fe" : "#f1f5f9",
+                }}
+              >
+                <strong>{msg.role === "user" ? "You" : "ParkPlan AI"}: </strong>
+                {msg.content}
+              </div>
+            ))}
+          </div>
+
+          <form
+            onSubmit={handleChatSubmit}
+            style={{ display: "flex", gap: 8, marginTop: 12 }}
+          >
+            <input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Ask ParkPlan AI..."
+              style={{
+                flex: 1,
+                border: "1px solid #cbd5e1",
+                borderRadius: 999,
+                padding: "10px 12px",
+              }}
+            />
+            <button style={button} disabled={chatLoading}>
+              <Send size={14} /> {chatLoading ? "..." : "Send"}
+            </button>
+          </form>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+export default App;
