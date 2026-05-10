@@ -1,3 +1,5 @@
+import { getWaterOptionsForLand } from "../parkAmenities";
+
 export function getWeatherMode(weather) {
   const tempF = weather?.tempF ?? null;
   const rainRisk = weather?.rainRisk ?? 0;
@@ -26,16 +28,16 @@ export function getWeatherMode(weather) {
       mode: "extreme_heat",
       label: "Extreme Heat Mode",
       message:
-        "This is a recovery-first window. Prioritize AC, indoor seating, water breaks, and consider a resort/pool break if staying onsite.",
+        "It’s very hot out. A water stop, shade break, indoor attraction, or longer resort reset can help keep everyone feeling good.",
     };
   }
 
   if (tempF >= 93) {
     return {
       mode: "hot",
-      label: "Beat the Heat Mode",
+      label: "Heat Smart Mode",
       message:
-        "Heat is high. Mix in indoor attractions, AC shows, and water breaks before pushing more outdoor rides.",
+        "It’s warm out. A quick water stop, shade break, or indoor attraction can help keep everyone feeling good.",
     };
   }
 
@@ -44,7 +46,7 @@ export function getWeatherMode(weather) {
       mode: "warm",
       label: "Hydration Reminder",
       message:
-        "It is warm. Build in water and shade breaks between attractions.",
+        "It’s warm out. A quick water stop or indoor break between attractions can help keep the day smooth.",
     };
   }
 
@@ -88,9 +90,39 @@ export function getWeatherRideModifier(ride, weather) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Water helpers                                                              */
+/* -------------------------------------------------------------------------- */
+
+function buildWaterNearbySuggestion(parkId, currentLand) {
+  const waterOptions = getWaterOptionsForLand(parkId, currentLand);
+
+  const quickService = waterOptions.quickService || [];
+  const bottleRefill = waterOptions.bottleRefill || [];
+
+  if (!quickService.length && !bottleRefill.length) {
+    return null;
+  }
+
+  const quickServiceText = quickService
+    .map((spot) => `${spot.name}: ${spot.note}`)
+    .join(" ");
+
+  const bottleRefillText = bottleRefill.length
+    ? ` Bottle refill stations nearby: ${bottleRefill
+        .map((spot) => `${spot.name}: ${spot.note}`)
+        .join(" ")}`
+    : "";
+
+  return {
+    title: "Water nearby",
+    text: `${quickServiceText}${bottleRefillText}`,
+  };
+}
+
+/* -------------------------------------------------------------------------- */
 /* Mode-specific recovery suggestions                                         */
 /*                                                                            */
-/* Each mode returns its OWN advice. We never share copy across modes — pool  */
+/* Each mode returns its OWN advice. We never share copy across modes. Pool   */
 /* breaks belong in heat advice, not storm advice. Free-water reminders make  */
 /* sense in heat, not in lightning.                                           */
 /* -------------------------------------------------------------------------- */
@@ -119,7 +151,7 @@ function getStormSuggestions(parkId) {
       },
       {
         title: "Indoor dining shelter",
-        text: "Be Our Guest, Crystal Palace, Cosmic Ray's, Tortuga Tavern, or Pinocchio Village Haus give you a real break from the storm.",
+        text: "Crystal Palace, Cosmic Ray's, Columbia Harbour House, Pecos Bill, or Pinocchio Village Haus can be useful places to wait out heavy weather.",
       },
     ],
   };
@@ -135,7 +167,7 @@ function getRainSuggestions(parkId) {
     },
     {
       title: "Pack ponchos, not umbrellas",
-      text: "Umbrellas aren't allowed on most rides. A poncho keeps you moving without storage hassle.",
+      text: "Umbrellas are awkward around queues and rides. A poncho keeps you moving without storage hassle.",
     },
   ];
 
@@ -151,22 +183,27 @@ function getRainSuggestions(parkId) {
   return [...common, ...(byPark[parkId] || [])];
 }
 
-function getHeatSuggestions(parkId, severity) {
+function getHeatSuggestions(parkId, severity, currentLand) {
   const common = [
     {
       title: "Free water reset",
-      text: "Stop at any quick-service location and ask for free cups of ice water.",
+      text: "Most quick-service locations can provide free cups of ice water. This is an easy reset when the heat starts catching up.",
     },
     {
-      title: "AC break between rides",
-      text: "Prioritize an indoor attraction or show before the next major outdoor push.",
+      title: "AC break",
+      text: "Mix in an indoor ride or show between outdoor attractions.",
     },
   ];
 
-  if (severity === "extreme_heat") {
+  const waterNearby = buildWaterNearbySuggestion(parkId, currentLand);
+  if (waterNearby) {
+    common.push(waterNearby);
+  }
+
+  if (severity === "extreme_heat" || severity === "hot") {
     common.push({
-      title: "Resort break window",
-      text: "If staying onsite, midday is a smart time to head back to the hotel for the pool or AC for a couple hours, then return when conditions soften.",
+      title: "Resort break option",
+      text: "If you’re staying onsite or nearby, a midday resort or pool break can be a smart reset before coming back later.",
     });
   }
 
@@ -174,7 +211,7 @@ function getHeatSuggestions(parkId, severity) {
     magic_kingdom: [
       {
         title: "Magic Kingdom cool-down picks",
-        text: "Carousel of Progress, PhilharMagic, Pirates, Haunted Mansion, and Hall of Presidents are AC-safe recovery options.",
+        text: "Carousel of Progress, PhilharMagic, Pirates, Haunted Mansion, Hall of Presidents, Monsters Inc. Laugh Floor, and Country Bears are strong recovery options.",
       },
     ],
   };
@@ -182,20 +219,27 @@ function getHeatSuggestions(parkId, severity) {
   return [...common, ...(byPark[parkId] || [])];
 }
 
-function getWarmSuggestions() {
-  return [
+function getWarmSuggestions(parkId, currentLand) {
+  const suggestions = [
     {
-      title: "Hydration check",
-      text: "It's warm. Carry water and grab a refill between rides.",
+      title: "Free water reset",
+      text: "Most quick-service locations can provide free cups of ice water. This is an easy reset when the heat starts catching up.",
     },
     {
       title: "Mix in indoor breaks",
       text: "Drop in an indoor show or AC ride between outdoor pushes.",
     },
   ];
+
+  const waterNearby = buildWaterNearbySuggestion(parkId, currentLand);
+  if (waterNearby) {
+    suggestions.push(waterNearby);
+  }
+
+  return suggestions;
 }
 
-export function getRecoverySuggestions({ parkId, weather }) {
+export function getRecoverySuggestions({ parkId, weather, currentLand }) {
   const weatherMode = getWeatherMode(weather);
 
   switch (weatherMode.mode) {
@@ -204,11 +248,11 @@ export function getRecoverySuggestions({ parkId, weather }) {
     case "rain":
       return getRainSuggestions(parkId);
     case "extreme_heat":
-      return getHeatSuggestions(parkId, "extreme_heat");
+      return getHeatSuggestions(parkId, "extreme_heat", currentLand);
     case "hot":
-      return getHeatSuggestions(parkId, "hot");
+      return getHeatSuggestions(parkId, "hot", currentLand);
     case "warm":
-      return getWarmSuggestions();
+      return getWarmSuggestions(parkId, currentLand);
     case "normal":
     default:
       return [];
