@@ -279,6 +279,8 @@ function App() {
       const res = await sendChatMessage(trimmed, {
         activePark,
         weather,
+        weatherMode,
+        recommendations,
         conversationHistory: nextChat.slice(-6),
         completedRideIds,
         skippedRideIds,
