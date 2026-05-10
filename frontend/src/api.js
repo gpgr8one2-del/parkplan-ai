@@ -10,7 +10,9 @@ function stableStringify(value) {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
   const keys = Object.keys(value).sort();
-  return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(value[k])}`).join(",")}}`;
+  return `{${keys
+    .map((k) => `${JSON.stringify(k)}:${stableStringify(value[k])}`)
+    .join(",")}}`;
 }
 
 function buildRequestKey(path, options = {}) {
@@ -27,6 +29,7 @@ function buildRequestKey(path, options = {}) {
 async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     return await fetch(url, { ...options, signal: controller.signal });
   } finally {
@@ -42,28 +45,47 @@ async function apiFetch(path, options = {}, config = {}) {
 
   const requestPromise = (async () => {
     let lastError;
+
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        const res = await fetchWithTimeout(`${BASE_URL}${path}`, {
-          headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-          ...options,
-        }, timeoutMs);
+        const res = await fetchWithTimeout(
+          `${BASE_URL}${path}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(options.headers || {}),
+            },
+            ...options,
+          },
+          timeoutMs
+        );
 
         if (!res.ok) {
           const body = await res.text();
           const error = new Error(`API ${path} -> ${res.status}: ${body}`);
           error.status = res.status;
-          if (res.status >= 400 && res.status < 500 && res.status !== 429) throw error;
+
+          if (res.status >= 400 && res.status < 500 && res.status !== 429) {
+            throw error;
+          }
+
           throw error;
         }
+
         return await res.json();
       } catch (err) {
         lastError = err;
+
         if (attempt === retries) throw lastError;
+
         await sleep(300 * Math.pow(2, attempt));
-        if (err.name === "AbortError" || err.status === 429) await sleep(250);
+
+        if (err.name === "AbortError" || err.status === 429) {
+          await sleep(250);
+        }
       }
     }
+
     throw lastError;
   })();
 
@@ -71,17 +93,51 @@ async function apiFetch(path, options = {}, config = {}) {
     activeRequests.set(key, requestPromise);
     requestPromise.finally(() => activeRequests.delete(key));
   }
+
   return requestPromise;
 }
 
-export async function fetchParkData(parkId) {
-  return apiFetch(`/api/park-data?parkId=${encodeURIComponent(parkId)}`, { method: "GET" }, { retries: 2, timeoutMs: 8000, dedupe: true });
+export async function fetchParkData(parkId, options = {}) {
+  const { force = false } = options;
+
+  const path =
+    `/api/park-data?parkId=${encodeURIComponent(parkId)}` +
+    (force ? "&force=true" : "");
+
+  return apiFetch(
+    path,
+    { method: "GET" },
+    {
+      retries: 2,
+      timeoutMs: force ? 12000 : 8000,
+      dedupe: !force,
+    }
+  );
 }
 
-export async function fetchWeather() {
-  return apiFetch("/api/weather", { method: "GET" }, { retries: 2, timeoutMs: 8000, dedupe: true });
+export async function fetchWeather(options = {}) {
+  const { force = false } = options;
+
+  const path = "/api/weather" + (force ? "?force=true" : "");
+
+  return apiFetch(
+    path,
+    { method: "GET" },
+    {
+      retries: 2,
+      timeoutMs: force ? 12000 : 8000,
+      dedupe: !force,
+    }
+  );
 }
 
 export async function sendChatMessage(message, sessionData) {
-  return apiFetch("/api/ai-chat", { method: "POST", body: JSON.stringify({ message, sessionData }) }, { retries: 1, timeoutMs: 12000, dedupe: false });
+  return apiFetch(
+    "/api/ai-chat",
+    {
+      method: "POST",
+      body: JSON.stringify({ message, sessionData }),
+    },
+    { retries: 1, timeoutMs: 12000, dedupe: false }
+  );
 }
