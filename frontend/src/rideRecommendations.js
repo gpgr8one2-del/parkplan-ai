@@ -7,6 +7,48 @@ import { getParkCloseTime } from "./parkHours";
 
 const DEFAULT_POPULARITY = 40;
 const WALK_BUFFER_MINUTES = 15;
+const ORLANDO_TIME_ZONE = "America/New_York";
+
+/* -------------------------------------------------------------------------- */
+/* Time helpers                                                               */
+/* -------------------------------------------------------------------------- */
+
+function getOrlandoTimeParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: ORLANDO_TIME_ZONE,
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  }).formatToParts(date);
+
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
+
+  return { hour, minute, totalMinutes: hour * 60 + minute };
+}
+
+function isEarlyEntryWindow(parkId) {
+  if (parkId !== "magic_kingdom") return false;
+
+  const { totalMinutes } = getOrlandoTimeParts();
+
+  // V1 assumption for Magic Kingdom testing:
+  // Early Entry / rope-drop strategy window from 8:00 AM to 9:00 AM Orlando time.
+  // Later this should come from official daily park hours.
+  return totalMinutes >= 8 * 60 && totalMinutes < 9 * 60;
+}
+
+function isAllowedDuringEarlyEntry(parkId, meta) {
+  if (!isEarlyEntryWindow(parkId)) return true;
+
+  // Magic Kingdom Early Entry is primarily a Fantasyland / Tomorrowland play.
+  // Suppress Adventureland, Frontierland, Liberty Square, Main Street, and filler items.
+  if (parkId === "magic_kingdom") {
+    return meta?.land === "fantasyland" || meta?.land === "tomorrowland";
+  }
+
+  return true;
+}
 
 /* -------------------------------------------------------------------------- */
 /* Score components                                                           */
@@ -17,10 +59,6 @@ function getBaseScore(parkId, ride) {
   return meta?.popularity ?? DEFAULT_POPULARITY;
 }
 
-/**
- * Generic wait penalty is still useful, but the new waitProfile modifier
- * gives the app ride-specific intelligence.
- */
 function getWaitPenalty(waitTime) {
   if (waitTime == null) return 15;
   if (waitTime <= 10) return 0;
@@ -39,10 +77,6 @@ function getLowWaitBonus(waitTime) {
   return 0;
 }
 
-/**
- * Trend modifier — guest demand momentum, NOT contextual value.
- * Both apostrophe variants listed because API formatting can vary.
- */
 function getTrendModifier(rideName) {
   const trends = {
     "Buzz Lightyear's Space Ranger Spin": 8,
@@ -54,13 +88,6 @@ function getTrendModifier(rideName) {
   return trends[rideName] ?? 0;
 }
 
-/**
- * Context modifier — V1: weather only.
- * Uses rideMetadata, not raw live ride data.
- *
- * Storm mode is intentionally severe. closesInRain rides take a -90 hit
- * so even very high popularity can't drag them into a positive slot.
- */
 function getContextModifier(meta, weather, mode = "default") {
   if (!meta || !weather) return 0;
 
@@ -100,45 +127,30 @@ function getContextModifier(meta, weather, mode = "default") {
   return mod;
 }
 
-/**
- * Wet ride timing modifier.
- *
- * Real guest behavior:
- * - Morning: guests often avoid getting wet early.
- * - Midday heat: water rides become more desirable.
- * - Evening/night: guests often avoid getting wet with less drying time.
- *
- * This applies to any ride with getsWet: true, not just Tiana's.
- */
 function getWetRideTimingModifier(meta, weather, waitValueStatus) {
   if (!meta?.getsWet) return 0;
 
   const tempF = weather?.tempF ?? null;
-  const hour = new Date().getHours();
+  const { hour } = getOrlandoTimeParts();
 
   let mod = 0;
 
-  // Morning penalty: people often do not want to start the day wet.
   if (hour < 11) {
     mod -= 10;
   }
 
-  // Prime water ride window: hot part of the day with time left to dry.
   if (hour >= 12 && hour <= 16) {
     mod += 10;
   }
 
-  // Late afternoon is still okay if it is hot, but less powerful than midday.
   if (hour >= 17 && hour < 18) {
     mod += 2;
   }
 
-  // Evening penalty: less drying time and cooler air.
   if (hour >= 18) {
     mod -= 12;
   }
 
-  // Temperature adjustment.
   if (tempF != null) {
     if (tempF >= 92) {
       mod += 10;
@@ -151,16 +163,12 @@ function getWetRideTimingModifier(meta, weather, waitValueStatus) {
     }
   }
 
-  // Storm/rain risk makes a wet ride less attractive. During an active
-  // storm we apply a brutal penalty — a water ride during lightning is
-  // a category error, no amount of heat boost should overcome it.
   if (weather?.stormMode) {
     mod -= 50;
   } else if ((weather?.rainRisk ?? 0) >= 0.6) {
     mod -= 6;
   }
 
-  // Guardrail: heat can help a wet ride, but it should not overrule bad wait value.
   if (
     waitValueStatus?.status === "above_normal" ||
     waitValueStatus?.status === "bad_value"
@@ -197,14 +205,13 @@ function isFillerOrRecovery(ride) {
   return ride?.planningProfile?.category === "filler_or_recovery";
 }
 
-/**
- * Will the guest realistically be able to enter this ride's queue and
- * finish before park close? Returns true if there's enough time left,
- * false if they'd be queueing past close.
- *
- * If close time is unknown (no schedule data), returns true and lets
- * other logic handle it.
- */
+function isStormBlockedRide(parkId, ride, weather) {
+  if (!weather?.stormMode) return false;
+
+  const meta = getRideMeta(parkId, ride.id ?? ride.name);
+  return Boolean(meta?.closesInRain);
+}
+
 function fitsBeforeClose(waitTime, closeTime, now) {
   if (!closeTime) return true;
 
@@ -307,20 +314,23 @@ export function getNextBestRides({
   const completed = new Set(completedRideIds.map(String));
   const skipped = new Set(skippedRideIds.map(String));
 
-  // Storm guardrail flag — used to keep storm-sensitive rides
-  // out of every positive recommendation slot.
   const isStormActive = weather?.stormMode === true;
 
-  // Park close awareness — filter out rides that won't fit
-  // before close, so we don't recommend a 70-min wait when
-  // the park closes in 60.
   const now = new Date();
   const closeTime = getParkCloseTime(parkId, now);
 
   const eligibleRides = rides.filter((ride) => {
+    const meta = getRideMeta(parkId, ride.id ?? ride.name);
+
+    // Critical: if we did not intentionally add metadata, do not recommend it.
+    // This blocks Cinderella Castle, Casey Jr., meet-and-greets, random landmarks, etc.
+    if (!meta) return false;
+
     if (!ride.isOpen) return false;
     if (completed.has(String(ride.id))) return false;
     if (skipped.has(String(ride.id))) return false;
+
+    if (!isAllowedDuringEarlyEntry(parkId, meta)) return false;
 
     if (!fitsBeforeClose(ride.waitTime, closeTime, now)) return false;
 
@@ -384,21 +394,28 @@ export function getNextBestRides({
     (a, b) => b.recommendationScore - a.recommendationScore
   );
 
-  const nearbyRides = sorted.filter((ride) => {
+  // During active storm mode, positive recommendation slots should not point
+  // guests toward attractions that commonly close in lightning/rain.
+  const positivePool = sorted.filter((ride) => {
+    if (!isStormActive) return true;
+    return !isStormBlockedRide(parkId, ride, weather);
+  });
+
+  const nearbyRides = positivePool.filter((ride) => {
     return ride.proximityDistance !== "far";
   });
 
-  const farRides = sorted.filter((ride) => {
+  const farRides = positivePool.filter((ride) => {
     return ride.proximityDistance === "far";
   });
 
-  const bestMove = nearbyRides[0] || sorted[0] || null;
+  const bestMove = nearbyRides[0] || positivePool[0] || null;
 
   const usedAfterBest = getUsedRideIds(bestMove);
 
   const backup =
     nearbyRides.find((ride) => !usedAfterBest.has(String(ride.id))) ||
-    sorted.find((ride) => !usedAfterBest.has(String(ride.id))) ||
+    positivePool.find((ride) => !usedAfterBest.has(String(ride.id))) ||
     null;
 
   const usedAfterBackup = getUsedRideIds(bestMove, backup);
@@ -409,28 +426,18 @@ export function getNextBestRides({
       if (isFillerOrRecovery(ride)) return false;
       if (ride.recommendationScore < 60) return false;
 
-      // Storm guardrail: never tell people to walk farther for a ride
-      // that is about to close in lightning.
-      if (isStormActive) {
-        const meta = getRideMeta(parkId, ride.id ?? ride.name);
-        if (meta?.closesInRain) return false;
-      }
-
       return true;
     }) || null;
 
   const usedAfterWorth = getUsedRideIds(bestMove, backup, worthTheWalk);
 
-  const planAheadCandidates = scored
+  const planAheadCandidates = positivePool
     .filter((ride) => {
       if (usedAfterWorth.has(String(ride.id))) return false;
 
       const meta = getRideMeta(parkId, ride.id ?? ride.name);
       const category = meta?.planningProfile?.category;
 
-      // Storm guardrail: closesInRain rides do NOT belong in Plan Ahead
-      // during an active storm — Plan Ahead implies "head there with a
-      // strategy," and that's not safe advice during lightning.
       if (isStormActive && meta?.closesInRain) return false;
 
       return (
@@ -476,10 +483,6 @@ export function getNextBestRides({
 
       if (isPlanAheadCategory) return false;
 
-      // Storm guardrail: storm-sensitive rides have unreliable waits
-      // during active storms (they may be paused or about to close).
-      // "Wait on this" implies the wait is the issue, when really the
-      // weather is. Hide them entirely.
       if (isStormActive && meta?.closesInRain) return false;
 
       return status === "bad_value" || status === "above_normal";
