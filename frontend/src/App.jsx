@@ -31,9 +31,6 @@ const LAND_OPTIONS = {
 
 const STORAGE_KEY = "parkplan.state";
 
-// Auto-refresh interval (ms). 6 minutes — slightly above queue-times'
-// own update cadence (~5 min) so we're not over-fetching, and well
-// inside the backend cache TTL so most refreshes are cheap.
 const AUTO_REFRESH_MS = 6 * 60 * 1000;
 
 const page = {
@@ -110,42 +107,42 @@ function App() {
 
   const isRestoringParkState = useRef(false);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  const loadData = useCallback(
+    async (force = false) => {
+      setLoading(true);
+      setError("");
 
-    try {
-      const [park, weatherData] = await Promise.all([
-        fetchParkData(activePark),
-        fetchWeather(),
-      ]);
+      try {
+        const [park, weatherData] = await Promise.all([
+          fetchParkData(activePark, { force }),
+          fetchWeather({ force }),
+        ]);
 
-      setParkData(park);
-      setWeather(weatherData);
-    } catch (err) {
-      setError(err.message || "Could not load app data.");
-    } finally {
-      setLoading(false);
-    }
-  }, [activePark]);
+        setParkData(park);
+        setWeather(weatherData);
+      } catch (err) {
+        setError(err.message || "Could not load app data.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [activePark]
+  );
 
   useEffect(() => {
-    loadData();
+    loadData(false);
   }, [loadData]);
 
-  // Auto-refresh wait times + weather every AUTO_REFRESH_MS while the tab
-  // is visible. Also refresh whenever the user switches back to the tab
-  // after it's been hidden (mobile users tab-switching through the day).
   useEffect(() => {
     const intervalId = setInterval(() => {
       if (document.visibilityState === "visible") {
-        loadData();
+        loadData(false);
       }
     }, AUTO_REFRESH_MS);
 
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        loadData();
+        loadData(false);
       }
     };
 
@@ -350,7 +347,7 @@ function App() {
               </p>
             </div>
 
-            <button style={button} onClick={loadData} disabled={loading}>
+            <button style={button} onClick={() => loadData(true)} disabled={loading}>
               <RefreshCw size={14} /> {loading ? "Loading" : "Refresh"}
             </button>
           </div>
