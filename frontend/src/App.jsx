@@ -355,6 +355,19 @@ function App() {
 
           <DataStatusBanner source={parkData?.source} />
 
+          <p
+            style={{
+              margin: "8px 0 0",
+              color: "#64748b",
+              fontSize: 12,
+              lineHeight: 1.4,
+            }}
+          >
+            Live wait data can occasionally lag the official park app during ride
+            reopenings or weather delays. Refresh before walking across the park
+            for a headliner.
+          </p>
+
           {error && (
             <p style={{ color: "#b91c1c", fontWeight: 700 }}>{error}</p>
           )}
