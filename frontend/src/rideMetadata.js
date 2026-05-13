@@ -829,12 +829,327 @@ export const RIDE_METADATA = {
       },
       tags: ["headliner", "coaster", "thrill", "single-pass", "plan-ahead"],
     },
+   },
+
+  // ============================================================
+  // EPCOT (queue-times park ID: 5)
+  // Lands: world_celebration, world_discovery, world_nature, world_showcase
+  // ============================================================
+  epcot: {
+    // ---------- World Discovery ----------
+    "10916": {
+      displayName: "Guardians of the Galaxy: Cosmic Rewind",
+      land: "world_discovery",
+      minHeightInches: 42,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 5,
+      popularity: 98,
+      waitProfile: {
+        averageWait: 70,
+        goodDealUnder: 50,
+        normalRange: [60, 90],
+        badValueOver: 100,
+        usuallyHighAllDay: true,
+        strategyNote:
+          "One of EPCOT’s strongest headliners. Standby can stay high most of the day, so target Early Entry, late evening, or a rare posted-wait dip.",
+      },
+      planningProfile: {
+        category: "plan_ahead_single_pass",
+        paidAccess: "LLSP",
+        appStatus: "plan_ahead",
+        strategy:
+          "Consider Single Pass if this is a must-do, otherwise target Early Entry, late evening, or a rare posted-wait dip.",
+      },
+      tags: [
+        "headliner",
+        "coaster",
+        "thrill",
+        "single-pass",
+        "plan-ahead",
+        "indoor",
+      ],
+    },
+
+    "160": {
+      displayName: "Test Track",
+      land: "world_discovery",
+      minHeightInches: 40,
+      environment: "mixed",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: true,
+      intensity: 4,
+      popularity: 92,
+      waitProfile: {
+        averageWait: 60,
+        goodDealUnder: 35,
+        normalRange: [50, 80],
+        badValueOver: 90,
+        usuallyHighAllDay: true,
+        strategyNote:
+          "Outdoor high-speed section makes this weather-sensitive. If storms are building, ride before the weather hits or avoid crossing the park for it.",
+      },
+      planningProfile: {
+        category: "plan_ahead_multi_pass",
+        paidAccess: "LLMP",
+        appStatus: "plan_ahead",
+        strategy:
+          "Book Multi Pass if available, rope drop it if entering from the front, or watch for late-day dips after downtime clears.",
+      },
+      tags: ["headliner", "thrill", "weather-sensitive", "plan-ahead"],
+    },
+
+    "158": {
+      displayName: "Mission: SPACE",
+      land: "world_discovery",
+      minHeightInches: 40,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 4,
+      popularity: 58,
+      waitProfile: {
+        averageWait: 16,
+        goodDealUnder: 15,
+        normalRange: [15, 30],
+        badValueOver: 40,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Usually manageable, but not for motion-sensitive guests. Better as a nearby World Discovery move than a cross-park target.",
+      },
+      planningProfile: {
+        category: "normal_standby",
+        paidAccess: "LLMP",
+        appStatus: "go_now_if_low",
+        strategy:
+          "Use when nearby and the group is comfortable with intense motion. Skip for motion-sensitive guests.",
+      },
+      tags: ["thrill", "motion-sickness", "indoor", "ac"],
+    },
+
+    // ---------- World Celebration ----------
+    "159": {
+      displayName: "Spaceship Earth",
+      land: "world_celebration",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 62,
+      waitProfile: {
+        averageWait: 11,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 30,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Often spikes when guests enter the park, then settles later. Great indoor reset near the front.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "LLMP",
+        appStatus: "recovery",
+        strategy:
+          "Use as an easy indoor reset near the front of the park, especially in heat or rain.",
+      },
+      tags: ["classic", "slow-ride", "recovery", "indoor", "ac"],
+    },
+
+    // ---------- World Nature ----------
+    "151": {
+      displayName: "Soarin' Around the World",
+      land: "world_nature",
+      minHeightInches: 40,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 2,
+      popularity: 78,
+      waitProfile: {
+        averageWait: 24,
+        goodDealUnder: 20,
+        normalRange: [25, 45],
+        badValueOver: 60,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Strong indoor family pick. If it is under 25 minutes, it is usually a good EPCOT move.",
+      },
+      planningProfile: {
+        category: "normal_standby",
+        paidAccess: "LLMP",
+        appStatus: "go_now",
+        strategy:
+          "Good use of standby when low. Also useful as a heat or rain-friendly anchor in World Nature.",
+      },
+      tags: ["family", "indoor", "ac", "popular"],
+    },
+
+    "156": {
+      displayName: "Living with the Land",
+      land: "world_nature",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 50,
+      waitProfile: {
+        averageWait: 10,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 30,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Excellent low-stress indoor boat ride. Perfect when the group needs AC, seats, and a calmer reset.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "LLMP",
+        appStatus: "recovery",
+        strategy:
+          "Use as a top recovery pick in World Nature, especially during heat or rain.",
+      },
+      tags: ["boat", "family", "recovery", "indoor", "ac"],
+    },
+
+    "153": {
+      displayName: "The Seas with Nemo & Friends",
+      land: "world_nature",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 48,
+      waitProfile: {
+        averageWait: 11,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 30,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Easy indoor family filler with aquarium time after the ride. Strong heat/rain recovery option.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "LLMP",
+        appStatus: "recovery",
+        strategy:
+          "Use when nearby, especially with kids or when the group needs indoor time.",
+      },
+      tags: ["dark-ride", "toddler", "family", "recovery", "indoor", "ac"],
+    },
+
+    "155": {
+      displayName: "Journey Into Imagination With Figment",
+      land: "world_nature",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 42,
+      waitProfile: {
+        averageWait: 11,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 30,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Usually a low-wait indoor filler. Good nearby move, not worth crossing the park for unless the group wants a reset.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "LLMP",
+        appStatus: "filler",
+        strategy:
+          "Use as a quick indoor filler in World Nature or near the Imagination pavilion.",
+      },
+      tags: ["dark-ride", "family", "filler", "indoor", "ac"],
+    },
+
+    // ---------- World Showcase ----------
+    "10914": {
+      displayName: "Remy's Ratatouille Adventure",
+      land: "world_showcase",
+      pavilion: "france",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 2,
+      popularity: 90,
+      waitProfile: {
+        averageWait: 49,
+        goodDealUnder: 35,
+        normalRange: [45, 70],
+        badValueOver: 80,
+        usuallyHighAllDay: true,
+        strategyNote:
+          "Deep World Showcase location makes walking cost matter. Best with Multi Pass, International Gateway advantage, or a late-evening dip.",
+      },
+      planningProfile: {
+        category: "plan_ahead_multi_pass",
+        paidAccess: "LLMP",
+        appStatus: "plan_ahead",
+        strategy:
+          "Book Multi Pass if available, use International Gateway advantage if entering from the EPCOT resorts side, or check late evening.",
+      },
+      tags: [
+        "headliner",
+        "dark-ride",
+        "trackless",
+        "family",
+        "plan-ahead",
+        "indoor",
+      ],
+    },
+
+    "2679": {
+      displayName: "Frozen Ever After",
+      land: "world_showcase",
+      pavilion: "norway",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 2,
+      popularity: 88,
+      waitProfile: {
+        averageWait: 45,
+        goodDealUnder: 30,
+        normalRange: [40, 65],
+        badValueOver: 75,
+        usuallyHighAllDay: true,
+        strategyNote:
+          "Slow-loading family headliner with steady demand. Best with Multi Pass, early routing if nearby, or late evening.",
+      },
+      planningProfile: {
+        category: "plan_ahead_multi_pass",
+        paidAccess: "LLMP",
+        appStatus: "plan_ahead",
+        strategy:
+          "Book Multi Pass if available, target it early if already moving into World Showcase, or check near park close.",
+      },
+      tags: ["headliner", "boat", "family", "plan-ahead", "indoor"],
+    },
   },
 
-  // Future parks: epcot, hollywood_studios, animal_kingdom,
+  // Future parks: hollywood_studios, animal_kingdom,
   // universal_studios, islands_of_adventure, epic_universe
 };
-
 /* -------------------------------------------------------------------------- */
 /* Lookup helpers                                                             */
 /* -------------------------------------------------------------------------- */
