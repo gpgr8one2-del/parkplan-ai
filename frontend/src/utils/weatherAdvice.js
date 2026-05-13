@@ -1,9 +1,40 @@
 import { getWaterOptionsForLand } from "../parkAmenities";
 
+/* -------------------------------------------------------------------------- */
+/* Current weather condition helpers                                          */
+/* -------------------------------------------------------------------------- */
+
+function getWeatherSummary(weather) {
+  return String(weather?.summary || "").toLowerCase();
+}
+
+function isCurrentlyRaining(weather) {
+  const summary = getWeatherSummary(weather);
+
+  return (
+    summary.includes("rain") ||
+    summary.includes("drizzle") ||
+    summary.includes("shower") ||
+    summary.includes("showers")
+  );
+}
+
+function isCurrentlyStorming(weather) {
+  const summary = getWeatherSummary(weather);
+
+  return (
+    weather?.stormMode === true ||
+    summary.includes("thunderstorm") ||
+    summary.includes("storm") ||
+    summary.includes("lightning")
+  );
+}
+
 export function getWeatherMode(weather) {
   const tempF = weather?.tempF ?? null;
   const rainRisk = weather?.rainRisk ?? 0;
-  const stormMode = weather?.stormMode === true;
+  const stormMode = isCurrentlyStorming(weather);
+  const currentlyRaining = isCurrentlyRaining(weather);
 
   if (stormMode) {
     return {
@@ -11,6 +42,15 @@ export function getWeatherMode(weather) {
       label: "Storm Smart Mode",
       message:
         "Active storms or lightning may pause outdoor and mixed attractions. Stay indoors, avoid open paths and bodies of water, and wait the worst of it out before heading back out.",
+    };
+  }
+
+  if (currentlyRaining) {
+    return {
+      mode: "rain",
+      label: "Rain Watch",
+      message:
+        "Rain is being reported right now. Keep your plan flexible, lean on indoor options nearby, and be careful before walking across the park for outdoor rides.",
     };
   }
 
@@ -163,7 +203,11 @@ function getRainSuggestions(parkId) {
   const common = [
     {
       title: "Lean on indoor rides",
-      text: "Some outdoor rides may pause briefly while it passes. Stick to indoor options until it clears.",
+      text: "Rain is active right now. Outdoor rides may become uncomfortable or pause briefly, so favor indoor attractions, shows, shops, and restaurants nearby.",
+    },
+    {
+      title: "Avoid unnecessary cross-park walks",
+      text: "A short indoor option nearby is usually smarter than crossing the park through rain for a slightly better wait.",
     },
     {
       title: "Pack ponchos, not umbrellas",
@@ -175,7 +219,7 @@ function getRainSuggestions(parkId) {
     magic_kingdom: [
       {
         title: "Magic Kingdom rain-safe picks",
-        text: "Pirates, Haunted Mansion, Peter Pan's Flight, Little Mermaid, Buzz Lightyear, Winnie the Pooh, and \"it's a small world\" all stay open and dry.",
+        text: "Pirates, Haunted Mansion, Tiki Room, Country Bears, Hall of Presidents, PhilharMagic, Carousel of Progress, Laugh Floor, Buzz Lightyear, Peter Pan's Flight, Little Mermaid, Winnie the Pooh, and \"it's a small world\" are better rain choices.",
       },
     ],
   };
