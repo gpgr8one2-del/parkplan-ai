@@ -35,7 +35,24 @@ export const PARK_PROXIMITY = {
       adjacent: ["fantasyland", "main_street"],
     },
   },
-  // epcot, hollywood_studios, animal_kingdom, universal_studios, etc.
+
+  epcot: {
+    world_celebration: {
+      adjacent: ["world_discovery", "world_nature", "world_showcase"],
+    },
+    world_discovery: {
+      adjacent: ["world_celebration", "world_showcase"],
+    },
+    world_nature: {
+      adjacent: ["world_celebration", "world_showcase"],
+    },
+    world_showcase: {
+      adjacent: ["world_celebration", "world_discovery", "world_nature"],
+    },
+  },
+
+  // Future parks: hollywood_studios, animal_kingdom,
+  // universal_studios, islands_of_adventure, epic_universe
   // each gets its own adjacency map keyed by snake_case land name.
 };
 
@@ -108,7 +125,7 @@ export function getLandDistance(parkId, fromLand, toLand) {
  *
  * Updated tuning:
  *   - same land gets a stronger bonus so nearby rides feel prioritized
- *   - adjacent lands stay viable because MK flows naturally between lands
+ *   - adjacent lands stay viable because parks naturally flow between areas
  *   - far lands get a larger penalty so cross-park options don't hijack backups
  *
  * If currentLand is null, returns 0 for every ride — no proximity influence.
