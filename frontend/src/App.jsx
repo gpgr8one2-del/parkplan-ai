@@ -18,7 +18,6 @@ const PARKS = [
 ];
 
 const LAND_OPTIONS = {
-  const LAND_OPTIONS = {
   magic_kingdom: [
     { value: "not_sure", label: "Not sure" },
     { value: "main_street", label: "Main Street, U.S.A." },
@@ -36,8 +35,7 @@ const LAND_OPTIONS = {
     { value: "world_nature", label: "World Nature" },
     { value: "world_showcase", label: "World Showcase" },
   ],
-};
-const STORAGE_KEY = "parkplan.state";
+};const STORAGE_KEY = "parkplan.state";
 
 const AUTO_REFRESH_MS = 6 * 60 * 1000;
 
