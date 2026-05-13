@@ -51,6 +51,50 @@ function isAllowedDuringEarlyEntry(parkId, meta) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Weather helpers                                                            */
+/* -------------------------------------------------------------------------- */
+
+function getWeatherSummary(weather) {
+  return String(weather?.summary || "").toLowerCase();
+}
+
+function isCurrentlyRaining(weather) {
+  const summary = getWeatherSummary(weather);
+
+  return (
+    summary.includes("rain") ||
+    summary.includes("drizzle") ||
+    summary.includes("shower") ||
+    summary.includes("showers")
+  );
+}
+
+function isCurrentlyStorming(weather) {
+  const summary = getWeatherSummary(weather);
+
+  return (
+    weather?.stormMode === true ||
+    summary.includes("thunderstorm") ||
+    summary.includes("storm") ||
+    summary.includes("lightning")
+  );
+}
+
+function isRainActive(weather) {
+  return isCurrentlyRaining(weather) || (weather?.rainRisk ?? 0) >= 0.45;
+}
+
+function isRainSensitiveRide(meta) {
+  if (!meta) return false;
+
+  return (
+    meta.closesInRain === true ||
+    meta.environment === "outdoor" ||
+    meta.environment === "mixed"
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /* Score components                                                           */
 /* -------------------------------------------------------------------------- */
 
@@ -91,14 +135,23 @@ function getTrendModifier(rideName) {
 function getContextModifier(meta, weather, mode = "default") {
   if (!meta || !weather) return 0;
 
-  const { tempF, rainRisk = 0, stormMode = false } = weather;
+  const { tempF, rainRisk = 0 } = weather;
+  const stormActive = isCurrentlyStorming(weather);
+  const rainActive = isRainActive(weather);
   let mod = 0;
 
-  if (stormMode) {
+  if (stormActive) {
     if (meta.closesInRain) mod -= 90;
     if (meta.environment === "indoor") mod += 18;
-    else if (meta.environment === "outdoor") mod -= 20;
-    else if (meta.environment === "mixed") mod -= 12;
+    else if (meta.environment === "outdoor") mod -= 35;
+    else if (meta.environment === "mixed") mod -= 25;
+  } else if (rainActive) {
+    if (meta.environment === "indoor") mod += 12;
+    if (meta.hasAC) mod += 4;
+    if (meta.closesInRain) mod -= 45;
+    if (meta.environment === "outdoor") mod -= 30;
+    if (meta.environment === "mixed") mod -= 18;
+    if (meta.getsWet) mod -= 10;
   } else if (rainRisk >= 0.7) {
     if (meta.closesInRain) mod -= 15;
     if (meta.environment === "indoor") mod += 8;
@@ -111,16 +164,16 @@ function getContextModifier(meta, weather, mode = "default") {
   if (tempF != null) {
     if (tempF >= 95) {
       if (meta.hasAC) mod += 10;
-      if (meta.getsWet) mod += 8;
+      if (meta.getsWet && !rainActive && !stormActive) mod += 8;
       if (meta.environment === "indoor") mod += 4;
       if (meta.environment === "outdoor" && !meta.getsWet) mod -= 4;
     } else if (tempF >= 88) {
       if (meta.hasAC) mod += 6;
-      if (meta.getsWet) mod += 5;
+      if (meta.getsWet && !rainActive && !stormActive) mod += 5;
       if (meta.environment === "indoor") mod += 2;
     } else if (tempF >= 82) {
       if (meta.hasAC) mod += 3;
-      if (meta.getsWet) mod += 3;
+      if (meta.getsWet && !rainActive && !stormActive) mod += 3;
     }
   }
 
@@ -132,6 +185,8 @@ function getWetRideTimingModifier(meta, weather, waitValueStatus) {
 
   const tempF = weather?.tempF ?? null;
   const { hour } = getOrlandoTimeParts();
+  const stormActive = isCurrentlyStorming(weather);
+  const rainActive = isRainActive(weather);
 
   let mod = 0;
 
@@ -163,8 +218,10 @@ function getWetRideTimingModifier(meta, weather, waitValueStatus) {
     }
   }
 
-  if (weather?.stormMode) {
-    mod -= 50;
+  if (stormActive) {
+    mod -= 60;
+  } else if (rainActive) {
+    mod -= 20;
   } else if ((weather?.rainRisk ?? 0) >= 0.6) {
     mod -= 6;
   }
@@ -205,11 +262,20 @@ function isFillerOrRecovery(ride) {
   return ride?.planningProfile?.category === "filler_or_recovery";
 }
 
-function isStormBlockedRide(parkId, ride, weather) {
-  if (!weather?.stormMode) return false;
-
+function isWeatherBlockedFromPositiveCards(parkId, ride, weather) {
   const meta = getRideMeta(parkId, ride.id ?? ride.name);
-  return Boolean(meta?.closesInRain);
+  if (!meta) return true;
+
+  const stormActive = isCurrentlyStorming(weather);
+  const rainActive = isRainActive(weather);
+
+  if (stormActive && isRainSensitiveRide(meta)) return true;
+
+  // In active rain, do not send guests toward outdoor/mixed/rain-sensitive rides
+  // as Best Move, Smart Backup, Worth the Walk, or Plan Ahead.
+  if (rainActive && isRainSensitiveRide(meta)) return true;
+
+  return false;
 }
 
 function fitsBeforeClose(waitTime, closeTime, now) {
@@ -314,7 +380,8 @@ export function getNextBestRides({
   const completed = new Set(completedRideIds.map(String));
   const skipped = new Set(skippedRideIds.map(String));
 
-  const isStormActive = weather?.stormMode === true;
+  const stormActive = isCurrentlyStorming(weather);
+  const rainActive = isRainActive(weather);
 
   const now = new Date();
   const closeTime = getParkCloseTime(parkId, now);
@@ -394,11 +461,10 @@ export function getNextBestRides({
     (a, b) => b.recommendationScore - a.recommendationScore
   );
 
-  // During active storm mode, positive recommendation slots should not point
-  // guests toward attractions that commonly close in lightning/rain.
+  // During active rain/storm mode, positive recommendation slots should not point
+  // guests toward outdoor, mixed, or rain-sensitive attractions.
   const positivePool = sorted.filter((ride) => {
-    if (!isStormActive) return true;
-    return !isStormBlockedRide(parkId, ride, weather);
+    return !isWeatherBlockedFromPositiveCards(parkId, ride, weather);
   });
 
   const nearbyRides = positivePool.filter((ride) => {
@@ -424,6 +490,10 @@ export function getNextBestRides({
     farRides.find((ride) => {
       if (usedAfterBackup.has(String(ride.id))) return false;
       if (isFillerOrRecovery(ride)) return false;
+
+      // Be more conservative about cross-park walks during active rain.
+      if (rainActive && ride.recommendationScore < 75) return false;
+
       if (ride.recommendationScore < 60) return false;
 
       return true;
@@ -438,7 +508,7 @@ export function getNextBestRides({
       const meta = getRideMeta(parkId, ride.id ?? ride.name);
       const category = meta?.planningProfile?.category;
 
-      if (isStormActive && meta?.closesInRain) return false;
+      if ((stormActive || rainActive) && isRainSensitiveRide(meta)) return false;
 
       return (
         category === "plan_ahead_single_pass" ||
@@ -483,7 +553,9 @@ export function getNextBestRides({
 
       if (isPlanAheadCategory) return false;
 
-      if (isStormActive && meta?.closesInRain) return false;
+      // Do not use rain-sensitive rides in Wait On This during active rain/storm.
+      // The weather card already explains why guests should avoid them.
+      if ((stormActive || rainActive) && isRainSensitiveRide(meta)) return false;
 
       return status === "bad_value" || status === "above_normal";
     })
