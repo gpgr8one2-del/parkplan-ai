@@ -23,12 +23,27 @@ const recommendationSchema = z
   .nullable()
   .optional();
 
+const currentActivitySchema = z
+  .object({
+    type: z.string().max(50).optional(),
+    rideId: z.union([z.string(), z.number()]).optional(),
+    rideName: z.string().max(200).optional(),
+    land: z.string().max(100).optional(),
+    startedAt: z.string().max(100).optional(),
+    postedWaitAtStart: z.number().nullable().optional(),
+  })
+  .passthrough()
+  .nullable()
+  .optional();
+
 const chatSchema = z.object({
   message: z.string().trim().min(1).max(500),
   sessionData: z
     .object({
       activePark: z.string().max(100).optional(),
       currentLand: z.string().max(100).optional(),
+      currentActivity: currentActivitySchema,
+
       weather: z.any().optional(),
       weatherMode: z.any().optional(),
 
