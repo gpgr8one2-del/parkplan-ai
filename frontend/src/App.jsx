@@ -174,8 +174,7 @@ useEffect(() => {
     clearInterval(intervalId);
     document.removeEventListener("visibilitychange", handleVisibility);
   };
-}, [loadData]);
-  useEffect(() => {
+}, [loadData]);  useEffect(() => {
     isRestoringParkState.current = true;
 
     const saved = readStoredParkState(activePark);
