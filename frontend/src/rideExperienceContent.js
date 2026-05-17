@@ -500,6 +500,258 @@ export const RIDE_EXPERIENCE_CONTENT = {
       ],
     },
   },
+  epcot: {
+    // ---------- World Celebration ----------
+    "Spaceship Earth": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "Spaceship Earth weighs about 16 million pounds and is built as a structural sphere within a sphere.",
+        },
+        {
+          title: "Queue Detail",
+          text: "The outside is covered in 11,324 aluminum-composite panels. The drainage system funnels rainwater through the structure instead of letting it pour off the sides.",
+        },
+        {
+          title: "Hidden Mickey",
+          text: "In the Renaissance scene, look behind the sleeping monk on the left. The inkwells and ink stains form a Hidden Mickey.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "If you could time travel to one scene in this ride, which one would you pick?",
+        },
+      ],
+    },
+
+    // ---------- World Discovery ----------
+    "Guardians of the Galaxy: Cosmic Rewind": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "Cosmic Rewind is Disney’s first Omnicoaster. The vehicles can rotate to point you toward the action while moving along the track.",
+        },
+        {
+          title: "Queue Detail",
+          text: "The Galaxarium has a long cinematic loop about Xandar and Earth. Watch for nods to classic EPCOT architecture in the Wonders of Xandar pavilion model.",
+        },
+        {
+          title: "Look For This",
+          text: "In the Xandar Gallery, the broadcast segments include real Walt Disney Imagineers playing themselves.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Which song are you hoping to get?",
+        },
+      ],
+    },
+
+    "Test Track": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "Test Track reaches up to 65 mph, making it the fastest ride at Walt Disney World.",
+        },
+        {
+          title: "Queue Detail",
+          text: "The queue is themed as a futuristic design studio where guests create a concept vehicle focused on capability, efficiency, responsiveness, and power.",
+        },
+        {
+          title: "Hidden Mickey",
+          text: "Watch the digital blueprint screens in the design studio. Engine or wheel diagrams can align into a Mickey shape.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Would your group build a car for speed, comfort, style, or chaos?",
+        },
+      ],
+    },
+
+    "Mission: SPACE": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "The Orange Team version uses a real centrifuge system and can generate more than twice Earth’s gravity.",
+        },
+        {
+          title: "Queue Detail",
+          text: "The queue features a 35-foot Lunar Rover replica on loan from the Smithsonian Institution.",
+        },
+        {
+          title: "Hidden Mickey",
+          text: "In the simulation training area, look at the large moon mural. One crater is shaped like Mickey.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Green Team or Orange Team: who is brave and who is playing it safe?",
+        },
+      ],
+    },
+
+    // ---------- World Nature ----------
+    "Soarin' Around the World": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "The ride system was first modeled by Imagineer Mark Sumner using an old Erector Set.",
+        },
+        {
+          title: "Queue Detail",
+          text: "The queue includes Soarin’ Challenge, an interactive trivia game about geography, culture, and aviation.",
+        },
+        {
+          title: "Hidden Mickey",
+          text: "Near the finale over EPCOT, a firework briefly forms a giant Mickey head in the sky.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Which destination would you want to actually visit?",
+        },
+      ],
+    },
+
+    "Living with the Land": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "The greenhouses are real working research facilities and produce thousands of crops each year.",
+        },
+        {
+          title: "Queue Detail",
+          text: "Look for quotes about agriculture, conservation, and the Earth along the queue walls.",
+        },
+        {
+          title: "Hidden Mickey",
+          text: "In the aquaculture section, look at the mesh tubes used to sort fish. Some are shaped like Mickey heads.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Would your group rather grow giant vegetables or work in the fish farm?",
+        },
+      ],
+    },
+
+    "The Seas with Nemo & Friends": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "The aquarium at the end holds about 5.7 million gallons of water, making it one of the largest man-made ocean environments in the world.",
+        },
+        {
+          title: "Queue Detail",
+          text: "The queue transitions from a sunny beach, under a boardwalk, and then deeper underwater.",
+        },
+        {
+          title: "Hidden Mickey",
+          text: "In the underwater cavern section, look for three round stones grouped together in the coral walls.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Which sea creature would you want to see after the ride?",
+        },
+      ],
+    },
+
+    "Journey of Water, Inspired by Moana": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "Journey of Water is a walkthrough attraction with interactive water elements that respond to guest movement.",
+        },
+        {
+          title: "Look For This",
+          text: "The trail includes design plaques about the water cycle, including rain, stream, wetland, spring, lake, river, and ocean.",
+        },
+        {
+          title: "Hidden Detail",
+          text: "Look closely at the rock carvings. Characters like Moana, Maui, Heihei, and Pua appear throughout the trail.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Are you touching every water effect or trying to stay dry?",
+        },
+      ],
+    },
+
+    // ---------- World Showcase West ----------
+    "Remy's Ratatouille Adventure": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "Remy’s is a trackless ride that uses positioning technology, 3D projections, heat, and water effects to make you feel rat-sized.",
+        },
+        {
+          title: "Queue Detail",
+          text: "The queue takes you over the rooftops of Paris. In the artist loft, watch the paintings on the easels change digitally.",
+        },
+        {
+          title: "Hidden Mickey",
+          text: "In the artist loft area, look up at the exposed wooden rafters. Knots and curves in the wood form a Mickey profile.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Would you trust Remy to cook dinner for your family?",
+        },
+      ],
+    },
+
+    // ---------- World Showcase East ----------
+    "Frozen Ever After": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "Frozen Ever After uses the same basic track layout and ride system as Maelstrom, the Norway ride that operated from 1988 to 2014.",
+        },
+        {
+          title: "Queue Detail",
+          text: "In Wandering Oaken’s Trading Post and Sauna, watch the sauna window. Oaken occasionally clears the steam and waves.",
+        },
+        {
+          title: "Hidden Mickey",
+          text: "In Oaken’s Trading Post, look at the cluttered shelves. A small wooden block set is stacked into a Mickey silhouette.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Who is your group most like today: Anna, Elsa, Olaf, Kristoff, or Sven?",
+        },
+      ],
+    },
+
+    "Gran Fiesta Tour Starring The Three Caballeros": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "The final concert scene uses real Audio-Animatronics of Donald, José, and Panchito that were originally used in Mickey Mouse Revue.",
+        },
+        {
+          title: "Queue Detail",
+          text: "The queue sits inside the twilight atmosphere of the Mexico pavilion, surrounded by folk art, carvings, and pottery displays.",
+        },
+        {
+          title: "Hidden Mickey",
+          text: "In the boat scene where Donald takes photos, look at the boat to his left. Three hanging paper lanterns form a Hidden Mickey.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Who would be the most likely to lose Donald Duck in Mexico?",
+        },
+      ],
+    },
+
+    // ---------- EPCOT General ----------
+    "EPCOT": {
+      whileWaiting: [
+        {
+          title: "Did You Know?",
+          text: "EPCOT was originally imagined by Walt Disney as the Experimental Prototype Community of Tomorrow, a functioning futuristic city concept.",
+        },
+        {
+          title: "Look For This",
+          text: "Many EPCOT queues shift visually from present-day materials and lighting into a more futuristic tone as you move deeper inside.",
+        },
+      ],
+    },
+  }
+,
 };
 
 export function getRideExperienceContent(parkId, rideName) {
