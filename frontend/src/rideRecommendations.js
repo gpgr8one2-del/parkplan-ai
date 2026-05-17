@@ -1,4 +1,4 @@
-import { getRideMeta, getWaitValueStatus } from "./rideMetadata";
+import { getRideMeta, getWaitValueStatus, getParkRides } from "./rideMetadata";
 import {
   resolveCurrentLand,
   getProximityModifier,
@@ -103,12 +103,44 @@ function isRainSensitiveRide(meta) {
   );
 }
 
+function normalizeRideName(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[’']/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function getMetaForRide(parkId, ride) {
+  const direct = getRideMeta(parkId, ride?.id ?? ride?.name);
+  if (direct) return direct;
+
+  const rideName = normalizeRideName(ride?.name);
+  if (!rideName) return null;
+
+  const parkRides = getParkRides(parkId);
+
+  const exactNameMatch = parkRides.find(([, meta]) => {
+    return normalizeRideName(meta.displayName) === rideName;
+  });
+
+  if (exactNameMatch) return exactNameMatch[1];
+
+  const looseNameMatch = parkRides.find(([, meta]) => {
+    const metaName = normalizeRideName(meta.displayName);
+    return metaName.includes(rideName) || rideName.includes(metaName);
+  });
+
+  return looseNameMatch?.[1] || null;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Score components                                                           */
 /* -------------------------------------------------------------------------- */
 
 function getBaseScore(parkId, ride) {
-  const meta = getRideMeta(parkId, ride.id ?? ride.name);
+  const meta = getMetaForRide(parkId, ride);
   return meta?.popularity ?? DEFAULT_POPULARITY;
 }
 
@@ -282,7 +314,7 @@ function isFillerOrRecovery(ride) {
 }
 
 function isWeatherBlockedFromPositiveCards(parkId, ride, weather) {
-  const meta = getRideMeta(parkId, ride.id ?? ride.name);
+  const meta = getMetaForRide(parkId, ride);
   if (!meta) return true;
 
   const stormActive = isCurrentlyStorming(weather);
@@ -405,26 +437,102 @@ export function getNextBestRides({
   const now = new Date();
   const closeTime = getParkCloseTime(parkId, now);
 
-  const eligibleRides = rides.filter((ride) => {
-    const meta = getRideMeta(parkId, ride.id ?? ride.name);
+  const filterStats = {
+    total: rides.length,
+    noMeta: 0,
+    closed: 0,
+    completed: 0,
+    skipped: 0,
+    earlyEntryBlocked: 0,
+    closingSoon: 0,
+    eligible: 0,
+  };
+
+  const filterExamples = {
+    noMeta: [],
+    closed: [],
+    completed: [],
+    skipped: [],
+    earlyEntryBlocked: [],
+    closingSoon: [],
+    eligible: [],
+  };
+
+  function addExample(bucket, ride, extra = "") {
+    if (filterExamples[bucket].length >= 8) return;
+    filterExamples[bucket].push(`${ride.name || "Unknown"} (${ride.id})${extra}`);
+  }
+
+  function getEligibilityFailure(ride, { ignoreCloseTime = false } = {}) {
+    const meta = getMetaForRide(parkId, ride);
 
     // Critical: if we did not intentionally add metadata, do not recommend it.
     // This blocks Cinderella Castle, Casey Jr., meet-and-greets, random landmarks, etc.
-    if (!meta) return false;
+    if (!meta) return { reason: "noMeta", meta: null };
 
-    if (!ride.isOpen) return false;
-    if (completed.has(String(ride.id))) return false;
-    if (skipped.has(String(ride.id))) return false;
+    if (!ride.isOpen) return { reason: "closed", meta };
+    if (completed.has(String(ride.id))) return { reason: "completed", meta };
+    if (skipped.has(String(ride.id))) return { reason: "skipped", meta };
 
-    if (!isAllowedDuringEarlyEntry(parkId, meta)) return false;
+    if (!isAllowedDuringEarlyEntry(parkId, meta)) {
+      return { reason: "earlyEntryBlocked", meta };
+    }
 
-    if (!fitsBeforeClose(ride.waitTime, closeTime, now)) return false;
+    if (!ignoreCloseTime && !fitsBeforeClose(ride.waitTime, closeTime, now)) {
+      return { reason: "closingSoon", meta };
+    }
 
+    return { reason: null, meta };
+  }
+
+  let eligibleRides = rides.filter((ride) => {
+    const result = getEligibilityFailure(ride);
+    const reason = result.reason;
+
+    if (reason) {
+      filterStats[reason] += 1;
+      addExample(reason, ride, result.meta?.land ? ` · ${result.meta.land}` : "");
+      return false;
+    }
+
+    filterStats.eligible += 1;
+    addExample("eligible", ride, result.meta?.land ? ` · ${result.meta.land}` : "");
     return true;
   });
 
+  // Safety valve: if park-hours logic gets too aggressive, do not let the entire
+  // recommendation engine go blank. This can happen if a static close-time config
+  // is wrong for a specific day or event.
+  if (!eligibleRides.length && filterStats.closingSoon > 0) {
+    eligibleRides = rides.filter((ride) => {
+      return !getEligibilityFailure(ride, { ignoreCloseTime: true }).reason;
+    });
+
+    if (eligibleRides.length) {
+      console.warn("ParkPlan: close-time filter removed all rides; using relaxed close-time fallback.", {
+        parkId,
+        closeTime,
+        now,
+      });
+    }
+  }
+
+  if (!eligibleRides.length) {
+    console.warn("ParkPlan: no eligible recommendation rides", {
+      parkId,
+      currentLand,
+      weather,
+      completedRideIds,
+      skippedRideIds,
+      closeTime,
+      now,
+      filterStats,
+      filterExamples,
+    });
+  }
+
   const scored = eligibleRides.map((ride) => {
-    const meta = getRideMeta(parkId, ride.id ?? ride.name);
+    const meta = getMetaForRide(parkId, ride);
 
     const baseScore = meta?.popularity ?? DEFAULT_POPULARITY;
     const waitPenalty = getWaitPenalty(ride.waitTime);
@@ -482,9 +590,28 @@ export function getNextBestRides({
 
   // During active rain/storm mode, positive recommendation slots should not point
   // guests toward outdoor, mixed, or rain-sensitive attractions.
-  const positivePool = sorted.filter((ride) => {
+  let positivePool = sorted.filter((ride) => {
     return !isWeatherBlockedFromPositiveCards(parkId, ride, weather);
   });
+
+  // Safety valve: if weather filtering removes every positive option, prefer
+  // indoor/AC recovery options instead of going completely blank.
+  if (!positivePool.length && sorted.length) {
+    const indoorRecoveryPool = sorted.filter((ride) => {
+      const meta = getMetaForRide(parkId, ride);
+      return meta?.environment === "indoor" || meta?.hasAC === true;
+    });
+
+    positivePool = indoorRecoveryPool.length ? indoorRecoveryPool : sorted;
+
+    console.warn("ParkPlan: positive recommendation pool was empty; using fallback pool.", {
+      parkId,
+      currentLand,
+      weather,
+      sortedCount: sorted.length,
+      fallbackCount: positivePool.length,
+    });
+  }
 
   const nearbyRides = positivePool.filter((ride) => {
     return ride.proximityDistance !== "far";
@@ -524,7 +651,7 @@ export function getNextBestRides({
     .filter((ride) => {
       if (usedAfterWorth.has(String(ride.id))) return false;
 
-      const meta = getRideMeta(parkId, ride.id ?? ride.name);
+      const meta = getMetaForRide(parkId, ride);
       const category = meta?.planningProfile?.category;
 
       if ((stormActive || rainActive) && isRainSensitiveRide(meta)) return false;
@@ -536,7 +663,7 @@ export function getNextBestRides({
       );
     })
     .map((ride) => {
-      const meta = getRideMeta(parkId, ride.id ?? ride.name);
+      const meta = getMetaForRide(parkId, ride);
       const waitValueStatus = getWaitValueStatus(meta, ride.waitTime);
 
       return {
@@ -561,7 +688,7 @@ export function getNextBestRides({
     .filter((ride) => {
       if (usedAfterPlanAhead.has(String(ride.id))) return false;
 
-      const meta = getRideMeta(parkId, ride.id ?? ride.name);
+      const meta = getMetaForRide(parkId, ride);
       const category = meta?.planningProfile?.category;
       const status = ride.waitValueStatus?.status;
 
