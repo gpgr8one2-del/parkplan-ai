@@ -7,6 +7,7 @@ import { getNextBestRides } from "./rideRecommendations";
 import { getWeatherMode, getRecoverySuggestions } from "./utils/weatherAdvice";
 import { formatCloseTimeLabel } from "./parkHours";
 import { getRideExperienceContent } from "./rideExperienceContent";
+import { shouldShowRideInWaitList } from "./attractionDisplayFilters";
 
 const PARKS = [
   { id: "magic_kingdom", name: "Magic Kingdom" },
@@ -147,6 +148,32 @@ function buildWeatherDisplay(weather) {
   return parts.length ? parts.join(" · ") : "Loading weather...";
 }
 
+function formatLandLabel(parkId, land) {
+  const labels = {
+    magic_kingdom: {
+      main_street: "Main Street, U.S.A.",
+      adventureland: "Adventureland",
+      frontierland: "Frontierland",
+      liberty_square: "Liberty Square",
+      fantasyland: "Fantasyland",
+      tomorrowland: "Tomorrowland",
+    },
+
+    epcot: {
+      world_celebration: "World Celebration",
+      world_discovery: "World Discovery",
+      world_nature: "World Nature",
+      world_showcase_west: "World Showcase West / France-UK-Canada",
+      world_showcase_center: "World Showcase Center / America-Japan-Italy",
+      world_showcase_east: "World Showcase East / Mexico-Norway-China",
+      world_showcase: "World Showcase",
+      "American Adventure Pavilion": "American Adventure Pavilion",
+    },
+  };
+
+  return labels[parkId]?.[land] || land || "Unknown area";
+}
+
 function App() {
   const [activePark, setActivePark] = useState("magic_kingdom");
   const [parkData, setParkData] = useState(null);
@@ -248,10 +275,10 @@ function App() {
   ]);
 
   const sortedRides = useMemo(() => {
-    return [...(parkData?.rides || [])].sort(
-      (a, b) => (b.waitTime || 0) - (a.waitTime || 0)
-    );
-  }, [parkData]);
+    return [...(parkData?.rides || [])]
+      .filter((ride) => shouldShowRideInWaitList(activePark, ride))
+      .sort((a, b) => (b.waitTime || 0) - (a.waitTime || 0));
+  }, [parkData, activePark]);
 
   const activeRideId =
     currentActivity?.type === "in_line" && currentActivity?.rideId != null
@@ -976,7 +1003,7 @@ function App() {
                 <div>
                   <strong>{ride.name}</strong>
                   <div style={{ color: "#64748b", fontSize: 12 }}>
-                    {ride.land} · {ride.isOpen ? "Open" : "Closed"}
+                    {formatLandLabel(activePark, ride.land)} · {ride.isOpen ? "Open" : "Closed"}
                   </div>
                 </div>
 
