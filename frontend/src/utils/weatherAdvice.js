@@ -168,6 +168,204 @@ function buildWaterNearbySuggestion(parkId, currentLand) {
   };
 }
 
+
+/* -------------------------------------------------------------------------- */
+/* EPCOT recovery helpers                                                     */
+/* -------------------------------------------------------------------------- */
+
+function getEpcotRainSuggestions(currentLand) {
+  const byLand = {
+    world_celebration: [
+      {
+        title: "World Celebration rain plan",
+        text: "Stay near the front/center instead of crossing the park. Spaceship Earth, Journey Into Imagination, Disney & Pixar Short Film Festival, Connections, Creations Shop, and nearby indoor spaces are smart rain moves.",
+      },
+      {
+        title: "Avoid a bad weather hike",
+        text: "If rain is active or building, do not chase Test Track or deep World Showcase for a small wait-time improvement.",
+      },
+    ],
+
+    world_discovery: [
+      {
+        title: "World Discovery rain caution",
+        text: "Test Track is weather-sensitive and can pause during rain or lightning. Favor Mission: SPACE, Connections, or a move toward Spaceship Earth until the weather settles.",
+      },
+      {
+        title: "Avoid getting stranded",
+        text: "If storms are building, do not walk deep into World Showcase just for a small wait-time improvement.",
+      },
+    ],
+
+    world_nature: [
+      {
+        title: "World Nature rain plan",
+        text: "The Land and The Seas are excellent rain shelters. Soarin’, Living with the Land, Awesome Planet, Nemo, Turtle Talk, aquarium time, and Sunshine Seasons can absorb a long weather delay.",
+      },
+      {
+        title: "Smart next move",
+        text: "If you are near The Land, stay there for a full reset rather than crossing EPCOT in the rain.",
+      },
+    ],
+
+    world_showcase_west: [
+      {
+        title: "World Showcase West rain plan",
+        text: "Use France, United Kingdom, Canada, or nearby International Gateway cover. Remy, France theater options, Canada Far and Wide, shops, and nearby dining are better than hiking to Test Track.",
+      },
+      {
+        title: "Better escape route",
+        text: "If you need a longer indoor reset, move toward World Nature and The Land instead of crossing to World Discovery.",
+      },
+    ],
+
+    world_showcase_center: [
+      {
+        title: "World Showcase Center rain plan",
+        text: "American Adventure is one of the best long indoor resets in EPCOT. Regal Eagle, Japan shops, Morocco cover, and nearby festival spaces can help you wait out rain without over-walking.",
+      },
+      {
+        title: "Do not overreact",
+        text: "From the middle of World Showcase, both front-of-park sides are a commitment. Pick the nearest indoor shelter first, then move once rain weakens.",
+      },
+    ],
+
+    world_showcase_east: [
+      {
+        title: "World Showcase East rain plan",
+        text: "Frozen, Gran Fiesta Tour, Mexico pavilion, China pavilion, and Norway shops are your best nearby rain-friendly options. Stay east unless a front-of-park ride is truly worth it.",
+      },
+      {
+        title: "Test Track warning",
+        text: "Even though Test Track is closer from this side, it is weather-sensitive. Check conditions before walking that way.",
+      },
+    ],
+  };
+
+  return (
+    byLand[currentLand] || [
+      {
+        title: "EPCOT rain plan",
+        text: "Pick the nearest indoor pavilion, shop, show, or restaurant first. EPCOT walks are long, and rain makes small wait-time savings less valuable.",
+      },
+    ]
+  );
+}
+
+function getEpcotStormSuggestions(currentLand) {
+  const byLand = {
+    world_celebration: [
+      {
+        title: "World Celebration storm shelter",
+        text: "Use Spaceship Earth, Connections, Creations Shop, Journey Into Imagination, or Disney & Pixar Short Film Festival until lightning clears.",
+      },
+    ],
+
+    world_discovery: [
+      {
+        title: "World Discovery storm shelter",
+        text: "Do not count on Test Track during lightning. Use Mission: SPACE, Connections, or nearby indoor shops/restaurants until the storm passes.",
+      },
+    ],
+
+    world_nature: [
+      {
+        title: "World Nature storm shelter",
+        text: "The Land and The Seas are your best storm shelters. Soarin’, Living with the Land, Awesome Planet, Nemo, Turtle Talk, aquarium time, and food seating can comfortably absorb a delay.",
+      },
+    ],
+
+    world_showcase_west: [
+      {
+        title: "World Showcase West storm shelter",
+        text: "Stay in France/UK/Canada cover, shops, theater options, or dining. If you can safely move, The Land pavilion is the better long-reset target than World Discovery.",
+      },
+    ],
+
+    world_showcase_center: [
+      {
+        title: "World Showcase Center storm shelter",
+        text: "American Adventure, Regal Eagle, Japan shops, Morocco cover, and festival indoor areas are your safest nearby reset choices.",
+      },
+    ],
+
+    world_showcase_east: [
+      {
+        title: "World Showcase East storm shelter",
+        text: "Use Mexico pavilion, Frozen/Norway indoor areas, China pavilion, or nearby covered dining. Avoid walking toward Test Track until lightning risk clears.",
+      },
+    ],
+  };
+
+  return (
+    byLand[currentLand] || [
+      {
+        title: "EPCOT storm shelter",
+        text: "Get inside the nearest pavilion, shop, restaurant, or indoor attraction. EPCOT has long exposed walkways, so wait for lightning risk to clear before crossing the park.",
+      },
+    ]
+  );
+}
+
+function getEpcotHeatSuggestions(currentLand, severity) {
+  const strongHeat = severity === "extreme_heat" || severity === "hot";
+
+  const byLand = {
+    world_celebration: [
+      {
+        title: "World Celebration cool-down",
+        text: "Use Spaceship Earth, Connections, Creations Shop, Journey Into Imagination, or Disney & Pixar Short Film Festival before pushing into the lagoon loop.",
+      },
+    ],
+
+    world_discovery: [
+      {
+        title: "World Discovery cool-down",
+        text: "Mission: SPACE and Connections are your easiest AC resets. Test Track can be rough in heat because of the outdoor section and exposed walking.",
+      },
+    ],
+
+    world_nature: [
+      {
+        title: "World Nature cool-down",
+        text: "The Land and The Seas are EPCOT heat anchors. Soarin’, Living with the Land, Awesome Planet, Nemo, Turtle Talk, aquarium time, and Sunshine Seasons can reset the whole group.",
+      },
+    ],
+
+    world_showcase_west: [
+      {
+        title: "World Showcase West cool-down",
+        text: "Use France/UK/Canada shops, Les Halles, theater options, Remy if reasonable, or move toward The Land for a longer AC reset.",
+      },
+    ],
+
+    world_showcase_center: [
+      {
+        title: "World Showcase Center cool-down",
+        text: "American Adventure and Regal Eagle are strong seated AC resets. Japan, Morocco, Germany, and Italy also have shops or food stops that can slow the pace.",
+      },
+    ],
+
+    world_showcase_east: [
+      {
+        title: "World Showcase East cool-down",
+        text: "Use Mexico pavilion, Gran Fiesta Tour, Norway shops, Frozen if reasonable, China pavilion, or Lotus Blossom Café before walking farther around the lagoon.",
+      },
+    ],
+  };
+
+  const extra = strongHeat
+    ? [
+        {
+          title: "Do not over-walk EPCOT in heat",
+          text: "EPCOT distances are sneaky. A nearby AC reset is usually better than crossing the park for a slightly better wait.",
+        },
+      ]
+    : [];
+
+  return [...(byLand[currentLand] || []), ...extra];
+}
+
 /* -------------------------------------------------------------------------- */
 /* Mode-specific recovery suggestions                                         */
 /*                                                                            */
@@ -176,7 +374,7 @@ function buildWaterNearbySuggestion(parkId, currentLand) {
 /* sense in heat, not in lightning.                                           */
 /* -------------------------------------------------------------------------- */
 
-function getStormSuggestions(parkId) {
+function getStormSuggestions(parkId, currentLand) {
   const common = [
     {
       title: "Stay indoors until the storm clears",
@@ -203,12 +401,14 @@ function getStormSuggestions(parkId) {
         text: "Crystal Palace, Cosmic Ray's, Columbia Harbour House, Pecos Bill, or Pinocchio Village Haus can be useful places to wait out heavy weather.",
       },
     ],
+
+    epcot: getEpcotStormSuggestions(currentLand),
   };
 
   return [...common, ...(byPark[parkId] || [])];
 }
 
-function getRainSuggestions(parkId) {
+function getRainSuggestions(parkId, currentLand) {
   const common = [
     {
       title: "Lean on indoor rides",
@@ -231,6 +431,8 @@ function getRainSuggestions(parkId) {
         text: "Pirates, Haunted Mansion, Tiki Room, Country Bears, Hall of Presidents, PhilharMagic, Carousel of Progress, Laugh Floor, Buzz Lightyear, Peter Pan's Flight, Little Mermaid, Winnie the Pooh, and \"it's a small world\" are better rain choices.",
       },
     ],
+
+    epcot: getEpcotRainSuggestions(currentLand),
   };
 
   return [...common, ...(byPark[parkId] || [])];
@@ -267,6 +469,8 @@ function getHeatSuggestions(parkId, severity, currentLand) {
         text: "Carousel of Progress, PhilharMagic, Pirates, Haunted Mansion, Hall of Presidents, Monsters Inc. Laugh Floor, and Country Bears are strong recovery options.",
       },
     ],
+
+    epcot: getEpcotHeatSuggestions(currentLand, severity),
   };
 
   return [...common, ...(byPark[parkId] || [])];
@@ -289,6 +493,10 @@ function getWarmSuggestions(parkId, currentLand) {
     suggestions.push(waterNearby);
   }
 
+  if (parkId === "epcot") {
+    suggestions.push(...getEpcotHeatSuggestions(currentLand, "warm"));
+  }
+
   return suggestions;
 }
 
@@ -297,9 +505,9 @@ export function getRecoverySuggestions({ parkId, weather, currentLand }) {
 
   switch (weatherMode.mode) {
     case "storm":
-      return getStormSuggestions(parkId);
+      return getStormSuggestions(parkId, currentLand);
     case "rain":
-      return getRainSuggestions(parkId);
+      return getRainSuggestions(parkId, currentLand);
     case "extreme_heat":
       return getHeatSuggestions(parkId, "extreme_heat", currentLand);
     case "hot":
