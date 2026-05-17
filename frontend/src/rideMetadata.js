@@ -833,7 +833,7 @@ export const RIDE_METADATA = {
 
   // ============================================================
   // EPCOT (queue-times park ID: 5)
-  // Lands: world_celebration, world_discovery, world_nature, world_showcase
+  // Lands from current EPCOT guidemap: world_celebration, world_discovery, world_nature, world_showcase
   // ============================================================
   epcot: {
     // ---------- World Discovery ----------
@@ -1051,7 +1051,7 @@ export const RIDE_METADATA = {
 
     "155": {
       displayName: "Journey Into Imagination With Figment",
-      land: "world_nature",
+      land: "world_celebration",
       minHeightInches: 0,
       environment: "indoor",
       hasAC: true,
@@ -1073,9 +1073,84 @@ export const RIDE_METADATA = {
         paidAccess: "LLMP",
         appStatus: "filler",
         strategy:
-          "Use as a quick indoor filler in World Nature or near the Imagination pavilion.",
+          "Use as a quick indoor filler in World Celebration near the Imagination pavilion.",
       },
       tags: ["dark-ride", "family", "filler", "indoor", "ac"],
+    },
+
+
+    "epcot_disney_pixar_short_film_festival": {
+      displayName: "Disney & Pixar Short Film Festival",
+      land: "world_celebration",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 32,
+      waitProfile: {
+        averageWait: 12,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 25,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "A low-pressure indoor theater option near Journey Into Imagination. Best used as an AC reset, not a cross-park priority.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "recovery",
+        strategy:
+          "Use when nearby and the group needs a seated indoor break.",
+      },
+      tags: ["show", "recovery", "family", "indoor", "ac"],
+    },
+
+    "epcot_journey_of_water": {
+      displayName: "Journey of Water, Inspired by Moana",
+      land: "world_nature",
+      minHeightInches: 0,
+      environment: "outdoor",
+      hasAC: false,
+      getsWet: true,
+      closesInRain: true,
+      intensity: 1,
+      popularity: 38,
+      waitProfile: { averageWait: 10, goodDealUnder: 10, normalRange: [10, 20], badValueOver: 25, usuallyHighAllDay: false, strategyNote: "A self-guided outdoor walkthrough. Better in mild weather or as a low-pressure filler." },
+      planningProfile: { category: "filler_or_recovery", paidAccess: "none", appStatus: "filler", strategy: "Use as a nearby low-stress walkthrough. Avoid during storms or when the group needs true AC." },
+      tags: ["walkthrough", "family", "water", "outdoor", "filler"],
+    },
+
+    "epcot_turtle_talk_with_crush": {
+      displayName: "Turtle Talk With Crush",
+      land: "world_nature",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 40,
+      waitProfile: { averageWait: 15, goodDealUnder: 10, normalRange: [10, 20], badValueOver: 30, usuallyHighAllDay: false, strategyNote: "Interactive indoor show inside The Seas. Great for kids and useful when the group needs a seated AC break." },
+      planningProfile: { category: "filler_or_recovery", paidAccess: "none", appStatus: "recovery", strategy: "Use with kids or as part of a Seas pavilion reset." },
+      tags: ["show", "interactive", "kids", "recovery", "indoor", "ac"],
+    },
+
+    "epcot_awesome_planet": {
+      displayName: "Awesome Planet",
+      land: "world_nature",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 28,
+      waitProfile: { averageWait: 10, goodDealUnder: 10, normalRange: [10, 15], badValueOver: 20, usuallyHighAllDay: false, strategyNote: "Usually a short theater wait inside The Land pavilion. Better as a calm recovery option than a must-do attraction." },
+      planningProfile: { category: "filler_or_recovery", paidAccess: "none", appStatus: "recovery", strategy: "Use when already in The Land and the group needs AC and seats." },
+      tags: ["show", "recovery", "indoor", "ac"],
     },
 
     // ---------- World Showcase ----------
@@ -1145,6 +1220,103 @@ export const RIDE_METADATA = {
       },
       tags: ["headliner", "boat", "family", "plan-ahead", "indoor"],
     },
+
+    "epcot_gran_fiesta_tour": {
+      displayName: "Gran Fiesta Tour Starring The Three Caballeros",
+      land: "world_showcase",
+      pavilion: "mexico",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 46,
+      waitProfile: { averageWait: 12, goodDealUnder: 10, normalRange: [10, 20], badValueOver: 30, usuallyHighAllDay: false, strategyNote: "A low-wait indoor boat ride in the Mexico pavilion. Excellent as a quick World Showcase reset." },
+      planningProfile: { category: "filler_or_recovery", paidAccess: "none", appStatus: "recovery", strategy: "Use when near Mexico, especially in heat or rain. Not usually worth a long cross-park walk by itself." },
+      tags: ["boat", "family", "recovery", "indoor", "ac"],
+    },
+
+    "epcot_reflections_of_china": {
+      displayName: "Reflections of China",
+      land: "world_showcase",
+      pavilion: "china",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 24,
+      waitProfile: { averageWait: 12, goodDealUnder: 10, normalRange: [10, 20], badValueOver: 25, usuallyHighAllDay: false, strategyNote: "Indoor film option in the China pavilion. Good as a nearby rain or heat break." },
+      planningProfile: { category: "filler_or_recovery", paidAccess: "none", appStatus: "recovery", strategy: "Use if already nearby and the group needs indoor time." },
+      tags: ["show", "film", "recovery", "indoor", "ac"],
+    },
+
+    "epcot_the_american_adventure": {
+      displayName: "The American Adventure",
+      land: "world_showcase",
+      pavilion: "american_adventure",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 34,
+      waitProfile: { averageWait: 18, goodDealUnder: 15, normalRange: [15, 30], badValueOver: 35, usuallyHighAllDay: false, strategyNote: "A longer indoor theater show. Strong choice when the group needs a real seated reset in the middle of World Showcase." },
+      planningProfile: { category: "filler_or_recovery", paidAccess: "none", appStatus: "recovery", strategy: "Use as a longer AC break, especially during peak heat or rain." },
+      tags: ["show", "long-break", "recovery", "indoor", "ac"],
+    },
+
+    "epcot_beauty_and_the_beast_sing_along": {
+      displayName: "Beauty and the Beast Sing-Along",
+      land: "world_showcase",
+      pavilion: "france",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 30,
+      waitProfile: { averageWait: 12, goodDealUnder: 10, normalRange: [10, 20], badValueOver: 25, usuallyHighAllDay: false, strategyNote: "Indoor theater option in France. Works well as a recovery pairing near Remy." },
+      planningProfile: { category: "filler_or_recovery", paidAccess: "none", appStatus: "recovery", strategy: "Use near France when your group needs AC, especially before or after Remy." },
+      tags: ["show", "family", "recovery", "indoor", "ac"],
+    },
+
+    "epcot_impressions_de_france": {
+      displayName: "Impressions de France",
+      land: "world_showcase",
+      pavilion: "france",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 26,
+      waitProfile: { averageWait: 12, goodDealUnder: 10, normalRange: [10, 20], badValueOver: 25, usuallyHighAllDay: false, strategyNote: "Indoor theater option in France. Best as a calm reset when nearby." },
+      planningProfile: { category: "filler_or_recovery", paidAccess: "none", appStatus: "recovery", strategy: "Use as a seated indoor break in the France pavilion." },
+      tags: ["show", "film", "recovery", "indoor", "ac"],
+    },
+
+    "epcot_canada_far_and_wide": {
+      displayName: "Canada Far and Wide in Circle-Vision 360",
+      land: "world_showcase",
+      pavilion: "canada",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 24,
+      waitProfile: { averageWait: 12, goodDealUnder: 10, normalRange: [10, 20], badValueOver: 25, usuallyHighAllDay: false, strategyNote: "Indoor film option in Canada. Useful as a nearby weather escape, but not a major destination by itself." },
+      planningProfile: { category: "filler_or_recovery", paidAccess: "none", appStatus: "recovery", strategy: "Use when already near Canada and the group needs a short indoor break." },
+      tags: ["show", "film", "recovery", "indoor", "ac"],
+    },
+
   },
 
   // Future parks: hollywood_studios, animal_kingdom,
