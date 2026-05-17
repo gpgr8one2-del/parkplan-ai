@@ -3,12 +3,22 @@ const { getWeather } = require("../services/weatherService");
 
 const router = express.Router();
 
-router.get("/weather", async (_req, res) => {
+router.get("/weather", async (req, res) => {
+  const force = req.query.force === "true";
+
   try {
-    const data = await getWeather();
+    const data = await getWeather({ force });
     res.json(data);
   } catch (err) {
-    res.status(502).json({ error: "Could not fetch weather", detail: err.message });
+    req.log?.error(
+      { force, err: err.message },
+      "weather fetch failed"
+    );
+
+    res.status(502).json({
+      error: "Could not fetch weather",
+      detail: err.message,
+    });
   }
 });
 
