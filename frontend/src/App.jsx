@@ -157,6 +157,7 @@ function App() {
   const [currentLand, setCurrentLand] = useState("not_sure");
   const [completedRideIds, setCompletedRideIds] = useState([]);
   const [skippedRideIds, setSkippedRideIds] = useState([]);
+  const [reportedRideIssueIds, setReportedRideIssueIds] = useState([]);
   const [currentActivity, setCurrentActivity] = useState(null);
 
   const isRestoringParkState = useRef(false);
@@ -216,6 +217,7 @@ function App() {
     setCurrentLand(saved.currentLand || "not_sure");
     setCompletedRideIds(saved.completedRideIds || []);
     setSkippedRideIds(saved.skippedRideIds || []);
+    setReportedRideIssueIds(saved.reportedRideIssueIds || []);
     setCurrentActivity(saved.currentActivity || null);
 
     setTimeout(() => {
@@ -230,9 +232,17 @@ function App() {
       currentLand,
       completedRideIds,
       skippedRideIds,
+      reportedRideIssueIds,
       currentActivity,
     });
-  }, [activePark, currentLand, completedRideIds, skippedRideIds, currentActivity]);
+  }, [
+    activePark,
+    currentLand,
+    completedRideIds,
+    skippedRideIds,
+    reportedRideIssueIds,
+    currentActivity,
+  ]);
 
   const sortedRides = useMemo(() => {
     return [...(parkData?.rides || [])].sort(
@@ -245,13 +255,18 @@ function App() {
       ? String(currentActivity.rideId)
       : null;
 
-  const recommendationSkippedRideIds = useMemo(() => {
-    if (!activeRideId) return skippedRideIds;
+  const recommendationAvoidedRideIds = useMemo(() => {
+    const ids = new Set([
+      ...skippedRideIds.map(String),
+      ...reportedRideIssueIds.map(String),
+    ]);
 
-    return skippedRideIds.includes(activeRideId)
-      ? skippedRideIds
-      : [...skippedRideIds, activeRideId];
-  }, [skippedRideIds, activeRideId]);
+    if (activeRideId) {
+      ids.add(activeRideId);
+    }
+
+    return Array.from(ids);
+  }, [skippedRideIds, reportedRideIssueIds, activeRideId]);
 
   const recommendations = useMemo(() => {
     return getNextBestRides({
@@ -263,7 +278,7 @@ function App() {
         land: currentLand,
       },
       completedRideIds,
-      skippedRideIds: recommendationSkippedRideIds,
+      skippedRideIds: recommendationAvoidedRideIds,
     });
   }, [
     activePark,
@@ -306,6 +321,7 @@ function App() {
 
     setCompletedRideIds((prev) => prev.filter((existingId) => existingId !== id));
     setSkippedRideIds((prev) => prev.filter((existingId) => existingId !== id));
+    setReportedRideIssueIds((prev) => prev.filter((existingId) => existingId !== id));
   }
 
   function handleDone(rideId) {
@@ -314,6 +330,7 @@ function App() {
 
     setCompletedRideIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
     setSkippedRideIds((prev) => prev.filter((existingId) => existingId !== id));
+    setReportedRideIssueIds((prev) => prev.filter((existingId) => existingId !== id));
 
     if (activeRideId === id) {
       setCurrentActivity(null);
@@ -326,6 +343,21 @@ function App() {
 
     setSkippedRideIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
     setCompletedRideIds((prev) => prev.filter((existingId) => existingId !== id));
+    setReportedRideIssueIds((prev) => prev.filter((existingId) => existingId !== id));
+
+    if (activeRideId === id) {
+      setCurrentActivity(null);
+    }
+  }
+
+  function handleReportRideIssue(ride) {
+    if (!ride?.id) return;
+
+    const id = String(ride.id);
+
+    setReportedRideIssueIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    setCompletedRideIds((prev) => prev.filter((existingId) => existingId !== id));
+    setSkippedRideIds((prev) => prev.filter((existingId) => existingId !== id));
 
     if (activeRideId === id) {
       setCurrentActivity(null);
@@ -339,6 +371,7 @@ function App() {
   function handleResetRecs() {
     setCompletedRideIds([]);
     setSkippedRideIds([]);
+    setReportedRideIssueIds([]);
     setCurrentActivity(null);
   }
 
@@ -383,6 +416,17 @@ function App() {
         >
           Skip
         </button>
+
+        <button
+          onClick={() => handleReportRideIssue(ride)}
+          style={{
+            ...actionButton,
+            color: "#9a3412",
+            borderColor: "#fed7aa",
+          }}
+        >
+          Report Issue
+        </button>
       </div>
     );
   }
@@ -407,6 +451,7 @@ function App() {
         conversationHistory: nextChat.slice(-6),
         completedRideIds,
         skippedRideIds,
+        reportedRideIssueIds,
         currentLand,
         currentActivity,
       });
@@ -427,14 +472,19 @@ function App() {
 
   const landOptions = LAND_OPTIONS[activePark] || [{ value: "not_sure", label: "Not sure" }];
   const hiddenRideCount =
-    completedRideIds.length + skippedRideIds.length + (currentActivity ? 1 : 0);
+    completedRideIds.length +
+    skippedRideIds.length +
+    reportedRideIssueIds.length +
+    (currentActivity ? 1 : 0);
 
-  const hasAnyRecommendation =
+  const primaryRecommendation =
     recommendations.bestMove ||
     recommendations.backup ||
     recommendations.worthTheWalk ||
     recommendations.planAhead ||
     recommendations.waitOnThis;
+
+  const hasAnyRecommendation = Boolean(primaryRecommendation);
 
   return (
     <main style={page}>
@@ -670,6 +720,24 @@ function App() {
             </select>
           </div>
 
+          {reportedRideIssueIds.length > 0 && (
+            <div
+              style={{
+                padding: 12,
+                borderRadius: 16,
+                border: "1px solid #fed7aa",
+                background: "#fff7ed",
+                marginBottom: 12,
+              }}
+            >
+              <strong>Ride issue reported</strong>
+              <p style={{ margin: "6px 0 0", color: "#64748b" }}>
+                I’ll avoid recommending reported rides for now. Use reset to bring
+                them back once things look normal.
+              </p>
+            </div>
+          )}
+
           {hiddenRideCount > 0 && (
             <button
               onClick={handleResetRecs}
@@ -702,18 +770,18 @@ function App() {
                   BEST MOVE
                 </div>
                 <h4 style={{ margin: "4px 0", fontSize: 20 }}>
-                  {recommendations.bestMove.name}
+                  {primaryRecommendation.name}
                 </h4>
                 <p style={{ margin: 0, color: "#166534", fontWeight: 800 }}>
-                  {recommendations.bestMove.waitTime} min wait
+                  {primaryRecommendation.waitTime} min wait
                 </p>
                 <p style={{ margin: "8px 0 0", color: "#334155" }}>
-                  Why: {recommendations.bestMove.reason}.
+                  Why: {primaryRecommendation.reason || "best available option based on current conditions"}.
                 </p>
-                {renderRideActions(recommendations.bestMove)}
+                {renderRideActions(primaryRecommendation)}
               </div>
 
-              {recommendations.backup && (
+              {recommendations.backup && recommendations.backup.id !== primaryRecommendation?.id && (
                 <div
                   style={{
                     padding: 14,
@@ -738,7 +806,7 @@ function App() {
                 </div>
               )}
 
-              {recommendations.worthTheWalk && (
+              {recommendations.worthTheWalk && recommendations.worthTheWalk.id !== primaryRecommendation?.id && (
                 <div
                   style={{
                     padding: 14,
@@ -763,7 +831,7 @@ function App() {
                 </div>
               )}
 
-              {recommendations.planAhead && (
+              {recommendations.planAhead && recommendations.planAhead.id !== primaryRecommendation?.id && (
                 <div
                   style={{
                     padding: 14,
@@ -789,7 +857,7 @@ function App() {
                 </div>
               )}
 
-              {recommendations.waitOnThis && (
+              {recommendations.waitOnThis && recommendations.waitOnThis.id !== primaryRecommendation?.id && (
                 <div
                   style={{
                     padding: 14,
