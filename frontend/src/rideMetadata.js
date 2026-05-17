@@ -833,7 +833,7 @@ export const RIDE_METADATA = {
 
   // ============================================================
   // EPCOT (queue-times park ID: 5)
-  // Lands from current EPCOT guidemap: world_celebration, world_discovery, world_nature, world_showcase
+  // Lands from current EPCOT guidemap, with World Showcase split for better walking logic: world_celebration, world_discovery, world_nature, world_showcase_west, world_showcase_center, world_showcase_east
   // ============================================================
   epcot: {
     // ---------- World Discovery ----------
@@ -1153,10 +1153,10 @@ export const RIDE_METADATA = {
       tags: ["show", "recovery", "indoor", "ac"],
     },
 
-    // ---------- World Showcase ----------
+    // ---------- World Showcase West / Center / East ----------
     "10914": {
       displayName: "Remy's Ratatouille Adventure",
-      land: "world_showcase",
+      land: "world_showcase_west",
       pavilion: "france",
       minHeightInches: 0,
       environment: "indoor",
@@ -1193,7 +1193,7 @@ export const RIDE_METADATA = {
 
     "2679": {
       displayName: "Frozen Ever After",
-      land: "world_showcase",
+      land: "world_showcase_east",
       pavilion: "norway",
       minHeightInches: 0,
       environment: "indoor",
@@ -1223,7 +1223,7 @@ export const RIDE_METADATA = {
 
     "epcot_gran_fiesta_tour": {
       displayName: "Gran Fiesta Tour Starring The Three Caballeros",
-      land: "world_showcase",
+      land: "world_showcase_east",
       pavilion: "mexico",
       minHeightInches: 0,
       environment: "indoor",
@@ -1239,7 +1239,7 @@ export const RIDE_METADATA = {
 
     "epcot_reflections_of_china": {
       displayName: "Reflections of China",
-      land: "world_showcase",
+      land: "world_showcase_east",
       pavilion: "china",
       minHeightInches: 0,
       environment: "indoor",
@@ -1255,7 +1255,7 @@ export const RIDE_METADATA = {
 
     "epcot_the_american_adventure": {
       displayName: "The American Adventure",
-      land: "world_showcase",
+      land: "world_showcase_center",
       pavilion: "american_adventure",
       minHeightInches: 0,
       environment: "indoor",
@@ -1271,7 +1271,7 @@ export const RIDE_METADATA = {
 
     "epcot_beauty_and_the_beast_sing_along": {
       displayName: "Beauty and the Beast Sing-Along",
-      land: "world_showcase",
+      land: "world_showcase_west",
       pavilion: "france",
       minHeightInches: 0,
       environment: "indoor",
@@ -1287,7 +1287,7 @@ export const RIDE_METADATA = {
 
     "epcot_impressions_de_france": {
       displayName: "Impressions de France",
-      land: "world_showcase",
+      land: "world_showcase_west",
       pavilion: "france",
       minHeightInches: 0,
       environment: "indoor",
@@ -1303,7 +1303,7 @@ export const RIDE_METADATA = {
 
     "epcot_canada_far_and_wide": {
       displayName: "Canada Far and Wide in Circle-Vision 360",
-      land: "world_showcase",
+      land: "world_showcase_west",
       pavilion: "canada",
       minHeightInches: 0,
       environment: "indoor",
