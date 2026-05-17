@@ -9,29 +9,74 @@ function buildMockWeather() {
     location: "Orlando, FL",
     summary: "Weather unavailable",
     tempF: null,
+    feelsLikeF: null,
+    humidity: null,
     rainRisk: null,
     stormMode: false,
   };
 }
 
+function roundNullable(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) {
+    return null;
+  }
+
+  return Math.round(Number(value));
+}
+
+function estimateRainRisk(summary, json) {
+  const normalizedSummary = String(summary || "").toLowerCase();
+
+  const hasRain =
+    normalizedSummary.includes("rain") ||
+    normalizedSummary.includes("drizzle") ||
+    normalizedSummary.includes("shower");
+
+  const hasStorm =
+    normalizedSummary.includes("thunder") ||
+    normalizedSummary.includes("storm") ||
+    normalizedSummary.includes("lightning");
+
+  if (hasStorm) return 0.8;
+  if (hasRain) return 0.65;
+
+  if (json?.rain?.["1h"] || json?.rain?.["3h"]) return 0.6;
+  if (json?.snow?.["1h"] || json?.snow?.["3h"]) return 0.5;
+
+  return 0.2;
+}
+
 async function fetchLiveWeather() {
   const key = process.env.OPENWEATHER_API_KEY;
-  if (!key) return buildMockWeather();
+
+  if (!key) {
+    return buildMockWeather();
+  }
 
   const url = `https://api.openweathermap.org/data/2.5/weather?lat=${ORLANDO.lat}&lon=${ORLANDO.lon}&appid=${key}&units=imperial`;
+
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`OpenWeather ${res.status}`);
+
+  if (!res.ok) {
+    throw new Error(`OpenWeather ${res.status}`);
+  }
+
   const json = await res.json();
 
   const summary = json.weather?.[0]?.description || "Weather available";
-  const tempF = Math.round(json.main?.temp || 0);
-  const stormMode = /thunder|storm|heavy rain/i.test(summary);
+  const tempF = roundNullable(json.main?.temp);
+  const feelsLikeF = roundNullable(json.main?.feels_like);
+  const humidity = roundNullable(json.main?.humidity);
+  const rainRisk = estimateRainRisk(summary, json);
+  const stormMode = /thunder|storm|heavy rain|lightning/i.test(summary);
 
   return {
     location: "Orlando, FL",
     summary,
     tempF,
-    rainRisk: stormMode ? 0.8 : 0.2,
+    feelsLikeF,
+    humidity,
+    rainRisk,
     stormMode,
   };
 }
@@ -44,7 +89,19 @@ async function getWeather() {
     fallbackFn: buildMockWeather,
   });
 
-  logger.info({ source: result.source, ageMs: result.ageMs || 0 }, "weather returned");
+  logger.info(
+    {
+      source: result.source,
+      ageMs: result.ageMs || 0,
+      tempF: result.tempF,
+      feelsLikeF: result.feelsLikeF,
+      humidity: result.humidity,
+      rainRisk: result.rainRisk,
+      stormMode: result.stormMode,
+    },
+    "weather returned"
+  );
+
   return result;
 }
 
