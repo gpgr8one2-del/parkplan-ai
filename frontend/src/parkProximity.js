@@ -49,24 +49,29 @@ export const PARK_PROXIMITY = {
   },
 
   epcot: {
+    // EPCOT is not a simple hub-and-spoke park.
+    // World Celebration is the front/center connector.
+    // World Discovery and World Nature are opposite front-side neighborhoods.
+    // World Showcase is a big lagoon loop, so we keep it viable but avoid letting
+    // it hijack every recommendation unless the attraction value is strong.
     world_celebration: {
-      adjacent: ["world_discovery", "world_nature", "world_showcase"],
-      nearby: [],
+      adjacent: ["world_discovery", "world_nature"],
+      nearby: ["world_showcase"],
     },
 
     world_discovery: {
-      adjacent: ["world_celebration", "world_showcase"],
-      nearby: ["world_nature"],
+      adjacent: ["world_celebration"],
+      nearby: ["world_nature", "world_showcase"],
     },
 
     world_nature: {
-      adjacent: ["world_celebration", "world_showcase"],
-      nearby: ["world_discovery"],
+      adjacent: ["world_celebration"],
+      nearby: ["world_discovery", "world_showcase"],
     },
 
     world_showcase: {
-      adjacent: ["world_celebration", "world_discovery", "world_nature"],
-      nearby: [],
+      adjacent: ["world_celebration"],
+      nearby: ["world_discovery", "world_nature"],
     },
   },
 
