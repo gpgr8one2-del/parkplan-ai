@@ -8,6 +8,15 @@ function getWeatherSummary(weather) {
   return String(weather?.summary || "").toLowerCase();
 }
 
+function getEffectiveTempF(weather) {
+  return (
+    weather?.feelsLikeF ??
+    weather?.heatIndexF ??
+    weather?.tempF ??
+    null
+  );
+}
+
 function isCurrentlyRaining(weather) {
   const summary = getWeatherSummary(weather);
 
@@ -31,7 +40,7 @@ function isCurrentlyStorming(weather) {
 }
 
 export function getWeatherMode(weather) {
-  const tempF = weather?.tempF ?? null;
+  const effectiveTempF = getEffectiveTempF(weather);
   const rainRisk = weather?.rainRisk ?? 0;
   const stormMode = isCurrentlyStorming(weather);
   const currentlyRaining = isCurrentlyRaining(weather);
@@ -63,30 +72,30 @@ export function getWeatherMode(weather) {
     };
   }
 
-  if (tempF >= 98) {
+  if (effectiveTempF >= 98) {
     return {
       mode: "extreme_heat",
       label: "Extreme Heat Mode",
       message:
-        "It’s very hot out. A water stop, shade break, indoor attraction, or longer resort reset can help keep everyone feeling good.",
+        "It feels very hot out. A water stop, shade break, indoor attraction, or longer resort reset can help keep everyone feeling good.",
     };
   }
 
-  if (tempF >= 93) {
+  if (effectiveTempF >= 92) {
     return {
       mode: "hot",
       label: "Heat Smart Mode",
       message:
-        "It’s warm out. A quick water stop, shade break, or indoor attraction can help keep everyone feeling good.",
+        "It feels warm enough to plan smarter. A quick water stop, shade break, or indoor attraction can help keep everyone feeling good.",
     };
   }
 
-  if (tempF >= 88) {
+  if (effectiveTempF >= 87) {
     return {
       mode: "warm",
       label: "Hydration Reminder",
       message:
-        "It’s warm out. A quick water stop or indoor break between attractions can help keep the day smooth.",
+        "It feels warm out. A quick water stop or indoor break between attractions can help keep the day smooth.",
     };
   }
 
