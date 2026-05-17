@@ -112,6 +112,38 @@ function formatActivityStartTime(isoString) {
   }
 }
 
+function buildWeatherDisplay(weather) {
+  if (!weather) return "Loading weather...";
+
+  const parts = [];
+
+  if (weather.tempF != null) {
+    parts.push(`${weather.tempF}°F`);
+  }
+
+  if (
+    weather.feelsLikeF != null &&
+    weather.tempF != null &&
+    Math.abs(weather.feelsLikeF - weather.tempF) >= 2
+  ) {
+    parts.push(`feels like ${weather.feelsLikeF}°F`);
+  }
+
+  if (weather.humidity != null) {
+    parts.push(`${weather.humidity}% humidity`);
+  }
+
+  if (weather.summary) {
+    parts.push(weather.summary);
+  }
+
+  if (weather.stormMode) {
+    parts.push("Storm Mode active");
+  }
+
+  return parts.length ? parts.join(" · ") : "Loading weather...";
+}
+
 function App() {
   const [activePark, setActivePark] = useState("magic_kingdom");
   const [parkData, setParkData] = useState(null);
@@ -155,8 +187,8 @@ function App() {
     loadData(false);
   }, [loadData]);
 
-useEffect(() => {
-  const intervalId = setInterval(() => {
+  useEffect(() => {
+    const intervalId = setInterval(() => {
     if (document.visibilityState === "visible") {
       loadData(true);
     }
@@ -174,7 +206,9 @@ useEffect(() => {
     clearInterval(intervalId);
     document.removeEventListener("visibilitychange", handleVisibility);
   };
-}, [loadData]);  useEffect(() => {
+}, [loadData]);
+
+  useEffect(() => {
     isRestoringParkState.current = true;
 
     const saved = readStoredParkState(activePark);
@@ -507,9 +541,7 @@ useEffect(() => {
           </div>
 
           <p style={{ margin: "10px 0 0", color: "#334155" }}>
-            {weather?.tempF ? `${weather.tempF}°F · ` : ""}
-            {weather?.summary || "Loading weather..."}
-            {weather?.stormMode ? " · Storm Mode active" : ""}
+            {buildWeatherDisplay(weather)}
           </p>
 
           <DataStatusBanner source={weather?.source} />
