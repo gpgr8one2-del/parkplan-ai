@@ -189,24 +189,24 @@ function App() {
 
   useEffect(() => {
     const intervalId = setInterval(() => {
-    if (document.visibilityState === "visible") {
-      loadData(true);
-    }
-  }, AUTO_REFRESH_MS);
+      if (document.visibilityState === "visible") {
+        loadData(true);
+      }
+    }, AUTO_REFRESH_MS);
 
-  const handleVisibility = () => {
-    if (document.visibilityState === "visible") {
-      loadData(true);
-    }
-  };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        loadData(true);
+      }
+    };
 
-  document.addEventListener("visibilitychange", handleVisibility);
+    document.addEventListener("visibilitychange", handleVisibility);
 
-  return () => {
-    clearInterval(intervalId);
-    document.removeEventListener("visibilitychange", handleVisibility);
-  };
-}, [loadData]);
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [loadData]);
 
   useEffect(() => {
     isRestoringParkState.current = true;
@@ -428,6 +428,13 @@ function App() {
   const landOptions = LAND_OPTIONS[activePark] || [{ value: "not_sure", label: "Not sure" }];
   const hiddenRideCount =
     completedRideIds.length + skippedRideIds.length + (currentActivity ? 1 : 0);
+
+  const hasAnyRecommendation =
+    recommendations.bestMove ||
+    recommendations.backup ||
+    recommendations.worthTheWalk ||
+    recommendations.planAhead ||
+    recommendations.waitOnThis;
 
   return (
     <main style={page}>
@@ -681,7 +688,7 @@ function App() {
             </button>
           )}
 
-          {recommendations.bestMove ? (
+          {hasAnyRecommendation ? (
             <div style={{ display: "grid", gap: 10 }}>
               <div
                 style={{
@@ -808,7 +815,21 @@ function App() {
               )}
             </div>
           ) : (
-            <p style={{ color: "#64748b" }}>Loading recommendations...</p>
+            <div
+              style={{
+                padding: 14,
+                borderRadius: 18,
+                border: "1px solid #e2e8f0",
+                background: "#f8fafc",
+              }}
+            >
+              <strong>No strong recommendation right now.</strong>
+              <p style={{ margin: "6px 0 0", color: "#64748b" }}>
+                Refresh wait data, reset hidden rides, or use this as a good
+                moment for a nearby indoor break, snack, restroom stop, or
+                quick regroup.
+              </p>
+            </div>
           )}
         </section>
 
