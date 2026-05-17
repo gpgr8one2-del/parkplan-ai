@@ -155,27 +155,26 @@ function App() {
     loadData(false);
   }, [loadData]);
 
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        loadData(false);
-      }
-    }, AUTO_REFRESH_MS);
+useEffect(() => {
+  const intervalId = setInterval(() => {
+    if (document.visibilityState === "visible") {
+      loadData(true);
+    }
+  }, AUTO_REFRESH_MS);
 
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        loadData(false);
-      }
-    };
+  const handleVisibility = () => {
+    if (document.visibilityState === "visible") {
+      loadData(true);
+    }
+  };
 
-    document.addEventListener("visibilitychange", handleVisibility);
+  document.addEventListener("visibilitychange", handleVisibility);
 
-    return () => {
-      clearInterval(intervalId);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, [loadData]);
-
+  return () => {
+    clearInterval(intervalId);
+    document.removeEventListener("visibilitychange", handleVisibility);
+  };
+}, [loadData]);
   useEffect(() => {
     isRestoringParkState.current = true;
 
