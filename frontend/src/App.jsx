@@ -6,6 +6,7 @@ import { DataStatusBanner } from "./components/DataStatusBanner";
 import { getNextBestRides } from "./rideRecommendations";
 import { getWeatherMode, getRecoverySuggestions } from "./utils/weatherAdvice";
 import { formatCloseTimeLabel } from "./parkHours";
+import { getRideExperienceContent } from "./rideExperienceContent";
 
 const PARKS = [
   { id: "magic_kingdom", name: "Magic Kingdom" },
@@ -286,7 +287,7 @@ function App() {
     weather,
     currentLand,
     completedRideIds,
-    recommendationSkippedRideIds,
+    recommendationAvoidedRideIds,
   ]);
 
   const weatherMode = useMemo(() => {
@@ -304,6 +305,12 @@ function App() {
   const closeTimeLabel = useMemo(() => {
     return formatCloseTimeLabel(activePark);
   }, [activePark]);
+
+  const whileYouWaitContent = useMemo(() => {
+    if (currentActivity?.type !== "in_line") return null;
+
+    return getRideExperienceContent(activePark, currentActivity.rideName);
+  }, [activePark, currentActivity]);
 
   function handleInLine(ride) {
     if (!ride?.id) return;
@@ -428,6 +435,51 @@ function App() {
           Report Issue
         </button>
       </div>
+    );
+  }
+
+  function renderWhileYouWaitCard() {
+    const items = whileYouWaitContent?.whileWaiting || [];
+
+    if (!items.length) {
+      return null;
+    }
+
+    return (
+      <section
+        style={{
+          ...card,
+          border: "1px solid #bfdbfe",
+          background: "#eff6ff",
+        }}
+      >
+        <div style={{ fontSize: 12, color: "#1d4ed8", fontWeight: 900 }}>
+          WHILE YOU WAIT
+        </div>
+
+        <h3 style={{ margin: "5px 0 10px", fontSize: 20 }}>
+          Little details to make the line better
+        </h3>
+
+        <div style={{ display: "grid", gap: 10 }}>
+          {items.slice(0, 3).map((item, idx) => (
+            <div
+              key={`${item.title}-${idx}`}
+              style={{
+                padding: 12,
+                borderRadius: 16,
+                border: "1px solid #dbeafe",
+                background: "rgba(255,255,255,.75)",
+              }}
+            >
+              <strong>{item.title}</strong>
+              <p style={{ margin: "6px 0 0", color: "#334155" }}>
+                {item.text}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
     );
   }
 
@@ -681,6 +733,8 @@ function App() {
             </div>
           </section>
         )}
+
+        {renderWhileYouWaitCard()}
 
         <section style={card}>
           <h3 style={{ marginTop: 0 }}>Best Move Right Now</h3>
