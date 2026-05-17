@@ -81,7 +81,53 @@ async function fetchLiveWeather() {
   };
 }
 
-async function getWeather() {
+function withFreshMetadata(data, source = "live") {
+  return {
+    ...data,
+    source,
+    ageMs: 0,
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
+async function getWeather(options = {}) {
+  const { force = false } = options;
+
+  /**
+   * Manual/auto force refresh path:
+   * When the frontend sends force=true, bypass the backend cache and pull
+   * current OpenWeather data right now.
+   */
+  if (force) {
+    try {
+      const freshWeather = await fetchLiveWeather();
+      const result = withFreshMetadata(freshWeather, "live");
+
+      logger.info(
+        {
+          force: true,
+          source: result.source,
+          ageMs: result.ageMs,
+          tempF: result.tempF,
+          feelsLikeF: result.feelsLikeF,
+          humidity: result.humidity,
+          rainRisk: result.rainRisk,
+          stormMode: result.stormMode,
+        },
+        "weather force refreshed"
+      );
+
+      return result;
+    } catch (err) {
+      logger.warn(
+        { force: true, err: err.message },
+        "weather force refresh failed, falling back to resilient cache"
+      );
+
+      // If live force-refresh fails, fall back to cached/stale/mock instead of breaking the app.
+    }
+  }
+
   const result = await fetchWithResiliency("weather:orlando", fetchLiveWeather, {
     ttlMs: 10 * 60 * 1000,
     staleWhileRevalidate: true,
@@ -91,6 +137,7 @@ async function getWeather() {
 
   logger.info(
     {
+      force,
       source: result.source,
       ageMs: result.ageMs || 0,
       tempF: result.tempF,
