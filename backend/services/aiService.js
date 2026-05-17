@@ -10,8 +10,10 @@ You help guests make practical in-park decisions using the live context provided
 Rules:
 - Be concise, useful, and practical.
 - Act like a calm park expert, not a generic travel blogger.
-- Prioritize current park, current land, weather mode, live waits, and the recommendation cards.
+- Prioritize current park, current land, current activity, weather mode, live waits, and the recommendation cards.
 - Use the app's recommendation cards as the source of truth when available.
+- If the guest is currently in line for a ride, respect that choice. Do not tell them to skip it unless they say the ride is down, the line is unsafe, or they ask whether to leave.
+- If the guest is currently in line, focus on what to do after that ride, nearby backups, weather-safe options, and pacing.
 - Do not invent ride availability, wait times, Lightning Lane status, showtimes, parade times, or operating hours.
 - If live data may be stale or missing, say so briefly and advise refreshing or checking the official park app before walking far.
 - Do not recommend outdoor or mixed attractions during active storm/lightning conditions unless the context clearly says it is safe.
@@ -19,14 +21,124 @@ Rules:
 - Keep responses easy to act on while walking in a park.
 - Avoid long essays. Give the next best move and why.
 - If the user asks for a plan, give a simple ordered plan.
-- If the user asks whether to cross the park, weigh distance against wait value.
-- If the user has completed or skipped a ride, do not recommend it again unless they specifically ask about it.`;
+- If the user asks whether to cross the park, weigh distance against wait value, weather, and family energy.
+- If the user has completed or skipped a ride, do not recommend it again unless they specifically ask about it.
+
+Scope rules:
+- Only answer questions related to Disney, Universal, theme parks, park strategy, rides, shows, food, weather, resorts, transportation, accessibility, family pacing, current trip logistics, or using ParkPlan AI.
+- Do not help with unrelated topics such as schoolwork, coding, legal advice, medical advice, finance, stock trading, job applications, general research, personal writing, recipes, or anything outside park/trip support.
+- If the user asks something unrelated, politely redirect them back to park planning.
+- Keep redirects short and friendly.`;
+
+const OFF_TOPIC_REPLY =
+  "I’m here to help with your park day, ride strategy, weather, food breaks, resorts, transportation, and trip planning. Ask me what to do next in the park and I’ll help.";
 
 function summarizeHistory(conversationHistory = []) {
   return conversationHistory.slice(-6).map((msg) => ({
     role: msg.role,
     content: String(msg.content || "").slice(0, 500),
   }));
+}
+
+function isClearlyOffTopic(message = "") {
+  const text = String(message || "").toLowerCase().trim();
+
+  if (!text) return false;
+
+  const parkTerms = [
+    "park",
+    "ride",
+    "rides",
+    "line",
+    "queue",
+    "wait",
+    "wait time",
+    "disney",
+    "magic kingdom",
+    "epcot",
+    "hollywood studios",
+    "animal kingdom",
+    "universal",
+    "islands of adventure",
+    "epic universe",
+    "tron",
+    "tiana",
+    "big thunder",
+    "haunted mansion",
+    "pirates",
+    "space mountain",
+    "jungle cruise",
+    "peoplemover",
+    "carousel of progress",
+    "small world",
+    "peter pan",
+    "seven dwarfs",
+    "guardians",
+    "remy",
+    "frozen",
+    "soarin",
+    "test track",
+    "weather",
+    "rain",
+    "storm",
+    "lightning",
+    "heat",
+    "hydration",
+    "water",
+    "food",
+    "restaurant",
+    "quick service",
+    "snack",
+    "resort",
+    "hotel",
+    "transportation",
+    "bus",
+    "monorail",
+    "skyliner",
+    "boat",
+    "walking",
+    "stroller",
+    "wheelchair",
+    "scooter",
+    "mobility",
+    "family",
+    "kids",
+    "toddler",
+    "break",
+    "meltdown",
+    "nap",
+    "lightning lane",
+    "multipass",
+    "single pass",
+    "rope drop",
+    "fireworks",
+    "parade",
+    "show",
+    "castle",
+    "characters",
+    "what should we do",
+    "what should i do",
+    "what next",
+    "next",
+  ];
+
+  if (parkTerms.some((term) => text.includes(term))) {
+    return false;
+  }
+
+  const offTopicPatterns = [
+    /\b(stock|stocks|crypto|bitcoin|trading|portfolio|investment|investing)\b/,
+    /\b(homework|essay|paper|school assignment|research paper)\b/,
+    /\b(resume|cover letter|job application|interview prep)\b/,
+    /\b(code|coding|javascript|python|react|sql|debug this|write a program)\b/,
+    /\b(recipe|cook|bake|keto|ingredients|nutrition label)\b/,
+    /\b(legal|lawsuit|contract|attorney|court)\b/,
+    /\b(medical|diagnose|symptoms|medicine|doctor|rash|headache)\b/,
+    /\b(write me|rewrite|summarize this|translate|make a poem|song lyrics)\b/,
+    /\b(math|algebra|calculus|equation|solve this)\b/,
+  ];
+
+  return offTopicPatterns.some((pattern) => pattern.test(text));
 }
 
 function formatRideCard(label, ride) {
@@ -59,6 +171,14 @@ function buildWeatherContext(weather, weatherMode) {
   }
 
   const temp = weather?.tempF ? `${weather.tempF}°F` : "temp unavailable";
+  const feelsLike =
+    weather?.feelsLikeF !== undefined && weather?.feelsLikeF !== null
+      ? `feels like ${weather.feelsLikeF}°F`
+      : "feels-like unavailable";
+  const humidity =
+    weather?.humidity !== undefined && weather?.humidity !== null
+      ? `humidity: ${weather.humidity}%`
+      : "humidity unavailable";
   const summary = weather?.summary || "summary unavailable";
   const rainRisk =
     weather?.rainRisk !== undefined && weather?.rainRisk !== null
@@ -71,7 +191,7 @@ function buildWeatherContext(weather, weatherMode) {
   const message = weatherMode?.message || "";
 
   return [
-    `Weather: ${temp} · ${summary} · ${rainRisk} · ${stormMode}`,
+    `Weather: ${temp} · ${feelsLike} · ${humidity} · ${summary} · ${rainRisk} · ${stormMode}`,
     `Weather mode: ${label} (${mode})`,
     message ? `Weather advice: ${message}` : null,
   ]
@@ -79,10 +199,34 @@ function buildWeatherContext(weather, weatherMode) {
     .join("\n");
 }
 
+function buildCurrentActivityContext(currentActivity) {
+  if (!currentActivity) {
+    return "Current activity: none";
+  }
+
+  if (currentActivity.type === "in_line") {
+    const rideName = currentActivity.rideName || "unknown ride";
+    const land = currentActivity.land ? ` · land: ${currentActivity.land}` : "";
+    const postedWait =
+      currentActivity.postedWaitAtStart !== null &&
+      currentActivity.postedWaitAtStart !== undefined
+        ? ` · posted wait when joined: ${currentActivity.postedWaitAtStart} min`
+        : "";
+    const startedAt = currentActivity.startedAt
+      ? ` · started at: ${currentActivity.startedAt}`
+      : "";
+
+    return `Current activity: guest is in line for ${rideName}${land}${postedWait}${startedAt}`;
+  }
+
+  return `Current activity: ${currentActivity.type || "unknown"}`;
+}
+
 function buildDynamicContext(sessionData = {}) {
   const {
     activePark,
     currentLand,
+    currentActivity,
     weather,
     weatherMode,
     recommendations = {},
@@ -93,6 +237,7 @@ function buildDynamicContext(sessionData = {}) {
   return [
     `Active park: ${activePark || "unknown"}`,
     `Current land/location: ${currentLand || "unknown"}`,
+    buildCurrentActivityContext(currentActivity),
     buildWeatherContext(weather, weatherMode),
     "",
     "Current recommendation cards:",
@@ -115,11 +260,25 @@ async function getAIResponse(message, sessionData = {}) {
       messageLength: trimmedMessage.length,
       activePark: sessionData.activePark,
       currentLand: sessionData.currentLand,
+      currentActivityType: sessionData.currentActivity?.type,
+      currentActivityRide: sessionData.currentActivity?.rideName,
       weatherMode: sessionData.weatherMode?.mode,
       model: ANTHROPIC_MODEL,
     },
     "AI chat request"
   );
+
+  if (isClearlyOffTopic(trimmedMessage)) {
+    logger.info(
+      {
+        messageLength: trimmedMessage.length,
+        reason: "off_topic_guardrail",
+      },
+      "AI chat blocked off-topic request"
+    );
+
+    return OFF_TOPIC_REPLY;
+  }
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return "AI chat is not configured yet, but I can still help with park data, weather, and planning basics.";
