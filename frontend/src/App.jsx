@@ -35,7 +35,9 @@ const LAND_OPTIONS = {
     { value: "world_nature", label: "World Nature" },
     { value: "world_showcase", label: "World Showcase" },
   ],
-};const STORAGE_KEY = "parkplan.state";
+};
+
+const STORAGE_KEY = "parkplan.state";
 
 const AUTO_REFRESH_MS = 6 * 60 * 1000;
 
@@ -97,6 +99,19 @@ function writeStoredParkState(parkId, parkState) {
   }
 }
 
+function formatActivityStartTime(isoString) {
+  if (!isoString) return "";
+
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(isoString));
+  } catch {
+    return "";
+  }
+}
+
 function App() {
   const [activePark, setActivePark] = useState("magic_kingdom");
   const [parkData, setParkData] = useState(null);
@@ -110,6 +125,7 @@ function App() {
   const [currentLand, setCurrentLand] = useState("not_sure");
   const [completedRideIds, setCompletedRideIds] = useState([]);
   const [skippedRideIds, setSkippedRideIds] = useState([]);
+  const [currentActivity, setCurrentActivity] = useState(null);
 
   const isRestoringParkState = useRef(false);
 
@@ -168,6 +184,7 @@ function App() {
     setCurrentLand(saved.currentLand || "not_sure");
     setCompletedRideIds(saved.completedRideIds || []);
     setSkippedRideIds(saved.skippedRideIds || []);
+    setCurrentActivity(saved.currentActivity || null);
 
     setTimeout(() => {
       isRestoringParkState.current = false;
@@ -181,14 +198,28 @@ function App() {
       currentLand,
       completedRideIds,
       skippedRideIds,
+      currentActivity,
     });
-  }, [activePark, currentLand, completedRideIds, skippedRideIds]);
+  }, [activePark, currentLand, completedRideIds, skippedRideIds, currentActivity]);
 
   const sortedRides = useMemo(() => {
     return [...(parkData?.rides || [])].sort(
       (a, b) => (b.waitTime || 0) - (a.waitTime || 0)
     );
   }, [parkData]);
+
+  const activeRideId =
+    currentActivity?.type === "in_line" && currentActivity?.rideId != null
+      ? String(currentActivity.rideId)
+      : null;
+
+  const recommendationSkippedRideIds = useMemo(() => {
+    if (!activeRideId) return skippedRideIds;
+
+    return skippedRideIds.includes(activeRideId)
+      ? skippedRideIds
+      : [...skippedRideIds, activeRideId];
+  }, [skippedRideIds, activeRideId]);
 
   const recommendations = useMemo(() => {
     return getNextBestRides({
@@ -200,9 +231,16 @@ function App() {
         land: currentLand,
       },
       completedRideIds,
-      skippedRideIds,
+      skippedRideIds: recommendationSkippedRideIds,
     });
-  }, [activePark, parkData, weather, currentLand, completedRideIds, skippedRideIds]);
+  }, [
+    activePark,
+    parkData,
+    weather,
+    currentLand,
+    completedRideIds,
+    recommendationSkippedRideIds,
+  ]);
 
   const weatherMode = useMemo(() => {
     return getWeatherMode(weather);
@@ -220,12 +258,34 @@ function App() {
     return formatCloseTimeLabel(activePark);
   }, [activePark]);
 
+  function handleInLine(ride) {
+    if (!ride?.id) return;
+
+    const id = String(ride.id);
+
+    setCurrentActivity({
+      type: "in_line",
+      rideId: id,
+      rideName: ride.name || "Selected attraction",
+      land: ride.land || "",
+      startedAt: new Date().toISOString(),
+      postedWaitAtStart: ride.waitTime ?? null,
+    });
+
+    setCompletedRideIds((prev) => prev.filter((existingId) => existingId !== id));
+    setSkippedRideIds((prev) => prev.filter((existingId) => existingId !== id));
+  }
+
   function handleDone(rideId) {
     if (rideId == null) return;
     const id = String(rideId);
 
     setCompletedRideIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
     setSkippedRideIds((prev) => prev.filter((existingId) => existingId !== id));
+
+    if (activeRideId === id) {
+      setCurrentActivity(null);
+    }
   }
 
   function handleSkip(rideId) {
@@ -234,15 +294,26 @@ function App() {
 
     setSkippedRideIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
     setCompletedRideIds((prev) => prev.filter((existingId) => existingId !== id));
+
+    if (activeRideId === id) {
+      setCurrentActivity(null);
+    }
+  }
+
+  function handleCancelCurrentActivity() {
+    setCurrentActivity(null);
   }
 
   function handleResetRecs() {
     setCompletedRideIds([]);
     setSkippedRideIds([]);
+    setCurrentActivity(null);
   }
 
   function renderRideActions(ride) {
     if (!ride?.id) return null;
+
+    const isActiveRide = activeRideId === String(ride.id);
 
     return (
       <div
@@ -255,11 +326,25 @@ function App() {
         }}
       >
         <button
+          onClick={() => handleInLine(ride)}
+          disabled={isActiveRide}
+          style={{
+            ...actionButton,
+            color: isActiveRide ? "#94a3b8" : "#6d28d9",
+            borderColor: isActiveRide ? "#e2e8f0" : "#ddd6fe",
+            cursor: isActiveRide ? "not-allowed" : "pointer",
+          }}
+        >
+          {isActiveRide ? "In Line Now" : "In Line"}
+        </button>
+
+        <button
           onClick={() => handleDone(ride.id)}
           style={{ ...actionButton, color: "#166534" }}
         >
           ✓ Done
         </button>
+
         <button
           onClick={() => handleSkip(ride.id)}
           style={{ ...actionButton, color: "#64748b" }}
@@ -291,6 +376,7 @@ function App() {
         completedRideIds,
         skippedRideIds,
         currentLand,
+        currentActivity,
       });
 
       setChat([...nextChat, { role: "assistant", content: res.reply }]);
@@ -308,7 +394,8 @@ function App() {
   }
 
   const landOptions = LAND_OPTIONS[activePark] || [{ value: "not_sure", label: "Not sure" }];
-  const hiddenRideCount = completedRideIds.length + skippedRideIds.length;
+  const hiddenRideCount =
+    completedRideIds.length + skippedRideIds.length + (currentActivity ? 1 : 0);
 
   return (
     <main style={page}>
@@ -457,6 +544,54 @@ function App() {
                 ))}
               </div>
             )}
+          </section>
+        )}
+
+        {currentActivity?.type === "in_line" && (
+          <section
+            style={{
+              ...card,
+              border: "1px solid #c4b5fd",
+              background: "#f5f3ff",
+            }}
+          >
+            <div style={{ fontSize: 12, color: "#6d28d9", fontWeight: 900 }}>
+              CURRENTLY IN LINE
+            </div>
+
+            <h3 style={{ margin: "5px 0", fontSize: 20 }}>
+              {currentActivity.rideName}
+            </h3>
+
+            <p style={{ margin: "0 0 8px", color: "#475569" }}>
+              {currentActivity.postedWaitAtStart != null
+                ? `Posted wait when you joined: ${currentActivity.postedWaitAtStart} min`
+                : "You marked this as your current line."}
+              {currentActivity.startedAt
+                ? ` · Started around ${formatActivityStartTime(currentActivity.startedAt)}`
+                : ""}
+            </p>
+
+            <p style={{ margin: "0 0 12px", color: "#334155" }}>
+              I’ll stop recommending this against itself while you’re waiting. Mark it
+              done when you finish, or cancel if you leave the line.
+            </p>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                onClick={() => handleDone(currentActivity.rideId)}
+                style={{ ...button, color: "#166534", borderColor: "#bbf7d0" }}
+              >
+                ✓ Mark Done
+              </button>
+
+              <button
+                onClick={handleCancelCurrentActivity}
+                style={{ ...button, color: "#64748b" }}
+              >
+                Cancel
+              </button>
+            </div>
           </section>
         )}
 
