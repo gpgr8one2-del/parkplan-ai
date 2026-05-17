@@ -103,6 +103,17 @@ function isRainSensitiveRide(meta) {
   );
 }
 
+function isUnsupportedRecommendationVariant(ride) {
+  const name = String(ride?.name || "").toLowerCase();
+
+  return (
+    name.includes("single rider") ||
+    name.includes("single-rider") ||
+    name.includes("lightning lane") ||
+    name.includes("virtual queue")
+  );
+}
+
 function normalizeRideName(value) {
   return String(value || "")
     .toLowerCase()
@@ -115,6 +126,8 @@ function normalizeRideName(value) {
 function getMetaForRide(parkId, ride) {
   const direct = getRideMeta(parkId, ride?.id ?? ride?.name);
   if (direct) return direct;
+
+  if (isUnsupportedRecommendationVariant(ride)) return null;
 
   const rideName = normalizeRideName(ride?.name);
   if (!rideName) return null;
@@ -443,6 +456,7 @@ export function getNextBestRides({
     closed: 0,
     completed: 0,
     skipped: 0,
+    unsupportedVariant: 0,
     earlyEntryBlocked: 0,
     closingSoon: 0,
     eligible: 0,
@@ -453,6 +467,7 @@ export function getNextBestRides({
     closed: [],
     completed: [],
     skipped: [],
+    unsupportedVariant: [],
     earlyEntryBlocked: [],
     closingSoon: [],
     eligible: [],
@@ -464,6 +479,10 @@ export function getNextBestRides({
   }
 
   function getEligibilityFailure(ride, { ignoreCloseTime = false } = {}) {
+    if (isUnsupportedRecommendationVariant(ride)) {
+      return { reason: "unsupportedVariant", meta: null };
+    }
+
     const meta = getMetaForRide(parkId, ride);
 
     // Critical: if we did not intentionally add metadata, do not recommend it.
