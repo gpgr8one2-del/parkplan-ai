@@ -848,20 +848,20 @@ export const RIDE_METADATA = {
       intensity: 5,
       popularity: 98,
       waitProfile: {
-        averageWait: 70,
-        goodDealUnder: 50,
-        normalRange: [60, 90],
-        badValueOver: 100,
+        averageWait: 85,
+        goodDealUnder: 60,
+        normalRange: [75, 100],
+        badValueOver: 120,
         usuallyHighAllDay: true,
         strategyNote:
-          "One of EPCOT’s strongest headliners. Standby can stay high most of the day, so target Early Entry, late evening, or a rare posted-wait dip.",
+          "Now that standby absorbs the full demand, this can eat a huge chunk of the day. Best in the first 30 minutes or final 45 minutes, otherwise strongly consider Single Pass.",
       },
       planningProfile: {
         category: "plan_ahead_single_pass",
         paidAccess: "LLSP",
         appStatus: "plan_ahead",
         strategy:
-          "Consider Single Pass if this is a must-do, otherwise target Early Entry, late evening, or a rare posted-wait dip.",
+          "Buy Single Pass if this is a must-do, or target rope drop / the final 45 minutes of the night.",
       },
       tags: [
         "headliner",
@@ -884,20 +884,20 @@ export const RIDE_METADATA = {
       intensity: 4,
       popularity: 92,
       waitProfile: {
-        averageWait: 60,
-        goodDealUnder: 35,
-        normalRange: [50, 80],
-        badValueOver: 90,
+        averageWait: 70,
+        goodDealUnder: 50,
+        normalRange: [60, 85],
+        badValueOver: 95,
         usuallyHighAllDay: true,
         strategyNote:
-          "Outdoor high-speed section makes this weather-sensitive. If storms are building, ride before the weather hits or avoid crossing the park for it.",
+          "Major draw after its reimagining and heavily weather-sensitive. Best in the first hour, or later after weather/downtime clears. Do not cross the park for it during storms.",
       },
       planningProfile: {
         category: "plan_ahead_multi_pass",
         paidAccess: "LLMP",
         appStatus: "plan_ahead",
         strategy:
-          "Book Multi Pass if available, rope drop it if entering from the front, or watch for late-day dips after downtime clears.",
+          "Use Multi Pass if available, hit it in the first hour, or watch for late-day dips after downtime clears.",
       },
       tags: ["headliner", "thrill", "weather-sensitive", "plan-ahead"],
     },
@@ -913,20 +913,20 @@ export const RIDE_METADATA = {
       intensity: 4,
       popularity: 58,
       waitProfile: {
-        averageWait: 16,
+        averageWait: 25,
         goodDealUnder: 15,
-        normalRange: [15, 30],
-        badValueOver: 40,
+        normalRange: [20, 35],
+        badValueOver: 45,
         usuallyHighAllDay: false,
         strategyNote:
-          "Usually manageable, but not for motion-sensitive guests. Better as a nearby World Discovery move than a cross-park target.",
+          "Demand is split between Orange and Green. It rarely deserves a long wait unless nearby or Test Track downtime sends thrill-seekers over.",
       },
       planningProfile: {
-        category: "normal_standby",
+        category: "wait_for_drop",
         paidAccess: "LLMP",
-        appStatus: "go_now_if_low",
+        appStatus: "wait_for_drop",
         strategy:
-          "Use when nearby and the group is comfortable with intense motion. Skip for motion-sensitive guests.",
+          "Use when nearby and the group is comfortable with motion. If it spikes, wait for the crowd to shift.",
       },
       tags: ["thrill", "motion-sickness", "indoor", "ac"],
     },
@@ -943,20 +943,20 @@ export const RIDE_METADATA = {
       intensity: 1,
       popularity: 62,
       waitProfile: {
-        averageWait: 11,
-        goodDealUnder: 10,
-        normalRange: [10, 20],
-        badValueOver: 30,
+        averageWait: 20,
+        goodDealUnder: 15,
+        normalRange: [20, 30],
+        badValueOver: 40,
         usuallyHighAllDay: false,
         strategyNote:
-          "Often spikes when guests enter the park, then settles later. Great indoor reset near the front.",
+          "Morning entrance crowds inflate this wait because it is the first thing guests see. Walk past it early; it is usually better after 2 PM.",
       },
       planningProfile: {
-        category: "filler_or_recovery",
+        category: "wait_for_drop",
         paidAccess: "LLMP",
-        appStatus: "recovery",
+        appStatus: "wait_for_drop",
         strategy:
-          "Use as an easy indoor reset near the front of the park, especially in heat or rain.",
+          "Avoid the early entrance surge. Use it later as an easy indoor reset near the front.",
       },
       tags: ["classic", "slow-ride", "recovery", "indoor", "ac"],
     },
@@ -973,20 +973,20 @@ export const RIDE_METADATA = {
       intensity: 2,
       popularity: 78,
       waitProfile: {
-        averageWait: 24,
-        goodDealUnder: 20,
-        normalRange: [25, 45],
-        badValueOver: 60,
+        averageWait: 35,
+        goodDealUnder: 25,
+        normalRange: [30, 45],
+        badValueOver: 55,
         usuallyHighAllDay: false,
         strategyNote:
-          "Strong indoor family pick. If it is under 25 minutes, it is usually a good EPCOT move.",
+          "Midday lunch crowds can inflate waits inside The Land pavilion. Better before 10:30 AM or after 6 PM.",
       },
       planningProfile: {
-        category: "normal_standby",
+        category: "wait_for_drop",
         paidAccess: "LLMP",
-        appStatus: "go_now",
+        appStatus: "wait_for_drop",
         strategy:
-          "Good use of standby when low. Also useful as a heat or rain-friendly anchor in World Nature.",
+          "Strong indoor family pick when low. If it pushes toward 55–60 midday, come back later.",
       },
       tags: ["family", "indoor", "ac", "popular"],
     },
@@ -1002,20 +1002,20 @@ export const RIDE_METADATA = {
       intensity: 1,
       popularity: 50,
       waitProfile: {
-        averageWait: 10,
+        averageWait: 15,
         goodDealUnder: 10,
         normalRange: [10, 20],
-        badValueOver: 30,
+        badValueOver: 25,
         usuallyHighAllDay: false,
         strategyNote:
-          "Excellent low-stress indoor boat ride. Perfect when the group needs AC, seats, and a calmer reset.",
+          "High-capacity boat ride. It mostly spikes during lunch when guests flood The Land pavilion for food and AC.",
       },
       planningProfile: {
-        category: "filler_or_recovery",
+        category: "normal_standby",
         paidAccess: "LLMP",
-        appStatus: "recovery",
+        appStatus: "go_now_if_low",
         strategy:
-          "Use as a top recovery pick in World Nature, especially during heat or rain.",
+          "Great recovery ride when nearby. If it is over 25 minutes, check again after the lunch rush.",
       },
       tags: ["boat", "family", "recovery", "indoor", "ac"],
     },
@@ -1031,18 +1031,18 @@ export const RIDE_METADATA = {
       intensity: 1,
       popularity: 48,
       waitProfile: {
-        averageWait: 11,
+        averageWait: 10,
         goodDealUnder: 10,
-        normalRange: [10, 20],
-        badValueOver: 30,
+        normalRange: [10, 15],
+        badValueOver: 25,
         usuallyHighAllDay: false,
         strategyNote:
-          "Easy indoor family filler with aquarium time after the ride. Strong heat/rain recovery option.",
+          "Constant-loading omnimover with aquarium time after. If the line is high, explore the aquarium first and check again.",
       },
       planningProfile: {
-        category: "filler_or_recovery",
+        category: "normal_standby",
         paidAccess: "LLMP",
-        appStatus: "recovery",
+        appStatus: "go_now_if_low",
         strategy:
           "Use when nearby, especially with kids or when the group needs indoor time.",
       },
@@ -1060,20 +1060,20 @@ export const RIDE_METADATA = {
       intensity: 1,
       popularity: 42,
       waitProfile: {
-        averageWait: 11,
+        averageWait: 10,
         goodDealUnder: 10,
-        normalRange: [10, 20],
-        badValueOver: 30,
+        normalRange: [10, 15],
+        badValueOver: 20,
         usuallyHighAllDay: false,
         strategyNote:
-          "Usually a low-wait indoor filler. Good nearby move, not worth crossing the park for unless the group wants a reset.",
+          "Usually just a short walk through the queue. Not worth waiting long unless the group specifically wants Figment.",
       },
       planningProfile: {
-        category: "filler_or_recovery",
+        category: "normal_standby",
         paidAccess: "LLMP",
-        appStatus: "filler",
+        appStatus: "go_now_if_low",
         strategy:
-          "Use as a quick indoor filler in World Celebration near the Imagination pavilion.",
+          "Use as a quick indoor filler in World Celebration. Skip if it is oddly above 20 minutes.",
       },
       tags: ["dark-ride", "family", "filler", "indoor", "ac"],
     },
@@ -1133,8 +1133,22 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 40,
-      waitProfile: { averageWait: 15, goodDealUnder: 10, normalRange: [10, 20], badValueOver: 30, usuallyHighAllDay: false, strategyNote: "Interactive indoor show inside The Seas. Great for kids and useful when the group needs a seated AC break." },
-      planningProfile: { category: "filler_or_recovery", paidAccess: "none", appStatus: "recovery", strategy: "Use with kids or as part of a Seas pavilion reset." },
+      waitProfile: {
+        averageWait: 15,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 25,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "You are mostly waiting for the current show cycle to finish. LLMP is unnecessary here.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "LLMP_not_needed",
+        appStatus: "recovery",
+        strategy:
+          "Use with kids or as part of a Seas pavilion reset.",
+      },
       tags: ["show", "interactive", "kids", "recovery", "indoor", "ac"],
     },
 
@@ -1166,20 +1180,20 @@ export const RIDE_METADATA = {
       intensity: 2,
       popularity: 90,
       waitProfile: {
-        averageWait: 49,
-        goodDealUnder: 35,
-        normalRange: [45, 70],
-        badValueOver: 80,
+        averageWait: 65,
+        goodDealUnder: 45,
+        normalRange: [55, 80],
+        badValueOver: 90,
         usuallyHighAllDay: true,
         strategyNote:
-          "Deep World Showcase location makes walking cost matter. Best with Multi Pass, International Gateway advantage, or a late-evening dip.",
+          "International Gateway guests have a major rope-drop advantage. From the front entrance, use Multi Pass or check late evening.",
       },
       planningProfile: {
         category: "plan_ahead_multi_pass",
         paidAccess: "LLMP",
         appStatus: "plan_ahead",
         strategy:
-          "Book Multi Pass if available, use International Gateway advantage if entering from the EPCOT resorts side, or check late evening.",
+          "Book Multi Pass if available, use International Gateway advantage, or check during the final hour.",
       },
       tags: [
         "headliner",
@@ -1203,20 +1217,20 @@ export const RIDE_METADATA = {
       intensity: 2,
       popularity: 88,
       waitProfile: {
-        averageWait: 45,
-        goodDealUnder: 30,
-        normalRange: [40, 65],
-        badValueOver: 75,
+        averageWait: 60,
+        goodDealUnder: 40,
+        normalRange: [50, 70],
+        badValueOver: 85,
         usuallyHighAllDay: true,
         strategyNote:
-          "Slow-loading family headliner with steady demand. Best with Multi Pass, early routing if nearby, or late evening.",
+          "Slow-loading family headliner with massive appeal. Best early if already near Norway, with Multi Pass, or during the evening spectacular.",
       },
       planningProfile: {
         category: "plan_ahead_multi_pass",
         paidAccess: "LLMP",
         appStatus: "plan_ahead",
         strategy:
-          "Book Multi Pass if available, target it early if already moving into World Showcase, or check near park close.",
+          "Prime Tier 1 Multi Pass candidate. If standby is under 40 and you are nearby, it is a strong move.",
       },
       tags: ["headliner", "boat", "family", "plan-ahead", "indoor"],
     },
@@ -1232,8 +1246,22 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 46,
-      waitProfile: { averageWait: 12, goodDealUnder: 10, normalRange: [10, 20], badValueOver: 30, usuallyHighAllDay: false, strategyNote: "A low-wait indoor boat ride in the Mexico pavilion. Excellent as a quick World Showcase reset." },
-      planningProfile: { category: "filler_or_recovery", paidAccess: "none", appStatus: "recovery", strategy: "Use when near Mexico, especially in heat or rain. Not usually worth a long cross-park walk by itself." },
+      waitProfile: {
+        averageWait: 10,
+        goodDealUnder: 10,
+        normalRange: [10, 15],
+        badValueOver: 25,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Hidden inside the Mexico pavilion. Boats load quickly, but the queue can back up into the market during the afternoon.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "recovery",
+        strategy:
+          "Use when near Mexico, especially in heat or rain. Not worth a long cross-park walk by itself.",
+      },
       tags: ["boat", "family", "recovery", "indoor", "ac"],
     },
 
