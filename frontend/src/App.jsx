@@ -34,7 +34,9 @@ const LAND_OPTIONS = {
     { value: "world_celebration", label: "World Celebration" },
     { value: "world_discovery", label: "World Discovery" },
     { value: "world_nature", label: "World Nature" },
-    { value: "world_showcase", label: "World Showcase" },
+    { value: "world_showcase_west", label: "World Showcase West / France-UK-Canada" },
+    { value: "world_showcase_center", label: "World Showcase Center / America-Japan-Italy" },
+    { value: "world_showcase_east", label: "World Showcase East / Mexico-Norway-China" },
   ],
 };
 
