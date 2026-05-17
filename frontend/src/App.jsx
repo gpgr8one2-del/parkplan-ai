@@ -39,6 +39,18 @@ const LAND_OPTIONS = {
     { value: "world_showcase_center", label: "World Showcase Center / America-Japan-Italy" },
     { value: "world_showcase_east", label: "World Showcase East / Mexico-Norway-China" },
   ],
+
+  hollywood: [
+    { value: "not_sure", label: "Not sure" },
+    { value: "hollywood_boulevard", label: "Hollywood Boulevard" },
+    { value: "sunset_boulevard", label: "Sunset Boulevard" },
+    { value: "echo_lake", label: "Echo Lake" },
+    { value: "grand_avenue", label: "Grand Avenue" },
+    { value: "star_wars_galaxys_edge", label: "Star Wars: Galaxy’s Edge" },
+    { value: "toy_story_land", label: "Toy Story Land" },
+    { value: "animation_courtyard", label: "Animation Courtyard" },
+    { value: "commissary_lane", label: "Commissary Lane" },
+  ],
 };
 
 const STORAGE_KEY = "parkplan.state";
@@ -168,6 +180,17 @@ function formatLandLabel(parkId, land) {
       world_showcase_east: "World Showcase East / Mexico-Norway-China",
       world_showcase: "World Showcase",
       "American Adventure Pavilion": "American Adventure Pavilion",
+    },
+
+    hollywood: {
+      hollywood_boulevard: "Hollywood Boulevard",
+      sunset_boulevard: "Sunset Boulevard",
+      echo_lake: "Echo Lake",
+      grand_avenue: "Grand Avenue",
+      star_wars_galaxys_edge: "Star Wars: Galaxy’s Edge",
+      toy_story_land: "Toy Story Land",
+      animation_courtyard: "Animation Courtyard",
+      commissary_lane: "Commissary Lane",
     },
   };
 
