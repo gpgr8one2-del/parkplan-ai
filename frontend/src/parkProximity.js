@@ -4,50 +4,69 @@
  * Per-park land adjacency graph + location resolution. Kept separate from
  * rideMetadata.js because it's park-level layout data, not per-ride.
  *
- * Design: each park has its own adjacency map. Three proximity tiers:
- *   "same"     — guest is in this land
- *   "adjacent" — one walking hop away
- *   "far"      — two or more hops, or no path defined
+ * Design:
+ * - "same" = guest is in this land
+ * - "adjacent" = nearby / natural next-land flow
+ * - "nearby" = not directly adjacent, but still realistic without feeling like a huge commitment
+ * - "far" = meaningful walk / cross-park move
  *
- * Scaling note: when adding Universal/Epic Universe, just add a new park key
- * with its own adjacency map. No universal rules — each park's topology is
- * different (hub-and-spoke, circular, perimeter, etc.).
+ * Product philosophy:
+ * This should not behave like a strict map algorithm.
+ * It should behave like a family-friendly walking-friction model.
  */
 
 export const PARK_PROXIMITY = {
   magic_kingdom: {
     main_street: {
       adjacent: ["adventureland", "tomorrowland", "fantasyland"],
+      nearby: ["liberty_square"],
     },
+
     adventureland: {
       adjacent: ["main_street", "frontierland"],
+      nearby: ["liberty_square", "fantasyland"],
     },
+
     frontierland: {
       adjacent: ["adventureland", "liberty_square"],
+      nearby: ["fantasyland", "main_street"],
     },
+
     liberty_square: {
       adjacent: ["frontierland", "fantasyland"],
+      nearby: ["adventureland", "main_street"],
     },
+
     fantasyland: {
       adjacent: ["liberty_square", "tomorrowland", "main_street"],
+      nearby: ["frontierland", "adventureland"],
     },
+
     tomorrowland: {
       adjacent: ["fantasyland", "main_street"],
+      nearby: ["liberty_square"],
     },
   },
 
   epcot: {
     world_celebration: {
       adjacent: ["world_discovery", "world_nature", "world_showcase"],
+      nearby: [],
     },
+
     world_discovery: {
       adjacent: ["world_celebration", "world_showcase"],
+      nearby: ["world_nature"],
     },
+
     world_nature: {
       adjacent: ["world_celebration", "world_showcase"],
+      nearby: ["world_discovery"],
     },
+
     world_showcase: {
       adjacent: ["world_celebration", "world_discovery", "world_nature"],
+      nearby: [],
     },
   },
 
@@ -70,7 +89,7 @@ export const PARK_PROXIMITY = {
  *   { type: "last_seen", land, at }                  ← future
  *
  * Returns null when location is unknown or "not_sure" — scoring then skips
- * the proximity modifier entirely (treats all rides as equidistant).
+ * the proximity modifier entirely.
  */
 export function resolveCurrentLand(parkId, locationContext) {
   if (!locationContext || !locationContext.type) return null;
@@ -101,10 +120,11 @@ export function resolveCurrentLand(parkId, locationContext) {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Returns "same" | "adjacent" | "far".
+ * Returns "same" | "adjacent" | "nearby" | "far".
+ *
  * If either land is unknown or the park has no proximity map, returns "far"
- * by default — but callers should usually skip the modifier when current
- * land is null.
+ * by default — but callers should usually skip the modifier when currentLand
+ * is null.
  */
 export function getLandDistance(parkId, fromLand, toLand) {
   if (!fromLand || !toLand) return "far";
@@ -117,16 +137,19 @@ export function getLandDistance(parkId, fromLand, toLand) {
   if (!fromEntry) return "far";
 
   if (fromEntry.adjacent?.includes(toLand)) return "adjacent";
+  if (fromEntry.nearby?.includes(toLand)) return "nearby";
+
   return "far";
 }
 
 /**
  * Score modifier for walking distance.
  *
- * Updated tuning:
- *   - same land gets a stronger bonus so nearby rides feel prioritized
- *   - adjacent lands stay viable because parks naturally flow between areas
- *   - far lands get a larger penalty so cross-park options don't hijack backups
+ * Tuning:
+ * - Same land gets a meaningful boost.
+ * - Adjacent lands are still encouraged because families naturally flow between lands.
+ * - Nearby lands are allowed without feeling like a big cross-park commitment.
+ * - Far lands are penalized, but not murdered. A great wait can still be worth it.
  *
  * If currentLand is null, returns 0 for every ride — no proximity influence.
  */
@@ -137,11 +160,13 @@ export function getProximityModifier(meta, currentLand, parkId) {
 
   switch (distance) {
     case "same":
-      return 8;
+      return 10;
     case "adjacent":
-      return -2;
+      return 3;
+    case "nearby":
+      return -4;
     case "far":
-      return -16;
+      return -10;
     default:
       return 0;
   }
