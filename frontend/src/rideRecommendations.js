@@ -58,6 +58,15 @@ function getWeatherSummary(weather) {
   return String(weather?.summary || "").toLowerCase();
 }
 
+function getEffectiveTempF(weather) {
+  return (
+    weather?.feelsLikeF ??
+    weather?.heatIndexF ??
+    weather?.tempF ??
+    null
+  );
+}
+
 function isCurrentlyRaining(weather) {
   const summary = getWeatherSummary(weather);
 
@@ -135,7 +144,8 @@ function getTrendModifier(rideName) {
 function getContextModifier(meta, weather, mode = "default") {
   if (!meta || !weather) return 0;
 
-  const { tempF, rainRisk = 0 } = weather;
+  const effectiveTempF = getEffectiveTempF(weather);
+  const { rainRisk = 0 } = weather;
   const stormActive = isCurrentlyStorming(weather);
   const rainActive = isRainActive(weather);
   let mod = 0;
@@ -161,19 +171,26 @@ function getContextModifier(meta, weather, mode = "default") {
     if (meta.closesInRain) mod -= 3;
   }
 
-  if (tempF != null) {
-    if (tempF >= 95) {
-      if (meta.hasAC) mod += 10;
+  if (effectiveTempF != null) {
+    if (effectiveTempF >= 98) {
+      if (meta.hasAC) mod += 14;
       if (meta.getsWet && !rainActive && !stormActive) mod += 8;
-      if (meta.environment === "indoor") mod += 4;
-      if (meta.environment === "outdoor" && !meta.getsWet) mod -= 4;
-    } else if (tempF >= 88) {
+      if (meta.environment === "indoor") mod += 8;
+      if (meta.environment === "outdoor" && !meta.getsWet) mod -= 12;
+      if (meta.environment === "mixed" && !meta.getsWet) mod -= 6;
+    } else if (effectiveTempF >= 92) {
+      if (meta.hasAC) mod += 10;
+      if (meta.getsWet && !rainActive && !stormActive) mod += 6;
+      if (meta.environment === "indoor") mod += 5;
+      if (meta.environment === "outdoor" && !meta.getsWet) mod -= 7;
+    } else if (effectiveTempF >= 87) {
       if (meta.hasAC) mod += 6;
-      if (meta.getsWet && !rainActive && !stormActive) mod += 5;
-      if (meta.environment === "indoor") mod += 2;
-    } else if (tempF >= 82) {
-      if (meta.hasAC) mod += 3;
       if (meta.getsWet && !rainActive && !stormActive) mod += 3;
+      if (meta.environment === "indoor") mod += 3;
+      if (meta.environment === "outdoor" && !meta.getsWet) mod -= 3;
+    } else if (effectiveTempF >= 82) {
+      if (meta.hasAC) mod += 3;
+      if (meta.getsWet && !rainActive && !stormActive) mod += 2;
     }
   }
 
@@ -183,7 +200,7 @@ function getContextModifier(meta, weather, mode = "default") {
 function getWetRideTimingModifier(meta, weather, waitValueStatus) {
   if (!meta?.getsWet) return 0;
 
-  const tempF = weather?.tempF ?? null;
+  const effectiveTempF = getEffectiveTempF(weather);
   const { hour } = getOrlandoTimeParts();
   const stormActive = isCurrentlyStorming(weather);
   const rainActive = isRainActive(weather);
@@ -206,14 +223,16 @@ function getWetRideTimingModifier(meta, weather, waitValueStatus) {
     mod -= 12;
   }
 
-  if (tempF != null) {
-    if (tempF >= 92) {
+  if (effectiveTempF != null) {
+    if (effectiveTempF >= 98) {
+      mod += 12;
+    } else if (effectiveTempF >= 92) {
       mod += 10;
-    } else if (tempF >= 86) {
+    } else if (effectiveTempF >= 87) {
       mod += 5;
-    } else if (tempF <= 75) {
+    } else if (effectiveTempF <= 75) {
       mod -= 10;
-    } else if (tempF <= 80) {
+    } else if (effectiveTempF <= 80) {
       mod -= 5;
     }
   }
