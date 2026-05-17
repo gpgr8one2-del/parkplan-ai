@@ -52,26 +52,47 @@ export const PARK_PROXIMITY = {
     // EPCOT is not a simple hub-and-spoke park.
     // World Celebration is the front/center connector.
     // World Discovery and World Nature are opposite front-side neighborhoods.
-    // World Showcase is a big lagoon loop, so we keep it viable but avoid letting
-    // it hijack every recommendation unless the attraction value is strong.
+    // World Showcase is a huge lagoon loop, so it is split into west/center/east.
+    //
+    // West: Canada / United Kingdom / France / International Gateway / Remy
+    // Center: Morocco / Japan / American Adventure / Italy / Germany
+    // East: China / Norway / Mexico / Frozen / Gran Fiesta
+    //
+    // Important product rule:
+    // From France/Remy, World Nature is a much more realistic move than
+    // Test Track/Guardians. From Mexico/Norway, World Discovery is more realistic.
     world_celebration: {
       adjacent: ["world_discovery", "world_nature"],
-      nearby: ["world_showcase"],
+      nearby: [
+        "world_showcase_west",
+        "world_showcase_center",
+        "world_showcase_east",
+      ],
     },
 
     world_discovery: {
-      adjacent: ["world_celebration"],
-      nearby: ["world_nature", "world_showcase"],
+      adjacent: ["world_celebration", "world_showcase_east"],
+      nearby: ["world_nature", "world_showcase_center"],
     },
 
     world_nature: {
-      adjacent: ["world_celebration"],
-      nearby: ["world_discovery", "world_showcase"],
+      adjacent: ["world_celebration", "world_showcase_west"],
+      nearby: ["world_discovery", "world_showcase_center"],
     },
 
-    world_showcase: {
-      adjacent: ["world_celebration"],
-      nearby: ["world_discovery", "world_nature"],
+    world_showcase_west: {
+      adjacent: ["world_nature", "world_showcase_center"],
+      nearby: ["world_celebration"],
+    },
+
+    world_showcase_center: {
+      adjacent: ["world_showcase_west", "world_showcase_east"],
+      nearby: ["world_celebration", "world_nature", "world_discovery"],
+    },
+
+    world_showcase_east: {
+      adjacent: ["world_discovery", "world_showcase_center"],
+      nearby: ["world_celebration"],
     },
   },
 
