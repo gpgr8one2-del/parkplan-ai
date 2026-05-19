@@ -1345,9 +1345,514 @@ export const RIDE_METADATA = {
       tags: ["show", "film", "recovery", "indoor", "ac"],
     },
 
+
   },
 
-  // Future parks: hollywood_studios, animal_kingdom,
+  // ============================================================
+  // Hollywood Studios (queue-times park ID: 7)
+  // V1 lands: hollywood_boulevard, sunset_boulevard, echo_lake,
+  // grand_avenue, star_wars_galaxys_edge, toy_story_land,
+  // animation_courtyard, commissary_lane
+  //
+  // Keys use stable attraction names instead of guessed Queue-Times IDs.
+  // rideRecommendations.js can still match by displayName/name fallback.
+  // ============================================================
+  hollywood: {
+    "Mickey & Minnie's Runaway Railway": {
+      displayName: "Mickey & Minnie's Runaway Railway",
+      land: "hollywood_boulevard",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 2,
+      popularity: 82,
+      waitProfile: {
+        averageWait: 45,
+        goodDealUnder: 30,
+        normalRange: [40, 60],
+        badValueOver: 75,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "High-demand family headliner near the front of the park. Best early, late, or when the wait dips under 30.",
+      },
+      planningProfile: {
+        category: "wait_for_drop",
+        paidAccess: "LLMP",
+        appStatus: "wait_for_drop",
+        strategy:
+          "Strong family pick when the wait is low. If it is high midday, check again later.",
+      },
+      tags: ["family", "dark-ride", "headliner", "indoor", "ac"],
+    },
+
+    "The Twilight Zone Tower of Terror": {
+      displayName: "The Twilight Zone Tower of Terror",
+      land: "sunset_boulevard",
+      minHeightInches: 40,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 5,
+      popularity: 86,
+      waitProfile: {
+        averageWait: 55,
+        goodDealUnder: 35,
+        normalRange: [45, 70],
+        badValueOver: 85,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Major thrill ride with strong demand. Good when under 35, but not worth dragging the group across the park unless the value is strong.",
+      },
+      planningProfile: {
+        category: "wait_for_drop",
+        paidAccess: "LLMP",
+        appStatus: "wait_for_drop",
+        strategy:
+          "Use Multi Pass if it is a must-do, or watch for dips during shows and late evening.",
+      },
+      tags: ["thrill", "drop", "classic", "indoor", "wait-for-drop"],
+    },
+
+    "Rock 'n' Roller Coaster Starring Aerosmith": {
+      displayName: "Rock 'n' Roller Coaster Starring Aerosmith",
+      land: "sunset_boulevard",
+      minHeightInches: 48,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 5,
+      popularity: 84,
+      waitProfile: {
+        averageWait: 50,
+        goodDealUnder: 30,
+        normalRange: [40, 65],
+        badValueOver: 80,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "High-intensity indoor coaster. Great value if it drops under 30, but skip if the group is motion-sensitive or thrill-averse.",
+      },
+      planningProfile: {
+        category: "wait_for_drop",
+        paidAccess: "LLMP",
+        appStatus: "wait_for_drop",
+        strategy:
+          "Use when nearby and low, or pair with Tower of Terror if the group wants thrill rides.",
+      },
+      tags: ["coaster", "thrill", "inversion", "indoor", "ac"],
+    },
+
+    "Beauty and the Beast Live on Stage": {
+      displayName: "Beauty and the Beast Live on Stage",
+      land: "sunset_boulevard",
+      minHeightInches: 0,
+      environment: "covered",
+      hasAC: false,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 45,
+      waitProfile: {
+        averageWait: 20,
+        goodDealUnder: 15,
+        normalRange: [15, 30],
+        badValueOver: 35,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Show-based attraction. Time it around showtimes rather than waiting around too long.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "filler",
+        strategy:
+          "Good seated break on Sunset Boulevard when showtime lines up.",
+      },
+      tags: ["show", "family", "seated", "filler"],
+    },
+
+    "Fantasmic!": {
+      displayName: "Fantasmic!",
+      land: "sunset_boulevard",
+      minHeightInches: 0,
+      environment: "outdoor",
+      hasAC: false,
+      getsWet: false,
+      closesInRain: true,
+      intensity: 2,
+      popularity: 90,
+      waitProfile: {
+        averageWait: 45,
+        goodDealUnder: 30,
+        normalRange: [35, 60],
+        badValueOver: 75,
+        usuallyHighAllDay: true,
+        strategyNote:
+          "Nighttime show. This should be planned around showtime and weather, not treated like a normal ride wait.",
+      },
+      planningProfile: {
+        category: "plan_ahead_standby_only",
+        paidAccess: "none",
+        appStatus: "plan_ahead",
+        strategy:
+          "Plan around showtime. Arrive earlier on busy nights or if your group wants better seats.",
+      },
+      tags: ["show", "nighttime", "outdoor", "plan-ahead"],
+    },
+
+    "Star Tours – The Adventures Continue": {
+      displayName: "Star Tours – The Adventures Continue",
+      land: "echo_lake",
+      minHeightInches: 40,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 3,
+      popularity: 58,
+      waitProfile: {
+        averageWait: 20,
+        goodDealUnder: 15,
+        normalRange: [15, 30],
+        badValueOver: 40,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Usually manageable and high-capacity. Good nearby move, but not worth crossing the whole park for unless your group loves Star Wars.",
+      },
+      planningProfile: {
+        category: "normal_standby",
+        paidAccess: "LLMP",
+        appStatus: "go_now_if_low",
+        strategy:
+          "Use when nearby, especially as an indoor reset with moderate thrill.",
+      },
+      tags: ["star-wars", "simulator", "indoor", "ac", "motion-sickness"],
+    },
+
+    "For the First Time in Forever: A Frozen Sing-Along Celebration": {
+      displayName: "For the First Time in Forever: A Frozen Sing-Along Celebration",
+      land: "echo_lake",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 48,
+      waitProfile: {
+        averageWait: 20,
+        goodDealUnder: 15,
+        normalRange: [15, 30],
+        badValueOver: 35,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Indoor theater show. Strong AC recovery option when the showtime lines up.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "recovery",
+        strategy:
+          "Use as a seated AC break, especially with kids or during heat/rain.",
+      },
+      tags: ["show", "family", "indoor", "ac", "recovery"],
+    },
+
+    "Indiana Jones Epic Stunt Spectacular": {
+      displayName: "Indiana Jones Epic Stunt Spectacular",
+      land: "echo_lake",
+      minHeightInches: 0,
+      environment: "covered",
+      hasAC: false,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 2,
+      popularity: 50,
+      waitProfile: {
+        averageWait: 25,
+        goodDealUnder: 15,
+        normalRange: [20, 35],
+        badValueOver: 45,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Large stunt show. Better to time around the next show than wait a long time in place.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "filler",
+        strategy:
+          "Good seated break when showtime is close, but not a true AC reset.",
+      },
+      tags: ["show", "stunts", "covered", "seated", "filler"],
+    },
+
+    "Muppet*Vision 3D": {
+      displayName: "Muppet*Vision 3D",
+      land: "grand_avenue",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 38,
+      waitProfile: {
+        averageWait: 12,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 25,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "High-capacity indoor theater. Usually just waiting for the next show cycle.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "recovery",
+        strategy:
+          "Excellent low-stress AC break in Grand Avenue.",
+      },
+      tags: ["show", "family", "indoor", "ac", "recovery"],
+    },
+
+    "Star Wars: Rise of the Resistance": {
+      displayName: "Star Wars: Rise of the Resistance",
+      land: "star_wars_galaxys_edge",
+      minHeightInches: 40,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 4,
+      popularity: 99,
+      waitProfile: {
+        averageWait: 85,
+        goodDealUnder: 60,
+        normalRange: [75, 110],
+        badValueOver: 130,
+        usuallyHighAllDay: true,
+        strategyNote:
+          "Hollywood Studios' biggest headliner. A true plan-ahead ride. Under 60 is usually a strong opportunity.",
+      },
+      planningProfile: {
+        category: "plan_ahead_single_pass",
+        paidAccess: "LLSP",
+        appStatus: "plan_ahead",
+        strategy:
+          "Buy Single Pass if this is a must-do, rope drop carefully, or watch for late-day dips after downtime clears.",
+      },
+      tags: ["headliner", "star-wars", "trackless", "thrill", "single-pass", "plan-ahead", "indoor"],
+    },
+
+    "Millennium Falcon: Smugglers Run": {
+      displayName: "Millennium Falcon: Smugglers Run",
+      land: "star_wars_galaxys_edge",
+      minHeightInches: 38,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 3,
+      popularity: 74,
+      waitProfile: {
+        averageWait: 40,
+        goodDealUnder: 25,
+        normalRange: [35, 55],
+        badValueOver: 70,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Interactive simulator in Galaxy's Edge. Good if you are already nearby and the wait is under 25–30.",
+      },
+      planningProfile: {
+        category: "wait_for_drop",
+        paidAccess: "LLMP",
+        appStatus: "wait_for_drop",
+        strategy:
+          "Ride when nearby and low. Avoid crossing the park for it unless the wait is excellent.",
+      },
+      tags: ["star-wars", "simulator", "interactive", "indoor", "motion-sickness"],
+    },
+
+    "Slinky Dog Dash": {
+      displayName: "Slinky Dog Dash",
+      land: "toy_story_land",
+      minHeightInches: 38,
+      environment: "outdoor",
+      hasAC: false,
+      getsWet: false,
+      closesInRain: true,
+      intensity: 3,
+      popularity: 96,
+      waitProfile: {
+        averageWait: 75,
+        goodDealUnder: 50,
+        normalRange: [65, 95],
+        badValueOver: 110,
+        usuallyHighAllDay: true,
+        strategyNote:
+          "Outdoor family coaster with brutal demand and exposed heat. It needs a plan, especially in summer weather.",
+      },
+      planningProfile: {
+        category: "plan_ahead_multi_pass",
+        paidAccess: "LLMP",
+        appStatus: "plan_ahead",
+        strategy:
+          "Use Multi Pass, rope drop, or late evening. Avoid long exposed waits in heat or storms.",
+      },
+      tags: ["headliner", "coaster", "family", "outdoor", "weather-sensitive", "plan-ahead"],
+    },
+
+    "Toy Story Mania!": {
+      displayName: "Toy Story Mania!",
+      land: "toy_story_land",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 2,
+      popularity: 78,
+      waitProfile: {
+        averageWait: 40,
+        goodDealUnder: 25,
+        normalRange: [35, 55],
+        badValueOver: 70,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Strong family ride and good Toy Story Land recovery option because the attraction itself is indoors.",
+      },
+      planningProfile: {
+        category: "wait_for_drop",
+        paidAccess: "LLMP",
+        appStatus: "wait_for_drop",
+        strategy:
+          "Good family pick when under 25–30, especially if you are already in Toy Story Land.",
+      },
+      tags: ["interactive", "family", "indoor", "ac", "toy-story"],
+    },
+
+    "Alien Swirling Saucers": {
+      displayName: "Alien Swirling Saucers",
+      land: "toy_story_land",
+      minHeightInches: 32,
+      environment: "outdoor",
+      hasAC: false,
+      getsWet: false,
+      closesInRain: true,
+      intensity: 2,
+      popularity: 50,
+      waitProfile: {
+        averageWait: 25,
+        goodDealUnder: 15,
+        normalRange: [20, 35],
+        badValueOver: 45,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Short outdoor spinner. Not worth a long wait, especially in heat.",
+      },
+      planningProfile: {
+        category: "normal_standby",
+        paidAccess: "LLMP",
+        appStatus: "go_now_if_low",
+        strategy:
+          "Use as nearby Toy Story Land filler only when the wait is low.",
+      },
+      tags: ["spinner", "family", "outdoor", "weather-sensitive", "filler"],
+    },
+
+    "Walt Disney Presents": {
+      displayName: "Walt Disney Presents",
+      land: "animation_courtyard",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 25,
+      waitProfile: {
+        averageWait: 10,
+        goodDealUnder: 10,
+        normalRange: [5, 15],
+        badValueOver: 20,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Low-pressure indoor walkthrough/exhibit. Useful as a calm AC reset, not a major destination.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "recovery",
+        strategy:
+          "Use when nearby and the group needs quiet indoor time.",
+      },
+      tags: ["walkthrough", "history", "recovery", "indoor", "ac"],
+    },
+
+    "Vacation Fun - An Original Animated Short with Mickey & Minnie": {
+      displayName: "Vacation Fun - An Original Animated Short with Mickey & Minnie",
+      land: "animation_courtyard",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 28,
+      waitProfile: {
+        averageWait: 10,
+        goodDealUnder: 10,
+        normalRange: [5, 15],
+        badValueOver: 20,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Short indoor theater option. Good for a quick AC reset when nearby.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "recovery",
+        strategy:
+          "Use as a quick indoor break, especially during heat or rain.",
+      },
+      tags: ["show", "family", "recovery", "indoor", "ac"],
+    },
+
+    "Disney Junior Play and Dance!": {
+      displayName: "Disney Junior Play and Dance!",
+      land: "animation_courtyard",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 30,
+      waitProfile: {
+        averageWait: 15,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 30,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Best for families with young kids. Useful indoor reset if the target audience fits.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "recovery",
+        strategy:
+          "Use with preschool-age kids or when younger guests need a safe indoor reset.",
+      },
+      tags: ["show", "toddlers", "kids", "indoor", "ac", "recovery"],
+    },
+  },
+
+  // Future parks: animal_kingdom,
   // universal_studios, islands_of_adventure, epic_universe
 };
 /* -------------------------------------------------------------------------- */
