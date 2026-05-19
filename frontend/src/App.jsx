@@ -514,7 +514,7 @@ function App() {
         </h3>
 
         <div style={{ display: "grid", gap: 10 }}>
-          {items.slice(0, 3).map((item, idx) => (
+          {items.map((item, idx) => (
             <div
               key={`${item.title}-${idx}`}
               style={{
