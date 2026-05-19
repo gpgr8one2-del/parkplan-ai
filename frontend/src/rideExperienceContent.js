@@ -750,8 +750,223 @@ export const RIDE_EXPERIENCE_CONTENT = {
         },
       ],
     },
-  }
-,
+  },
+  hollywood: {
+    // ---------- Hollywood Boulevard ----------
+    "Mickey & Minnie's Runaway Railway": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "This is the first ride-through attraction in Disney history starring Mickey and Minnie.",
+        },
+        {
+          title: "Queue Detail",
+          text: "The queue is the lobby of the El CapiTOON Theater and features the “Mickey Through the Ears” exhibit. Look for spoof movie posters and the concession cash register total of $19.28, a nod to Mickey’s debut year.",
+        },
+        {
+          title: "Hidden Mickey",
+          text: "Before you board the train, look up at the wooden ceiling beams. Knots and wood grain can form a Hidden Mickey.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "If you could jump into any cartoon world for one day, which one would you choose and what is the first thing you would do?",
+        },
+      ],
+    },
+
+    // ---------- Sunset Boulevard ----------
+    "The Twilight Zone Tower of Terror": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "The tower is 199 feet tall. Imagineers kept it just under 200 feet to avoid needing a flashing aviation light that would ruin the spooky 1939 hotel look.",
+        },
+        {
+          title: "Queue Detail",
+          text: "The lobby is staged as if everyone vanished suddenly on Halloween night in 1939. Look for old suitcases, antiques, and the abandoned Mahjong game.",
+        },
+        {
+          title: "Hidden Mickey",
+          text: "In the library pre-show, watch the little girl entering the elevator. The vintage doll she holds is a Mickey plush.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "If you managed a haunted hotel, what silly or spooky rule would every guest have to follow?",
+        },
+      ],
+    },
+
+    "Rock 'n' Roller Coaster Starring Aerosmith": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "This indoor launch coaster accelerates from 0 to nearly 60 mph in just a few seconds, making the launch the star of the ride.",
+        },
+        {
+          title: "Queue Detail",
+          text: "You enter G-Force Records and move through a rock-and-roll recording studio setup before being sent to the super-stretch limo.",
+        },
+        {
+          title: "Look For This",
+          text: "Watch the recording studio props, posters, cables, and music gear. The queue is packed with rock-tour details.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "If your family started a rock band today, what would the band name be, and who would play which instrument?",
+        },
+      ],
+    },
+
+    "Rock 'n' Roller Coaster Starring The Muppets": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "The Electric Mayhem takes over this high-speed launch coaster with a Muppets rock-show twist.",
+        },
+        {
+          title: "Queue Detail",
+          text: "You step into G-Force Records with Muppet-style recording studio chaos, music gear, and audio-engineer penguin energy.",
+        },
+        {
+          title: "Look For This",
+          text: "Near the end, watch for Statler and Waldorf-style heckling energy. This ride practically begs for jokes in the unload area.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "If your family started a rock band today, what would the band name be, and who would play which instrument?",
+        },
+      ],
+    },
+
+    // ---------- Toy Story Land ----------
+    "Slinky Dog Dash": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "The story is that Andy built a “Dash & Dodge Mega Coaster Kit” in his backyard and put Slinky Dog on the track instead of the train from the box.",
+        },
+        {
+          title: "Queue Detail",
+          text: "Everything is oversized because you are toy-sized. Look for huge glue bottles, coloring books, and Andy’s hand-drawn coaster plans on notebook paper.",
+        },
+        {
+          title: "Hidden Mickey",
+          text: "In the loading area, look closely at Andy’s giant hand-drawn mural. A classic Mickey shape is hidden in the fluffy clouds.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "If your favorite toy came to life when you left the room, what kind of mischief would it get into?",
+        },
+      ],
+    },
+
+    "Toy Story Mania!": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "The ride uses 3D carnival games with synchronized effects like air blasts and water sprays.",
+        },
+        {
+          title: "Queue Detail",
+          text: "The Mr. Potato Head figure in the queue can joke with guests and even remove his own ear.",
+        },
+        {
+          title: "Look For This",
+          text: "Look around at the oversized vintage board games and toy details. The scale is part of the joke because you are toy-sized.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Which carnival game are you best at: ring toss, balloon pop, or water gun race?",
+        },
+      ],
+    },
+
+    "Alien Swirling Saucers": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "The ride is themed as a toy playset Andy won at Pizza Planet.",
+        },
+        {
+          title: "Queue Detail",
+          text: "Look for oversized space blasters, toy packaging, and little green alien details around the queue.",
+        },
+        {
+          title: "Hidden Mickey",
+          text: "Check the metal grating and fencing around the ride. Some geometric shapes repeat into Mickey-like silhouettes.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "If friendly green aliens abducted you, what Earth snack would you offer to prove we come in peace?",
+        },
+      ],
+    },
+
+    // ---------- Star Wars: Galaxy's Edge ----------
+    "Star Wars: Rise of the Resistance": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "This attraction blends multiple ride systems into one experience, including walk-through moments, a motion simulator, a trackless dark ride, and a drop sequence.",
+        },
+        {
+          title: "Queue Detail",
+          text: "You move through a secret Resistance base carved into Batuu’s ancient stone. Look for flight suits, blaster racks, rock tunnels, and communication equipment.",
+        },
+        {
+          title: "Hidden Mickey",
+          text: "In the cave areas before the first pre-show, look at the glowing consoles. Three round dials can line up like a Mickey head.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "If you were a Resistance pilot, what would you name your spaceship and what would your call sign be?",
+        },
+      ],
+    },
+
+    "Millennium Falcon: Smugglers Run": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "The Millennium Falcon outside the attraction is built life-size to match the ship from the films.",
+        },
+        {
+          title: "Queue Detail",
+          text: "You walk through Ohnaka Transport Solutions and eventually wait in the Falcon’s main hold, complete with the Dejarik holochess table.",
+        },
+        {
+          title: "Hidden Mickey",
+          text: "In the Hondo Ohnaka pre-show room, look at the cargo crates behind him. A faint oil stain can resemble a Mickey head.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Would you rather be the Pilot steering, the Gunner shooting, or the Engineer fixing the ship?",
+        },
+      ],
+    },
+
+    // ---------- Echo Lake ----------
+    "Star Tours – The Adventures Continue": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "The ride uses randomized scene combinations, so it is rare to get the exact same flight twice.",
+        },
+        {
+          title: "Queue Detail",
+          text: "You walk through a busy spaceport terminal. Watch the baggage scanner for funny items like Buzz Lightyear toys and Mickey ears.",
+        },
+        {
+          title: "Hidden Mickey",
+          text: "Before entering the main building, look up into the tree branches in the outdoor queue. Some branches can twist into a Mickey shape.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "If you could vacation on any alien planet, where would you go and what one thing would you pack?",
+        },
+      ],
+    },
+  },
 };
 
 export function getRideExperienceContent(parkId, rideName) {
