@@ -6,7 +6,8 @@
  * Important:
  * Do not let raw feed entries decide the product experience.
  * Some entries are useful operationally, but make the wait-time list feel dumb:
- * galleries, passive exhibits, Kidcot stops, Single Rider variants, and venue names.
+ * galleries, passive exhibits, Kidcot stops, Single Rider variants, character greetings,
+ * and venue-name filler entries.
  */
 
 function normalizeName(value) {
@@ -35,6 +36,25 @@ const EXACT_HIDE_NAMES_BY_PARK = {
       "Palais du Cinéma",
     ].map(normalizeName)
   ),
+
+  hollywood: new Set(
+    [
+      "Meet Ariel at Walt Disney Presents",
+      "Meet Disney Stars at Red Carpet Dreams",
+      "Meet Olaf at Celebrity Spotlight",
+      "Meet Sulley at Walt Disney Presents",
+      "Celebrity Spotlight",
+      "Red Carpet Dreams",
+      "Lightning McQueen's Racing Academy",
+      "Vacation Fun - An Original Animated Short with Mickey & Minnie",
+      "Walt Disney Presents",
+      "Disney Junior Play and Dance!",
+      "Star Wars Launch Bay",
+      "Meet Darth Vader at Star Wars Launch Bay",
+      "Meet BB-8 at Star Wars Launch Bay",
+      "Meet Chewbacca at Star Wars Launch Bay",
+    ].map(normalizeName)
+  ),
 };
 
 const GENERIC_HIDE_PATTERNS_BY_PARK = {
@@ -48,6 +68,21 @@ const GENERIC_HIDE_PATTERNS_BY_PARK = {
     /project tomorrow/i,
     /house of the whispering willows/i,
     /stave church/i,
+  ],
+
+  hollywood: [
+    /single rider/i,
+    /single-rider/i,
+    /lightning lane/i,
+    /meet .* at /i,
+    /^meet /i,
+    /character/i,
+    /red carpet dreams/i,
+    /celebrity spotlight/i,
+    /star wars launch bay/i,
+    /walt disney presents/i,
+    /vacation fun/i,
+    /disney junior/i,
   ],
 };
 
