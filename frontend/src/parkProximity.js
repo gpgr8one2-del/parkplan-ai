@@ -96,7 +96,53 @@ export const PARK_PROXIMITY = {
     },
   },
 
-  // Future parks: hollywood_studios, animal_kingdom,
+  hollywood: {
+    // Hollywood Studios has strong walking friction.
+    // Galaxy's Edge and Toy Story Land flow together well.
+    // Sunset Boulevard is a commitment from the back of the park.
+    // Hollywood Boulevard / Echo Lake / Commissary Lane function as the middle/front connectors.
+    hollywood_boulevard: {
+      adjacent: ["echo_lake", "commissary_lane", "sunset_boulevard"],
+      nearby: ["animation_courtyard", "grand_avenue"],
+    },
+
+    sunset_boulevard: {
+      adjacent: ["hollywood_boulevard", "animation_courtyard"],
+      nearby: ["echo_lake", "commissary_lane"],
+    },
+
+    echo_lake: {
+      adjacent: ["hollywood_boulevard", "commissary_lane", "grand_avenue"],
+      nearby: ["animation_courtyard", "star_wars_galaxys_edge", "sunset_boulevard"],
+    },
+
+    commissary_lane: {
+      adjacent: ["hollywood_boulevard", "echo_lake", "grand_avenue"],
+      nearby: ["animation_courtyard", "sunset_boulevard", "star_wars_galaxys_edge"],
+    },
+
+    grand_avenue: {
+      adjacent: ["echo_lake", "commissary_lane", "star_wars_galaxys_edge"],
+      nearby: ["toy_story_land", "hollywood_boulevard"],
+    },
+
+    star_wars_galaxys_edge: {
+      adjacent: ["grand_avenue", "toy_story_land"],
+      nearby: ["echo_lake", "commissary_lane"],
+    },
+
+    toy_story_land: {
+      adjacent: ["star_wars_galaxys_edge", "animation_courtyard"],
+      nearby: ["grand_avenue", "echo_lake"],
+    },
+
+    animation_courtyard: {
+      adjacent: ["toy_story_land", "sunset_boulevard", "hollywood_boulevard"],
+      nearby: ["echo_lake", "commissary_lane"],
+    },
+  },
+
+  // Future parks: animal_kingdom,
   // universal_studios, islands_of_adventure, epic_universe
   // each gets its own adjacency map keyed by snake_case land name.
 };
