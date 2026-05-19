@@ -1367,24 +1367,24 @@ export const RIDE_METADATA = {
       getsWet: false,
       closesInRain: false,
       intensity: 2,
-      popularity: 82,
+      popularity: 88,
       waitProfile: {
-        averageWait: 45,
-        goodDealUnder: 30,
-        normalRange: [40, 60],
+        averageWait: 55,
+        goodDealUnder: 40,
+        normalRange: [45, 65],
         badValueOver: 75,
-        usuallyHighAllDay: false,
+        usuallyHighAllDay: true,
         strategyNote:
-          "High-demand family headliner near the front of the park. Best early, late, or when the wait dips under 30.",
+          "Central park location pulls big mid-morning crowds. Strong before 9:30 AM, during Fantasmic!, or whenever it drops under 40 minutes.",
       },
       planningProfile: {
-        category: "wait_for_drop",
+        category: "plan_ahead_multi_pass",
         paidAccess: "LLMP",
-        appStatus: "wait_for_drop",
+        appStatus: "plan_ahead",
         strategy:
-          "Strong family pick when the wait is low. If it is high midday, check again later.",
+          "Excellent Tier 1 fallback if Slinky Dog is gone. Use Multi Pass, early morning, or evening showtime dips.",
       },
-      tags: ["family", "dark-ride", "headliner", "indoor", "ac"],
+      tags: ["family", "dark-ride", "headliner", "indoor", "ac", "plan-ahead"],
     },
 
     "The Twilight Zone Tower of Terror": {
@@ -1425,24 +1425,24 @@ export const RIDE_METADATA = {
       getsWet: false,
       closesInRain: false,
       intensity: 5,
-      popularity: 84,
+      popularity: 86,
       waitProfile: {
-        averageWait: 50,
-        goodDealUnder: 30,
-        normalRange: [40, 65],
-        badValueOver: 80,
-        usuallyHighAllDay: false,
+        averageWait: 60,
+        goodDealUnder: 40,
+        normalRange: [50, 75],
+        badValueOver: 85,
+        usuallyHighAllDay: true,
         strategyNote:
-          "High-intensity indoor coaster. Great value if it drops under 30, but skip if the group is motion-sensitive or thrill-averse.",
+          "High-demand Tier 1 thrill ride. Single Rider is available but can move painfully slowly compared with other rides.",
       },
       planningProfile: {
-        category: "wait_for_drop",
+        category: "plan_ahead_multi_pass",
         paidAccess: "LLMP",
-        appStatus: "wait_for_drop",
+        appStatus: "plan_ahead",
         strategy:
-          "Use when nearby and low, or pair with Tower of Terror if the group wants thrill rides.",
+          "Use Multi Pass, rope drop Sunset Boulevard, or try late evening. Do not count on Single Rider as a reliable family strategy.",
       },
-      tags: ["coaster", "thrill", "inversion", "indoor", "ac"],
+      tags: ["coaster", "thrill", "inversion", "indoor", "ac", "plan-ahead"],
     },
 
     "Beauty and the Beast Live on Stage": {
@@ -1456,17 +1456,17 @@ export const RIDE_METADATA = {
       intensity: 1,
       popularity: 45,
       waitProfile: {
-        averageWait: 20,
-        goodDealUnder: 15,
-        normalRange: [15, 30],
-        badValueOver: 35,
+        averageWait: 15,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 25,
         usuallyHighAllDay: false,
         strategyNote:
-          "Show-based attraction. Time it around showtimes rather than waiting around too long.",
+          "Show-based attraction. Hollywood Studios relies on shows to absorb crowds, so use this as a seated break when showtime lines up.",
       },
       planningProfile: {
         category: "filler_or_recovery",
-        paidAccess: "none",
+        paidAccess: "LLMP_not_needed",
         appStatus: "filler",
         strategy:
           "Good seated break on Sunset Boulevard when showtime lines up.",
@@ -1514,22 +1514,22 @@ export const RIDE_METADATA = {
       intensity: 3,
       popularity: 58,
       waitProfile: {
-        averageWait: 20,
-        goodDealUnder: 15,
-        normalRange: [15, 30],
-        badValueOver: 40,
+        averageWait: 15,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 30,
         usuallyHighAllDay: false,
         strategyNote:
-          "Usually manageable and high-capacity. Good nearby move, but not worth crossing the whole park for unless your group loves Star Wars.",
+          "Massive-capacity simulator. You almost never need Multi Pass. Use it as an air-conditioned filler between bigger plans.",
       },
       planningProfile: {
-        category: "normal_standby",
-        paidAccess: "LLMP",
-        appStatus: "go_now_if_low",
+        category: "filler_or_recovery",
+        paidAccess: "LLMP_not_needed",
+        appStatus: "recovery",
         strategy:
-          "Use when nearby, especially as an indoor reset with moderate thrill.",
+          "Excellent Echo Lake recovery ride when nearby. Skip if it oddly spikes over 30.",
       },
-      tags: ["star-wars", "simulator", "indoor", "ac", "motion-sickness"],
+      tags: ["star-wars", "simulator", "indoor", "ac", "motion-sickness", "recovery"],
     },
 
     "For the First Time in Forever: A Frozen Sing-Along Celebration": {
@@ -1543,17 +1543,17 @@ export const RIDE_METADATA = {
       intensity: 1,
       popularity: 48,
       waitProfile: {
-        averageWait: 20,
-        goodDealUnder: 15,
-        normalRange: [15, 30],
-        badValueOver: 35,
+        averageWait: 15,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 25,
         usuallyHighAllDay: false,
         strategyNote:
-          "Indoor theater show. Strong AC recovery option when the showtime lines up.",
+          "Usually a next-show wait. Perfect for resting feet during peak heat.",
       },
       planningProfile: {
         category: "filler_or_recovery",
-        paidAccess: "none",
+        paidAccess: "LLMP_not_needed",
         appStatus: "recovery",
         strategy:
           "Use as a seated AC break, especially with kids or during heat/rain.",
@@ -1572,17 +1572,17 @@ export const RIDE_METADATA = {
       intensity: 2,
       popularity: 50,
       waitProfile: {
-        averageWait: 25,
-        goodDealUnder: 15,
-        normalRange: [20, 35],
-        badValueOver: 45,
+        averageWait: 15,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 25,
         usuallyHighAllDay: false,
         strategyNote:
-          "Large stunt show. Better to time around the next show than wait a long time in place.",
+          "Large stunt show. Hollywood Studios uses shows to absorb crowds, so time this around showtime rather than treating it like a normal ride wait.",
       },
       planningProfile: {
         category: "filler_or_recovery",
-        paidAccess: "none",
+        paidAccess: "LLMP_not_needed",
         appStatus: "filler",
         strategy:
           "Good seated break when showtime is close, but not a true AC reset.",
@@ -1601,20 +1601,20 @@ export const RIDE_METADATA = {
       intensity: 1,
       popularity: 38,
       waitProfile: {
-        averageWait: 12,
+        averageWait: 15,
         goodDealUnder: 10,
         normalRange: [10, 20],
         badValueOver: 25,
         usuallyHighAllDay: false,
         strategyNote:
-          "High-capacity indoor theater. Usually just waiting for the next show cycle.",
+          "Usually just waiting for the next show. Great AC and foot-rest option, especially during peak heat.",
       },
       planningProfile: {
         category: "filler_or_recovery",
-        paidAccess: "none",
+        paidAccess: "LLMP_not_needed",
         appStatus: "recovery",
         strategy:
-          "Excellent low-stress AC break in Grand Avenue.",
+          "Use as an easy Grand Avenue AC break. Do not burn a priority strategy on it unless seating matters to your group.",
       },
       tags: ["show", "family", "indoor", "ac", "recovery"],
     },
@@ -1631,21 +1631,29 @@ export const RIDE_METADATA = {
       popularity: 99,
       waitProfile: {
         averageWait: 85,
-        goodDealUnder: 60,
-        normalRange: [75, 110],
-        badValueOver: 130,
+        goodDealUnder: 65,
+        normalRange: [75, 100],
+        badValueOver: 110,
         usuallyHighAllDay: true,
         strategyNote:
-          "Hollywood Studios' biggest headliner. A true plan-ahead ride. Under 60 is usually a strong opportunity.",
+          "Hollywood Studios' biggest headliner. Rope drop is often a trap unless you are at the absolute front of Early Entry. It often improves significantly in the evening.",
       },
       planningProfile: {
         category: "plan_ahead_single_pass",
         paidAccess: "LLSP",
         appStatus: "plan_ahead",
         strategy:
-          "Buy Single Pass if this is a must-do, rope drop carefully, or watch for late-day dips after downtime clears.",
+          "Buy Single Pass if this is a must-do, or watch for evening dips after 7:30 PM. Avoid joining the giant 9 AM crowd unless you are truly at the front.",
       },
-      tags: ["headliner", "star-wars", "trackless", "thrill", "single-pass", "plan-ahead", "indoor"],
+      tags: [
+        "headliner",
+        "star-wars",
+        "trackless",
+        "thrill",
+        "single-pass",
+        "plan-ahead",
+        "indoor",
+      ],
     },
 
     "Millennium Falcon: Smugglers Run": {
@@ -1657,24 +1665,31 @@ export const RIDE_METADATA = {
       getsWet: false,
       closesInRain: false,
       intensity: 3,
-      popularity: 74,
+      popularity: 78,
       waitProfile: {
-        averageWait: 40,
-        goodDealUnder: 25,
-        normalRange: [35, 55],
-        badValueOver: 70,
-        usuallyHighAllDay: false,
+        averageWait: 60,
+        goodDealUnder: 40,
+        normalRange: [50, 70],
+        badValueOver: 80,
+        usuallyHighAllDay: true,
         strategyNote:
-          "Interactive simulator in Galaxy's Edge. Good if you are already nearby and the wait is under 25–30.",
+          "Galaxy's Edge crowds keep this high most of the day, but it can drop hard after 6 PM. Single Rider exists, but do not push it by default for families.",
       },
       planningProfile: {
-        category: "wait_for_drop",
+        category: "plan_ahead_multi_pass",
         paidAccess: "LLMP",
-        appStatus: "wait_for_drop",
+        appStatus: "plan_ahead",
         strategy:
-          "Ride when nearby and low. Avoid crossing the park for it unless the wait is excellent.",
+          "Use Multi Pass if your group cares about riding together, or check after 6 PM when Galaxy's Edge starts to clear.",
       },
-      tags: ["star-wars", "simulator", "interactive", "indoor", "motion-sickness"],
+      tags: [
+        "star-wars",
+        "simulator",
+        "interactive",
+        "indoor",
+        "motion-sickness",
+        "plan-ahead",
+      ],
     },
 
     "Slinky Dog Dash": {
@@ -1688,22 +1703,29 @@ export const RIDE_METADATA = {
       intensity: 3,
       popularity: 96,
       waitProfile: {
-        averageWait: 75,
-        goodDealUnder: 50,
-        normalRange: [65, 95],
-        badValueOver: 110,
+        averageWait: 85,
+        goodDealUnder: 60,
+        normalRange: [75, 95],
+        badValueOver: 105,
         usuallyHighAllDay: true,
         strategyNote:
-          "Outdoor family coaster with brutal demand and exposed heat. It needs a plan, especially in summer weather.",
+          "The most competitive Tier 1 Multi Pass in Hollywood Studios. The queue is exposed, so midday standby is brutal in heat.",
       },
       planningProfile: {
         category: "plan_ahead_multi_pass",
         paidAccess: "LLMP",
         appStatus: "plan_ahead",
         strategy:
-          "Use Multi Pass, rope drop, or late evening. Avoid long exposed waits in heat or storms.",
+          "Prioritize Multi Pass, ride in the first 15 minutes of Early Entry, or save for the final 30 minutes of the night. Avoid long exposed waits midday.",
       },
-      tags: ["headliner", "coaster", "family", "outdoor", "weather-sensitive", "plan-ahead"],
+      tags: [
+        "headliner",
+        "coaster",
+        "family",
+        "outdoor",
+        "weather-sensitive",
+        "plan-ahead",
+      ],
     },
 
     "Toy Story Mania!": {
@@ -1717,22 +1739,22 @@ export const RIDE_METADATA = {
       intensity: 2,
       popularity: 78,
       waitProfile: {
-        averageWait: 40,
-        goodDealUnder: 25,
-        normalRange: [35, 55],
+        averageWait: 50,
+        goodDealUnder: 30,
+        normalRange: [40, 60],
         badValueOver: 70,
         usuallyHighAllDay: false,
         strategyNote:
-          "Strong family ride and good Toy Story Land recovery option because the attraction itself is indoors.",
+          "High-capacity family ride with a moving queue. If it spikes over 60 minutes midday, it usually drops later as crowds shift.",
       },
       planningProfile: {
         category: "wait_for_drop",
         paidAccess: "LLMP",
         appStatus: "wait_for_drop",
         strategy:
-          "Good family pick when under 25–30, especially if you are already in Toy Story Land.",
+          "Good Toy Story Land indoor reset under 30 minutes. If it is high midday, check back later.",
       },
-      tags: ["interactive", "family", "indoor", "ac", "toy-story"],
+      tags: ["interactive", "family", "indoor", "ac", "toy-story", "wait-for-drop"],
     },
 
     "Alien Swirling Saucers": {
@@ -1746,20 +1768,20 @@ export const RIDE_METADATA = {
       intensity: 2,
       popularity: 50,
       waitProfile: {
-        averageWait: 25,
-        goodDealUnder: 15,
-        normalRange: [20, 35],
-        badValueOver: 45,
+        averageWait: 35,
+        goodDealUnder: 25,
+        normalRange: [30, 45],
+        badValueOver: 50,
         usuallyHighAllDay: false,
         strategyNote:
-          "Short outdoor spinner. Not worth a long wait, especially in heat.",
+          "Short outdoor spinner. Do not wait more than about 30 minutes unless your group specifically wants it or you have an immediate return.",
       },
       planningProfile: {
         category: "normal_standby",
         paidAccess: "LLMP",
         appStatus: "go_now_if_low",
         strategy:
-          "Use as nearby Toy Story Land filler only when the wait is low.",
+          "Use as nearby Toy Story Land filler only when low. Avoid long waits in heat.",
       },
       tags: ["spinner", "family", "outdoor", "weather-sensitive", "filler"],
     },
