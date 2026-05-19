@@ -326,6 +326,125 @@ function isFillerOrRecovery(ride) {
   return ride?.planningProfile?.category === "filler_or_recovery";
 }
 
+function isSoftRecoveryOnlyCandidate(parkId, ride, weather) {
+  const meta = getMetaForRide(parkId, ride);
+
+  if (!meta) return false;
+
+  const tags = meta.tags || [];
+  const category = meta?.planningProfile?.category;
+  const effectiveTempF = getEffectiveTempF(weather);
+  const badWeatherOrHeat =
+    isCurrentlyStorming(weather) ||
+    isRainActive(weather) ||
+    (effectiveTempF != null && effectiveTempF >= 87);
+
+  const isRecoveryOrShow =
+    category === "filler_or_recovery" ||
+    tags.includes("show") ||
+    tags.includes("walkthrough") ||
+    tags.includes("recovery");
+
+  // During weather/heat, recovery options are allowed to become primary because
+  // the family may need AC/seating more than a headliner.
+  if (badWeatherOrHeat) return false;
+
+  // In normal conditions, do not let low-wait shows/exhibits hijack Best Move.
+  return isRecoveryOrShow;
+}
+
+function getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand) {
+  if (parkId !== "hollywood" || !meta) return 0;
+
+  let mod = 0;
+  const effectiveTempF = getEffectiveTempF(weather);
+  const rainActive = isRainActive(weather);
+  const stormActive = isCurrentlyStorming(weather);
+  const tags = meta.tags || [];
+  const category = meta?.planningProfile?.category;
+
+  // Hollywood Studios is top-heavy. Do not let shows/recovery filler beat real
+  // attraction strategy during normal conditions unless the family needs weather relief.
+  const weatherRecoveryActive =
+    stormActive ||
+    rainActive ||
+    (effectiveTempF != null && effectiveTempF >= 87);
+
+  if (!weatherRecoveryActive && category === "filler_or_recovery") {
+    mod -= 10;
+  }
+
+  if (!weatherRecoveryActive && tags.includes("show")) {
+    mod -= 8;
+  }
+
+  // Toy Story Land is exposed and rough in heat. Outdoor Toy Story options need
+  // an extra heat penalty beyond the generic outdoor penalty.
+  if (
+    effectiveTempF != null &&
+    effectiveTempF >= 92 &&
+    meta.land === "toy_story_land" &&
+    meta.environment === "outdoor"
+  ) {
+    mod -= 10;
+  }
+
+  if (
+    effectiveTempF != null &&
+    effectiveTempF >= 98 &&
+    meta.land === "toy_story_land" &&
+    meta.environment === "outdoor"
+  ) {
+    mod -= 8;
+  }
+
+  // In rain/storm mode, outdoor Hollywood attractions should be heavily suppressed.
+  if ((rainActive || stormActive) && meta.environment === "outdoor") {
+    mod -= 18;
+  }
+
+  // Slinky is a plan-ahead ride. Do not over-reward a merely normal wait in
+  // brutal heat because the standby experience can be miserable.
+  if (
+    meta.displayName === "Slinky Dog Dash" &&
+    effectiveTempF != null &&
+    effectiveTempF >= 92 &&
+    waitValueStatus?.status === "normal"
+  ) {
+    mod -= 12;
+  }
+
+  // Rise at a good/great wait is a legitimate opportunity, but we do not want
+  // average waits blindly hijacking the whole app from across the park.
+  if (
+    meta.displayName === "Star Wars: Rise of the Resistance" &&
+    waitValueStatus?.status === "great_value"
+  ) {
+    mod += 8;
+  }
+
+  // Star Tours is fantastic recovery, but in normal conditions it should not
+  // beat major attractions just because the wait is low.
+  if (
+    meta.displayName === "Star Tours – The Adventures Continue" &&
+    !weatherRecoveryActive
+  ) {
+    mod -= 6;
+  }
+
+  // Falcon should be better late day. This supports the historical pattern
+  // without forcing a clock-heavy itinerary system yet.
+  const { totalMinutes } = getOrlandoTimeParts();
+  if (
+    meta.displayName === "Millennium Falcon: Smugglers Run" &&
+    totalMinutes >= 18 * 60
+  ) {
+    mod += 6;
+  }
+
+  return mod;
+}
+
 function isWeatherBlockedFromPositiveCards(parkId, ride, weather) {
   const meta = getMetaForRide(parkId, ride);
   if (!meta) return true;
@@ -398,6 +517,12 @@ function buildReason(ride, parts) {
     reasons.push("good water-ride timing");
   } else if (parts.wetRideModifier <= -8) {
     reasons.push("water-ride timing is less ideal");
+  }
+
+  if (parts.parkStrategyModifier >= 8) {
+    reasons.push("strong park-specific opportunity");
+  } else if (parts.parkStrategyModifier <= -8) {
+    reasons.push("less ideal for this park situation");
   }
 
   if (!reasons.length) {
@@ -566,6 +691,14 @@ export function getNextBestRides({
       weather,
       waitValueStatus
     );
+    const parkStrategyModifier = getHollywoodStrategyModifier(
+      parkId,
+      meta,
+      ride,
+      weather,
+      waitValueStatus,
+      currentLand
+    );
 
     const finalScore =
       baseScore -
@@ -575,7 +708,8 @@ export function getNextBestRides({
       contextModifier +
       proximityModifier +
       waitValueModifier +
-      wetRideModifier;
+      wetRideModifier +
+      parkStrategyModifier;
 
     const proximityDistance =
       proximityModifier > 0
@@ -599,6 +733,7 @@ export function getNextBestRides({
         proximityModifier,
         waitValueStatus,
         wetRideModifier,
+        parkStrategyModifier,
       }),
     };
   });
@@ -640,11 +775,26 @@ export function getNextBestRides({
     return ride.proximityDistance === "far";
   });
 
-  const bestMove = nearbyRides[0] || positivePool[0] || null;
+  const primaryNearbyRides = nearbyRides.filter((ride) => {
+    return !isSoftRecoveryOnlyCandidate(parkId, ride, weather);
+  });
+
+  const primaryPositivePool = positivePool.filter((ride) => {
+    return !isSoftRecoveryOnlyCandidate(parkId, ride, weather);
+  });
+
+  const bestMove =
+    primaryNearbyRides[0] ||
+    primaryPositivePool[0] ||
+    nearbyRides[0] ||
+    positivePool[0] ||
+    null;
 
   const usedAfterBest = getUsedRideIds(bestMove);
 
   const backup =
+    primaryNearbyRides.find((ride) => !usedAfterBest.has(String(ride.id))) ||
+    primaryPositivePool.find((ride) => !usedAfterBest.has(String(ride.id))) ||
     nearbyRides.find((ride) => !usedAfterBest.has(String(ride.id))) ||
     positivePool.find((ride) => !usedAfterBest.has(String(ride.id))) ||
     null;
