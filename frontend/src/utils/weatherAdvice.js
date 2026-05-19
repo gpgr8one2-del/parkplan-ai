@@ -366,6 +366,242 @@ function getEpcotHeatSuggestions(currentLand, severity) {
   return [...(byLand[currentLand] || []), ...extra];
 }
 
+
+/* -------------------------------------------------------------------------- */
+/* Hollywood Studios recovery helpers                                         */
+/* -------------------------------------------------------------------------- */
+
+function getHollywoodRainSuggestions(currentLand) {
+  const byLand = {
+    hollywood_boulevard: [
+      {
+        title: "Hollywood Boulevard rain plan",
+        text: "Use Mickey & Minnie’s Runaway Railway, shops, The Trolley Car Café, or move toward ABC Commissary if you need a longer indoor reset.",
+      },
+      {
+        title: "Avoid a bad rain hike",
+        text: "Do not chase Galaxy’s Edge, Toy Story Land, or Sunset Boulevard through rain unless the wait is truly worth it.",
+      },
+    ],
+
+    sunset_boulevard: [
+      {
+        title: "Sunset Boulevard rain plan",
+        text: "Tower of Terror and Rock ’n’ Roller Coaster are indoor once you are committed, but the area can still be exposed. Beauty and the Beast works if showtime is close and weather is not severe.",
+      },
+      {
+        title: "If storms build",
+        text: "Use nearby shops or move carefully toward Hollywood Boulevard instead of walking to the back of the park.",
+      },
+    ],
+
+    echo_lake: [
+      {
+        title: "Echo Lake rain plan",
+        text: "Star Tours, Frozen Sing-Along, Backlot Express, and nearby shops are strong rain-friendly choices. This is one of the better areas to absorb a weather delay.",
+      },
+    ],
+
+    grand_avenue: [
+      {
+        title: "Grand Avenue rain plan",
+        text: "Muppet*Vision 3D, PizzeRizzo, BaseLine Tap House, and nearby covered areas make this a good low-stress rain reset.",
+      },
+      {
+        title: "Smarter next move",
+        text: "If rain is active, stay around Grand Avenue or Galaxy’s Edge cover rather than hiking to Sunset Boulevard.",
+      },
+    ],
+
+    star_wars_galaxys_edge: [
+      {
+        title: "Galaxy’s Edge rain plan",
+        text: "Rise of the Resistance, Smugglers Run, Docking Bay 7, shops, and covered market areas are better than crossing the park in rain.",
+      },
+      {
+        title: "Avoid the long exposed move",
+        text: "Tower of Terror and Rock ’n’ Roller Coaster are a real hike from here. Only cross for them if the wait is excellent and weather is clearing.",
+      },
+    ],
+
+    toy_story_land: [
+      {
+        title: "Toy Story Land rain caution",
+        text: "Toy Story Land is exposed. Slinky Dog and Alien Swirling Saucers can be poor rain choices. Toy Story Mania is the best nearby indoor reset.",
+      },
+      {
+        title: "Better shelter nearby",
+        text: "If rain is building, move toward Toy Story Mania, Animation Courtyard, or Galaxy’s Edge cover instead of lingering outside.",
+      },
+    ],
+
+    animation_courtyard: [
+      {
+        title: "Animation Courtyard rain plan",
+        text: "Walt Disney Presents, Vacation Fun, Disney Junior, nearby shops, and the path toward Toy Story Mania are useful low-stress rain options.",
+      },
+    ],
+
+    commissary_lane: [
+      {
+        title: "Commissary Lane rain plan",
+        text: "ABC Commissary is one of the easiest indoor AC and water resets in Hollywood Studios. Use it before making a long rainy walk.",
+      },
+    ],
+  };
+
+  return (
+    byLand[currentLand] || [
+      {
+        title: "Hollywood Studios rain plan",
+        text: "Pick the nearest indoor show, restaurant, shop, or attraction first. Hollywood Studios has exposed stretches, so small wait-time savings may not be worth a wet cross-park walk.",
+      },
+    ]
+  );
+}
+
+function getHollywoodStormSuggestions(currentLand) {
+  const byLand = {
+    hollywood_boulevard: [
+      {
+        title: "Hollywood Boulevard storm shelter",
+        text: "Use Mickey & Minnie’s Runaway Railway, shops, The Trolley Car Café, or ABC Commissary until lightning clears.",
+      },
+    ],
+
+    sunset_boulevard: [
+      {
+        title: "Sunset Boulevard storm shelter",
+        text: "Get indoors or under solid cover. Tower and Rock ’n’ Roller are indoor attractions, but avoid exposed walks if lightning is active.",
+      },
+    ],
+
+    echo_lake: [
+      {
+        title: "Echo Lake storm shelter",
+        text: "Star Tours, Frozen Sing-Along, Backlot Express, and nearby indoor areas are strong shelter choices.",
+      },
+    ],
+
+    grand_avenue: [
+      {
+        title: "Grand Avenue storm shelter",
+        text: "Muppet*Vision 3D, PizzeRizzo, and nearby covered areas are good storm reset options.",
+      },
+    ],
+
+    star_wars_galaxys_edge: [
+      {
+        title: "Galaxy’s Edge storm shelter",
+        text: "Use Docking Bay 7, shops, covered market areas, Rise, or Smugglers Run if available. Do not hike to Sunset Boulevard during active lightning.",
+      },
+    ],
+
+    toy_story_land: [
+      {
+        title: "Toy Story Land storm shelter",
+        text: "Toy Story Land is exposed. Use Toy Story Mania or move toward Animation Courtyard/Galaxy’s Edge cover if it is safe to do so.",
+      },
+    ],
+
+    animation_courtyard: [
+      {
+        title: "Animation Courtyard storm shelter",
+        text: "Walt Disney Presents, Vacation Fun, Disney Junior, and nearby indoor spaces can help you wait out lightning.",
+      },
+    ],
+
+    commissary_lane: [
+      {
+        title: "Commissary Lane storm shelter",
+        text: "ABC Commissary is a strong indoor reset with AC, seating, and water access.",
+      },
+    ],
+  };
+
+  return (
+    byLand[currentLand] || [
+      {
+        title: "Hollywood Studios storm shelter",
+        text: "Get inside the nearest attraction, shop, restaurant, or theater. Avoid long exposed paths until lightning risk clears.",
+      },
+    ]
+  );
+}
+
+function getHollywoodHeatSuggestions(currentLand, severity) {
+  const strongHeat = severity === "extreme_heat" || severity === "hot";
+
+  const byLand = {
+    hollywood_boulevard: [
+      {
+        title: "Hollywood Boulevard cool-down",
+        text: "Use Mickey & Minnie’s Runaway Railway, shops, The Trolley Car Café, or ABC Commissary before pushing deeper into the park.",
+      },
+    ],
+
+    sunset_boulevard: [
+      {
+        title: "Sunset Boulevard cool-down",
+        text: "Tower and Rock ’n’ Roller are indoor, but Sunset Boulevard can still feel hot. Sunset Ranch Market is useful for water, and Beauty and the Beast can work as a seated break when showtime lines up.",
+      },
+    ],
+
+    echo_lake: [
+      {
+        title: "Echo Lake cool-down",
+        text: "Star Tours, Frozen Sing-Along, and Backlot Express are strong AC and water reset choices.",
+      },
+    ],
+
+    grand_avenue: [
+      {
+        title: "Grand Avenue cool-down",
+        text: "Muppet*Vision 3D, PizzeRizzo, and BaseLine Tap House can slow the pace and keep the group out of the sun.",
+      },
+    ],
+
+    star_wars_galaxys_edge: [
+      {
+        title: "Galaxy’s Edge cool-down",
+        text: "Docking Bay 7 is your best AC and water anchor. Smugglers Run and Rise can also help if waits are reasonable.",
+      },
+    ],
+
+    toy_story_land: [
+      {
+        title: "Toy Story Land heat warning",
+        text: "Toy Story Land is one of the rougher heat zones. Use Toy Story Mania, refill water, and avoid long exposed waits for Slinky Dog or Alien Swirling Saucers in peak heat.",
+      },
+    ],
+
+    animation_courtyard: [
+      {
+        title: "Animation Courtyard cool-down",
+        text: "Walt Disney Presents, Vacation Fun, Disney Junior, and nearby indoor spaces are good low-pressure AC resets.",
+      },
+    ],
+
+    commissary_lane: [
+      {
+        title: "Commissary Lane cool-down",
+        text: "ABC Commissary is one of the strongest Hollywood Studios heat resets: AC, seating, food, and water access in one place.",
+      },
+    ],
+  };
+
+  const extra = strongHeat
+    ? [
+        {
+          title: "Do not over-walk Hollywood Studios in heat",
+          text: "Toy Story Land, Galaxy’s Edge, and Sunset Boulevard can feel far apart in the heat. A nearby AC reset is usually smarter than chasing a slightly better wait.",
+        },
+      ]
+    : [];
+
+  return [...(byLand[currentLand] || []), ...extra];
+}
+
 /* -------------------------------------------------------------------------- */
 /* Mode-specific recovery suggestions                                         */
 /*                                                                            */
@@ -403,6 +639,7 @@ function getStormSuggestions(parkId, currentLand) {
     ],
 
     epcot: getEpcotStormSuggestions(currentLand),
+    hollywood: getHollywoodStormSuggestions(currentLand),
   };
 
   return [...common, ...(byPark[parkId] || [])];
@@ -433,6 +670,7 @@ function getRainSuggestions(parkId, currentLand) {
     ],
 
     epcot: getEpcotRainSuggestions(currentLand),
+    hollywood: getHollywoodRainSuggestions(currentLand),
   };
 
   return [...common, ...(byPark[parkId] || [])];
@@ -471,6 +709,7 @@ function getHeatSuggestions(parkId, severity, currentLand) {
     ],
 
     epcot: getEpcotHeatSuggestions(currentLand, severity),
+    hollywood: getHollywoodHeatSuggestions(currentLand, severity),
   };
 
   return [...common, ...(byPark[parkId] || [])];
@@ -495,6 +734,10 @@ function getWarmSuggestions(parkId, currentLand) {
 
   if (parkId === "epcot") {
     suggestions.push(...getEpcotHeatSuggestions(currentLand, "warm"));
+  }
+
+  if (parkId === "hollywood") {
+    suggestions.push(...getHollywoodHeatSuggestions(currentLand, "warm"));
   }
 
   return suggestions;
