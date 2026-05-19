@@ -445,6 +445,141 @@ function getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStat
   return mod;
 }
 
+function getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand) {
+  if (parkId !== "magic_kingdom" || !meta) return 0;
+
+  let mod = 0;
+  const effectiveTempF = getEffectiveTempF(weather);
+  const rainActive = isRainActive(weather);
+  const stormActive = isCurrentlyStorming(weather);
+  const tags = meta.tags || [];
+  const category = meta?.planningProfile?.category;
+  const { totalMinutes } = getOrlandoTimeParts();
+
+  const weatherRecoveryActive =
+    stormActive ||
+    rainActive ||
+    (effectiveTempF != null && effectiveTempF >= 87);
+
+  // Magic Kingdom has tons of tempting low-wait recovery rides. They are useful,
+  // but in normal weather they should not hijack Best Move over real strategy.
+  if (!weatherRecoveryActive && category === "filler_or_recovery") {
+    mod -= 10;
+  }
+
+  if (!weatherRecoveryActive && tags.includes("show")) {
+    mod -= 8;
+  }
+
+  if (
+    !weatherRecoveryActive &&
+    meta.displayName === "Tomorrowland Transit Authority PeopleMover"
+  ) {
+    mod -= 6;
+  }
+
+  if (
+    !weatherRecoveryActive &&
+    meta.displayName === "Walt Disney's Carousel of Progress"
+  ) {
+    mod -= 6;
+  }
+
+  if (
+    !weatherRecoveryActive &&
+    meta.displayName === "Mickey's PhilharMagic"
+  ) {
+    mod -= 5;
+  }
+
+  // TRON and Seven Dwarfs are true plan-ahead rides. Do not let a normal high wait
+  // become a casual "go now" recommendation.
+  if (
+    (meta.displayName === "TRON Lightcycle / Run" ||
+      meta.displayName === "Seven Dwarfs Mine Train") &&
+    waitValueStatus?.status === "normal"
+  ) {
+    mod -= 8;
+  }
+
+  if (
+    (meta.displayName === "TRON Lightcycle / Run" ||
+      meta.displayName === "Seven Dwarfs Mine Train") &&
+    waitValueStatus?.status === "great_value"
+  ) {
+    mod += 8;
+  }
+
+  // Peter Pan is low-capacity. A great wait is a real opportunity, but normal
+  // mid-day waits should not look attractive.
+  if (
+    meta.displayName === "Peter Pan's Flight" &&
+    waitValueStatus?.status === "great_value"
+  ) {
+    mod += 6;
+  }
+
+  if (
+    meta.displayName === "Peter Pan's Flight" &&
+    totalMinutes >= 10 * 60 + 30 &&
+    totalMinutes <= 17 * 60 &&
+    waitValueStatus?.status === "normal"
+  ) {
+    mod -= 8;
+  }
+
+  // Tiana's is heat-demanded but weather-sensitive. Warm weather helps only when
+  // rain/storm risk is not active and the wait is actually attractive.
+  if (
+    meta.displayName === "Tiana's Bayou Adventure" &&
+    effectiveTempF != null &&
+    effectiveTempF >= 90 &&
+    !rainActive &&
+    !stormActive &&
+    (waitValueStatus?.status === "great_value" ||
+      waitValueStatus?.status === "good_value")
+  ) {
+    mod += 8;
+  }
+
+  if (
+    meta.displayName === "Tiana's Bayou Adventure" &&
+    effectiveTempF != null &&
+    effectiveTempF >= 90 &&
+    waitValueStatus?.status === "normal"
+  ) {
+    mod -= 5;
+  }
+
+  // Outdoor Magic Kingdom rides get extra suppression in heat unless they are
+  // water rides with a strong wait value.
+  if (
+    effectiveTempF != null &&
+    effectiveTempF >= 92 &&
+    meta.environment === "outdoor" &&
+    !meta.getsWet
+  ) {
+    mod -= 6;
+  }
+
+  // Late evening is when several Magic Kingdom headliners become more realistic.
+  if (
+    totalMinutes >= 20 * 60 &&
+    [
+      "TRON Lightcycle / Run",
+      "Seven Dwarfs Mine Train",
+      "Peter Pan's Flight",
+      "Space Mountain",
+      "Big Thunder Mountain Railroad",
+      "Jungle Cruise",
+    ].includes(meta.displayName)
+  ) {
+    mod += 5;
+  }
+
+  return mod;
+}
+
 function isWeatherBlockedFromPositiveCards(parkId, ride, weather) {
   const meta = getMetaForRide(parkId, ride);
   if (!meta) return true;
@@ -691,14 +826,23 @@ export function getNextBestRides({
       weather,
       waitValueStatus
     );
-    const parkStrategyModifier = getHollywoodStrategyModifier(
-      parkId,
-      meta,
-      ride,
-      weather,
-      waitValueStatus,
-      currentLand
-    );
+    const parkStrategyModifier =
+      getHollywoodStrategyModifier(
+        parkId,
+        meta,
+        ride,
+        weather,
+        waitValueStatus,
+        currentLand
+      ) +
+      getMagicKingdomStrategyModifier(
+        parkId,
+        meta,
+        ride,
+        weather,
+        waitValueStatus,
+        currentLand
+      );
 
     const finalScore =
       baseScore -
