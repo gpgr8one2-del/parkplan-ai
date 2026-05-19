@@ -23,24 +23,24 @@ export const RIDE_METADATA = {
       getsWet: false,
       closesInRain: true,
       intensity: 1,
-      popularity: 76,
+      popularity: 78,
       waitProfile: {
-        averageWait: 45,
-        goodDealUnder: 35,
-        normalRange: [40, 55],
-        badValueOver: 60,
+        averageWait: 55,
+        goodDealUnder: 40,
+        normalRange: [45, 65],
+        badValueOver: 75,
         usuallyHighAllDay: true,
         strategyNote:
-          "Lines peak mid-day. Best during the afternoon parade or late at night.",
+          "Sustains heavy crowds through morning and afternoon. Best in the first hour, after 8:30 PM, or during the afternoon Festival of Fantasy parade.",
       },
       planningProfile: {
         category: "plan_ahead_multi_pass",
         paidAccess: "LLMP",
         appStatus: "plan_ahead",
         strategy:
-          "Secure Lightning Lane Multi Pass if this is a must-do, or watch for dips during the afternoon parade.",
+          "Secure Lightning Lane Multi Pass if this is a must-do, or watch for dips during the afternoon parade or late evening.",
       },
-      tags: ["classic", "boat", "family", "plan-ahead"],
+      tags: ["classic", "boat", "family", "outdoor", "plan-ahead"],
     },
 
     "137": {
@@ -54,13 +54,13 @@ export const RIDE_METADATA = {
       intensity: 2,
       popularity: 78,
       waitProfile: {
-        averageWait: 27,
+        averageWait: 35,
         goodDealUnder: 20,
-        normalRange: [25, 35],
-        badValueOver: 45,
+        normalRange: [25, 45],
+        badValueOver: 55,
         usuallyHighAllDay: false,
         strategyNote:
-          "High-capacity people eater. If it spikes around midday, check again later.",
+          "Massive people eater with strong capacity. Avoid the noon AC rush; shorter waits usually show up before 11 AM or after 6 PM.",
       },
       planningProfile: {
         category: "wait_for_drop",
@@ -69,7 +69,7 @@ export const RIDE_METADATA = {
         strategy:
           "Great value when low. If it is high around noon, wait for late afternoon or evening.",
       },
-      tags: ["classic", "boat", "family", "indoor"],
+      tags: ["classic", "boat", "family", "indoor", "ac", "wait-for-drop"],
     },
 
     "141": {
@@ -229,22 +229,22 @@ export const RIDE_METADATA = {
       intensity: 3,
       popularity: 96,
       waitProfile: {
-        averageWait: 68,
+        averageWait: 75,
         goodDealUnder: 60,
-        normalRange: [65, 85],
-        badValueOver: 90,
+        normalRange: [65, 90],
+        badValueOver: 100,
         usuallyHighAllDay: true,
         strategyNote:
-          "Rarely a good deal except Early Entry, park close, or after downtime.",
+          "Almost every resort guest targets this during Early Entry. If you do not have Single Pass or a true front-of-pack rope drop position, save it for fireworks or late night.",
       },
       planningProfile: {
         category: "plan_ahead_single_pass",
         paidAccess: "LLSP",
         appStatus: "plan_ahead",
         strategy:
-          "Buy Single Pass, rope drop during Early Entry, or ride during fireworks/near park close.",
+          "Buy Single Pass, be at the front of Early Entry, or ride during fireworks/near park close. Avoid the mid-morning family surge.",
       },
-      tags: ["headliner", "coaster", "family", "single-pass", "plan-ahead"],
+      tags: ["headliner", "coaster", "family", "single-pass", "plan-ahead", "weather-sensitive"],
     },
 
     "132": {
@@ -285,24 +285,24 @@ export const RIDE_METADATA = {
       getsWet: false,
       closesInRain: false,
       intensity: 1,
-      popularity: 48,
+      popularity: 50,
       waitProfile: {
-        averageWait: 18,
+        averageWait: 25,
         goodDealUnder: 15,
-        normalRange: [15, 25],
-        badValueOver: 35,
+        normalRange: [20, 35],
+        badValueOver: 45,
         usuallyHighAllDay: false,
         strategyNote:
-          "Massive people eater. Line can look long but usually moves continuously.",
+          "Massive people eater. The line may look long outside, but it moves continuously. Great afternoon heat escape when the wait is reasonable.",
       },
       planningProfile: {
         category: "normal_standby",
         paidAccess: "LLMP",
-        appStatus: "go_now",
+        appStatus: "go_now_if_low",
         strategy:
-          "Great indoor family filler, especially afternoon or evening.",
+          "Good indoor family filler when nearby. Skip if it pushes over 45 minutes unless your group really wants it.",
       },
-      tags: ["classic", "boat", "toddler", "recovery", "indoor"],
+      tags: ["classic", "boat", "toddler", "recovery", "indoor", "ac"],
     },
 
     "135": {
@@ -343,24 +343,24 @@ export const RIDE_METADATA = {
       getsWet: false,
       closesInRain: false,
       intensity: 1,
-      popularity: 89,
+      popularity: 90,
       waitProfile: {
-        averageWait: 52,
-        goodDealUnder: 40,
-        normalRange: [45, 65],
-        badValueOver: 70,
+        averageWait: 65,
+        goodDealUnder: 45,
+        normalRange: [50, 75],
+        badValueOver: 80,
         usuallyHighAllDay: true,
         strategyNote:
-          "Low capacity. If it is under 40 minutes during the day, strongly consider riding.",
+          "Very low hourly capacity, so the line barely moves once it builds. Best early morning or the final hour of the night. Do not wait mid-day unless it is a must-do.",
       },
       planningProfile: {
         category: "plan_ahead_multi_pass",
         paidAccess: "LLMP",
         appStatus: "plan_ahead",
         strategy:
-          "Book Multi Pass, make it a first stop, or save for the final hour.",
+          "Book Multi Pass, make it an early stop, or save it for the final hour. Avoid 10:30 AM to 5 PM unless the wait unexpectedly drops.",
       },
-      tags: ["classic", "dark-ride", "family", "plan-ahead"],
+      tags: ["classic", "dark-ride", "family", "indoor", "plan-ahead"],
     },
 
     "142": {
@@ -374,22 +374,22 @@ export const RIDE_METADATA = {
       intensity: 1,
       popularity: 65,
       waitProfile: {
-        averageWait: 27,
-        goodDealUnder: 20,
-        normalRange: [25, 35],
-        badValueOver: 40,
+        averageWait: 35,
+        goodDealUnder: 25,
+        normalRange: [30, 45],
+        badValueOver: 50,
         usuallyHighAllDay: false,
         strategyNote:
-          "Peaks mid-day with families. Better early or late.",
+          "Often acts as overflow when Peter Pan and Seven Dwarfs get too long. Better early or evening than peak family hours.",
       },
       planningProfile: {
         category: "normal_standby",
         paidAccess: "LLMP",
         appStatus: "go_now_if_low",
         strategy:
-          "Ride under 30 minutes, especially if nearby with young kids.",
+          "Ride under 30 minutes, especially if nearby with young kids. If it spikes midday, check back later.",
       },
-      tags: ["dark-ride", "toddler", "family", "indoor"],
+      tags: ["dark-ride", "toddler", "family", "indoor", "ac"],
     },
 
     "161": {
@@ -462,22 +462,22 @@ export const RIDE_METADATA = {
       intensity: 3,
       popularity: 85,
       waitProfile: {
-        averageWait: 36,
-        goodDealUnder: 25,
-        normalRange: [30, 45],
-        badValueOver: 50,
+        averageWait: 45,
+        goodDealUnder: 30,
+        normalRange: [35, 55],
+        badValueOver: 65,
         usuallyHighAllDay: false,
         strategyNote:
-          "Susceptible to crowd surges. Often drops during parade or late evening.",
+          "Highly susceptible to crowd surges. Best first hour, during the afternoon parade, or late night. If it posts high, walk away and check again later.",
       },
       planningProfile: {
         category: "wait_for_drop",
         paidAccess: "LLMP",
         appStatus: "wait_for_drop",
         strategy:
-          "If it spikes, check again during the parade or late evening.",
+          "If it spikes, check again during the parade or late evening. Do not cross the park for an average wait unless you are nearby.",
       },
-      tags: ["coaster", "family", "wait-for-drop"],
+      tags: ["coaster", "family", "outdoor", "weather-sensitive", "wait-for-drop"],
     },
 
     "1214": {
@@ -518,24 +518,24 @@ export const RIDE_METADATA = {
       getsWet: true,
       closesInRain: true,
       intensity: 3,
-      popularity: 92,
+      popularity: 94,
       waitProfile: {
-        averageWait: 33,
-        goodDealUnder: 25,
-        normalRange: [30, 45],
-        badValueOver: 55,
+        averageWait: 65,
+        goodDealUnder: 45,
+        normalRange: [50, 75],
+        badValueOver: 85,
         usuallyHighAllDay: true,
         strategyNote:
-          "High demand, especially on warm days. Better late evening if missed earlier.",
+          "Standby demand is heavily dictated by weather. It stays high on warm afternoons. Prioritize it as a first Multi Pass pick or try after the sun sets.",
       },
       planningProfile: {
         category: "plan_ahead_multi_pass",
         paidAccess: "LLMP",
         appStatus: "plan_ahead",
         strategy:
-          "Prioritize as a top Multi Pass selection. If missed, rope drop or try late evening.",
+          "Prioritize as a top Multi Pass selection, hit it at rope drop, or try late night. Warm weather can keep standby high all afternoon.",
       },
-      tags: ["headliner", "water", "family", "plan-ahead"],
+      tags: ["headliner", "water", "family", "mixed", "weather-sensitive", "plan-ahead"],
     },
 
     // ---------- Liberty Square ----------
@@ -550,22 +550,22 @@ export const RIDE_METADATA = {
       intensity: 2,
       popularity: 84,
       waitProfile: {
-        averageWait: 34,
+        averageWait: 40,
         goodDealUnder: 25,
-        normalRange: [30, 45],
-        badValueOver: 50,
+        normalRange: [30, 50],
+        badValueOver: 60,
         usuallyHighAllDay: false,
         strategyNote:
-          "Line moves continuously. If it spikes over 45–50, check again later.",
+          "Line flows faster than it looks. Avoid the noon Liberty Square jam, but jump in when it drops under 35 minutes.",
       },
       planningProfile: {
         category: "wait_for_drop",
         paidAccess: "LLMP",
         appStatus: "wait_for_drop",
         strategy:
-          "Avoid the noon to mid-afternoon surge. Usually improves later.",
+          "Best before 10:30 AM or after 7:30 PM. If it spikes around noon, check again later.",
       },
-      tags: ["classic", "dark-ride", "spooky", "indoor"],
+      tags: ["classic", "dark-ride", "spooky", "indoor", "ac", "wait-for-drop"],
     },
 
     "356": {
@@ -638,22 +638,22 @@ export const RIDE_METADATA = {
       intensity: 1,
       popularity: 75,
       waitProfile: {
-        averageWait: 26,
+        averageWait: 30,
         goodDealUnder: 20,
-        normalRange: [25, 35],
-        badValueOver: 40,
+        normalRange: [25, 40],
+        badValueOver: 50,
         usuallyHighAllDay: false,
         strategyNote:
-          "Omnimover-style flow. Under 20 often means a quick moving queue.",
+          "Omnimover-style flow. Anything under 25 minutes usually means you are mostly walking through the queue switchbacks.",
       },
       planningProfile: {
         category: "normal_standby",
         paidAccess: "LLMP",
-        appStatus: "go_now",
+        appStatus: "go_now_if_low",
         strategy:
-          "Good Tomorrowland move when under 30 minutes or nearby.",
+          "Good Tomorrowland move under 25–30 minutes. Avoid the peak lunch rush if it spikes.",
       },
-      tags: ["interactive", "dark-ride", "family", "indoor"],
+      tags: ["interactive", "dark-ride", "family", "indoor", "ac"],
     },
 
     "138": {
@@ -667,22 +667,22 @@ export const RIDE_METADATA = {
       intensity: 4,
       popularity: 88,
       waitProfile: {
-        averageWait: 43,
-        goodDealUnder: 30,
-        normalRange: [35, 50],
-        badValueOver: 55,
+        averageWait: 50,
+        goodDealUnder: 35,
+        normalRange: [40, 60],
+        badValueOver: 70,
         usuallyHighAllDay: false,
         strategyNote:
-          "Peaks mid-day but clears out well in the evening.",
+          "Spikes hard midday but clears out well in the evening. A 30–35 minute wait after 8 PM is very realistic.",
       },
       planningProfile: {
         category: "wait_for_drop",
         paidAccess: "LLMP",
         appStatus: "wait_for_drop",
         strategy:
-          "Avoid mid-day spikes. Try after 8 PM or use Multi Pass.",
+          "Avoid 11 AM to 2 PM spikes. Try the first hour, after 8 PM, or use Multi Pass.",
       },
-      tags: ["coaster", "thrill", "dark-ride", "wait-for-drop"],
+      tags: ["coaster", "thrill", "dark-ride", "indoor", "ac", "wait-for-drop"],
     },
 
     "143": {
@@ -781,24 +781,24 @@ export const RIDE_METADATA = {
       getsWet: false,
       closesInRain: true,
       intensity: 1,
-      popularity: 68,
+      popularity: 60,
       waitProfile: {
-        averageWait: 11,
+        averageWait: 15,
         goodDealUnder: 10,
-        normalRange: [10, 15],
-        badValueOver: 20,
+        normalRange: [10, 20],
+        badValueOver: 25,
         usuallyHighAllDay: false,
         strategyNote:
-          "Usually walk-on except afternoon spikes when guests want shade and seats.",
+          "Perfect filler attraction. It only gets a real wait when tired guests seek a shaded seated break in the afternoon.",
       },
       planningProfile: {
         category: "filler_or_recovery",
         paidAccess: "none",
         appStatus: "recovery",
         strategy:
-          "Great low-stress break. Best as a recovery/chill pick, not a default headliner.",
+          "Great low-stress break when nearby. It should not hijack the plan unless the group needs a breather.",
       },
-      tags: ["classic", "relaxing", "low-wait", "recovery"],
+      tags: ["classic", "relaxing", "low-wait", "recovery", "filler"],
     },
 
     "11527": {
@@ -812,22 +812,22 @@ export const RIDE_METADATA = {
       intensity: 5,
       popularity: 98,
       waitProfile: {
-        averageWait: 62,
-        goodDealUnder: 45,
-        normalRange: [50, 70],
-        badValueOver: 75,
+        averageWait: 85,
+        goodDealUnder: 65,
+        normalRange: [75, 100],
+        badValueOver: 110,
         usuallyHighAllDay: true,
         strategyNote:
-          "High-demand premium thrill ride. Use Single Pass, rope drop, or late night.",
+          "With virtual queue retired, standby stays massive most of the day. Buying Single Pass is the easiest way to avoid a grueling wait.",
       },
       planningProfile: {
         category: "plan_ahead_single_pass",
         paidAccess: "LLSP",
         appStatus: "plan_ahead",
         strategy:
-          "Purchase Single Pass in advance, rope drop during Early Entry, or ride near park close.",
+          "Purchase Single Pass, ride right at official park open, or save for right before park close. Avoid 11 AM to 4 PM standby unless the wait unexpectedly drops.",
       },
-      tags: ["headliner", "coaster", "thrill", "single-pass", "plan-ahead"],
+      tags: ["headliner", "coaster", "thrill", "single-pass", "plan-ahead", "weather-sensitive"],
     },
    },
 
