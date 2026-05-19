@@ -7,7 +7,7 @@
  * V1 focus:
  * - Land-aware free water recommendations
  * - Bottle refill station suggestions
- * - Heat/hydration support for Magic Kingdom and EPCOT
+ * - Heat/hydration support for Magic Kingdom, EPCOT, and Hollywood Studios
  */
 
 export const PARK_AMENITIES = {
@@ -277,6 +277,151 @@ export const PARK_AMENITIES = {
       },
     },
   },
+
+  hollywood: {
+    waterByLand: {
+      hollywood_boulevard: {
+        quickService: [
+          {
+            name: "The Trolley Car Café",
+            note: "Starbucks-style location near the front. Ask for a free cup of ice water, but expect longer lines during morning rush.",
+          },
+          {
+            name: "ABC Commissary",
+            note: "Reliable nearby quick-service option with indoor AC seating and ice water available at the counter.",
+          },
+        ],
+        bottleRefill: [
+          {
+            name: "Front-of-park restroom areas",
+            note: "Check newer fountains near main restroom areas for bottle refill stations.",
+          },
+        ],
+      },
+
+      sunset_boulevard: {
+        quickService: [
+          {
+            name: "Sunset Ranch Market",
+            note: "Outdoor quick-service area near Tower of Terror and Rock 'n' Roller Coaster. Ask at open windows for ice water.",
+          },
+          {
+            name: "Rosie's All-American Café",
+            note: "Walk-up window in Sunset Ranch Market. Good water stop if you are near Tower or Rock 'n' Roller Coaster.",
+          },
+          {
+            name: "Catalina Eddie's",
+            note: "Another Sunset Ranch Market window where you can request ice water when open.",
+          },
+        ],
+        bottleRefill: [],
+      },
+
+      echo_lake: {
+        quickService: [
+          {
+            name: "Backlot Express",
+            note: "Excellent indoor AC reset near Star Tours with quick-service counters for free ice water.",
+          },
+          {
+            name: "Dockside Diner",
+            note: "Walk-up option near Echo Lake. Ask at the window for ice water when open.",
+          },
+        ],
+        bottleRefill: [
+          {
+            name: "Echo Lake restroom areas",
+            note: "Check nearby restroom-area fountains for refill options.",
+          },
+        ],
+      },
+
+      grand_avenue: {
+        quickService: [
+          {
+            name: "PizzeRizzo",
+            note: "Indoor seating and quick-service counters make this a useful AC and water reset near Muppet*Vision.",
+          },
+          {
+            name: "BaseLine Tap House",
+            note: "Good shaded Grand Avenue stop. Ask for water at the counter/bar area when open.",
+          },
+        ],
+        bottleRefill: [],
+      },
+
+      star_wars_galaxys_edge: {
+        quickService: [
+          {
+            name: "Docking Bay 7 Food and Cargo",
+            note: "Best Galaxy's Edge water and AC reset. Ask at the counter for ice water and use the indoor seating if available.",
+          },
+          {
+            name: "Ronto Roasters",
+            note: "Walk-up counter where you can request water when open, but seating/AC is more limited.",
+          },
+          {
+            name: "Milk Stand",
+            note: "Walk-up beverage window. You can ask for water, but lines may not make it the fastest option.",
+          },
+        ],
+        bottleRefill: [
+          {
+            name: "Galaxy's Edge restroom areas",
+            note: "Look for bottle refill stations near the land's restroom areas, especially useful because the land gets hot.",
+          },
+        ],
+      },
+
+      toy_story_land: {
+        quickService: [
+          {
+            name: "Woody's Lunch Box",
+            note: "Main Toy Story Land quick-service window. Ask for ice water, but lines and outdoor heat can make this less ideal at peak times.",
+          },
+        ],
+        bottleRefill: [
+          {
+            name: "Toy Story Land restroom area",
+            note: "Use restroom-area fountains/refill stations when available. This land is exposed, so refill before staying too long.",
+          },
+        ],
+      },
+
+      animation_courtyard: {
+        quickService: [
+          {
+            name: "The Market",
+            note: "Small nearby stand when open. Ask for water at the register.",
+          },
+          {
+            name: "ABC Commissary",
+            note: "Nearby fallback with indoor AC seating and counter-service water.",
+          },
+        ],
+        bottleRefill: [
+          {
+            name: "Animation Courtyard restroom areas",
+            note: "Check restroom-area fountains for bottle refill options.",
+          },
+        ],
+      },
+
+      commissary_lane: {
+        quickService: [
+          {
+            name: "ABC Commissary",
+            note: "One of the strongest Hollywood Studios hydration resets: indoor AC seating, quick-service counters, and easy access from Commissary Lane.",
+          },
+          {
+            name: "Sci-Fi Dine-In Theater Restaurant",
+            note: "Table-service option nearby. Not a quick water stop, but useful if you already have a reservation and need a full AC break.",
+          },
+        ],
+        bottleRefill: [],
+      },
+    },
+  },
 };
 
 export function getWaterOptionsForLand(parkId, land) {
@@ -312,6 +457,20 @@ export function getWaterOptionsForLand(parkId, land) {
           PARK_AMENITIES.magic_kingdom.waterByLand.liberty_square.quickService[0],
         ],
         bottleRefill: [],
+      };
+    }
+
+    if (parkId === "hollywood") {
+      return {
+        quickService: [
+          PARK_AMENITIES.hollywood.waterByLand.commissary_lane.quickService[0],
+          PARK_AMENITIES.hollywood.waterByLand.echo_lake.quickService[0],
+          PARK_AMENITIES.hollywood.waterByLand.star_wars_galaxys_edge.quickService[0],
+        ],
+        bottleRefill: [
+          PARK_AMENITIES.hollywood.waterByLand.star_wars_galaxys_edge.bottleRefill[0],
+          PARK_AMENITIES.hollywood.waterByLand.toy_story_land.bottleRefill[0],
+        ],
       };
     }
 
