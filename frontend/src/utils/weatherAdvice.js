@@ -405,7 +405,7 @@ function getHollywoodRainSuggestions(currentLand) {
     grand_avenue: [
       {
         title: "Grand Avenue rain plan",
-        text: "Muppet*Vision 3D, PizzeRizzo, BaseLine Tap House, and nearby covered areas make this a good low-stress rain reset.",
+        text: "BaseLine Tap House, nearby covered Grand Avenue areas, ABC Commissary, and Backlot Express are better rain-reset choices now. BaseLine is good for shade and water, while ABC Commissary and Backlot Express are stronger indoor AC resets.",
       },
       {
         title: "Smarter next move",
@@ -486,7 +486,7 @@ function getHollywoodStormSuggestions(currentLand) {
     grand_avenue: [
       {
         title: "Grand Avenue storm shelter",
-        text: "Muppet*Vision 3D, PizzeRizzo, and nearby covered areas are good storm reset options.",
+        text: "Use nearby covered Grand Avenue areas if you are stuck there, but for a stronger storm reset, move to ABC Commissary, Backlot Express, or Galaxy’s Edge cover when it is safe to do so.",
       },
     ],
 
@@ -557,7 +557,7 @@ function getHollywoodHeatSuggestions(currentLand, severity) {
     grand_avenue: [
       {
         title: "Grand Avenue cool-down",
-        text: "Muppet*Vision 3D, PizzeRizzo, and BaseLine Tap House can slow the pace and keep the group out of the sun.",
+        text: "BaseLine Tap House can help with shade and water, but it is not a true AC reset. For real cooling, move toward ABC Commissary, Backlot Express, or Docking Bay 7 depending on which direction you are headed.",
       },
     ],
 
