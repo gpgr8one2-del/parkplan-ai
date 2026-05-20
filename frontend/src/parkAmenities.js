@@ -339,12 +339,16 @@ export const PARK_AMENITIES = {
       grand_avenue: {
         quickService: [
           {
-            name: "PizzeRizzo",
-            note: "Indoor seating and quick-service counters make this a useful AC and water reset near Muppet*Vision.",
+            name: "BaseLine Tap House",
+            note: "Good shaded Grand Avenue stop. Ask for water at the counter/bar area when open. This is shade and hydration, not a true AC reset.",
           },
           {
-            name: "BaseLine Tap House",
-            note: "Good shaded Grand Avenue stop. Ask for water at the counter/bar area when open.",
+            name: "ABC Commissary",
+            note: "Best nearby fallback for a real indoor AC and water reset. Walk back toward Commissary Lane if the group needs to fully cool down.",
+          },
+          {
+            name: "Backlot Express",
+            note: "Strong nearby indoor AC and water reset toward Echo Lake / Star Tours if you are moving that direction.",
           },
         ],
         bottleRefill: [],
