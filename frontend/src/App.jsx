@@ -8,6 +8,7 @@ import { getWeatherMode, getRecoverySuggestions } from "./utils/weatherAdvice";
 import { formatCloseTimeLabel } from "./parkHours";
 import { getRideExperienceContent } from "./rideExperienceContent";
 import { shouldShowRideInWaitList } from "./attractionDisplayFilters";
+import { getMiniGameForContext, MINI_GAME_TYPES } from "./data/miniGames/magicKingdomMiniGames";
 
 const PARKS = [
   { id: "magic_kingdom", name: "Magic Kingdom" },
@@ -212,6 +213,9 @@ function App() {
   const [skippedRideIds, setSkippedRideIds] = useState([]);
   const [reportedRideIssueIds, setReportedRideIssueIds] = useState([]);
   const [currentActivity, setCurrentActivity] = useState(null);
+  const [activeMiniGameType, setActiveMiniGameType] = useState("trivia");
+  const [miniGameSeed, setMiniGameSeed] = useState(0);
+  const [revealedTriviaAnswer, setRevealedTriviaAnswer] = useState(false);
 
   const isRestoringParkState = useRef(false);
 
@@ -364,6 +368,24 @@ function App() {
     return getRideExperienceContent(activePark, currentActivity.rideName);
   }, [activePark, currentActivity]);
 
+  const activeMiniGame = useMemo(() => {
+    if (currentActivity?.type !== "in_line") return null;
+
+    return getMiniGameForContext({
+      parkId: activePark,
+      land: currentActivity.land || currentLand,
+      rideName: currentActivity.rideName,
+      gameType: activeMiniGameType,
+      seed: miniGameSeed,
+    });
+  }, [
+    activePark,
+    activeMiniGameType,
+    currentActivity,
+    currentLand,
+    miniGameSeed,
+  ]);
+
   function handleInLine(ride) {
     if (!ride?.id) return;
 
@@ -425,6 +447,17 @@ function App() {
 
   function handleCancelCurrentActivity() {
     setCurrentActivity(null);
+  }
+
+  function handleMiniGameTypeChange(type) {
+    setActiveMiniGameType(type);
+    setMiniGameSeed(0);
+    setRevealedTriviaAnswer(false);
+  }
+
+  function handleNextMiniGame() {
+    setMiniGameSeed((prev) => prev + 1);
+    setRevealedTriviaAnswer(false);
   }
 
   function handleResetRecs() {
@@ -490,6 +523,192 @@ function App() {
     );
   }
 
+  function renderLineTimeCompanion() {
+    if (currentActivity?.type !== "in_line") return null;
+
+    if (activePark !== "magic_kingdom") {
+      return (
+        <div
+          style={{
+            marginTop: 14,
+            padding: 12,
+            borderRadius: 16,
+            border: "1px solid #dbeafe",
+            background: "rgba(255,255,255,.75)",
+          }}
+        >
+          <strong>Line Time Companion</strong>
+          <p style={{ margin: "6px 0 0", color: "#475569" }}>
+            Mini-games are starting in Magic Kingdom for this test. If your family likes it, we’ll expand it to the other parks.
+          </p>
+        </div>
+      );
+    }
+
+    if (!activeMiniGame) return null;
+
+    return (
+      <div
+        style={{
+          marginTop: 14,
+          padding: 12,
+          borderRadius: 18,
+          border: "1px solid #c4b5fd",
+          background: "#faf5ff",
+        }}
+      >
+        <div style={{ fontSize: 12, color: "#6d28d9", fontWeight: 900 }}>
+          LINE TIME COMPANION
+        </div>
+
+        <h4 style={{ margin: "5px 0 6px", fontSize: 18 }}>
+          A quick family game while you wait
+        </h4>
+
+        <p style={{ margin: "0 0 10px", color: "#475569", fontSize: 13 }}>
+          No scores. No pressure. Just a tiny way to laugh, look around, and make the line feel shorter.
+        </p>
+
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+          {MINI_GAME_TYPES.map((game) => (
+            <button
+              key={game.key}
+              onClick={() => handleMiniGameTypeChange(game.key)}
+              style={{
+                ...actionButton,
+                background: activeMiniGameType === game.key ? "#6d28d9" : "white",
+                color: activeMiniGameType === game.key ? "white" : "#6d28d9",
+                borderColor: "#c4b5fd",
+              }}
+            >
+              {game.label}
+            </button>
+          ))}
+        </div>
+
+        <div
+          style={{
+            padding: 12,
+            borderRadius: 16,
+            border: "1px solid #ddd6fe",
+            background: "white",
+          }}
+        >
+          <strong>{activeMiniGame.title}</strong>
+
+          {activeMiniGame.type === "trivia" && (
+            <>
+              <p style={{ margin: "8px 0", color: "#334155", fontWeight: 700 }}>
+                {activeMiniGame.question}
+              </p>
+
+              <div style={{ display: "grid", gap: 8 }}>
+                {activeMiniGame.choices.map((choice) => {
+                  const isCorrect = choice === activeMiniGame.answer;
+
+                  return (
+                    <button
+                      key={choice}
+                      onClick={() => setRevealedTriviaAnswer(true)}
+                      style={{
+                        ...button,
+                        borderRadius: 14,
+                        textAlign: "left",
+                        background:
+                          revealedTriviaAnswer && isCorrect ? "#dcfce7" : "white",
+                        borderColor:
+                          revealedTriviaAnswer && isCorrect ? "#86efac" : "#e2e8f0",
+                        color:
+                          revealedTriviaAnswer && isCorrect ? "#166534" : "#0f172a",
+                      }}
+                    >
+                      {choice}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {!revealedTriviaAnswer ? (
+                <button
+                  onClick={() => setRevealedTriviaAnswer(true)}
+                  style={{ ...button, marginTop: 10, color: "#6d28d9" }}
+                >
+                  Show Answer
+                </button>
+              ) : (
+                <div
+                  style={{
+                    marginTop: 10,
+                    padding: 10,
+                    borderRadius: 14,
+                    background: "#f0fdf4",
+                    border: "1px solid #bbf7d0",
+                  }}
+                >
+                  <strong style={{ color: "#166534" }}>
+                    Answer: {activeMiniGame.answer}
+                  </strong>
+                  <p style={{ margin: "6px 0 0", color: "#334155" }}>
+                    {activeMiniGame.fact}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
+          {activeMiniGame.type === "look_around" && (
+            <>
+              <p style={{ margin: "8px 0", color: "#334155", fontWeight: 700 }}>
+                {activeMiniGame.task}
+              </p>
+              <p style={{ margin: "0 0 10px", color: "#64748b" }}>
+                Hint: {activeMiniGame.hint}
+              </p>
+              <button style={{ ...button, color: "#166534" }}>
+                Found it!
+              </button>
+            </>
+          )}
+
+          {activeMiniGame.type === "family_vote" && (
+            <>
+              <p style={{ margin: "8px 0", color: "#334155", fontWeight: 700 }}>
+                {activeMiniGame.prompt}
+              </p>
+              <div style={{ display: "grid", gap: 8 }}>
+                {activeMiniGame.options.map((option) => (
+                  <button
+                    key={option}
+                    style={{
+                      ...button,
+                      borderRadius: 14,
+                      textAlign: "left",
+                    }}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {activeMiniGame.type === "would_you_rather" && (
+            <p style={{ margin: "8px 0", color: "#334155", fontWeight: 800 }}>
+              {activeMiniGame.prompt}
+            </p>
+          )}
+
+          <button
+            onClick={handleNextMiniGame}
+            style={{ ...button, marginTop: 12, color: "#6d28d9" }}
+          >
+            Give us another one
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   function renderWhileYouWaitCard() {
     const items = whileYouWaitContent?.whileWaiting || [];
 
@@ -531,6 +750,8 @@ function App() {
             </div>
           ))}
         </div>
+
+        {renderLineTimeCompanion()}
       </section>
     );
   }
