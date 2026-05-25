@@ -969,9 +969,118 @@ export const RIDE_EXPERIENCE_CONTENT = {
   },
 };
 
+function normalizeRideExperienceName(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[™®©]/g, "")
+    .replace(/[’‘]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/&/g, "and")
+    .replace(/\bstarring\b/g, "")
+    .replace(/\bpresented by .+$/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function getRideExperienceAliases(normalizedName) {
+  const aliases = new Set([normalizedName]);
+
+  // Live feeds sometimes include legal marks, subtitles, or slightly different
+  // branding than our curated content keys. These aliases keep While You Wait
+  // content from disappearing during real park use.
+  if (normalizedName.includes("tower of terror")) {
+    aliases.add("the twilight zone tower of terror");
+    aliases.add("tower of terror");
+  }
+
+  if (
+    normalizedName.includes("rock n roller coaster") ||
+    normalizedName.includes("rock and roller coaster")
+  ) {
+    aliases.add("rock n roller coaster aerosmith");
+    aliases.add("rock n roller coaster");
+    aliases.add("rock and roller coaster");
+  }
+
+  if (normalizedName.includes("mickey") && normalizedName.includes("runaway railway")) {
+    aliases.add("mickey and minnies runaway railway");
+    aliases.add("mickey minnies runaway railway");
+  }
+
+  if (normalizedName.includes("rise of the resistance")) {
+    aliases.add("star wars rise of the resistance");
+    aliases.add("rise of the resistance");
+  }
+
+  if (normalizedName.includes("millennium falcon") || normalizedName.includes("smugglers run")) {
+    aliases.add("millennium falcon smugglers run");
+    aliases.add("smugglers run");
+  }
+
+  if (normalizedName.includes("star tours")) {
+    aliases.add("star tours the adventures continue");
+    aliases.add("star tours");
+  }
+
+  if (normalizedName.includes("frozen") && normalizedName.includes("sing along")) {
+    aliases.add("for the first time in forever a frozen sing along celebration");
+    aliases.add("frozen sing along celebration");
+  }
+
+  if (normalizedName.includes("little mermaid") || normalizedName.includes("under the sea")) {
+    aliases.add("under the sea journey of the little mermaid");
+    aliases.add("journey of the little mermaid");
+  }
+
+  if (normalizedName.includes("its a small world") || normalizedName.includes("small world")) {
+    aliases.add("its a small world");
+    aliases.add("small world");
+  }
+
+  if (normalizedName.includes("tianas bayou adventure")) {
+    aliases.add("tianas bayou adventure");
+  }
+
+  if (normalizedName.includes("tron")) {
+    aliases.add("tron lightcycle run");
+  }
+
+  return aliases;
+}
+
 export function getRideExperienceContent(parkId, rideName) {
   const parkContent = RIDE_EXPERIENCE_CONTENT[parkId];
   if (!parkContent || !rideName) return null;
 
-  return parkContent[rideName] || null;
+  // Fast path for exact matches.
+  if (parkContent[rideName]) return parkContent[rideName];
+
+  const normalizedRideName = normalizeRideExperienceName(rideName);
+  const rideAliases = getRideExperienceAliases(normalizedRideName);
+
+  const matchedKey = Object.keys(parkContent).find((contentKey) => {
+    const normalizedContentKey = normalizeRideExperienceName(contentKey);
+    const contentAliases = getRideExperienceAliases(normalizedContentKey);
+
+    if (rideAliases.has(normalizedContentKey)) return true;
+
+    for (const alias of rideAliases) {
+      if (contentAliases.has(alias)) return true;
+
+      // Helpful for live-feed names with extra branding or legal marks.
+      if (
+        alias.length >= 8 &&
+        normalizedContentKey.length >= 8 &&
+        (alias.includes(normalizedContentKey) ||
+          normalizedContentKey.includes(alias))
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+
+  return matchedKey ? parkContent[matchedKey] : null;
 }
