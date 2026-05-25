@@ -129,6 +129,70 @@ function formatActivityStartTime(isoString) {
   }
 }
 
+function getElapsedMinutesSince(isoString) {
+  if (!isoString) return null;
+
+  const startedAtMs = new Date(isoString).getTime();
+
+  if (!Number.isFinite(startedAtMs)) {
+    return null;
+  }
+
+  const elapsedMs = Date.now() - startedAtMs;
+
+  if (elapsedMs < 0) {
+    return 0;
+  }
+
+  return Math.max(0, Math.round(elapsedMs / 60000));
+}
+
+function buildCurrentActivityContext(currentActivity) {
+  if (!currentActivity) return null;
+
+  const elapsedMinutes =
+    currentActivity.type === "in_line"
+      ? getElapsedMinutesSince(currentActivity.startedAt)
+      : null;
+
+  return {
+    ...currentActivity,
+    elapsedMinutesInLine: elapsedMinutes,
+    summary:
+      currentActivity.type === "in_line"
+        ? `User is currently in line for ${currentActivity.rideName}. Posted wait when joined: ${
+            currentActivity.postedWaitAtStart ?? "unknown"
+          } minutes. Elapsed time in line: ${
+            elapsedMinutes ?? "unknown"
+          } minutes.`
+        : null,
+  };
+}
+
+function buildLocalChatFallback({
+  activePark,
+  weatherMode,
+  currentActivityContext,
+}) {
+  if (currentActivityContext?.type === "in_line") {
+    const elapsed = currentActivityContext.elapsedMinutesInLine;
+    const posted = currentActivityContext.postedWaitAtStart;
+    const rideName = currentActivityContext.rideName || "this ride";
+    const elapsedText =
+      elapsed != null ? `you’ve already waited about ${elapsed} minutes` : "you’re already in line";
+    const postedText =
+      posted != null ? `the posted wait was ${posted} minutes when you joined` : "I do not have the original posted wait";
+
+    return `I’m having trouble reaching AI chat right now, but here’s the safe ParkPlan call: since ${elapsedText} for ${rideName} and ${postedText}, don’t automatically bail unless the line has stopped, someone feels overheated, or the kids are close to a true meltdown. If the line is moving and this ride matters to your family, try to finish it, then make food, water, and AC the immediate next move.`;
+  }
+
+  if (weatherMode?.mode && weatherMode.mode !== "normal") {
+    return `I’m having trouble reaching AI chat right now, but based on current weather mode, keep the plan simple: favor nearby indoor options, water, shade, food, or a seated reset before chasing a farther ride.`;
+  }
+
+  return "I’m having trouble reaching AI chat right now. Try again in a minute. If the family is tired or hot, use this as a good moment for water, AC, food, or a nearby low-stress ride before making a big walk.";
+}
+
 function buildWeatherDisplay(weather) {
   if (!weather) return "Loading weather...";
 
@@ -385,6 +449,10 @@ function App() {
     currentLand,
     miniGameSeed,
   ]);
+
+  const currentActivityContext = useMemo(() => {
+    return buildCurrentActivityContext(currentActivity);
+  }, [currentActivity]);
 
   function handleInLine(ride) {
     if (!ride?.id) return;
@@ -778,7 +846,14 @@ function App() {
         skippedRideIds,
         reportedRideIssueIds,
         currentLand,
-        currentActivity,
+        currentActivity: currentActivityContext,
+        currentActivityContext,
+        parkPlanBehaviorHints: {
+          inLineDecisionRule:
+            "If the user is already in line and asks whether to leave, do not give a hard leave-the-line recommendation unless safety, overheating, true meltdown risk, ride closure, or a stalled line clearly outweighs the ride value. If elapsed line time, line movement, or must-do status is missing, ask one quick clarifying question or give stay-vs-leave thresholds.",
+          familyEnergyRule:
+            "When kids are tired, hungry, hot, or cranky, balance ride value against family energy. Recommend food, water, AC, and resort breaks when appropriate, but respect high-value waits and sunk wait time.",
+        },
       });
 
       setChat([...nextChat, { role: "assistant", content: res.reply }]);
@@ -787,7 +862,11 @@ function App() {
         ...nextChat,
         {
           role: "assistant",
-          content: "I had trouble connecting to AI chat. Try again in a minute.",
+          content: buildLocalChatFallback({
+            activePark,
+            weatherMode,
+            currentActivityContext,
+          }),
         },
       ]);
     } finally {
@@ -981,6 +1060,9 @@ function App() {
                 : "You marked this as your current line."}
               {currentActivity.startedAt
                 ? ` · Started around ${formatActivityStartTime(currentActivity.startedAt)}`
+                : ""}
+              {currentActivityContext?.elapsedMinutesInLine != null
+                ? ` · About ${currentActivityContext.elapsedMinutesInLine} min in line`
                 : ""}
             </p>
 
