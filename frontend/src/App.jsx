@@ -9,6 +9,7 @@ import { formatCloseTimeLabel } from "./parkHours";
 import { getRideExperienceContent } from "./rideExperienceContent";
 import { shouldShowRideInWaitList } from "./attractionDisplayFilters";
 import { getMiniGameForContext, MINI_GAME_TYPES } from "./data/miniGames/magicKingdomMiniGames";
+import { detectNearestLocationZone, getCurrentPosition } from "./utils/locationDetection";
 
 const PARKS = [
   { id: "magic_kingdom", name: "Magic Kingdom" },
@@ -339,6 +340,9 @@ function App() {
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
   const [chatLoading, setChatLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationMessage, setLocationMessage] = useState("");
+  const [locationError, setLocationError] = useState("");
 
   const [currentLand, setCurrentLand] = useState(() => getDefaultLandForPark("magic_kingdom"));
   const [completedRideIds, setCompletedRideIds] = useState([]);
@@ -408,6 +412,8 @@ function App() {
     setSkippedRideIds(saved.skippedRideIds || []);
     setReportedRideIssueIds(saved.reportedRideIssueIds || []);
     setCurrentActivity(saved.currentActivity || null);
+    setLocationMessage("");
+    setLocationError("");
 
     setTimeout(() => {
       isRestoringParkState.current = false;
@@ -594,6 +600,49 @@ function App() {
   function handleNextMiniGame() {
     setMiniGameSeed((prev) => prev + 1);
     setRevealedTriviaAnswer(false);
+  }
+
+  async function handleUseMyLocation() {
+    setLocationLoading(true);
+    setLocationMessage("");
+    setLocationError("");
+
+    try {
+      const position = await getCurrentPosition();
+      const detectedZone = detectNearestLocationZone({
+        parkId: activePark,
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      });
+
+      if (!detectedZone) {
+        setLocationError(
+          "I could not match your location to this park yet. Pick the closest area manually for now."
+        );
+        return;
+      }
+
+      setCurrentLand(getSafeLandForPark(activePark, detectedZone.landKey));
+      setLocationMessage(
+        `${detectedZone.message} ${
+          detectedZone.confidence === "low"
+            ? "If that does not look right, pick the closest area manually."
+            : "Not right? Pick another area manually."
+        }`
+      );
+    } catch (err) {
+      const denied =
+        err?.code === 1 ||
+        String(err?.message || "").toLowerCase().includes("denied");
+
+      setLocationError(
+        denied
+          ? "Location permission was denied. No problem — pick the closest area manually."
+          : "I could not get your location right now. Pick the closest area manually."
+      );
+    } finally {
+      setLocationLoading(false);
+    }
   }
 
   function handleResetRecs() {
@@ -914,6 +963,11 @@ function App() {
         skippedRideIds,
         reportedRideIssueIds,
         currentLand,
+        locationContext: {
+          type: "manual_or_gps_land",
+          land: currentLand,
+          locationMessage,
+        },
         currentActivity: currentActivityContext,
         currentActivityContext,
         parkPlanBehaviorHints: {
@@ -1195,6 +1249,63 @@ function App() {
                 </option>
               ))}
             </select>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                alignItems: "center",
+                marginTop: 8,
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleUseMyLocation}
+                disabled={locationLoading}
+                style={{
+                  ...actionButton,
+                  color: "#1d4ed8",
+                  borderColor: "#bfdbfe",
+                }}
+              >
+                <MapPin size={13} />{" "}
+                {locationLoading ? "Finding you..." : "Use My Location"}
+              </button>
+
+              <span style={{ color: "#64748b", fontSize: 12 }}>
+                Optional. Used only to estimate your nearby park area.
+              </span>
+            </div>
+
+            {locationMessage && (
+              <p
+                style={{
+                  margin: "7px 0 0",
+                  color: "#166534",
+                  fontSize: 12,
+                  lineHeight: 1.4,
+                  fontWeight: 700,
+                }}
+              >
+                {locationMessage}
+              </p>
+            )}
+
+            {locationError && (
+              <p
+                style={{
+                  margin: "7px 0 0",
+                  color: "#b91c1c",
+                  fontSize: 12,
+                  lineHeight: 1.4,
+                  fontWeight: 700,
+                }}
+              >
+                {locationError}
+              </p>
+            )}
+
             <p
               style={{
                 margin: "7px 0 0",
