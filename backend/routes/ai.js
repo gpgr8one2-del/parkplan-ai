@@ -31,9 +31,21 @@ const currentActivitySchema = z
     land: z.string().max(100).optional(),
     startedAt: z.string().max(100).optional(),
     postedWaitAtStart: z.number().nullable().optional(),
+
+    // Added from App.jsx so AI knows how invested the family already is.
+    elapsedMinutesInLine: z.number().nullable().optional(),
+    summary: z.string().max(500).nullable().optional(),
   })
   .passthrough()
   .nullable()
+  .optional();
+
+const parkPlanBehaviorHintsSchema = z
+  .object({
+    inLineDecisionRule: z.string().max(1000).optional(),
+    familyEnergyRule: z.string().max(1000).optional(),
+  })
+  .passthrough()
   .optional();
 
 const chatSchema = z.object({
@@ -42,13 +54,17 @@ const chatSchema = z.object({
     .object({
       activePark: z.string().max(100).optional(),
       currentLand: z.string().max(100).optional(),
+
       currentActivity: currentActivitySchema,
+      currentActivityContext: currentActivitySchema,
+      parkPlanBehaviorHints: parkPlanBehaviorHintsSchema,
 
       weather: z.any().optional(),
       weatherMode: z.any().optional(),
 
       completedRideIds: z.array(z.string().max(100)).max(100).optional(),
       skippedRideIds: z.array(z.string().max(100)).max(100).optional(),
+      reportedRideIssueIds: z.array(z.string().max(100)).max(100).optional(),
 
       recommendations: z
         .object({
@@ -79,6 +95,13 @@ router.post("/ai-chat", async (req, res) => {
   const parsed = chatSchema.safeParse(req.body);
 
   if (!parsed.success) {
+    req.log?.warn(
+      {
+        issues: parsed.error.flatten(),
+      },
+      "invalid AI chat payload"
+    );
+
     return res.status(400).json({
       error: "Invalid request payload",
       detail: parsed.error.flatten(),
@@ -88,13 +111,28 @@ router.post("/ai-chat", async (req, res) => {
   try {
     const { message, sessionData = {} } = parsed.data;
     const reply = await getAIResponse(message, sessionData);
+
     res.json({ reply });
   } catch (err) {
-    req.log?.error({ err: err.message }, "AI chat failed");
+    req.log?.error(
+      {
+        err: err.message,
+        stack: err.stack,
+        activePark: parsed.data?.sessionData?.activePark,
+        currentLand: parsed.data?.sessionData?.currentLand,
+        currentActivity:
+          parsed.data?.sessionData?.currentActivityContext ||
+          parsed.data?.sessionData?.currentActivity,
+      },
+      "AI chat failed"
+    );
 
     res.status(502).json({
       error: "AI service unavailable",
-      detail: err.message,
+      detail:
+        process.env.NODE_ENV === "production"
+          ? "AI chat is temporarily unavailable."
+          : err.message,
     });
   }
 });
