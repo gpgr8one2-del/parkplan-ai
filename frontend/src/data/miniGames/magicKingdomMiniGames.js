@@ -357,619 +357,808 @@ const WOULD_YOU_RATHER_PROMPTS = [
   "Would you rather eat only park snacks all day or only quick-service meals all day?",
 ];
 
-const MULTI_PARK_LINE_COMPANION_BY_RIDE = {
-  epcot: {
-    "Spaceship Earth": {
-      trivia: [
-        {
-          question: "How long does Spaceship Earth take to complete its historical timeline?",
-          choices: ["About 8 minutes", "About 16 minutes", "About 25 minutes", "About 40 minutes"],
-          answer: "About 16 minutes",
-          fact: "Spaceship Earth is about a 16-minute journey through the history of human communication.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "In the Renaissance scene, look for the sleeping monk who is supposed to be working.",
-          hint: "Look for ink stains he accidentally left on his paper.",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "Time machine vote: if we could visit one era, where are we going?",
-          options: ["Ancient Egypt", "The Renaissance", "The first computers", "The future"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather carve all your text messages into giant stone tablets or only communicate using a telegraph machine?",
-      ],
-    },
 
-    "Guardians of the Galaxy: Cosmic Rewind": {
-      trivia: [
-        {
-          question: "What 1980s pop song plays when you get the “Conga” track?",
-          choices: ["Conga", "September", "One Way or Another", "Everybody Wants to Rule the World"],
-          answer: "Conga",
-          fact: "“Conga” by Gloria Estefan is one of the six possible songs you can get on Cosmic Rewind.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "In the Xandar Gallery, look closely at the city models.",
-          hint: "Try to spot the tiny red star-shaped Nova Corps ships on the landing pads.",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "If our family formed a team of intergalactic heroes, who gets each job?",
-          options: ["Captain", "Pilot", "Tech genius", "The one causing all the trouble"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather have a dancing Baby Groot in your backpack or a grumpy Rocket Raccoon building gadgets for you?",
-      ],
+const EPCOT_TRIVIA_BY_RIDE = {
+  "Spaceship Earth": [
+    {
+      question: "How long does it take for Spaceship Earth to complete one full rotation of its historical timeline?",
+      choices: ["About 8 minutes", "About 16 minutes", "About 24 minutes", "About 32 minutes"],
+      answer: "About 16 minutes",
+      fact: "Spaceship Earth is a slow-moving trip through communication history, which makes it one of EPCOT’s best calm reset rides.",
     },
+    {
+      question: "Disney nerd check: which phrase from Spaceship Earth became one of EPCOT’s most quoted lines?",
+      choices: ["Thank the Phoenicians", "Paging Mr. Morrow", "Por favor manténganse alejado", "Nothing can stop us now"],
+      answer: "Thank the Phoenicians",
+      fact: "The Phoenicians helped spread one of the earliest alphabets, and EPCOT fans have turned that line into a full personality trait.",
+    },
+    {
+      question: "What kind of ride system slowly moves guests through Spaceship Earth?",
+      choices: ["Boat flume", "Omnimover", "Trackless ride", "Suspended coaster"],
+      answer: "Omnimover",
+      fact: "An Omnimover keeps vehicles moving continuously, which is why Spaceship Earth can move a lot of guests while staying calm.",
+    },
+  ],
 
-    "Mission: SPACE": {
-      trivia: [
-        {
-          question: "About how far is the simulated journey from Earth to Mars?",
-          choices: ["340,000 miles", "3.4 million miles", "34 million miles", "340 million miles"],
-          answer: "34 million miles",
-          fact: "The mission is based around a roughly 34-million-mile journey to Mars.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "Look at the giant spinning gravity wheel in the queue.",
-          hint: "Can you spot astronaut crew uniforms hanging inside the sleeping bunks as they rotate past?",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "We landed on Mars. Who gets each role?",
-          options: ["First brave explorer", "Radio monitor", "Space snack captain", "Person asking to go home"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather float in zero gravity trying to catch your food or wear magnetic boots to walk on the ceiling?",
-      ],
+  "Guardians of the Galaxy: Cosmic Rewind": [
+    {
+      question: "What famous 1980s pop song plays when you get the “Conga” track on Cosmic Rewind?",
+      choices: ["September", "Conga", "Everybody Wants to Rule the World", "I Ran"],
+      answer: "Conga",
+      fact: "There are multiple possible songs on Cosmic Rewind, so half the fun is finding out which space jam your family gets.",
     },
+    {
+      question: "Cosmic Rewind is special because the ride vehicles do what during the coaster?",
+      choices: ["Rotate toward the action", "Let guests steer", "Go underwater", "Launch backward only"],
+      answer: "Rotate toward the action",
+      fact: "Disney calls it an Omnicoaster. The vehicles turn so the ride can point your attention like a moving movie camera.",
+    },
+    {
+      question: "What former EPCOT attraction area did Cosmic Rewind replace?",
+      choices: ["Universe of Energy", "Horizons", "World of Motion", "Body Wars"],
+      answer: "Universe of Energy",
+      fact: "Old-school EPCOT fans still have complicated feelings about this one. Cosmic Rewind is amazing, but Universe of Energy was a classic.",
+    },
+  ],
 
-    "Test Track": {
-      trivia: [
-        {
-          question: "What classic EPCOT ride used to be in the Test Track building?",
-          choices: ["Horizons", "World of Motion", "Body Wars", "Maelstrom"],
-          answer: "World of Motion",
-          fact: "World of Motion was the classic EPCOT attraction that originally occupied this space.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "Look at the concept cars, digital blueprints, and wheel designs.",
-          hint: "Who can spot something that looks like a Hidden Mickey?",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "If we designed a family car, what ridiculous feature does it need?",
-          options: ["Hot chocolate machine", "Flying mode", "Built-in nap pods", "Snack cannon"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather test a car through a freezing blizzard simulator or a super-hot desert simulator?",
-      ],
+  "Mission: SPACE": [
+    {
+      question: "How many miles is the simulated journey from Earth to Mars on Mission: SPACE?",
+      choices: ["About 3 million", "About 12 million", "About 34 million", "About 100 million"],
+      answer: "About 34 million",
+      fact: "The ride turns a huge space journey into a few intense minutes. That is either awesome or a terrible idea right after lunch.",
     },
+    {
+      question: "Mission: SPACE has two versions. Which one is the more intense Mars mission?",
+      choices: ["Green", "Orange", "Blue", "Silver"],
+      answer: "Orange",
+      fact: "Orange is the more intense version. Green is the calmer orbit version and usually the better pick for nervous riders.",
+    },
+  ],
 
-    "Soarin' Around the World": {
-      trivia: [
-        {
-          question: "What does the Chief Flight Attendant call Mickey Mouse ear hats?",
-          choices: ["Those little beauties", "Mouse helmets", "Flying ears", "Cabin cargo"],
-          answer: "Those little beauties",
-          fact: "Patrick Warburton famously tells guests to store “these little beauties” in the under-seat compartment.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "Look up at the terminal screens showing facts about different countries.",
-          hint: "First person to find a country they want to visit gets bragging rights.",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "Which landmark from Soarin’ would we visit first?",
-          options: ["Eiffel Tower", "Great Wall of China", "Pyramids of Egypt", "Anywhere with snacks"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather fly anywhere in the world on a hang glider or magically teleport instantly?",
-      ],
+  "Test Track": [
+    {
+      question: "Test Track reaches what top speed?",
+      choices: ["45 mph", "55 mph", "65 mph", "75 mph"],
+      answer: "65 mph",
+      fact: "At 65 mph, Test Track is one of the fastest rides at Walt Disney World.",
     },
+    {
+      question: "What classic EPCOT ride used to live in the Test Track building?",
+      choices: ["World of Motion", "Horizons", "Journey Into Imagination", "Body Wars"],
+      answer: "World of Motion",
+      fact: "World of Motion was a classic transportation dark ride before Test Track moved into the same building.",
+    },
+    {
+      question: "Best family debate: what is the most important car feature?",
+      choices: ["Speed", "Safety", "Comfort", "Snack storage"],
+      answer: "Snack storage",
+      fact: "Okay, not officially. But any family that has done a full park day knows snack storage is elite engineering.",
+    },
+  ],
 
-    "Living with the Land": {
-      trivia: [
-        {
-          question: "What happens to many fruits and vegetables grown in the greenhouses?",
-          choices: ["They are thrown away", "They are served in EPCOT restaurants", "They are shipped to Magic Kingdom", "They are only for display"],
-          answer: "They are served in EPCOT restaurants",
-          fact: "Many crops grown in The Land are harvested and served to guests in EPCOT restaurants.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "In the aquaculture section, look closely at the tanks.",
-          hint: "Can you spot mesh fish tubes shaped like Mickey heads?",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "Deserted island vote: we can plant one fruit or vegetable forever. What are we choosing?",
-          options: ["Potatoes", "Watermelon", "Tomatoes", "Corn"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather grow a pumpkin the size of a minivan or a tomato plant that reaches the clouds?",
-      ],
+  "Soarin' Around the World": [
+    {
+      question: "What does the Chief Flight Attendant call Mickey ear hats in the pre-show?",
+      choices: ["Little beauties", "Mouse helmets", "Flight ears", "Tiny wings"],
+      answer: "Little beauties",
+      fact: "Patrick Warburton’s delivery is half the reason Disney fans can quote this pre-show from memory.",
     },
+    {
+      question: "What kind of experience is Soarin’?",
+      choices: ["Hang gliding simulator", "Boat ride", "Dark coaster", "Trackless chase"],
+      answer: "Hang gliding simulator",
+      fact: "The ride lifts you into a giant screen and uses motion, wind, and scents to make it feel like a world tour.",
+    },
+  ],
 
-    "The Seas with Nemo & Friends": {
-      trivia: [
-        {
-          question: "How much water is in the massive aquarium at The Seas?",
-          choices: ["570,000 gallons", "1.2 million gallons", "5.7 million gallons", "10 million gallons"],
-          answer: "5.7 million gallons",
-          fact: "The Seas aquarium holds about 5.7 million gallons of water.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "In the indoor queue, find the room that feels like you are under a wooden pier.",
-          hint: "Look up for the bottom of a little glass-bottom boat.",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "We are forming an underwater fish-tank band. Who gets each role?",
-          options: ["Lead singer", "Bubble drums", "Grumpy octopus manager", "Backup dancer"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather speak whale like Dory or ride the East Australian Current on a sea turtle shell?",
-      ],
+  "Living with the Land": [
+    {
+      question: "What happens to some of the fruits and vegetables grown in Living with the Land?",
+      choices: ["They are thrown away", "They are painted for display", "They are served in EPCOT restaurants", "They are sent to Magic Kingdom"],
+      answer: "They are served in EPCOT restaurants",
+      fact: "Some food grown in the greenhouses is harvested for use at Disney restaurants. EPCOT somehow made vegetables cool.",
     },
+    {
+      question: "In the greenhouses, some plants grow without soil. What is that method called?",
+      choices: ["Hydroponics", "Root floating", "Soil skipping", "Plant magic"],
+      answer: "Hydroponics",
+      fact: "Hydroponics uses nutrient-rich water instead of traditional soil. Living with the Land is secretly a science class on a boat.",
+    },
+    {
+      question: "Disney fan check: what abbreviation do fans use for Living with the Land?",
+      choices: ["LWTL", "LWL", "LANDY", "Boat Veggies"],
+      answer: "LWTL",
+      fact: "Living with the Land has a huge fanbase because it is calm, cool, weirdly fascinating, and peak EPCOT comfort.",
+    },
+  ],
 
-    "Journey of Water, Inspired by Moana": {
-      trivia: [
-        {
-          question: "What shape is the first water feature near the trail entrance?",
-          choices: ["A spiral wave", "A waterfall", "A hidden Mickey", "A heart"],
-          answer: "A spiral wave",
-          fact: "The opening feature looks like a spiral wave, almost like the ocean waving to Moana.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "Look closely at the rock formations along the trail.",
-          hint: "Can you find Hei Hei hidden in the stone?",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "If we could control one element like Moana connects with water, what would we choose?",
-          options: ["Water", "Wind", "Earth", "Fire"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather sail across the ocean with Hei Hei or explore a glowing monster realm with Maui?",
-      ],
+  "The Seas with Nemo & Friends": [
+    {
+      question: "How much water is inside the massive aquarium at The Seas pavilion?",
+      choices: ["570,000 gallons", "1.2 million gallons", "5.7 million gallons", "10 million gallons"],
+      answer: "5.7 million gallons",
+      fact: "It is so massive that Spaceship Earth could fit inside the aquarium. EPCOT does not do subtle.",
     },
+    {
+      question: "What type of ride vehicle do you board on The Seas with Nemo & Friends?",
+      choices: ["Clamobile", "Seashell spinner", "Submarine pod", "Turtle shell"],
+      answer: "Clamobile",
+      fact: "The Clamobiles move through the story before dropping you into the real aquarium area.",
+    },
+  ],
 
-    "Journey into Imagination with Figment": {
-      trivia: [
-        {
-          question: "What exactly is Figment?",
-          choices: ["A purple dragon", "A tiny dinosaur", "A dream cloud", "A wizard lizard"],
-          answer: "A purple dragon",
-          fact: "Figment is a purple dragon created from the spark of imagination.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "Look at the doors for the sensory labs in the queue.",
-          hint: "Can you find the Sight Lab and read the funny eye chart?",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "If imagination could change one rule of the world, what should change?",
-          options: ["Green sky", "Cars run on bubbles", "Dessert for breakfast", "Gravity gets a day off"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather have a pet dragon that changes colors with your mood or a magical hat that creates what you imagine?",
-      ],
+  "Journey of Water, Inspired by Moana": [
+    {
+      question: "What shape is the first water feature that greets you near the entrance of Journey of Water?",
+      choices: ["A spiral wave", "A giant turtle", "A waterfall door", "A hidden Mickey fountain"],
+      answer: "A spiral wave",
+      fact: "It feels like the ocean waving hello, which is exactly the kind of small detail families actually remember.",
     },
+    {
+      question: "Journey of Water is mostly about what?",
+      choices: ["The water cycle", "Volcanoes", "Space travel", "Norwegian mythology"],
+      answer: "The water cycle",
+      fact: "The trail turns the water cycle into something kids can touch, hear, and play with instead of just reading about it.",
+    },
+  ],
 
-    "Gran Fiesta Tour Starring The Three Caballeros": {
-      trivia: [
-        {
-          question: "Who are Donald Duck’s two bird friends in this ride?",
-          choices: ["Panchito and José", "Lumiere and Cogsworth", "Timon and Pumbaa", "Chip and Dale"],
-          answer: "Panchito and José",
-          fact: "Donald’s Three Caballeros friends are Panchito the rooster and José Carioca the parrot.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "Look across the Mexico pavilion toward the giant pyramid.",
-          hint: "Can you spot the smoking volcano under the twilight sky?",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "If our family started a mariachi band, who gets which instrument?",
-          options: ["Giant guitar", "Maracas", "Trumpet", "Lead singer"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather travel on a flying serape or have a piñata that refills with your favorite candy every morning?",
-      ],
+  "Journey into Imagination with Figment": [
+    {
+      question: "What exactly is Figment?",
+      choices: ["A purple dragon made from imagination", "A tiny dinosaur", "A Norway troll", "A science robot"],
+      answer: "A purple dragon made from imagination",
+      fact: "Figment is the little purple spark of imagination, and EPCOT fans are very protective of him.",
     },
+    {
+      question: "Figment was originally paired with which beloved EPCOT character?",
+      choices: ["Dreamfinder", "Buzzy", "Captain EO", "Sonny Eclipse"],
+      answer: "Dreamfinder",
+      fact: "Dreamfinder and Figment are sacred EPCOT nostalgia. Mention Dreamfinder around an EPCOT fan and watch what happens.",
+    },
+  ],
 
-    "Frozen Ever After": {
-      trivia: [
-        {
-          question: "What is the name of Elsa’s giant snowy ice monster?",
-          choices: ["Marshmallow", "Snowball", "Frostbite", "Sven Jr."],
-          answer: "Marshmallow",
-          fact: "Marshmallow is the giant snow monster Elsa creates to guard her ice palace.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "In Wandering Oaken’s Trading Post, listen near the sauna door.",
-          hint: "If you wait long enough, Oaken may wipe the steam away and wave.",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "If we had Elsa’s ice magic for one day, what are we building?",
-          options: ["Ice castle", "Snow slide", "Frozen snack stand", "A giant Olaf"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather have a magical talking snowman best friend or a loyal reindeer like Sven?",
-      ],
+  "Gran Fiesta Tour Starring The Three Caballeros": [
+    {
+      question: "What are the names of Donald Duck’s two bird best friends in Gran Fiesta Tour?",
+      choices: ["Panchito and José Carioca", "Lumiere and Cogsworth", "Timon and Pumbaa", "Chip and Dale"],
+      answer: "Panchito and José Carioca",
+      fact: "Panchito is the rooster, José Carioca is the parrot, and Donald is somehow always the problem.",
     },
+    {
+      question: "Gran Fiesta Tour is hidden inside which EPCOT pavilion?",
+      choices: ["Mexico", "Norway", "Italy", "Morocco"],
+      answer: "Mexico",
+      fact: "The Mexico pavilion hides a twilight marketplace, a volcano backdrop, restaurants, shops, and a full boat ride.",
+    },
+  ],
 
-    "Remy's Ratatouille Adventure": {
-      trivia: [
-        {
-          question: "What is the name of the chef whose spirit guides Remy?",
-          choices: ["Auguste Gusteau", "Chef Linguini", "Chef Skinner", "Chef Louis"],
-          answer: "Auguste Gusteau",
-          fact: "Chef Auguste Gusteau inspires Remy with the idea that anyone can cook.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "Look closely at the wallpaper in the indoor part of the line.",
-          hint: "From far away it looks normal, but slices of cheese, grapes, and tiny rats are hidden in the pattern.",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "If our family opened a Paris restaurant, who gets each job?",
-          options: ["Head Chef", "Host", "Food critic", "Person eating all the bread"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather be rat-sized in a giant kitchen or be a giant stomping through a miniature city?",
-      ],
+  "Frozen Ever After": [
+    {
+      question: "What is the name of the giant snow monster Elsa created to guard her ice palace?",
+      choices: ["Marshmallow", "Snowball", "Olaf 2", "Frostbite"],
+      answer: "Marshmallow",
+      fact: "Marshmallow is not exactly cuddly, but he does take his ice palace security job seriously.",
     },
-  },
+    {
+      question: "Frozen Ever After replaced what original Norway pavilion boat ride?",
+      choices: ["Maelstrom", "El Rio del Tiempo", "Horizons", "Body Wars"],
+      answer: "Maelstrom",
+      fact: "Maelstrom was a cult-favorite Norway ride. EPCOT fans still bring it up like an unresolved family argument.",
+    },
+  ],
 
-  hollywood: {
-    "Mickey & Minnie's Runaway Railway": {
-      trivia: [
-        {
-          question: "What song do Mickey and Minnie sing as they drive to the park?",
-          choices: ["Nothing Can Stop Us Now", "Hot Dog", "The Best Picnic Ever", "Runaway Railway Rag"],
-          answer: "Nothing Can Stop Us Now",
-          fact: "“Nothing Can Stop Us Now” is the catchy theme song from the attraction.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "In the movie poster room, look at the classic cartoon-style posters.",
-          hint: "Can you find the poster that features a hot dog?",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "Ultimate picnic vote: everyone can bring one food item. What are we bringing?",
-          options: ["Sandwiches", "Cookies", "Fruit", "Something chaotic"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather be pulled into a bouncy cartoon world or into a superhero movie where you have to save the day?",
-      ],
+  "Remy's Ratatouille Adventure": [
+    {
+      question: "What is the name of the famous chef whose spirit guides Remy?",
+      choices: ["Chef Auguste Gusteau", "Chef Linguini", "Chef Skinner", "Chef Anton Ego"],
+      answer: "Chef Auguste Gusteau",
+      fact: "Gusteau’s motto is that anyone can cook, which is encouraging until you remember Remy is a rat doing better than most adults.",
     },
-
-    "The Twilight Zone Tower of Terror": {
-      trivia: [
-        {
-          question: "What year is the Tower of Terror story set in?",
-          choices: ["1929", "1939", "1955", "1971"],
-          answer: "1939",
-          fact: "The story is set on Halloween night in 1939, when lightning struck the hotel.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "In the dusty lobby, look closely at the front desk and tables.",
-          hint: "Try to spot the Mahjong game or teacups with lipstick stains.",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "If our family got stuck in a spooky hotel, who does what?",
-          options: ["Brave leader", "Map reader", "Person hiding behind everyone", "Snack supplier"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather spend one night in a haunted 1930s hotel or one night in a pitch-black forest?",
-      ],
+    {
+      question: "Remy’s Ratatouille Adventure uses what type of ride system?",
+      choices: ["Trackless", "Boat ride", "Omnimover", "Suspended coaster"],
+      answer: "Trackless",
+      fact: "The vehicles move without a visible track, which helps them scurry around like tiny rats in a giant kitchen.",
     },
-
-    "Rock 'n' Roller Coaster Starring The Muppets": {
-      trivia: [
-        {
-          question: "Which Muppet chicken gets a feature track singing “Born To Be Wild”?",
-          choices: ["Camilla", "Gonzo", "Janice", "Miss Piggy"],
-          answer: "Camilla",
-          fact: "Camilla the Chicken gets the spotlight in this Muppets rock-show twist.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "Inside G-Force Records, look at the framed records and album covers.",
-          hint: "What wacky objects or Muppet-style details replace normal rock awards?",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "We are roadies for The Electric Mayhem. Who gets each job?",
-          options: ["Tune guitars", "Drive the tour bus", "Eat dressing-room snacks", "Handle chaos"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather perform in a heavy fuzzy Fozzie suit or be heckled by Statler and Waldorf while singing?",
-      ],
-    },
-
-    "Slinky Dog Dash": {
-      trivia: [
-        {
-          question: "Whose drawings and blueprints are taped around the Slinky Dog Dash queue?",
-          choices: ["Andy’s", "Woody’s", "Buzz’s", "Jessie’s"],
-          answer: "Andy’s",
-          fact: "Andy drew the plans for his backyard Mega Coaster Kit.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "Look for Rex’s giant cardboard box.",
-          hint: "Can you spot the $11.22 price tag, a nod to Toy Story’s original release date?",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "If we were toy-sized, what would be the most fun in Andy’s backyard?",
-          options: ["Wooden blocks", "Tinkertoys", "Bouncy green balls", "Slinky track"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather ride on Slinky Dog through a giant playroom or fly on Buzz Lightyear’s back across the park?",
-      ],
-    },
-
-    "Toy Story Mania!": {
-      trivia: [
-        {
-          question: "What color are the 3D glasses for Toy Story Mania?",
-          choices: ["Yellow", "Blue", "Red", "Green"],
-          answer: "Yellow",
-          fact: "Toy Story Mania uses yellow 3D glasses.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "Look way up at the ceiling in the queue.",
-          hint: "Can you spot the giant Barrel of Monkeys chain hanging across the room?",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "We are trapped in a toy box. Who gets each fort-building job?",
-          options: ["Block stacker", "Fort defender", "Accidental destroyer", "Snack guard"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather have stretchy Slinky arms or wheels for feet like a toy race car?",
-      ],
-    },
-
-    "Alien Swirling Saucers": {
-      trivia: [
-        {
-          question: "What object do the little green aliens worship?",
-          choices: ["The Claw", "The Button", "The Pizza", "The Rocket"],
-          answer: "The Claw",
-          fact: "The aliens famously worship The Claw from Pizza Planet.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "Look for the giant colorful space blasters in the queue.",
-          hint: "Can you find the Buzz Lightyear logo on the toy packaging?",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "If The Claw picked one person in our family to visit a new galaxy, who would be most excited?",
-          options: ["The brave one", "The snack packer", "The space nerd", "Absolutely not me"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather eat pizza for every meal forever or only speak in the squeaky voice of a toy alien?",
-      ],
-    },
-
-    "Star Wars: Rise of the Resistance": {
-      trivia: [
-        {
-          question: "What colors are the R5 droids that drive the ride vehicle?",
-          choices: ["Red, white, and black", "Blue and silver", "Green and gold", "Orange and white"],
-          answer: "Red, white, and black",
-          fact: "The ride vehicles are driven by red, white, and black R5-series droids.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "In the caves before the briefing room, look at the walls.",
-          hint: "Can you spot laser burns and markings from Batuu’s old mining tunnels?",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "We’ve been captured by the First Order. Who gets each escape job?",
-          options: ["Mastermind", "Stormtrooper distractor", "Door hacker", "Person panicking quietly"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather be an undercover spy sneaking onto a Star Destroyer or an X-Wing pilot leading a space battle?",
-      ],
-    },
-
-    "Millennium Falcon: Smugglers Run": {
-      trivia: [
-        {
-          question: "Who recruits you to fly the Millennium Falcon?",
-          choices: ["Hondo Ohnaka", "Chewbacca", "Kylo Ren", "C-3PO"],
-          answer: "Hondo Ohnaka",
-          fact: "Hondo Ohnaka recruits your crew for a coaxium smuggling mission.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "Inside the Falcon’s main room, look at the Dejarik holochess table.",
-          hint: "Then look up and try to spot the hidden Porg nest.",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "Based on real skills, who should fly the Falcon?",
-          options: ["Pilot", "Gunner", "Engineer", "Person not allowed near buttons"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather owe money to Jabba the Hutt or face Darth Vader in a lightsaber duel?",
-      ],
-    },
-
-    "Star Tours – The Adventures Continue": {
-      trivia: [
-        {
-          question: "Who accidentally ends up flying your Starspeeder 1000?",
-          choices: ["C-3PO", "R2-D2", "Chewbacca", "BB-8"],
-          answer: "C-3PO",
-          fact: "C-3PO accidentally becomes your pilot on Star Tours.",
-        },
-      ],
-      lookAround: [
-        {
-          task: "In the spaceport queue, watch the baggage scanner.",
-          hint: "Can you spot funny luggage like a lightsaber or Mickey ears?",
-        },
-      ],
-      familyVote: [
-        {
-          prompt: "Which droid would we want at home?",
-          options: ["Astromech like R2-D2", "Protocol droid like C-3PO", "Tiny rolling droid", "None, too much beeping"],
-        },
-      ],
-      wouldRather: [
-        "Would you rather have a lightsaber to slice toast or use the Force to bring the TV remote to you?",
-      ],
-    },
-  },
+  ],
 };
 
-const MULTI_PARK_FALLBACKS = {
-  epcot: {
-    trivia: [
-      {
-        question: "EPCOT is famous for blending technology, discovery, and world culture. Which vibe fits your group right now?",
-        choices: ["Future stuff", "Food and countries", "Calm boat ride", "Big thrill"],
-        answer: "Food and countries",
-        fact: "There is no wrong answer here. EPCOT is at its best when the day has a little discovery and a little snack strategy.",
-      },
-    ],
-    lookAround: [
-      {
-        task: "Pick one tiny design detail nearby that most people are walking past.",
-        hint: "Signs, tile, lighting, plants, costumes, and background music all count.",
-      },
-    ],
-    familyVote: [
-      {
-        prompt: "What EPCOT mode are we in right now?",
-        options: ["Future explorer", "Snack hunter", "World traveler", "AC survivor"],
-      },
-    ],
-    wouldRather: [
-      "Would you rather spend a whole day exploring future technology or eating one snack from every country?",
-    ],
-  },
+const EPCOT_LOOK_AROUND_BY_RIDE = {
+  "Spaceship Earth": [
+    {
+      task: "In the Renaissance scene, look for the sleeping monk who should be working. Can you spot the ink stains he left on his paper?",
+      hint: "Look for the monk who is very much not employee of the month.",
+    },
+    {
+      task: "Try to spot one moment where communication technology changes the world.",
+      hint: "Look for writing, printing, broadcasting, computers, and anything that screams “humans figured something out.”",
+    },
+  ],
 
-  hollywood: {
-    trivia: [
-      {
-        question: "Hollywood Studios is built around movies, shows, and stepping into stories. What would your family star in?",
-        choices: ["Cartoon short", "Space adventure", "Toy story", "Spooky hotel movie"],
-        answer: "Space adventure",
-        fact: "Hollywood Studios works best when you treat it like jumping between movie worlds.",
-      },
-    ],
-    lookAround: [
-      {
-        task: "Find something nearby that looks like a movie set detail.",
-        hint: "Posters, props, signs, fake buildings, lighting rigs, and background sounds all count.",
-      },
-    ],
-    familyVote: [
-      {
-        prompt: "If our family made a movie today, what genre would it be?",
-        options: ["Comedy", "Adventure", "Sci-fi", "Disaster, but funny"],
-      },
-    ],
-    wouldRather: [
-      "Would you rather be the star of a cartoon, a Star Wars mission, a toy adventure, or a spooky hotel mystery?",
-    ],
-  },
+  "Guardians of the Galaxy: Cosmic Rewind": [
+    {
+      task: "In the Xandar Gallery, look closely at the city models. Can you find the tiny red Nova Corps ships on the landing pads?",
+      hint: "The little details are hiding in the display cases.",
+    },
+    {
+      task: "Find the display that looks most like something your family would absolutely break by touching it.",
+      hint: "This is an honor-system museum game. No actual touching. Please do not get us escorted out by Xandarians.",
+    },
+  ],
+
+  "Mission: SPACE": [
+    {
+      task: "Look at the giant spinning gravity wheel in the queue. Can you spot the astronaut crew uniforms in the sleeping bunks?",
+      hint: "Watch as the wheel rotates past you.",
+    },
+    {
+      task: "Pick who in your group would be the calmest mission commander and who would press the wrong button first.",
+      hint: "Be honest. Every family has a wrong-button person.",
+    },
+  ],
+
+  "Test Track": [
+    {
+      task: "As you pass the concept car displays, try to spot a hidden Mickey in the blueprints, wheels, or design shapes.",
+      hint: "Look for circles hiding in design details.",
+    },
+    {
+      task: "Everyone pick the car detail they would add to the family car if there were no rules.",
+      hint: "Flying mode, snack drawer, built-in AC blast seat, and parent mute button are all acceptable answers.",
+    },
+  ],
+
+  "Soarin' Around the World": [
+    {
+      task: "Look up at the travel screens and find a country someone in your group wants to visit someday.",
+      hint: "This is basically vacation dreaming while standing in line.",
+    },
+    {
+      task: "Everyone quietly guess which scent they hope shows up on the ride.",
+      hint: "The smell moments are half the fun.",
+    },
+  ],
+
+  "Living with the Land": [
+    {
+      task: "In the aquaculture section, look for the wire mesh fish tubes shaped like Mickey Mouse heads.",
+      hint: "They are easy to miss if you are just staring at the fish.",
+    },
+    {
+      task: "Pick the weirdest plant-growing method you see and decide if your family could survive as EPCOT farmers.",
+      hint: "The answer is probably no, but let the kids believe.",
+    },
+  ],
+
+  "The Seas with Nemo & Friends": [
+    {
+      task: "In the indoor queue, look up in the room that feels like you’re under a pier. Can you spot the little glass-bottom boat above you?",
+      hint: "Look up, not forward.",
+    },
+    {
+      task: "After the ride, everyone has to find one real sea animal they would want as their underwater sidekick.",
+      hint: "No, sharks are not practical sidekicks. But someone will pick one anyway.",
+    },
+  ],
+
+  "Journey of Water, Inspired by Moana": [
+    {
+      task: "Look through the rock formations and see who can find Hei Hei carved into the stone first.",
+      hint: "He is a chicken. He is not making good decisions.",
+    },
+    {
+      task: "Find one place where the water reacts to your movement.",
+      hint: "This trail rewards curious kids and adults who pretend they are just supervising.",
+    },
+  ],
+
+  "Journey into Imagination with Figment": [
+    {
+      task: "In the queue, look for the Sight Lab door and read the funny eye chart.",
+      hint: "Figment’s whole thing is making normal stuff weird.",
+    },
+    {
+      task: "Everyone pick the sense they would trust least if Figment was in charge of testing it.",
+      hint: "Smell is a dangerous answer on this ride.",
+    },
+  ],
+
+  "Gran Fiesta Tour Starring The Three Caballeros": [
+    {
+      task: "Look out at the giant pyramid inside the pavilion. Can you spot the smoking volcano painted under the twilight sky?",
+      hint: "The whole pavilion is pretending it is nighttime. EPCOT is ridiculous in the best way.",
+    },
+    {
+      task: "Before boarding, find the detail that makes the Mexico pavilion feel most like an outdoor market.",
+      hint: "Lights, shops, music, and the fake sky all count.",
+    },
+  ],
+
+  "Frozen Ever After": [
+    {
+      task: "In Wandering Oaken’s Trading Post, listen and watch the sauna door. Who wipes the steam away to wave?",
+      hint: "Wait long enough and Oaken may say hello.",
+    },
+    {
+      task: "Find one detail in the queue that makes Norway feel cozy instead of icy.",
+      hint: "Look for wood, lanterns, roofs, shop signs, and warm little village details.",
+    },
+  ],
+
+  "Remy's Ratatouille Adventure": [
+    {
+      task: "Look closely at the indoor wallpaper. From far away it looks normal, but what tiny food and rat details are hidden in the pattern?",
+      hint: "Look for cheese, grapes, and tiny rats.",
+    },
+    {
+      task: "Find one oversized detail that makes you feel rat-sized before you board.",
+      hint: "The best Remy queue details mess with scale.",
+    },
+  ],
 };
+
+const EPCOT_FAMILY_VOTE_PROMPTS = [
+  {
+    prompt: "We are jumping into Spaceship Earth’s time machine. If we could only visit one era, where are we going?",
+    options: ["Ancient Egypt", "The Renaissance", "The first computer labs", "The future, because we are nosy"],
+  },
+  {
+    prompt: "If our family formed an intergalactic hero team after Guardians, who gets each job?",
+    options: ["Captain", "Pilot", "Snack officer", "Person causing all the trouble"],
+  },
+  {
+    prompt: "We just landed on Mars. Who is stepping out first, who is monitoring radios, and who packed the space snacks?",
+    options: ["Brave explorer", "Radio boss", "Snack commander", "Person asking when we go home"],
+  },
+  {
+    prompt: "If we designed a family concept car at Test Track, what ridiculous feature does it need?",
+    options: ["Hot chocolate machine", "Flying mode", "Built-in nap seats", "Sibling separator shield"],
+  },
+  {
+    prompt: "If our family opened a fancy restaurant in Paris like Remy, who gets each role?",
+    options: ["Head Chef", "Host", "Food critic", "Person eating bread before dinner"],
+  },
+  {
+    prompt: "What EPCOT vibe does the family need right now?",
+    options: ["Calm boat ride", "Big thrill", "Snack mission", "AC and no questions"],
+  },
+];
+
+const EPCOT_WOULD_YOU_RATHER_PROMPTS = [
+  "Would you rather carve all your texts into giant stone tablets or only communicate using a telegraph machine?",
+  "Would you rather have Baby Groot riding in your backpack or Rocket building chaotic gadgets for your stroller?",
+  "Would you rather float in zero gravity trying to catch your food or wear magnetic boots and walk on the ceiling?",
+  "Would you rather test a car in a freezing blizzard simulator or a blazing desert simulator?",
+  "Would you rather hang-glide anywhere in the world whenever you want or magically teleport instantly?",
+  "Would you rather grow a pumpkin the size of a minivan or a tomato plant that reaches the clouds?",
+  "Would you rather speak whale like Dory or ride the East Australian Current on a sea turtle shell?",
+  "Would you rather sail with Hei Hei or explore a monster realm with Maui?",
+  "Would you rather have a pet dragon that changes colors with your mood or a hat that creates whatever you imagine?",
+  "Would you rather travel on a flying serape or have a piñata that refills with your favorite candy every morning?",
+  "Would you rather have a talking snowman best friend or a loyal reindeer who can carry you anywhere?",
+  "Would you rather be rat-sized in a giant kitchen or giant-sized in a tiny Paris?",
+];
+
+const HOLLYWOOD_TRIVIA_BY_RIDE = {
+  "Mickey & Minnie's Runaway Railway": [
+    {
+      question: "What is the catchy theme song Mickey and Minnie sing before everything goes completely sideways?",
+      choices: ["Nothing Can Stop Us Now", "Hot Dog!", "Minnie's Yoo Hoo", "Steamboat Shuffle"],
+      answer: "Nothing Can Stop Us Now",
+      fact: "It starts as a sweet picnic song and then immediately becomes cartoon chaos, which is exactly the point.",
+    },
+    {
+      question: "What kind of ride system does Runaway Railway use?",
+      choices: ["Trackless", "Boat flume", "Omnimover", "Suspended coaster"],
+      answer: "Trackless",
+      fact: "The trackless vehicles help the ride feel like you are bouncing through a cartoon instead of following a normal path.",
+    },
+  ],
+
+  "The Twilight Zone Tower of Terror": [
+    {
+      question: "What year is the Tower of Terror story set in?",
+      choices: ["1929", "1939", "1949", "1959"],
+      answer: "1939",
+      fact: "Specifically Halloween night of 1939, when the mysterious lightning strike hit the Hollywood Tower Hotel.",
+    },
+    {
+      question: "What floor does the elevator famously send you toward?",
+      choices: ["The basement", "The roof", "The Twilight Zone", "The lobby gift shop"],
+      answer: "The Twilight Zone",
+      fact: "The scariest answer might actually be the lobby gift shop, depending on your souvenir budget.",
+    },
+  ],
+
+  "Rock 'n' Roller Coaster Starring The Muppets": [
+    {
+      question: "Which famous Muppet chicken gets a feature track singing “Born To Be Wild” on the new version of this coaster?",
+      choices: ["Camilla", "Gonzo", "Janice", "Miss Piggy"],
+      answer: "Camilla",
+      fact: "Camilla the Chicken getting a rock moment is exactly the kind of chaos The Muppets were built for.",
+    },
+    {
+      question: "Which Muppet band is taking over the rock-and-roll energy?",
+      choices: ["The Electric Mayhem", "Dr. Teeth's Orchestra", "The Felt Notes", "The Gonzo Experience"],
+      answer: "The Electric Mayhem",
+      fact: "The Electric Mayhem is the perfect excuse for this coaster to get louder, weirder, and more ridiculous.",
+    },
+  ],
+
+  "Slinky Dog Dash": [
+    {
+      question: "Whose drawings and blueprints are taped around the Slinky Dog Dash queue?",
+      choices: ["Andy’s", "Bonnie’s", "Sid’s", "Woody’s"],
+      answer: "Andy’s",
+      fact: "The whole coaster is built to feel like Andy assembled it from a Mega Coaster Kit in his backyard.",
+    },
+    {
+      question: "The Rex box price tag says $11.22. What is that a nod to?",
+      choices: ["Toy Story’s release date", "Andy’s birthday", "Slinky’s model number", "A Disney patent number"],
+      answer: "Toy Story’s release date",
+      fact: "Toy Story was released on November 22, so $11.22 is a sneaky little Pixar date detail.",
+    },
+  ],
+
+  "Toy Story Mania!": [
+    {
+      question: "What color are the 3D glasses for Toy Story Mania?",
+      choices: ["Yellow", "Blue", "Green", "Red"],
+      answer: "Yellow",
+      fact: "They make everyone look ridiculous, which is honestly part of the charm.",
+    },
+    {
+      question: "What are you pulling to launch virtual objects during the game?",
+      choices: ["A spring-action shooter", "A joystick", "A steering wheel", "A rope bell"],
+      answer: "A spring-action shooter",
+      fact: "This is where families discover who is secretly way too competitive.",
+    },
+  ],
+
+  "Alien Swirling Saucers": [
+    {
+      question: "What magical object do the little green aliens worship?",
+      choices: ["The Claw", "The Button", "The Pizza Planet Sign", "The Space Spoon"],
+      answer: "The Claw",
+      fact: "The Claw chooses who will go and who will stay. Very dramatic for tiny toy aliens.",
+    },
+    {
+      question: "Alien Swirling Saucers feels like a space version of what kind of ride?",
+      choices: ["A whip-style spinner", "A drop tower", "A boat ride", "A flying theater"],
+      answer: "A whip-style spinner",
+      fact: "The little saucers swing you around just enough to make kids laugh and adults question their snack timing.",
+    },
+  ],
+
+  "Star Wars: Rise of the Resistance": [
+    {
+      question: "What colors are the little astromech droids that drive your ride vehicle?",
+      choices: ["Red, white, and black", "Blue and silver", "Green and gold", "Orange and white"],
+      answer: "Red, white, and black",
+      fact: "They are tiny, brave, and frankly doing a better job under pressure than most of us would.",
+    },
+    {
+      question: "Which group captures you during Rise of the Resistance?",
+      choices: ["The First Order", "The Resistance", "The Jedi Council", "The Jawas"],
+      answer: "The First Order",
+      fact: "The ride works because it makes the story feel huge, like you accidentally walked into the middle of a Star Wars movie.",
+    },
+  ],
+
+  "Millennium Falcon: Smugglers Run": [
+    {
+      question: "Who recruits you to fly the Millennium Falcon and steal coaxium?",
+      choices: ["Hondo Ohnaka", "Chewbacca", "Kylo Ren", "DJ R-3X"],
+      answer: "Hondo Ohnaka",
+      fact: "Hondo is funny, shady, and exactly the kind of guy who would hand a priceless ship to tourists.",
+    },
+    {
+      question: "Which job in Smugglers Run usually gets blamed first when things go badly?",
+      choices: ["Pilot", "Gunner", "Engineer", "Person yelling directions"],
+      answer: "Pilot",
+      fact: "The pilot job is fun, but it comes with the full family court of public opinion.",
+    },
+  ],
+
+  "Star Tours – The Adventures Continue": [
+    {
+      question: "Who accidentally ends up flying your Starspeeder 1000?",
+      choices: ["C-3PO", "R2-D2", "Chewbacca", "BB-8"],
+      answer: "C-3PO",
+      fact: "C-3PO absolutely did not sign up for this, which is why it is so funny.",
+    },
+    {
+      question: "What makes Star Tours extra re-ridable?",
+      choices: ["Different scene combinations", "Guests vote on the ending", "It changes by weather", "The seats move randomly"],
+      answer: "Different scene combinations",
+      fact: "Different destinations and characters can appear, so your family might not get the same trip twice.",
+    },
+  ],
+};
+
+const HOLLYWOOD_LOOK_AROUND_BY_RIDE = {
+  "Mickey & Minnie's Runaway Railway": [
+    {
+      task: "In the room with the animated short, look at the classic movie posters. Which one features a hot dog?",
+      hint: "Look for the Potatoland poster.",
+    },
+    {
+      task: "Find the poster that looks most like it would be a terrible movie but an amazing family joke.",
+      hint: "The sillier the title, the better.",
+    },
+  ],
+
+  "The Twilight Zone Tower of Terror": [
+    {
+      task: "In the dusty lobby, look for the Mahjong game, tea cups, or lipstick stains left behind by hotel guests.",
+      hint: "The lobby is a frozen disaster scene in the classiest way possible.",
+    },
+    {
+      task: "Everyone silently pick the object in the lobby they would absolutely not touch in a haunted hotel.",
+      hint: "Correct answer: probably everything.",
+    },
+  ],
+
+  "Rock 'n' Roller Coaster Starring The Muppets": [
+    {
+      task: "In G-Force Records, look for wacky framed records or album covers that feel very Muppets.",
+      hint: "The more ridiculous the music joke, the better.",
+    },
+    {
+      task: "Pick which family member would survive longest on tour with The Electric Mayhem.",
+      hint: "The snack person has a real advantage.",
+    },
+  ],
+
+  "Slinky Dog Dash": [
+    {
+      task: "Look for Rex’s cardboard box and the $11.22 price tag.",
+      hint: "It is a Toy Story release-date Easter egg.",
+    },
+    {
+      task: "Find something that looks like Andy built the coaster by himself and probably did not read the instructions.",
+      hint: "Tape, blocks, boxes, and toy parts all count.",
+    },
+  ],
+
+  "Toy Story Mania!": [
+    {
+      task: "Look up for the giant Barrel of Monkeys. Are they making a chain across the ceiling?",
+      hint: "Yes, and they are doing better teamwork than most families before lunch.",
+    },
+    {
+      task: "Everyone pick which carnival game they think they will dominate.",
+      hint: "This is where confidence gets very loud before reality arrives.",
+    },
+  ],
+
+  "Alien Swirling Saucers": [
+    {
+      task: "Look for the giant space blasters and see who can spot the Buzz Lightyear logo on the toy packaging.",
+      hint: "Pretend you are tiny in a toy box.",
+    },
+    {
+      task: "Find the most dramatic alien face nearby.",
+      hint: "The aliens are small, but their belief in The Claw is enormous.",
+    },
+  ],
+
+  "Star Wars: Rise of the Resistance": [
+    {
+      task: "In the caves before the briefing room, look for laser burns and old markings on the walls.",
+      hint: "The queue is telling you this Resistance base has history.",
+    },
+    {
+      task: "Once you see Stormtroopers, everyone has to keep a straight face for ten seconds.",
+      hint: "This is harder than it sounds if someone whispers something dumb.",
+    },
+  ],
+
+  "Millennium Falcon: Smugglers Run": [
+    {
+      task: "Inside the Falcon waiting area, look at the Dejarik holochess table, then look up for the hidden Porg nest.",
+      hint: "The nest is tucked above you.",
+    },
+    {
+      task: "Before boarding, decide who should be Pilot, Gunner, and Engineer based on actual family skills.",
+      hint: "Do not let the most chaotic driver automatically become Pilot.",
+    },
+  ],
+
+  "Star Tours – The Adventures Continue": [
+    {
+      task: "In the terminal queue, watch the luggage scanner. Can you spot funny items like a lightsaber or Mickey ears?",
+      hint: "Airport security is much better when droids are judging the bags.",
+    },
+    {
+      task: "Look at the arrivals/departures board and pick which Star Wars planet your family would least survive.",
+      hint: "Tatooine is hot, Hoth is cold, and everyone will have opinions.",
+    },
+  ],
+};
+
+const HOLLYWOOD_FAMILY_VOTE_PROMPTS = [
+  {
+    prompt: "We are packing the perfect Mickey and Minnie picnic. Everyone gets to bring one food. What are we bringing?",
+    options: ["Sandwiches", "Cupcakes", "Fruit", "Something chaotic from Dad"],
+  },
+  {
+    prompt: "If our family got stuck in the Tower of Terror hotel, who leads the way and who hides behind everyone?",
+    options: ["Brave leader", "Map reader", "Screamer", "Person pretending they are fine"],
+  },
+  {
+    prompt: "We just got hired as roadies for The Electric Mayhem. Who gets each job?",
+    options: ["Tune guitars", "Drive the tour bus", "Guard the snacks", "Keep Animal away from equipment"],
+  },
+  {
+    prompt: "If we were shrunk to toy size, which Andy’s backyard toy would be most fun?",
+    options: ["Tinkertoys", "Bouncy balls", "Wooden blocks", "Slinky Dog"],
+  },
+  {
+    prompt: "We were captured by the First Order. Who creates the escape plan?",
+    options: ["Mastermind", "Stormtrooper distractor", "Door hacker", "Person panicking quietly"],
+  },
+  {
+    prompt: "On Smugglers Run, who should actually be Pilot, Gunner, and Engineer?",
+    options: ["Best driver", "Best gamer", "Best fixer", "Person who should not touch anything"],
+  },
+];
+
+const HOLLYWOOD_WOULD_YOU_RATHER_PROMPTS = [
+  "Would you rather be sucked into a bouncy cartoon world or into a superhero movie where you have to save the day?",
+  "Would you rather spend one night alone in a haunted 1930s hotel or one night alone in a pitch-black creepy forest?",
+  "Would you rather perform a rock concert in a heavy fuzzy Fozzie suit or get heckled by Statler and Waldorf while you sing?",
+  "Would you rather ride on Slinky Dog through a giant playroom or fly on Buzz Lightyear’s back across the park?",
+  "Would you rather have stretchy Slinky arms or wheels for feet like a toy race car?",
+  "Would you rather eat pizza for every meal forever or only speak in the squeaky voice of a toy alien?",
+  "Would you rather be an undercover spy on a Star Destroyer or an X-Wing pilot in a space battle?",
+  "Would you rather owe money to Jabba the Hutt or face Darth Vader in a lightsaber duel?",
+  "Would you rather have a lightsaber that slices your toast or use the Force to grab the TV remote?",
+  "Would you rather pilot the Falcon perfectly once or crash it badly but make your whole family laugh?",
+];
+
+const TRIVIA_BY_PARK_AND_RIDE = {
+  magic_kingdom: MAGIC_KINGDOM_TRIVIA_BY_RIDE,
+  epcot: EPCOT_TRIVIA_BY_RIDE,
+  hollywood: HOLLYWOOD_TRIVIA_BY_RIDE,
+};
+
+const TRIVIA_BY_PARK_AND_LAND = {
+  magic_kingdom: MAGIC_KINGDOM_TRIVIA_BY_LAND,
+  epcot: {},
+  hollywood: {},
+};
+
+const LOOK_AROUND_BY_PARK_AND_RIDE = {
+  magic_kingdom: LOOK_AROUND_BY_RIDE,
+  epcot: EPCOT_LOOK_AROUND_BY_RIDE,
+  hollywood: HOLLYWOOD_LOOK_AROUND_BY_RIDE,
+};
+
+const LOOK_AROUND_BY_PARK_AND_LAND = {
+  magic_kingdom: LOOK_AROUND_BY_LAND,
+  epcot: {},
+  hollywood: {},
+};
+
+const FAMILY_VOTE_BY_PARK = {
+  magic_kingdom: FAMILY_VOTE_PROMPTS,
+  epcot: EPCOT_FAMILY_VOTE_PROMPTS,
+  hollywood: HOLLYWOOD_FAMILY_VOTE_PROMPTS,
+};
+
+const WOULD_YOU_RATHER_BY_PARK = {
+  magic_kingdom: WOULD_YOU_RATHER_PROMPTS,
+  epcot: EPCOT_WOULD_YOU_RATHER_PROMPTS,
+  hollywood: HOLLYWOOD_WOULD_YOU_RATHER_PROMPTS,
+};
+
 
 function normalizeName(value) {
   return String(value || "")
     .toLowerCase()
-    .replace(/[’']/g, "")
+    .replace(/[™®©]/g, "")
+    .replace(/[’‘]/g, "'")
+    .replace(/[“”]/g, '"')
     .replace(/&/g, "and")
+    .replace(/\bstarring\b/g, "")
+    .replace(/\bpresented by .+$/g, "")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+}
+
+function getRideNameAliases(value) {
+  const normalized = normalizeName(value);
+  const aliases = new Set([normalized]);
+
+  if (normalized.includes("spaceship earth")) aliases.add("spaceship earth");
+
+  if (normalized.includes("guardians") || normalized.includes("cosmic rewind")) {
+    aliases.add("guardians of the galaxy cosmic rewind");
+    aliases.add("cosmic rewind");
+  }
+
+  if (normalized.includes("mission space")) aliases.add("mission space");
+
+  if (normalized.includes("test track")) {
+    aliases.add("test track");
+    aliases.add("test track presented by chevrolet");
+  }
+
+  if (normalized.includes("soarin")) {
+    aliases.add("soarin around the world");
+    aliases.add("soarin");
+  }
+
+  if (normalized.includes("living with the land")) aliases.add("living with the land");
+
+  if (normalized.includes("nemo") || normalized.includes("seas")) {
+    aliases.add("the seas with nemo and friends");
+    aliases.add("nemo");
+  }
+
+  if (normalized.includes("journey of water") || normalized.includes("moana")) {
+    aliases.add("journey of water inspired by moana");
+    aliases.add("journey of water");
+  }
+
+  if (normalized.includes("figment") || normalized.includes("imagination")) {
+    aliases.add("journey into imagination with figment");
+    aliases.add("figment");
+  }
+
+  if (normalized.includes("gran fiesta") || normalized.includes("caballeros")) {
+    aliases.add("gran fiesta tour starring the three caballeros");
+    aliases.add("gran fiesta tour");
+  }
+
+  if (normalized.includes("frozen ever after")) aliases.add("frozen ever after");
+
+  if (normalized.includes("remy") || normalized.includes("ratatouille")) {
+    aliases.add("remys ratatouille adventure");
+    aliases.add("remy ratatouille adventure");
+  }
+
+  if (normalized.includes("runaway railway") || normalized.includes("mickey and minnie")) {
+    aliases.add("mickey and minnies runaway railway");
+    aliases.add("mickey minnies runaway railway");
+  }
+
+  if (normalized.includes("tower of terror")) {
+    aliases.add("the twilight zone tower of terror");
+    aliases.add("tower of terror");
+  }
+
+  if (normalized.includes("rock n roller") || normalized.includes("rock and roller")) {
+    aliases.add("rock n roller coaster starring the muppets");
+    aliases.add("rock n roller coaster starring aerosmith");
+    aliases.add("rock n roller coaster");
+    aliases.add("rock and roller coaster");
+  }
+
+  if (normalized.includes("slinky dog")) aliases.add("slinky dog dash");
+
+  if (normalized.includes("toy story mania")) aliases.add("toy story mania");
+
+  if (normalized.includes("alien swirling")) aliases.add("alien swirling saucers");
+
+  if (normalized.includes("rise of the resistance")) {
+    aliases.add("star wars rise of the resistance");
+    aliases.add("rise of the resistance");
+  }
+
+  if (normalized.includes("millennium falcon") || normalized.includes("smugglers run")) {
+    aliases.add("millennium falcon smugglers run");
+    aliases.add("smugglers run");
+  }
+
+  if (normalized.includes("star tours")) {
+    aliases.add("star tours the adventures continue");
+    aliases.add("star tours");
+  }
+
+  return aliases;
 }
 
 function pickFromList(list, seed = 0) {
@@ -978,94 +1167,30 @@ function pickFromList(list, seed = 0) {
 }
 
 function getRideSpecificList(source, rideName) {
-  const normalizedRide = normalizeName(rideName);
+  const rideAliases = getRideNameAliases(rideName);
 
-  const directKey = Object.keys(source).find(
-    (key) => normalizeName(key) === normalizedRide
-  );
-
-  if (directKey) return source[directKey];
-
-  const looseKey = Object.keys(source).find((key) => {
+  const matchedKey = Object.keys(source).find((key) => {
+    const keyAliases = getRideNameAliases(key);
     const normalizedKey = normalizeName(key);
-    return (
-      normalizedKey.includes(normalizedRide) ||
-      normalizedRide.includes(normalizedKey)
-    );
+
+    if (rideAliases.has(normalizedKey)) return true;
+
+    for (const alias of rideAliases) {
+      if (keyAliases.has(alias)) return true;
+
+      if (
+        alias.length >= 8 &&
+        normalizedKey.length >= 8 &&
+        (alias.includes(normalizedKey) || normalizedKey.includes(alias))
+      ) {
+        return true;
+      }
+    }
+
+    return false;
   });
 
-  return looseKey ? source[looseKey] : [];
-}
-
-function getMultiParkRideGame({ parkId, rideName, gameType, seed = 0 }) {
-  const parkContent = MULTI_PARK_LINE_COMPANION_BY_RIDE[parkId];
-  if (!parkContent) return null;
-
-  const rideContentList = getRideSpecificList(parkContent, rideName);
-  const rideContent = rideContentList?.[0] || null;
-  const fallbackContent = MULTI_PARK_FALLBACKS[parkId];
-
-  if (gameType === "trivia") {
-    const question = pickFromList(
-      [...(rideContent?.trivia || []), ...(fallbackContent?.trivia || [])],
-      seed
-    );
-
-    return question
-      ? {
-          type: "trivia",
-          title: "Quick Trivia",
-          ...question,
-        }
-      : null;
-  }
-
-  if (gameType === "look_around") {
-    const challenge = pickFromList(
-      [...(rideContent?.lookAround || []), ...(fallbackContent?.lookAround || [])],
-      seed
-    );
-
-    return challenge
-      ? {
-          type: "look_around",
-          title: "Look Around Challenge",
-          ...challenge,
-        }
-      : null;
-  }
-
-  if (gameType === "family_vote") {
-    const prompt = pickFromList(
-      [...(rideContent?.familyVote || []), ...(fallbackContent?.familyVote || [])],
-      seed
-    );
-
-    return prompt
-      ? {
-          type: "family_vote",
-          title: "Family Vote",
-          ...prompt,
-        }
-      : null;
-  }
-
-  if (gameType === "would_you_rather") {
-    const prompt = pickFromList(
-      [...(rideContent?.wouldRather || []), ...(fallbackContent?.wouldRather || [])],
-      seed
-    );
-
-    return prompt
-      ? {
-          type: "would_you_rather",
-          title: "Would You Rather",
-          prompt,
-        }
-      : null;
-  }
-
-  return null;
+  return matchedKey ? source[matchedKey] : [];
 }
 
 export function getMiniGameForContext({
@@ -1075,23 +1200,21 @@ export function getMiniGameForContext({
   gameType,
   seed = 0,
 }) {
-  if (parkId === "epcot" || parkId === "hollywood") {
-    return getMultiParkRideGame({
-      parkId,
-      rideName,
-      gameType,
-      seed,
-    });
-  }
-
-  if (parkId !== "magic_kingdom") return null;
+  const parkTriviaByRide = TRIVIA_BY_PARK_AND_RIDE[parkId] || {};
+  const parkTriviaByLand = TRIVIA_BY_PARK_AND_LAND[parkId] || {};
+  const parkLookAroundByRide = LOOK_AROUND_BY_PARK_AND_RIDE[parkId] || {};
+  const parkLookAroundByLand = LOOK_AROUND_BY_PARK_AND_LAND[parkId] || {};
+  const parkFamilyVotes = FAMILY_VOTE_BY_PARK[parkId] || [];
+  const parkWouldYouRather = WOULD_YOU_RATHER_BY_PARK[parkId] || [];
 
   if (gameType === "trivia") {
-    const rideTrivia = getRideSpecificList(MAGIC_KINGDOM_TRIVIA_BY_RIDE, rideName);
-    const landTrivia = MAGIC_KINGDOM_TRIVIA_BY_LAND[land] || [];
-    const fallbackTrivia = MAGIC_KINGDOM_TRIVIA_BY_LAND.fantasyland || [];
+    const rideTrivia = getRideSpecificList(parkTriviaByRide, rideName);
+    const landTrivia = parkTriviaByLand[land] || [];
+
+    // Magic Kingdom V0 can keep land fallback because we already built land-based games there.
+    // EPCOT/Hollywood should stay ride-specific so the experience does not feel generic.
     const question = pickFromList(
-      [...rideTrivia, ...landTrivia, ...fallbackTrivia],
+      parkId === "magic_kingdom" ? [...rideTrivia, ...landTrivia] : rideTrivia,
       seed
     );
 
@@ -1105,11 +1228,11 @@ export function getMiniGameForContext({
   }
 
   if (gameType === "look_around") {
-    const rideTasks = getRideSpecificList(LOOK_AROUND_BY_RIDE, rideName);
-    const landTasks = LOOK_AROUND_BY_LAND[land] || [];
-    const fallbackTasks = LOOK_AROUND_BY_LAND.fantasyland || [];
+    const rideTasks = getRideSpecificList(parkLookAroundByRide, rideName);
+    const landTasks = parkLookAroundByLand[land] || [];
+
     const challenge = pickFromList(
-      [...rideTasks, ...landTasks, ...fallbackTasks],
+      parkId === "magic_kingdom" ? [...rideTasks, ...landTasks] : rideTasks,
       seed
     );
 
@@ -1123,7 +1246,7 @@ export function getMiniGameForContext({
   }
 
   if (gameType === "family_vote") {
-    const prompt = pickFromList(FAMILY_VOTE_PROMPTS, seed);
+    const prompt = pickFromList(parkFamilyVotes, seed);
 
     return prompt
       ? {
@@ -1135,7 +1258,7 @@ export function getMiniGameForContext({
   }
 
   if (gameType === "would_you_rather") {
-    const prompt = pickFromList(WOULD_YOU_RATHER_PROMPTS, seed);
+    const prompt = pickFromList(parkWouldYouRather, seed);
 
     return prompt
       ? {
