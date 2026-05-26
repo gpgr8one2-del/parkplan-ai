@@ -12,7 +12,11 @@ Rules:
 - Act like a calm park expert, not a generic travel blogger.
 - Prioritize current park, current land, current activity, weather mode, live waits, and the recommendation cards.
 - Use the app's recommendation cards as the source of truth when available.
-- If the guest is currently in line for a ride, respect that choice. Do not tell them to skip it unless they say the ride is down, the line is unsafe, or they ask whether to leave.
+- If the guest is currently in line for a ride, respect that choice. Do not tell them to skip it unless they say the ride is down, the line is unsafe, someone may be overheating/sick, there is true meltdown risk, or they ask whether to leave.
+- If the guest is currently in line, use elapsed line time, posted wait when joined, weather, ride value, and family energy before advising them to stay or leave.
+- When the user is already in line and asks whether to leave, do not give a hard "leave the line" answer unless safety/health, a stopped line, true meltdown risk, ride closure, or severe family distress clearly outweighs the ride value.
+- If elapsed line time, whether the line is moving, must-do status, or family severity is missing, ask one quick clarifying question or give a clear stay-vs-leave threshold.
+- For high-value waits on headliners or weather-demand rides, bias toward staying if the line is moving and the family can realistically make it, then recommend food, water, AC, or a resort break immediately after.
 - If the guest is currently in line, focus on what to do after that ride, nearby backups, weather-safe options, and pacing.
 - Do not invent ride availability, wait times, Lightning Lane status, showtimes, parade times, or operating hours.
 - If live data may be stale or missing, say so briefly and advise refreshing or checking the official park app before walking far.
@@ -211,12 +215,20 @@ function buildCurrentActivityContext(currentActivity) {
       currentActivity.postedWaitAtStart !== null &&
       currentActivity.postedWaitAtStart !== undefined
         ? ` · posted wait when joined: ${currentActivity.postedWaitAtStart} min`
-        : "";
+        : " · posted wait when joined: unknown";
+    const elapsed =
+      currentActivity.elapsedMinutesInLine !== null &&
+      currentActivity.elapsedMinutesInLine !== undefined
+        ? ` · elapsed time in line: ${currentActivity.elapsedMinutesInLine} min`
+        : " · elapsed time in line: unknown";
     const startedAt = currentActivity.startedAt
       ? ` · started at: ${currentActivity.startedAt}`
       : "";
+    const summary = currentActivity.summary
+      ? `\nCurrent activity summary: ${currentActivity.summary}`
+      : "";
 
-    return `Current activity: guest is in line for ${rideName}${land}${postedWait}${startedAt}`;
+    return `Current activity: guest is in line for ${rideName}${land}${postedWait}${elapsed}${startedAt}${summary}`;
   }
 
   return `Current activity: ${currentActivity.type || "unknown"}`;
@@ -227,17 +239,20 @@ function buildDynamicContext(sessionData = {}) {
     activePark,
     currentLand,
     currentActivity,
+    currentActivityContext,
+    parkPlanBehaviorHints,
     weather,
     weatherMode,
     recommendations = {},
     completedRideIds = [],
     skippedRideIds = [],
+    reportedRideIssueIds = [],
   } = sessionData;
 
   return [
     `Active park: ${activePark || "unknown"}`,
     `Current land/location: ${currentLand || "unknown"}`,
-    buildCurrentActivityContext(currentActivity),
+    buildCurrentActivityContext(currentActivityContext || currentActivity),
     buildWeatherContext(weather, weatherMode),
     "",
     "Current recommendation cards:",
@@ -249,7 +264,16 @@ function buildDynamicContext(sessionData = {}) {
     "",
     `Completed ride IDs: ${completedRideIds.slice(0, 25).join(", ") || "none"}`,
     `Skipped ride IDs: ${skippedRideIds.slice(0, 25).join(", ") || "none"}`,
-  ].join("\n");
+    `Reported ride issue IDs: ${reportedRideIssueIds.slice(0, 25).join(", ") || "none"}`,
+    parkPlanBehaviorHints?.inLineDecisionRule
+      ? `In-line decision rule from app: ${parkPlanBehaviorHints.inLineDecisionRule}`
+      : null,
+    parkPlanBehaviorHints?.familyEnergyRule
+      ? `Family energy rule from app: ${parkPlanBehaviorHints.familyEnergyRule}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 async function getAIResponse(message, sessionData = {}) {
@@ -260,8 +284,14 @@ async function getAIResponse(message, sessionData = {}) {
       messageLength: trimmedMessage.length,
       activePark: sessionData.activePark,
       currentLand: sessionData.currentLand,
-      currentActivityType: sessionData.currentActivity?.type,
-      currentActivityRide: sessionData.currentActivity?.rideName,
+      currentActivityType:
+        sessionData.currentActivityContext?.type || sessionData.currentActivity?.type,
+      currentActivityRide:
+        sessionData.currentActivityContext?.rideName ||
+        sessionData.currentActivity?.rideName,
+      elapsedMinutesInLine:
+        sessionData.currentActivityContext?.elapsedMinutesInLine ??
+        sessionData.currentActivity?.elapsedMinutesInLine,
       weatherMode: sessionData.weatherMode?.mode,
       model: ANTHROPIC_MODEL,
     },
@@ -291,23 +321,28 @@ async function getAIResponse(message, sessionData = {}) {
   const dynamicContext = buildDynamicContext(sessionData);
   const history = summarizeHistory(sessionData.conversationHistory || []);
 
-  const response = await anthropic.messages.create({
-    model: ANTHROPIC_MODEL,
-    max_tokens: 400,
-    temperature: 0.35,
-    system: STATIC_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: `Current ParkPlan app context:\n${dynamicContext}`,
-      },
-      ...history,
-      {
-        role: "user",
-        content: trimmedMessage,
-      },
-    ],
-  });
+  const response = await Promise.race([
+    anthropic.messages.create({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 400,
+      temperature: 0.35,
+      system: STATIC_SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: `Current ParkPlan app context:\n${dynamicContext}`,
+        },
+        ...history,
+        {
+          role: "user",
+          content: trimmedMessage,
+        },
+      ],
+    }),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("AI chat request timed out")), 15000)
+    ),
+  ]);
 
   return response.content?.[0]?.text || "I had trouble creating a response. Try again.";
 }
