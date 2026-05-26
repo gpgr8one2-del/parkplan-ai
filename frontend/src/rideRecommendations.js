@@ -445,6 +445,68 @@ function getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStat
   return mod;
 }
 
+function getNearbyHeadlinerOpportunityModifier({
+  parkId,
+  meta,
+  ride,
+  weather,
+  waitValueStatus,
+  currentLand,
+  proximityModifier,
+}) {
+  if (!meta) return 0;
+
+  const category = meta?.planningProfile?.category;
+  const isPlanAheadCategory =
+    category === "plan_ahead_single_pass" ||
+    category === "plan_ahead_multi_pass" ||
+    category === "plan_ahead_standby_only";
+
+  if (!isPlanAheadCategory) return 0;
+
+  const stormActive = isCurrentlyStorming(weather);
+  const rainActive = isRainActive(weather);
+
+  // Do not promote weather-sensitive outdoor rides during active rain/storms.
+  if ((stormActive || rainActive) && isRainSensitiveRide(meta)) return 0;
+
+  const isSameArea = meta.land === currentLand || proximityModifier > 0;
+  const isNearbyEnough = isSameArea || proximityModifier > -8;
+
+  if (!isNearbyEnough) return 0;
+
+  const status = waitValueStatus?.status;
+  const waitTime = ride?.waitTime;
+
+  let mod = 0;
+
+  // General rule: if a normally hard-to-get ride has a strong wait and the guest
+  // is already near it, it should break out of the "Plan Ahead" bucket and become
+  // a real go-now option.
+  if (status === "great_value" && isSameArea) {
+    mod += 26;
+  } else if (status === "good_value" && isSameArea) {
+    mod += 18;
+  } else if (status === "great_value") {
+    mod += 14;
+  }
+
+  // Hollywood-specific field test rule:
+  // Slinky at ~30–35 minutes while the guest is in Toy Story Land is a no-brainer
+  // strike-now opportunity. Do not bury it under Plan Ahead.
+  if (
+    parkId === "hollywood" &&
+    meta.displayName === "Slinky Dog Dash" &&
+    currentLand === "toy_story_land" &&
+    waitTime != null &&
+    waitTime <= 35
+  ) {
+    mod += 34;
+  }
+
+  return mod;
+}
+
 function getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand) {
   if (parkId !== "magic_kingdom" || !meta) return 0;
 
@@ -660,6 +722,12 @@ function buildReason(ride, parts) {
     reasons.push("less ideal for this park situation");
   }
 
+  if (parts.nearbyHeadlinerOpportunityModifier >= 20) {
+    reasons.push("rare nearby headliner opportunity");
+  } else if (parts.nearbyHeadlinerOpportunityModifier >= 10) {
+    reasons.push("strong nearby headliner value");
+  }
+
   if (!reasons.length) {
     reasons.push("solid value based on current conditions");
   }
@@ -844,6 +912,17 @@ export function getNextBestRides({
         currentLand
       );
 
+    const nearbyHeadlinerOpportunityModifier =
+      getNearbyHeadlinerOpportunityModifier({
+        parkId,
+        meta,
+        ride,
+        weather,
+        waitValueStatus,
+        currentLand,
+        proximityModifier,
+      });
+
     const finalScore =
       baseScore -
       waitPenalty +
@@ -853,7 +932,8 @@ export function getNextBestRides({
       proximityModifier +
       waitValueModifier +
       wetRideModifier +
-      parkStrategyModifier;
+      parkStrategyModifier +
+      nearbyHeadlinerOpportunityModifier;
 
     const proximityDistance =
       proximityModifier > 0
@@ -870,6 +950,7 @@ export function getNextBestRides({
       planningProfile: meta?.planningProfile || null,
       strategyNote: meta?.waitProfile?.strategyNote || null,
       wetRideModifier,
+      nearbyHeadlinerOpportunityModifier,
       reason: buildReason(ride, {
         baseScore,
         trendModifier,
@@ -878,6 +959,7 @@ export function getNextBestRides({
         waitValueStatus,
         wetRideModifier,
         parkStrategyModifier,
+        nearbyHeadlinerOpportunityModifier,
       }),
     };
   });
@@ -969,11 +1051,30 @@ export function getNextBestRides({
 
       if ((stormActive || rainActive) && isRainSensitiveRide(meta)) return false;
 
-      return (
+      const isPlanAheadCategory =
         category === "plan_ahead_single_pass" ||
         category === "plan_ahead_multi_pass" ||
-        category === "plan_ahead_standby_only"
-      );
+        category === "plan_ahead_standby_only";
+
+      if (!isPlanAheadCategory) return false;
+
+      // If the ride is a same-area strike-now opportunity, it should have been
+      // promoted into Best Move / Smart Backup / Worth the Walk. Do not also
+      // frame it as "Plan Ahead" because that sends the wrong signal.
+      if (
+        ride.nearbyHeadlinerOpportunityModifier >= 20 &&
+        (ride.waitValueStatus?.status === "great_value" ||
+          ride.waitValueStatus?.status === "good_value" ||
+          (parkId === "hollywood" &&
+            ride.name === "Slinky Dog Dash" &&
+            currentLand === "toy_story_land" &&
+            ride.waitTime != null &&
+            ride.waitTime <= 35))
+      ) {
+        return false;
+      }
+
+      return true;
     })
     .map((ride) => {
       const meta = getMetaForRide(parkId, ride);
