@@ -711,25 +711,6 @@ function App() {
   function renderLineTimeCompanion() {
     if (currentActivity?.type !== "in_line") return null;
 
-    if (activePark !== "magic_kingdom") {
-      return (
-        <div
-          style={{
-            marginTop: 14,
-            padding: 12,
-            borderRadius: 16,
-            border: "1px solid #dbeafe",
-            background: "rgba(255,255,255,.75)",
-          }}
-        >
-          <strong>Line Time Companion</strong>
-          <p style={{ margin: "6px 0 0", color: "#475569" }}>
-            Mini-games are starting in Magic Kingdom for this test. If your family likes it, we’ll expand it to the other parks.
-          </p>
-        </div>
-      );
-    }
-
     if (!activeMiniGame) return null;
 
     return (
