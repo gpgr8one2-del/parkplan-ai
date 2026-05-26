@@ -22,37 +22,105 @@ const PARKS = [
 
 const LAND_OPTIONS = {
   magic_kingdom: [
-    { value: "not_sure", label: "Not sure" },
-    { value: "main_street", label: "Main Street, U.S.A." },
-    { value: "adventureland", label: "Adventureland" },
-    { value: "frontierland", label: "Frontierland" },
-    { value: "liberty_square", label: "Liberty Square" },
-    { value: "fantasyland", label: "Fantasyland" },
-    { value: "tomorrowland", label: "Tomorrowland" },
+    {
+      value: "main_street",
+      label: "Main Street / near entrance, shops, castle hub",
+    },
+    {
+      value: "adventureland",
+      label: "Adventureland / near Pirates, Jungle Cruise, Aladdin",
+    },
+    {
+      value: "frontierland",
+      label: "Frontierland / near Big Thunder, Tiana’s, Country Bears",
+    },
+    {
+      value: "liberty_square",
+      label: "Liberty Square / near Haunted Mansion, Hall of Presidents",
+    },
+    {
+      value: "fantasyland",
+      label: "Fantasyland / near Peter Pan, Small World, Seven Dwarfs, Little Mermaid",
+    },
+    {
+      value: "tomorrowland",
+      label: "Tomorrowland / near Space Mountain, TRON, Buzz, PeopleMover",
+    },
   ],
 
   epcot: [
-    { value: "not_sure", label: "Not sure" },
-    { value: "world_celebration", label: "World Celebration" },
-    { value: "world_discovery", label: "World Discovery" },
-    { value: "world_nature", label: "World Nature" },
-    { value: "world_showcase_west", label: "World Showcase West / France-UK-Canada" },
-    { value: "world_showcase_center", label: "World Showcase Center / America-Japan-Italy" },
-    { value: "world_showcase_east", label: "World Showcase East / Mexico-Norway-China" },
+    {
+      value: "world_celebration",
+      label: "World Celebration / near Spaceship Earth, Connections, Creations",
+    },
+    {
+      value: "world_discovery",
+      label: "World Discovery / near Guardians, Test Track, Mission: SPACE",
+    },
+    {
+      value: "world_nature",
+      label: "World Nature / near Soarin’, The Land, The Seas, Moana",
+    },
+    {
+      value: "world_showcase_west",
+      label: "World Showcase West / near Remy, France, UK, Canada",
+    },
+    {
+      value: "world_showcase_center",
+      label: "World Showcase Center / near America, Japan, Italy, Morocco",
+    },
+    {
+      value: "world_showcase_east",
+      label: "World Showcase East / near Frozen, Mexico, Norway, China",
+    },
   ],
 
   hollywood: [
-    { value: "not_sure", label: "Not sure" },
-    { value: "hollywood_boulevard", label: "Hollywood Boulevard" },
-    { value: "sunset_boulevard", label: "Sunset Boulevard" },
-    { value: "echo_lake", label: "Echo Lake" },
-    { value: "grand_avenue", label: "Grand Avenue" },
-    { value: "star_wars_galaxys_edge", label: "Star Wars: Galaxy’s Edge" },
-    { value: "toy_story_land", label: "Toy Story Land" },
-    { value: "animation_courtyard", label: "Animation Courtyard" },
-    { value: "commissary_lane", label: "Commissary Lane" },
+    {
+      value: "hollywood_boulevard",
+      label: "Hollywood Boulevard / near Mickey & Minnie’s Runaway Railway",
+    },
+    {
+      value: "sunset_boulevard",
+      label: "Sunset Boulevard / near Tower of Terror, Rock ’n’ Roller",
+    },
+    {
+      value: "echo_lake",
+      label: "Echo Lake / near Star Tours, Frozen Sing-Along, Backlot Express",
+    },
+    {
+      value: "grand_avenue",
+      label: "Grand Avenue / near BaseLine, ABC Commissary side",
+    },
+    {
+      value: "star_wars_galaxys_edge",
+      label: "Galaxy’s Edge / near Rise, Falcon, Docking Bay 7",
+    },
+    {
+      value: "toy_story_land",
+      label: "Toy Story Land / near Slinky, Toy Story Mania, Alien Saucers",
+    },
+    {
+      value: "animation_courtyard",
+      label: "Animation Courtyard / near Disney Junior, Walt Disney Presents area",
+    },
+    {
+      value: "commissary_lane",
+      label: "Commissary Lane / near ABC Commissary, Sci-Fi Dine-In",
+    },
   ],
 };
+
+function getDefaultLandForPark(parkId) {
+  return LAND_OPTIONS[parkId]?.[0]?.value || "";
+}
+
+function getSafeLandForPark(parkId, land) {
+  const options = LAND_OPTIONS[parkId] || [];
+  const hasLand = options.some((option) => option.value === land);
+
+  return hasLand ? land : getDefaultLandForPark(parkId);
+}
 
 const STORAGE_KEY = "parkplan.state";
 
@@ -272,7 +340,7 @@ function App() {
   const [chat, setChat] = useState([]);
   const [chatLoading, setChatLoading] = useState(false);
 
-  const [currentLand, setCurrentLand] = useState("not_sure");
+  const [currentLand, setCurrentLand] = useState(() => getDefaultLandForPark("magic_kingdom"));
   const [completedRideIds, setCompletedRideIds] = useState([]);
   const [skippedRideIds, setSkippedRideIds] = useState([]);
   const [reportedRideIssueIds, setReportedRideIssueIds] = useState([]);
@@ -335,7 +403,7 @@ function App() {
 
     const saved = readStoredParkState(activePark);
 
-    setCurrentLand(saved.currentLand || "not_sure");
+    setCurrentLand(getSafeLandForPark(activePark, saved.currentLand));
     setCompletedRideIds(saved.completedRideIds || []);
     setSkippedRideIds(saved.skippedRideIds || []);
     setReportedRideIssueIds(saved.reportedRideIssueIds || []);
@@ -874,7 +942,7 @@ function App() {
     }
   }
 
-  const landOptions = LAND_OPTIONS[activePark] || [{ value: "not_sure", label: "Not sure" }];
+  const landOptions = LAND_OPTIONS[activePark] || [];
   const hiddenRideCount =
     completedRideIds.length +
     skippedRideIds.length +
@@ -1105,7 +1173,7 @@ function App() {
                 marginBottom: 6,
               }}
             >
-              Where are you now?
+              What are you closest to?
             </label>
             <select
               id="current-land"
@@ -1127,6 +1195,17 @@ function App() {
                 </option>
               ))}
             </select>
+            <p
+              style={{
+                margin: "7px 0 0",
+                color: "#64748b",
+                fontSize: 12,
+                lineHeight: 1.4,
+              }}
+            >
+              Pick the closest area. It does not need to be perfect, but it helps
+              avoid bad cross-park recommendations.
+            </p>
           </div>
 
           {reportedRideIssueIds.length > 0 && (
