@@ -18,6 +18,10 @@ const recommendationSchema = z
     planningProfile: z.any().optional(),
     planAheadReason: z.string().optional(),
     strategyNote: z.string().optional(),
+
+    // Added from rideRecommendations.js so AI can understand why a ride was promoted.
+    nearbyHeadlinerOpportunityModifier: z.number().optional(),
+    closestAnchorOpportunityModifier: z.number().optional(),
   })
   .passthrough()
   .nullable()
@@ -40,6 +44,86 @@ const currentActivitySchema = z
   .nullable()
   .optional();
 
+const detectedLocationSchema = z
+  .object({
+    source: z.string().max(50).optional(),
+    parkId: z.string().max(100).optional(),
+
+    land: z.string().max(100).optional(),
+    landKey: z.string().max(100).optional(),
+    landLabel: z.string().max(250).optional(),
+
+    nearestAnchorName: z.string().max(250).nullable().optional(),
+    nearestAnchorId: z.union([z.string(), z.number()]).nullable().optional(),
+    nearestAnchorType: z.string().max(100).nullable().optional(),
+
+    distanceMeters: z.number().nullable().optional(),
+    confidence: z.string().max(50).nullable().optional(),
+    updatedAt: z.string().max(100).nullable().optional(),
+
+    nearbyAnchors: z
+      .array(
+        z
+          .object({
+            parkId: z.string().max(100).optional(),
+            landKey: z.string().max(100).optional(),
+            landLabel: z.string().max(250).optional(),
+            anchorId: z.union([z.string(), z.number()]).optional(),
+            anchorName: z.string().max(250).optional(),
+            anchorType: z.string().max(100).optional(),
+            distanceMeters: z.number().optional(),
+          })
+          .passthrough()
+      )
+      .max(10)
+      .optional(),
+
+    clusterScores: z
+      .array(
+        z
+          .object({
+            landKey: z.string().max(100).optional(),
+            landLabel: z.string().max(250).optional(),
+            score: z.number().optional(),
+            count: z.number().optional(),
+            closestDistanceMeters: z.number().optional(),
+            closestAnchorName: z.string().max(250).optional(),
+          })
+          .passthrough()
+      )
+      .max(10)
+      .optional(),
+
+    isBorderArea: z.boolean().optional(),
+  })
+  .passthrough()
+  .nullable()
+  .optional();
+
+const locationContextSchema = z
+  .object({
+    type: z.string().max(50).optional(),
+    source: z.string().max(50).optional(),
+
+    land: z.string().max(100).optional(),
+    landKey: z.string().max(100).optional(),
+    landLabel: z.string().max(250).optional(),
+    locationMessage: z.string().max(700).optional(),
+
+    nearestAnchorName: z.string().max(250).nullable().optional(),
+    nearestAnchorId: z.union([z.string(), z.number()]).nullable().optional(),
+    nearestAnchorType: z.string().max(100).nullable().optional(),
+
+    distanceMeters: z.number().nullable().optional(),
+    confidence: z.string().max(50).nullable().optional(),
+    updatedAt: z.string().max(100).nullable().optional(),
+
+    detectedLocation: detectedLocationSchema,
+  })
+  .passthrough()
+  .nullable()
+  .optional();
+
 const parkPlanBehaviorHintsSchema = z
   .object({
     inLineDecisionRule: z.string().max(1000).optional(),
@@ -54,6 +138,7 @@ const chatSchema = z.object({
     .object({
       activePark: z.string().max(100).optional(),
       currentLand: z.string().max(100).optional(),
+      locationContext: locationContextSchema,
 
       currentActivity: currentActivitySchema,
       currentActivityContext: currentActivitySchema,
@@ -120,6 +205,7 @@ router.post("/ai-chat", async (req, res) => {
         stack: err.stack,
         activePark: parsed.data?.sessionData?.activePark,
         currentLand: parsed.data?.sessionData?.currentLand,
+        locationContext: parsed.data?.sessionData?.locationContext,
         currentActivity:
           parsed.data?.sessionData?.currentActivityContext ||
           parsed.data?.sessionData?.currentActivity,
