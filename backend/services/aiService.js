@@ -27,6 +27,13 @@ Rules:
 - If the user asks for a plan, give a simple ordered plan.
 - If the user asks whether to cross the park, weigh distance against wait value, weather, and family energy.
 - If the user has completed or skipped a ride, do not recommend it again unless they specifically ask about it.
+- Transportation advice must consider the guest's current park, destination, and direct transit options. Do not assume a resort is a quick move just because it has Skyliner access.
+- From Magic Kingdom, Wilderness Lodge is a nearby resort/lunch-break option by boat/bus, but Pop Century is not a quick Skyliner move from Magic Kingdom.
+- Skyliner logic mainly applies to EPCOT, Hollywood Studios, Riviera, Caribbean Beach, Pop Century, and Art of Animation.
+- If the guest has a dining reservation or planned meal near the current park, use that as the natural reset point before suggesting a far resort break.
+- Do not recommend park → far resort → another resort movements unless the user clearly has enough time and wants a full reset.
+- If GPS/current location context includes a nearest anchor, use it carefully. Treat it as "near X," not proof that the guest is in line for X unless current activity says they tapped In Line.
+- If GPS confidence is low or border-area context is mentioned, avoid overconfident location claims and suggest confirming the closest area in the app.
 
 Scope rules:
 - Only answer questions related to Disney, Universal, theme parks, park strategy, rides, shows, food, weather, resorts, transportation, accessibility, family pacing, current trip logistics, or using ParkPlan AI.
@@ -234,12 +241,97 @@ function buildCurrentActivityContext(currentActivity) {
   return `Current activity: ${currentActivity.type || "unknown"}`;
 }
 
+function buildLocationContext(locationContext, currentLand) {
+  if (!locationContext) {
+    return `Location context: manual/current land only · land: ${currentLand || "unknown"}`;
+  }
+
+  const type = locationContext.type || locationContext.source || "unknown";
+  const land =
+    locationContext.landLabel ||
+    locationContext.landKey ||
+    locationContext.land ||
+    currentLand ||
+    "unknown";
+
+  const nearestAnchorName =
+    locationContext.nearestAnchorName ||
+    locationContext.detectedLocation?.nearestAnchorName ||
+    null;
+
+  const nearestAnchorId =
+    locationContext.nearestAnchorId ||
+    locationContext.detectedLocation?.nearestAnchorId ||
+    null;
+
+  const distanceMeters =
+    locationContext.distanceMeters ??
+    locationContext.detectedLocation?.distanceMeters ??
+    null;
+
+  const confidence =
+    locationContext.confidence ||
+    locationContext.detectedLocation?.confidence ||
+    null;
+
+  const updatedAt =
+    locationContext.updatedAt ||
+    locationContext.detectedLocation?.updatedAt ||
+    null;
+
+  const message = locationContext.locationMessage || "";
+
+  const parts = [
+    `Location context: ${type}`,
+    `current/selected land: ${currentLand || "unknown"}`,
+    `detected land: ${land}`,
+    nearestAnchorName ? `nearest anchor: ${nearestAnchorName}` : null,
+    nearestAnchorId ? `nearest anchor id: ${nearestAnchorId}` : null,
+    distanceMeters !== null ? `distance: ${distanceMeters} meters` : null,
+    confidence ? `GPS confidence: ${confidence}` : null,
+    updatedAt ? `location updated: ${updatedAt}` : null,
+    message ? `location note: ${message}` : null,
+  ];
+
+  return parts.filter(Boolean).join(" · ");
+}
+
+function buildTransportationContext(activePark) {
+  const park = String(activePark || "").toLowerCase();
+
+  if (park === "magic_kingdom") {
+    return [
+      "Transportation/resort break context:",
+      "- Current park is Magic Kingdom.",
+      "- Wilderness Lodge is a nearby Magic Kingdom resort break/lunch option by boat/bus.",
+      "- Contemporary, Polynesian, and Grand Floridian are also nearby MK-area resort options depending on route and time.",
+      "- Pop Century, Art of Animation, Caribbean Beach, and Riviera are not quick Skyliner moves from Magic Kingdom.",
+      "- Do not suggest going from Magic Kingdom to Pop Century for a quick break unless the guest explicitly wants a full resort-room reset and has enough time.",
+    ].join("\n");
+  }
+
+  if (park === "epcot" || park === "hollywood") {
+    return [
+      "Transportation/resort break context:",
+      "- Skyliner can be useful for EPCOT, Hollywood Studios, Riviera, Caribbean Beach, Pop Century, and Art of Animation.",
+      "- Still consider walking distance, transfer time, heat, rain, tired kids, and whether the guest needs a quick break or a full resort-room reset.",
+    ].join("\n");
+  }
+
+  return [
+    "Transportation/resort break context:",
+    "- Consider current park, destination, direct transportation, family energy, weather, and time cost before recommending a resort break.",
+    "- Do not assume any resort is a quick move unless the current park has a direct/easy route.",
+  ].join("\n");
+}
+
 function buildDynamicContext(sessionData = {}) {
   const {
     activePark,
     currentLand,
     currentActivity,
     currentActivityContext,
+    locationContext,
     parkPlanBehaviorHints,
     weather,
     weatherMode,
@@ -251,7 +343,8 @@ function buildDynamicContext(sessionData = {}) {
 
   return [
     `Active park: ${activePark || "unknown"}`,
-    `Current land/location: ${currentLand || "unknown"}`,
+    buildLocationContext(locationContext, currentLand),
+    buildTransportationContext(activePark),
     buildCurrentActivityContext(currentActivityContext || currentActivity),
     buildWeatherContext(weather, weatherMode),
     "",
@@ -289,6 +382,9 @@ async function getAIResponse(message, sessionData = {}) {
       currentActivityRide:
         sessionData.currentActivityContext?.rideName ||
         sessionData.currentActivity?.rideName,
+      locationType: sessionData.locationContext?.type,
+      nearestAnchorName: sessionData.locationContext?.nearestAnchorName,
+      locationConfidence: sessionData.locationContext?.confidence,
       elapsedMinutesInLine:
         sessionData.currentActivityContext?.elapsedMinutesInLine ??
         sessionData.currentActivity?.elapsedMinutesInLine,
