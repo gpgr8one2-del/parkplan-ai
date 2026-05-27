@@ -397,6 +397,79 @@ function App() {
     loadData(false);
   }, [loadData]);
 
+  const updateUserLocation = useCallback(
+    async ({ silent = false } = {}) => {
+      if (!silent) {
+        setLocationLoading(true);
+        setLocationMessage("");
+        setLocationError("");
+      }
+
+      try {
+        const position = await getCurrentPosition();
+        const detectedZone = detectNearestLocationZone({
+          parkId: activePark,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+
+        if (!detectedZone) {
+          if (!silent) {
+            setLocationError(
+              "I could not match your location to this park yet. Pick the closest area manually for now."
+            );
+          }
+          return null;
+        }
+
+        // Do not let low-confidence GPS yank families into the wrong land.
+        if (detectedZone.confidence !== "low") {
+          setCurrentLand(getSafeLandForPark(activePark, detectedZone.landKey));
+        }
+
+        const nowIso = new Date().toISOString();
+        setLastLocationUpdateAt(nowIso);
+
+        if (!silent || detectedZone.confidence !== "low") {
+          setLocationMessage(
+            `${detectedZone.message} ${
+              detectedZone.confidence === "low"
+                ? "If that does not look right, pick the closest area manually."
+                : "Not right? Pick another area manually."
+            }`
+          );
+        }
+
+        setLocationError("");
+        setLocationAutoEnabled(true);
+        return detectedZone;
+      } catch (err) {
+        const denied =
+          err?.code === 1 ||
+          String(err?.message || "").toLowerCase().includes("denied");
+
+        if (!silent) {
+          setLocationError(
+            denied
+              ? "Location permission was denied. No problem — pick the closest area manually."
+              : "I could not get your location right now. Pick the closest area manually."
+          );
+        }
+
+        if (denied) {
+          setLocationAutoEnabled(false);
+        }
+
+        return null;
+      } finally {
+        if (!silent) {
+          setLocationLoading(false);
+        }
+      }
+    },
+    [activePark]
+  );
+
   useEffect(() => {
     const runAutoRefresh = async () => {
       if (document.visibilityState !== "visible") return;
@@ -625,78 +698,6 @@ function App() {
     setMiniGameSeed((prev) => prev + 1);
     setRevealedTriviaAnswer(false);
   }
-
-  const updateUserLocation = useCallback(
-    async ({ silent = false } = {}) => {
-      if (!silent) {
-        setLocationLoading(true);
-        setLocationMessage("");
-        setLocationError("");
-      }
-
-      try {
-        const position = await getCurrentPosition();
-        const detectedZone = detectNearestLocationZone({
-          parkId: activePark,
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-
-        if (!detectedZone) {
-          if (!silent) {
-            setLocationError(
-              "I could not match your location to this park yet. Pick the closest area manually for now."
-            );
-          }
-          return null;
-        }
-
-        if (detectedZone.confidence !== "low") {
-          setCurrentLand(getSafeLandForPark(activePark, detectedZone.landKey));
-        }
-
-        const nowIso = new Date().toISOString();
-        setLastLocationUpdateAt(nowIso);
-
-        if (!silent || detectedZone.confidence !== "low") {
-          setLocationMessage(
-            `${detectedZone.message} ${
-              detectedZone.confidence === "low"
-                ? "If that does not look right, pick the closest area manually."
-                : "Not right? Pick another area manually."
-            }`
-          );
-        }
-
-        setLocationError("");
-        setLocationAutoEnabled(true);
-        return detectedZone;
-      } catch (err) {
-        const denied =
-          err?.code === 1 ||
-          String(err?.message || "").toLowerCase().includes("denied");
-
-        if (!silent) {
-          setLocationError(
-            denied
-              ? "Location permission was denied. No problem — pick the closest area manually."
-              : "I could not get your location right now. Pick the closest area manually."
-          );
-        }
-
-        if (denied) {
-          setLocationAutoEnabled(false);
-        }
-
-        return null;
-      } finally {
-        if (!silent) {
-          setLocationLoading(false);
-        }
-      }
-    },
-    [activePark]
-  );
 
   async function handleUseMyLocation() {
     await updateUserLocation({ silent: false });
