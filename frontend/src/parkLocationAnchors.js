@@ -35,6 +35,34 @@ const MAGIC_KINGDOM_ANCHORS = [
   { id: "hop", name: "The Hall of Presidents", landKey: "liberty_square", type: "Show", lat: 28.4199, lng: -81.5824 },
   { id: "lsr", name: "Liberty Square Riverboat", landKey: "liberty_square", type: "Ride", lat: 28.4202, lng: -81.5827 },
 
+  // Border helper anchors.
+  // These are not ride entrances. They help GPS clustering avoid bad land flips
+  // near Small World / Peter Pan / Haunted Mansion / Riverboat.
+  {
+    id: "fantasyland_west_bridge",
+    name: "Fantasyland West / near Peter Pan and Small World",
+    landKey: "fantasyland",
+    type: "Area",
+    lat: 28.4207,
+    lng: -81.5818,
+  },
+  {
+    id: "fantasyland_castle_side",
+    name: "Fantasyland Castle Side / near PhilharMagic and Carrousel",
+    landKey: "fantasyland",
+    type: "Area",
+    lat: 28.42035,
+    lng: -81.58125,
+  },
+  {
+    id: "liberty_fantasy_border",
+    name: "Liberty Square / Fantasyland border",
+    landKey: "liberty_square",
+    type: "Area",
+    lat: 28.42055,
+    lng: -81.58245,
+  },
+
   { id: "sdmt", name: "Seven Dwarfs Mine Train", landKey: "fantasyland", type: "Ride", lat: 28.4206, lng: -81.5802 },
   { id: "ppf", name: "Peter Pan's Flight", landKey: "fantasyland", type: "Ride", lat: 28.4205, lng: -81.5815 },
   { id: "iasw", name: "it's a small world", landKey: "fantasyland", type: "Ride", lat: 28.4209, lng: -81.5821 },
