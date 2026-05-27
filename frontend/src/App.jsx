@@ -359,6 +359,7 @@ function App() {
   const [locationAutoEnabled, setLocationAutoEnabled] = useState(false);
   const [lastAutoUpdateAt, setLastAutoUpdateAt] = useState("");
   const [lastLocationUpdateAt, setLastLocationUpdateAt] = useState("");
+  const [detectedLocationContext, setDetectedLocationContext] = useState(null);
 
   const [currentLand, setCurrentLand] = useState(() => getDefaultLandForPark("magic_kingdom"));
   const [completedRideIds, setCompletedRideIds] = useState([]);
@@ -422,12 +423,27 @@ function App() {
           return null;
         }
 
+        const structuredLocation = {
+          source: "gps",
+          parkId: activePark,
+          landKey: detectedZone.landKey,
+          landLabel: detectedZone.landLabel,
+          nearestAnchorName: detectedZone.anchorName,
+          nearestAnchorId: detectedZone.anchorId,
+          nearestAnchorType: detectedZone.anchorType,
+          distanceMeters: detectedZone.distanceMeters,
+          confidence: detectedZone.confidence,
+          updatedAt: new Date().toISOString(),
+        };
+
+        setDetectedLocationContext(structuredLocation);
+
         // Do not let low-confidence GPS yank families into the wrong land.
         if (detectedZone.confidence !== "low") {
           setCurrentLand(getSafeLandForPark(activePark, detectedZone.landKey));
         }
 
-        const nowIso = new Date().toISOString();
+        const nowIso = structuredLocation.updatedAt;
         setLastLocationUpdateAt(nowIso);
 
         if (!silent || detectedZone.confidence !== "low") {
@@ -458,6 +474,7 @@ function App() {
 
         if (denied) {
           setLocationAutoEnabled(false);
+          setDetectedLocationContext(null);
         }
 
         return null;
@@ -511,6 +528,7 @@ function App() {
     setLocationMessage("");
     setLocationError("");
     setLastLocationUpdateAt("");
+    setDetectedLocationContext(null);
 
     setTimeout(() => {
       isRestoringParkState.current = false;
@@ -560,15 +578,36 @@ function App() {
     return Array.from(ids);
   }, [skippedRideIds, reportedRideIssueIds, activeRideId]);
 
+  const locationContextForDecisions = useMemo(() => {
+    const safeDetectedLocation =
+      detectedLocationContext?.parkId === activePark ? detectedLocationContext : null;
+
+    return {
+      type: safeDetectedLocation ? "gps" : "manual_land",
+      land: currentLand,
+      landKey: safeDetectedLocation?.landKey || currentLand,
+      landLabel:
+        safeDetectedLocation?.landLabel ||
+        LAND_OPTIONS[activePark]?.find((option) => option.value === currentLand)?.label ||
+        formatLandLabel(activePark, currentLand),
+      locationMessage,
+      detectedLocation: safeDetectedLocation,
+      source: safeDetectedLocation ? "gps" : "manual",
+      nearestAnchorName: safeDetectedLocation?.nearestAnchorName || null,
+      nearestAnchorId: safeDetectedLocation?.nearestAnchorId || null,
+      nearestAnchorType: safeDetectedLocation?.nearestAnchorType || null,
+      distanceMeters: safeDetectedLocation?.distanceMeters ?? null,
+      confidence: safeDetectedLocation?.confidence || null,
+      updatedAt: safeDetectedLocation?.updatedAt || null,
+    };
+  }, [activePark, currentLand, detectedLocationContext, locationMessage]);
+
   const recommendations = useMemo(() => {
     return getNextBestRides({
       parkId: activePark,
       rides: parkData?.rides || [],
       weather,
-      locationContext: {
-        type: "manual_land",
-        land: currentLand,
-      },
+      locationContext: locationContextForDecisions,
       completedRideIds,
       skippedRideIds: recommendationAvoidedRideIds,
     });
@@ -576,7 +615,7 @@ function App() {
     activePark,
     parkData,
     weather,
-    currentLand,
+    locationContextForDecisions,
     completedRideIds,
     recommendationAvoidedRideIds,
   ]);
@@ -1002,11 +1041,7 @@ function App() {
         skippedRideIds,
         reportedRideIssueIds,
         currentLand,
-        locationContext: {
-          type: "manual_or_gps_land",
-          land: currentLand,
-          locationMessage,
-        },
+        locationContext: locationContextForDecisions,
         currentActivity: currentActivityContext,
         currentActivityContext,
         parkPlanBehaviorHints: {
