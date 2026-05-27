@@ -125,6 +125,314 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
         "Okay, the official answer is probably not the jokes, but the skippers’ terrible puns are the whole charm.",
     },
   ],
+
+  "Big Thunder Mountain Railroad": [
+    {
+      question: "What is Big Thunder Mountain’s famous nickname?",
+      choices: [
+        "The Wildest Ride in the Wilderness",
+        "The Fastest Train in Frontierland",
+        "The Haunted Mine Express",
+        "The Gold Rush Rocket",
+      ],
+      answer: "The Wildest Ride in the Wilderness",
+      fact:
+        "Big Thunder has earned that nickname. It is not the tallest or fastest coaster, but it feels wild because the train whips through turns, caves, and mining-town chaos.",
+    },
+    {
+      question: "Big Thunder is themed around what kind of runaway vehicle?",
+      choices: ["A mine train", "A riverboat", "A stagecoach", "A rocket train"],
+      answer: "A mine train",
+      fact:
+        "The story is that the mine train has a mind of its own. Great news for fun. Terrible news for fictional mining safety.",
+    },
+    {
+      question: "Best family debate: where is Big Thunder usually the wildest?",
+      choices: ["Front row", "Middle", "Back row", "Standing by the exit watching everyone scream"],
+      answer: "Back row",
+      fact:
+        "The back tends to get pulled over drops and turns with more whip. This is also where brave family members suddenly become very quiet.",
+    },
+  ],
+
+  "it's a small world": [
+    {
+      question: "Who created the famous visual style of “it’s a small world”?",
+      choices: ["Mary Blair", "Claude Coats", "Tony Baxter", "X Atencio"],
+      answer: "Mary Blair",
+      fact:
+        "Mary Blair’s bold colors, simple shapes, and joyful designs are a huge reason Small World looks so iconic.",
+    },
+    {
+      question: "What major event was “it’s a small world” originally created for?",
+      choices: [
+        "The 1964 New York World’s Fair",
+        "EPCOT opening day",
+        "Disneyland’s 10th anniversary",
+        "Magic Kingdom opening day",
+      ],
+      answer: "The 1964 New York World’s Fair",
+      fact:
+        "The original attraction debuted at the 1964 New York World’s Fair before becoming a Disney park classic.",
+    },
+    {
+      question: "What is the main message of “it’s a small world”?",
+      choices: [
+        "The world is connected",
+        "Boats are the best way to travel",
+        "Dolls secretly run everything",
+        "Never get the song stuck in your head",
+      ],
+      answer: "The world is connected",
+      fact:
+        "The ride is simple on purpose: kids from around the world singing together. Also yes, the song is now renting space in your brain.",
+    },
+  ],
+
+  "Buzz Lightyear's Space Ranger Spin": [
+    {
+      question: "Who are you trying to defeat on Buzz Lightyear’s Space Ranger Spin?",
+      choices: ["Emperor Zurg", "Lotso", "Sid", "The Claw"],
+      answer: "Emperor Zurg",
+      fact:
+        "Your mission is to stop Zurg by blasting targets. Your family’s real mission is figuring out who secretly spins the vehicle too much.",
+    },
+    {
+      question: "Which target shape is usually worth looking for if you want a better score?",
+      choices: ["Triangles and diamonds", "Only circles", "Stars only", "Anything blue"],
+      answer: "Triangles and diamonds",
+      fact:
+        "Not all targets are equal. Disney scoring games are where calm family members become terrifyingly competitive.",
+    },
+  ],
+
+  "Tomorrowland Transit Authority PeopleMover": [
+    {
+      question: "The PeopleMover is best described as what kind of ride?",
+      choices: ["A slow moving tour", "A spinning coaster", "A boat ride", "A drop tower"],
+      answer: "A slow moving tour",
+      fact:
+        "PeopleMover is part ride, part rest, part Tomorrowland therapy. It is one of the best “we need a minute” attractions in Magic Kingdom.",
+    },
+    {
+      question: "What famous model can you see while riding the PeopleMover?",
+      choices: ["Progress City", "A tiny Disneyland castle", "A model of Batuu", "A miniature Monorail hotel"],
+      answer: "Progress City",
+      fact:
+        "The Progress City model connects back to Walt Disney’s original ideas that helped inspire EPCOT.",
+    },
+  ],
+
+  "Under the Sea - Journey of The Little Mermaid": [
+    {
+      question: "What kind of ride vehicle do you board on Under the Sea?",
+      choices: ["A clamshell", "A pirate ship", "A seahorse", "A bubble pod"],
+      answer: "A clamshell",
+      fact:
+        "The clamshell vehicles move continuously, which helps the line move and makes it a solid family reset ride.",
+    },
+    {
+      question: "Which villain appears in a big dramatic scene on this ride?",
+      choices: ["Ursula", "Maleficent", "Cruella", "Mother Gothel"],
+      answer: "Ursula",
+      fact:
+        "Ursula is huge in this attraction. She is basically the definition of “do not sign paperwork underwater.”",
+    },
+  ],
+
+  "The Many Adventures of Winnie the Pooh": [
+    {
+      question: "Which former Magic Kingdom ride did Winnie the Pooh replace?",
+      choices: ["Mr. Toad’s Wild Ride", "Snow White’s Scary Adventures", "20,000 Leagues", "Skyway"],
+      answer: "Mr. Toad’s Wild Ride",
+      fact:
+        "Mr. Toad fans were not quiet about losing it. Disney fans can hold a grudge longer than a standby queue.",
+    },
+    {
+      question: "Which Pooh character is most likely to turn a normal day into bouncing chaos?",
+      choices: ["Tigger", "Piglet", "Rabbit", "Owl"],
+      answer: "Tigger",
+      fact:
+        "Tigger energy is fun until your group is hot, hungry, and someone says “let’s walk to the other side of the park.”",
+    },
+  ],
+
+  "Dumbo the Flying Elephant": [
+    {
+      question: "What controls how high Dumbo flies?",
+      choices: ["A lever in your elephant", "The Cast Member only", "A hidden foot pedal", "The elephant’s ears"],
+      answer: "A lever in your elephant",
+      fact:
+        "Dumbo is simple, but kids love being in control. Adults love when the line is not brutal.",
+    },
+    {
+      question: "What makes Magic Kingdom’s Dumbo queue especially family-friendly?",
+      choices: ["An indoor play area", "Free popcorn", "A boat ride", "A character meal"],
+      answer: "An indoor play area",
+      fact:
+        "The circus tent play area is one of the better kid-energy pressure valves in the park.",
+    },
+  ],
+
+  "Mad Tea Party": [
+    {
+      question: "Who pops out of the giant teapot near Mad Tea Party?",
+      choices: ["The Dormouse", "The White Rabbit", "Cheshire Cat", "The Queen of Hearts"],
+      answer: "The Dormouse",
+      fact:
+        "The Dormouse is living his best tiny chaotic life in the teapot.",
+    },
+    {
+      question: "What is the biggest family risk on Mad Tea Party?",
+      choices: ["Someone spins too much", "The tea gets cold", "The cups go backward", "The Queen steals your seat"],
+      answer: "Someone spins too much",
+      fact:
+        "Every family has one person who says “I won’t spin it too fast” and then immediately becomes the villain.",
+    },
+  ],
+
+  "Prince Charming Regal Carrousel": [
+    {
+      question: "Prince Charming Regal Carrousel is tied to which Disney story?",
+      choices: ["Cinderella", "Sleeping Beauty", "Snow White", "Tangled"],
+      answer: "Cinderella",
+      fact:
+        "The carrousel’s painted scenes tell Cinderella’s story, which makes it feel more special than a standard merry-go-round.",
+    },
+    {
+      question: "What detail is said to identify Cinderella’s Horse?",
+      choices: ["A golden ribbon on the tail", "A blue saddle", "A glass slipper mark", "A crown on the mane"],
+      answer: "A golden ribbon on the tail",
+      fact:
+        "Families love hunting for this one. Whether you find it or not, everyone will suddenly have strong horse opinions.",
+    },
+  ],
+
+  "Mickey's PhilharMagic": [
+    {
+      question: "Who accidentally causes most of the chaos in Mickey’s PhilharMagic?",
+      choices: ["Donald Duck", "Goofy", "Minnie", "Pluto"],
+      answer: "Donald Duck",
+      fact:
+        "Donald plus magical objects is almost never a stable business plan.",
+    },
+    {
+      question: "PhilharMagic is especially useful because it gives families what?",
+      choices: ["AC and seats", "A thrill launch", "A boat ride", "A parade view"],
+      answer: "AC and seats",
+      fact:
+        "Sometimes the best attraction is the one that quietly saves everyone’s mood.",
+    },
+  ],
+
+  "The Barnstormer": [
+    {
+      question: "The Barnstormer is themed around which classic Disney character?",
+      choices: ["Goofy", "Donald", "Mickey", "Chip"],
+      answer: "Goofy",
+      fact:
+        "It is a junior coaster with Goofy’s stunt-plane energy, which is exactly as safe-sounding as it needs to be.",
+    },
+    {
+      question: "The Barnstormer is usually best for what kind of family moment?",
+      choices: ["First coaster confidence", "Long AC break", "Huge thrill ride", "Fireworks viewing"],
+      answer: "First coaster confidence",
+      fact:
+        "For younger kids, this can be the “I did a coaster!” moment without going full Space Mountain.",
+    },
+  ],
+
+  "The Magic Carpets of Aladdin": [
+    {
+      question: "What can the camel near Magic Carpets sometimes do?",
+      choices: ["Spit water", "Sing", "Tell jokes", "Spin the carpet"],
+      answer: "Spit water",
+      fact:
+        "The camel splash is harmless, but it is absolutely personal if it gets you.",
+    },
+    {
+      question: "Magic Carpets is most similar to which other Magic Kingdom ride style?",
+      choices: ["Dumbo-style spinner", "Boat ride", "Dark ride", "Roller coaster"],
+      answer: "Dumbo-style spinner",
+      fact:
+        "It is a spinner with a little Adventureland chaos added in.",
+    },
+  ],
+
+  "Walt Disney's Enchanted Tiki Room": [
+    {
+      question: "The Enchanted Tiki Room is famous for using what Disney technology?",
+      choices: ["Audio-Animatronics", "Trackless vehicles", "Omnicoaster cars", "Virtual reality"],
+      answer: "Audio-Animatronics",
+      fact:
+        "The singing birds and flowers helped make Audio-Animatronics a signature Disney storytelling tool.",
+    },
+    {
+      question: "What is the correct emotional response when the Tiki birds start singing?",
+      choices: ["Join in", "Question your life choices", "Look for a snack", "All of the above"],
+      answer: "All of the above",
+      fact:
+        "The Tiki Room is classic Disney weirdness, and that is exactly why it works.",
+    },
+  ],
+
+  "Astro Orbiter": [
+    {
+      question: "What makes Astro Orbiter feel more intense than many spinner rides?",
+      choices: ["It loads high above Tomorrowland", "It goes underwater", "It spins backward", "It has a launch"],
+      answer: "It loads high above Tomorrowland",
+      fact:
+        "The height makes the view great and the ride feel more dramatic than it looks from the ground.",
+    },
+  ],
+
+  "Tomorrowland Speedway": [
+    {
+      question: "Tomorrowland Speedway cars top out around what speed?",
+      choices: ["7 mph", "25 mph", "45 mph", "65 mph"],
+      answer: "7 mph",
+      fact:
+        "Seven miles per hour has never felt more powerful to a kid holding a steering wheel.",
+    },
+    {
+      question: "Who should drive on Tomorrowland Speedway?",
+      choices: ["The kid with confidence", "The adult with patience", "The person who hits the rail least", "All of the above"],
+      answer: "All of the above",
+      fact:
+        "The guide rail is doing heroic work out there.",
+    },
+  ],
+
+  "Monsters Inc. Laugh Floor": [
+    {
+      question: "Monsters Inc. Laugh Floor powers Monstropolis with what?",
+      choices: ["Laughter", "Screams", "Pixie dust", "Dole Whip"],
+      answer: "Laughter",
+      fact:
+        "It is a great recovery show because the commitment is low, the seats are real, and the jokes are family-safe.",
+    },
+  ],
+
+  "Country Bear Musical Jamboree": [
+    {
+      question: "Country Bear Musical Jamboree is what kind of attraction?",
+      choices: ["An Audio-Animatronic show", "A boat ride", "A roller coaster", "A simulator"],
+      answer: "An Audio-Animatronic show",
+      fact:
+        "It is weird, musical, indoors, and exactly the kind of show that gives tired families a needed reset.",
+    },
+  ],
+
+  "The Hall of Presidents": [
+    {
+      question: "Hall of Presidents is one of Magic Kingdom’s best hidden weapons for what?",
+      choices: ["A long seated AC break", "A thrill ride", "A fireworks shortcut", "A water ride"],
+      answer: "A long seated AC break",
+      fact:
+        "Sometimes the smartest park move is not glamorous. It is sitting down in air conditioning before everyone melts.",
+    },
+  ],
+
 };
 
 const MAGIC_KINGDOM_TRIVIA_BY_LAND = {
@@ -241,6 +549,193 @@ const LOOK_AROUND_BY_RIDE = {
       hint: "Tiana’s story is full of food, music, and celebration.",
     },
   ],
+
+  "Big Thunder Mountain Railroad": [
+    {
+      task: "Look for mining tools, crates, lanterns, or warning signs while you move through the queue.",
+      hint: "The whole area is pretending this mine has seen some things.",
+    },
+    {
+      task: "Find the detail that makes the mountain feel the most abandoned or cursed.",
+      hint: "Old wood, rusty equipment, caves, signs, and weird little props all count.",
+    },
+    {
+      task: "Everyone pick the person in your group most likely to yell “faster!” on the runaway train.",
+      hint: "It is probably the same person who says they are not scared.",
+    },
+  ],
+
+  "it's a small world": [
+    {
+      task: "Find one animal that looks like it is having the best day ever.",
+      hint: "Small World animals have extreme main-character energy.",
+    },
+    {
+      task: "Pick the room with the color combo you would most want in your dream playroom.",
+      hint: "Mary Blair did not come here to be subtle.",
+    },
+    {
+      task: "Spot one clock, sun, moon, or geometric shape that feels very Small World.",
+      hint: "Look at the backgrounds, not just the dolls.",
+    },
+  ],
+
+  "Buzz Lightyear's Space Ranger Spin": [
+    {
+      task: "Look for the giant View-Master disks or oversized batteries in the queue.",
+      hint: "Tomorrowland loves making normal toy things look huge and important.",
+    },
+    {
+      task: "Everyone pick who will get the highest score and who will just spin the car for chaos.",
+      hint: "There is always a chaos pilot.",
+    },
+  ],
+
+  "Tomorrowland Transit Authority PeopleMover": [
+    {
+      task: "During the ride, look for the Progress City model.",
+      hint: "It looks like a tiny futuristic city and connects back to Walt’s EPCOT ideas.",
+    },
+    {
+      task: "Pick the most relaxing part of the ride: the views, the breeze, the tunnel, or sitting down.",
+      hint: "Sitting down is a very valid answer.",
+    },
+  ],
+
+  "Under the Sea - Journey of The Little Mermaid": [
+    {
+      task: "Look for nautical wreckage, shells, and carved rock details in the queue.",
+      hint: "The queue is doing a lot before you even board.",
+    },
+    {
+      task: "Find one detail that makes you feel like you are moving from land toward the ocean.",
+      hint: "Watch the materials, sounds, and sea-life touches.",
+    },
+  ],
+
+  "The Many Adventures of Winnie the Pooh": [
+    {
+      task: "Look for honey-themed details in the queue.",
+      hint: "Pooh does not believe in subtle branding.",
+    },
+    {
+      task: "Everyone pick which Hundred Acre Wood character matches their current mood.",
+      hint: "Hot, tired adults may identify with Eeyore more than expected.",
+    },
+  ],
+
+  "Dumbo the Flying Elephant": [
+    {
+      task: "Look for circus tent details, peanuts, flags, or bright carnival colors.",
+      hint: "This area is designed to feel like a toy-box circus.",
+    },
+    {
+      task: "Pick who would fly Dumbo highest and who would keep him low.",
+      hint: "This can reveal a lot about your family.",
+    },
+  ],
+
+  "Mad Tea Party": [
+    {
+      task: "Spot the Dormouse popping out of the giant teapot.",
+      hint: "Look toward the center of the ride.",
+    },
+    {
+      task: "Everyone choose: are you a gentle spinner or a full chaos spinner?",
+      hint: "Anyone who says “gentle” cannot always be trusted.",
+    },
+  ],
+
+  "Prince Charming Regal Carrousel": [
+    {
+      task: "Look up at the painted Cinderella scenes on the canopy.",
+      hint: "There is more story detail above you than people notice.",
+    },
+    {
+      task: "Try to find the horse with the golden ribbon on its tail.",
+      hint: "Families love hunting for Cinderella’s Horse.",
+    },
+  ],
+
+  "Mickey's PhilharMagic": [
+    {
+      task: "Before the show, everyone pick the Disney song they hope appears.",
+      hint: "This is a no-wrong-answer situation unless someone starts singing too loudly.",
+    },
+  ],
+
+  "The Barnstormer": [
+    {
+      task: "Look for Goofy stunt-plane details around the ride.",
+      hint: "The theme is basically “Goofy tried aviation.”",
+    },
+    {
+      task: "Ask who in your group is using this as a warm-up coaster.",
+      hint: "Tiny thrills still count.",
+    },
+  ],
+
+  "The Magic Carpets of Aladdin": [
+    {
+      task: "Watch the camel and see if anyone gets splashed.",
+      hint: "If it is you, the camel chose violence.",
+    },
+    {
+      task: "Find colorful jewels or Adventureland market details around the ride.",
+      hint: "Look at the metalwork and surrounding props.",
+    },
+  ],
+
+  "Walt Disney's Enchanted Tiki Room": [
+    {
+      task: "Pick the bird, flower, or tiki that seems to have the most personality.",
+      hint: "There are a lot of candidates.",
+    },
+    {
+      task: "Listen for the first song lyric someone in your group recognizes.",
+      hint: "Warning: it may follow you around the park.",
+    },
+  ],
+
+  "Astro Orbiter": [
+    {
+      task: "Look down over Tomorrowland and pick the best view from above.",
+      hint: "The height is the whole drama.",
+    },
+  ],
+
+  "Tomorrowland Speedway": [
+    {
+      task: "Look for racetrack details like signs, lanes, and the Yard of Bricks-style touch.",
+      hint: "It is slow, but it wants to feel official.",
+    },
+    {
+      task: "Everyone vote for the safest driver in the family.",
+      hint: "Do not let this become too honest.",
+    },
+  ],
+
+  "Monsters Inc. Laugh Floor": [
+    {
+      task: "Everyone pick who is most likely to get picked by the monsters.",
+      hint: "If someone is wearing a loud shirt, they are in danger.",
+    },
+  ],
+
+  "Country Bear Musical Jamboree": [
+    {
+      task: "Pick which bear looks like they would be the most fun at a family party.",
+      hint: "There is no scientific method here. Go with vibes.",
+    },
+  ],
+
+  "The Hall of Presidents": [
+    {
+      task: "Use this as a family reset check: water, snack, bathroom, or one more ride after this?",
+      hint: "This is less scavenger hunt and more survival strategy.",
+    },
+  ],
+
 };
 
 const LOOK_AROUND_BY_LAND = {
@@ -355,6 +850,7 @@ const WOULD_YOU_RATHER_PROMPTS = [
   "Would you rather have a personal parade or a private fireworks show?",
   "Would you rather talk like a pirate all day or sing like Small World all day?",
   "Would you rather eat only park snacks all day or only quick-service meals all day?",
+  "Would you rather be stuck on “it’s a small world” for 20 minutes or have the song randomly play every time you open the fridge?",
 ];
 
 
@@ -875,6 +1371,24 @@ const HOLLYWOOD_TRIVIA_BY_RIDE = {
       fact: "Different destinations and characters can appear, so your family might not get the same trip twice.",
     },
   ],
+
+  "Rock 'n' Roller Coaster Starring Aerosmith": [
+    {
+      question: "Rock ’n’ Roller Coaster is famous for what kind of start?",
+      choices: ["A high-speed launch", "A backwards drop", "A water splash", "A slow lift hill"],
+      answer: "A high-speed launch",
+      fact:
+        "The launch is the star. It takes you from standing still to nearly 60 mph in just a few seconds.",
+    },
+    {
+      question: "What are you riding in on Rock ’n’ Roller Coaster?",
+      choices: ["A super-stretch limo", "A tour bus", "A rocket", "A taxi"],
+      answer: "A super-stretch limo",
+      fact:
+        "The whole story is that you are racing across town to make it to the concert.",
+    },
+  ],
+
 };
 
 const HOLLYWOOD_LOOK_AROUND_BY_RIDE = {
@@ -976,6 +1490,18 @@ const HOLLYWOOD_LOOK_AROUND_BY_RIDE = {
       hint: "Tatooine is hot, Hoth is cold, and everyone will have opinions.",
     },
   ],
+
+  "Rock 'n' Roller Coaster Starring Aerosmith": [
+    {
+      task: "Look for recording studio details like guitars, posters, cables, and music gear.",
+      hint: "The queue wants you to feel like you wandered backstage.",
+    },
+    {
+      task: "Everyone invent a family band name before you board.",
+      hint: "The worse the pun, the better.",
+    },
+  ],
+
 };
 
 const HOLLYWOOD_FAMILY_VOTE_PROMPTS = [
@@ -1071,6 +1597,63 @@ function normalizeName(value) {
 function getRideNameAliases(value) {
   const normalized = normalizeName(value);
   const aliases = new Set([normalized]);
+
+  if (normalized.includes("big thunder")) {
+    aliases.add("big thunder mountain railroad");
+    aliases.add("big thunder");
+  }
+
+  if (normalized.includes("small world") || normalized.includes("its a small world")) {
+    aliases.add("its a small world");
+    aliases.add("it's a small world");
+    aliases.add("small world");
+  }
+
+  if (normalized.includes("buzz lightyear")) {
+    aliases.add("buzz lightyears space ranger spin");
+    aliases.add("buzz lightyear space ranger spin");
+  }
+
+  if (normalized.includes("peoplemover") || normalized.includes("people mover")) {
+    aliases.add("tomorrowland transit authority peoplemover");
+    aliases.add("peoplemover");
+  }
+
+  if (normalized.includes("little mermaid") || normalized.includes("under the sea")) {
+    aliases.add("under the sea journey of the little mermaid");
+    aliases.add("under the sea journey of the little mermaid");
+    aliases.add("journey of the little mermaid");
+  }
+
+  if (normalized.includes("winnie") || normalized.includes("pooh")) {
+    aliases.add("the many adventures of winnie the pooh");
+    aliases.add("winnie the pooh");
+  }
+
+  if (normalized.includes("magic carpets") || normalized.includes("aladdin")) {
+    aliases.add("the magic carpets of aladdin");
+    aliases.add("magic carpets of aladdin");
+  }
+
+  if (normalized.includes("tiki")) {
+    aliases.add("walt disneys enchanted tiki room");
+    aliases.add("enchanted tiki room");
+  }
+
+  if (normalized.includes("philharmagic")) {
+    aliases.add("mickeys philharmagic");
+    aliases.add("philharmagic");
+  }
+
+  if (normalized.includes("carousel of progress")) {
+    aliases.add("walt disneys carousel of progress");
+    aliases.add("carousel of progress");
+  }
+
+  if (normalized.includes("monsters") || normalized.includes("laugh floor")) {
+    aliases.add("monsters inc laugh floor");
+    aliases.add("monsters inc laugh floor");
+  }
 
   if (normalized.includes("spaceship earth")) aliases.add("spaceship earth");
 
@@ -1193,7 +1776,7 @@ function getRideSpecificList(source, rideName) {
   return matchedKey ? source[matchedKey] : [];
 }
 
-export function getMiniGameForContext({
+function buildMiniGameForType({
   parkId,
   land,
   rideName,
@@ -1211,8 +1794,6 @@ export function getMiniGameForContext({
     const rideTrivia = getRideSpecificList(parkTriviaByRide, rideName);
     const landTrivia = parkTriviaByLand[land] || [];
 
-    // Magic Kingdom V0 can keep land fallback because we already built land-based games there.
-    // EPCOT/Hollywood should stay ride-specific so the experience does not feel generic.
     const question = pickFromList(
       parkId === "magic_kingdom" ? [...rideTrivia, ...landTrivia] : rideTrivia,
       seed
@@ -1267,6 +1848,53 @@ export function getMiniGameForContext({
           prompt,
         }
       : null;
+  }
+
+  return null;
+}
+
+export function getMiniGameForContext({
+  parkId,
+  land,
+  rideName,
+  gameType,
+  seed = 0,
+}) {
+  const requestedGame = buildMiniGameForType({
+    parkId,
+    land,
+    rideName,
+    gameType,
+    seed,
+  });
+
+  if (requestedGame) return requestedGame;
+
+  // Safety net: never let Line Time Companion disappear just because one tab
+  // lacks ride-specific content. Try the other family-safe game types before
+  // giving up.
+  const fallbackOrder = [
+    "trivia",
+    "look_around",
+    "family_vote",
+    "would_you_rather",
+  ].filter((type) => type !== gameType);
+
+  for (const fallbackType of fallbackOrder) {
+    const fallbackGame = buildMiniGameForType({
+      parkId,
+      land,
+      rideName,
+      gameType: fallbackType,
+      seed,
+    });
+
+    if (fallbackGame) {
+      return {
+        ...fallbackGame,
+        fallbackFrom: gameType,
+      };
+    }
   }
 
   return null;
