@@ -125,7 +125,7 @@ function getSafeLandForPark(parkId, land) {
 
 const STORAGE_KEY = "parkplan.state";
 
-const AUTO_REFRESH_MS = 6 * 60 * 1000;
+const AUTO_REFRESH_MS = 3 * 60 * 1000;
 
 const page = {
   minHeight: "100vh",
@@ -186,6 +186,19 @@ function writeStoredParkState(parkId, parkState) {
 }
 
 function formatActivityStartTime(isoString) {
+  if (!isoString) return "";
+
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(isoString));
+  } catch {
+    return "";
+  }
+}
+
+function formatAutoUpdateTime(isoString) {
   if (!isoString) return "";
 
   try {
@@ -343,6 +356,9 @@ function App() {
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationMessage, setLocationMessage] = useState("");
   const [locationError, setLocationError] = useState("");
+  const [locationAutoEnabled, setLocationAutoEnabled] = useState(false);
+  const [lastAutoUpdateAt, setLastAutoUpdateAt] = useState("");
+  const [lastLocationUpdateAt, setLastLocationUpdateAt] = useState("");
 
   const [currentLand, setCurrentLand] = useState(() => getDefaultLandForPark("magic_kingdom"));
   const [completedRideIds, setCompletedRideIds] = useState([]);
@@ -382,15 +398,22 @@ function App() {
   }, [loadData]);
 
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        loadData(true);
+    const runAutoRefresh = async () => {
+      if (document.visibilityState !== "visible") return;
+
+      await loadData(true);
+      setLastAutoUpdateAt(new Date().toISOString());
+
+      if (locationAutoEnabled) {
+        await updateUserLocation({ silent: true });
       }
-    }, AUTO_REFRESH_MS);
+    };
+
+    const intervalId = setInterval(runAutoRefresh, AUTO_REFRESH_MS);
 
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        loadData(true);
+        runAutoRefresh();
       }
     };
 
@@ -400,7 +423,7 @@ function App() {
       clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [loadData]);
+  }, [loadData, locationAutoEnabled, updateUserLocation]);
 
   useEffect(() => {
     isRestoringParkState.current = true;
@@ -414,6 +437,7 @@ function App() {
     setCurrentActivity(saved.currentActivity || null);
     setLocationMessage("");
     setLocationError("");
+    setLastLocationUpdateAt("");
 
     setTimeout(() => {
       isRestoringParkState.current = false;
@@ -602,47 +626,80 @@ function App() {
     setRevealedTriviaAnswer(false);
   }
 
-  async function handleUseMyLocation() {
-    setLocationLoading(true);
-    setLocationMessage("");
-    setLocationError("");
-
-    try {
-      const position = await getCurrentPosition();
-      const detectedZone = detectNearestLocationZone({
-        parkId: activePark,
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-      });
-
-      if (!detectedZone) {
-        setLocationError(
-          "I could not match your location to this park yet. Pick the closest area manually for now."
-        );
-        return;
+  const updateUserLocation = useCallback(
+    async ({ silent = false } = {}) => {
+      if (!silent) {
+        setLocationLoading(true);
+        setLocationMessage("");
+        setLocationError("");
       }
 
-      setCurrentLand(getSafeLandForPark(activePark, detectedZone.landKey));
-      setLocationMessage(
-        `${detectedZone.message} ${
-          detectedZone.confidence === "low"
-            ? "If that does not look right, pick the closest area manually."
-            : "Not right? Pick another area manually."
-        }`
-      );
-    } catch (err) {
-      const denied =
-        err?.code === 1 ||
-        String(err?.message || "").toLowerCase().includes("denied");
+      try {
+        const position = await getCurrentPosition();
+        const detectedZone = detectNearestLocationZone({
+          parkId: activePark,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
 
-      setLocationError(
-        denied
-          ? "Location permission was denied. No problem — pick the closest area manually."
-          : "I could not get your location right now. Pick the closest area manually."
-      );
-    } finally {
-      setLocationLoading(false);
-    }
+        if (!detectedZone) {
+          if (!silent) {
+            setLocationError(
+              "I could not match your location to this park yet. Pick the closest area manually for now."
+            );
+          }
+          return null;
+        }
+
+        if (detectedZone.confidence !== "low") {
+          setCurrentLand(getSafeLandForPark(activePark, detectedZone.landKey));
+        }
+
+        const nowIso = new Date().toISOString();
+        setLastLocationUpdateAt(nowIso);
+
+        if (!silent || detectedZone.confidence !== "low") {
+          setLocationMessage(
+            `${detectedZone.message} ${
+              detectedZone.confidence === "low"
+                ? "If that does not look right, pick the closest area manually."
+                : "Not right? Pick another area manually."
+            }`
+          );
+        }
+
+        setLocationError("");
+        setLocationAutoEnabled(true);
+        return detectedZone;
+      } catch (err) {
+        const denied =
+          err?.code === 1 ||
+          String(err?.message || "").toLowerCase().includes("denied");
+
+        if (!silent) {
+          setLocationError(
+            denied
+              ? "Location permission was denied. No problem — pick the closest area manually."
+              : "I could not get your location right now. Pick the closest area manually."
+          );
+        }
+
+        if (denied) {
+          setLocationAutoEnabled(false);
+        }
+
+        return null;
+      } finally {
+        if (!silent) {
+          setLocationLoading(false);
+        }
+      }
+    },
+    [activePark]
+  );
+
+  async function handleUseMyLocation() {
+    await updateUserLocation({ silent: false });
   }
 
   function handleResetRecs() {
@@ -1259,6 +1316,25 @@ function App() {
               </span>
             </div>
 
+            {(locationAutoEnabled || lastAutoUpdateAt || lastLocationUpdateAt) && (
+              <p
+                style={{
+                  margin: "7px 0 0",
+                  color: "#64748b",
+                  fontSize: 12,
+                  lineHeight: 1.4,
+                }}
+              >
+                Auto-updates while the app is open
+                {lastAutoUpdateAt
+                  ? ` · waits/weather ${formatAutoUpdateTime(lastAutoUpdateAt)}`
+                  : ""}
+                {lastLocationUpdateAt
+                  ? ` · location ${formatAutoUpdateTime(lastLocationUpdateAt)}`
+                  : ""}
+              </p>
+            )}
+
             {locationMessage && (
               <p
                 style={{
@@ -1484,29 +1560,49 @@ function App() {
         <section style={card}>
           <h3 style={{ marginTop: 0 }}>Wait Times</h3>
 
-          <div style={{ display: "grid", gap: 10 }}>
-            {sortedRides.map((ride) => (
-              <div
-                key={ride.id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  padding: 12,
-                  border: "1px solid #e2e8f0",
-                  borderRadius: 16,
-                }}
-              >
-                <div>
-                  <strong>{ride.name}</strong>
-                  <div style={{ color: "#64748b", fontSize: 12 }}>
-                    {formatLandLabel(activePark, ride.land)} · {ride.isOpen ? "Open" : "Closed"}
-                  </div>
-                </div>
+          <p style={{ marginTop: -4, color: "#64748b", fontSize: 13 }}>
+            Riding something that is not on a recommendation card? Mark it here so
+            ParkPlan can keep up with your real day.
+          </p>
 
-                <div style={{ fontWeight: 900 }}>{ride.waitTime} min</div>
-              </div>
-            ))}
+          <div style={{ display: "grid", gap: 10 }}>
+            {sortedRides.map((ride) => {
+              const isActiveRide = activeRideId === String(ride.id);
+
+              return (
+                <div
+                  key={ride.id}
+                  style={{
+                    padding: 12,
+                    border: isActiveRide ? "1px solid #c4b5fd" : "1px solid #e2e8f0",
+                    borderRadius: 16,
+                    background: isActiveRide ? "#f5f3ff" : "white",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <div>
+                      <strong>{ride.name}</strong>
+                      <div style={{ color: "#64748b", fontSize: 12 }}>
+                        {formatLandLabel(activePark, ride.land)} · {ride.isOpen ? "Open" : "Closed"}
+                      </div>
+                    </div>
+
+                    <div style={{ fontWeight: 900, whiteSpace: "nowrap" }}>
+                      {ride.waitTime} min
+                    </div>
+                  </div>
+
+                  {renderRideActions(ride)}
+                </div>
+              );
+            })}
           </div>
         </section>
 
