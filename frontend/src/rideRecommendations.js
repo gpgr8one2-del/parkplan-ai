@@ -507,6 +507,93 @@ function getNearbyHeadlinerOpportunityModifier({
   return mod;
 }
 
+function isSameRideAsNearestAnchor(ride, meta, locationContext) {
+  const nearestAnchorId = String(locationContext?.nearestAnchorId || "");
+  const nearestAnchorName = normalizeRideName(locationContext?.nearestAnchorName);
+
+  if (!nearestAnchorId && !nearestAnchorName) return false;
+
+  const rideId = String(ride?.id || "");
+  const rideName = normalizeRideName(ride?.name);
+  const metaName = normalizeRideName(meta?.displayName);
+
+  if (nearestAnchorId && rideId && nearestAnchorId === rideId) return true;
+
+  if (!nearestAnchorName) return false;
+
+  return (
+    nearestAnchorName === rideName ||
+    nearestAnchorName === metaName ||
+    rideName.includes(nearestAnchorName) ||
+    nearestAnchorName.includes(rideName) ||
+    metaName.includes(nearestAnchorName) ||
+    nearestAnchorName.includes(metaName)
+  );
+}
+
+function getClosestAnchorOpportunityModifier({
+  parkId,
+  meta,
+  ride,
+  weather,
+  waitValueStatus,
+  locationContext,
+}) {
+  if (!meta || !locationContext || locationContext.type !== "gps") return 0;
+
+  const confidence = locationContext.confidence;
+  const distanceMeters = locationContext.distanceMeters;
+
+  if (confidence === "low") return 0;
+  if (distanceMeters != null && distanceMeters > 160) return 0;
+  if (!isSameRideAsNearestAnchor(ride, meta, locationContext)) return 0;
+
+  const stormActive = isCurrentlyStorming(weather);
+  const rainActive = isRainActive(weather);
+
+  if ((stormActive || rainActive) && isRainSensitiveRide(meta)) return 0;
+
+  const status = waitValueStatus?.status;
+  const waitTime = ride?.waitTime;
+  let mod = 0;
+
+  // If GPS says the guest is basically standing at a ride and the wait is good,
+  // that should heavily influence the recommendation. This is the field-test fix
+  // for Big Thunder being 30 minutes while GPS is closest to Big Thunder.
+  if (status === "great_value") mod += 34;
+  else if (status === "good_value") mod += 24;
+  else if (waitTime != null && waitTime <= 25) mod += 16;
+
+  if (confidence === "high") mod += 8;
+
+  if (distanceMeters != null && distanceMeters <= 75) {
+    mod += 8;
+  } else if (distanceMeters != null && distanceMeters <= 120) {
+    mod += 4;
+  }
+
+  if (
+    parkId === "magic_kingdom" &&
+    meta.displayName === "Big Thunder Mountain Railroad" &&
+    waitTime != null &&
+    waitTime <= 35
+  ) {
+    mod += 30;
+  }
+
+  if (
+    parkId === "magic_kingdom" &&
+    meta.displayName === "Tiana's Bayou Adventure" &&
+    waitTime != null &&
+    waitTime <= 45 &&
+    (status === "great_value" || status === "good_value")
+  ) {
+    mod += 18;
+  }
+
+  return mod;
+}
+
 function getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand) {
   if (parkId !== "magic_kingdom" || !meta) return 0;
 
@@ -728,6 +815,12 @@ function buildReason(ride, parts) {
     reasons.push("strong nearby headliner value");
   }
 
+  if (parts.closestAnchorOpportunityModifier >= 30) {
+    reasons.push("you are basically right here");
+  } else if (parts.closestAnchorOpportunityModifier >= 15) {
+    reasons.push("very close to your current location");
+  }
+
   if (!reasons.length) {
     reasons.push("solid value based on current conditions");
   }
@@ -923,6 +1016,16 @@ export function getNextBestRides({
         proximityModifier,
       });
 
+    const closestAnchorOpportunityModifier =
+      getClosestAnchorOpportunityModifier({
+        parkId,
+        meta,
+        ride,
+        weather,
+        waitValueStatus,
+        locationContext,
+      });
+
     const finalScore =
       baseScore -
       waitPenalty +
@@ -933,7 +1036,8 @@ export function getNextBestRides({
       waitValueModifier +
       wetRideModifier +
       parkStrategyModifier +
-      nearbyHeadlinerOpportunityModifier;
+      nearbyHeadlinerOpportunityModifier +
+      closestAnchorOpportunityModifier;
 
     const proximityDistance =
       proximityModifier > 0
@@ -951,6 +1055,7 @@ export function getNextBestRides({
       strategyNote: meta?.waitProfile?.strategyNote || null,
       wetRideModifier,
       nearbyHeadlinerOpportunityModifier,
+      closestAnchorOpportunityModifier,
       reason: buildReason(ride, {
         baseScore,
         trendModifier,
@@ -960,6 +1065,7 @@ export function getNextBestRides({
         wetRideModifier,
         parkStrategyModifier,
         nearbyHeadlinerOpportunityModifier,
+        closestAnchorOpportunityModifier,
       }),
     };
   });
@@ -993,12 +1099,24 @@ export function getNextBestRides({
     });
   }
 
+  const hasStrongClosestAnchorOpportunity = positivePool.some((ride) => {
+    return ride.closestAnchorOpportunityModifier >= 30;
+  });
+
   const nearbyRides = positivePool.filter((ride) => {
     return ride.proximityDistance !== "far";
   });
 
-  const farRides = positivePool.filter((ride) => {
-    return ride.proximityDistance === "far";
+  let farRides = positivePool.filter((ride) => {
+    if (ride.proximityDistance !== "far") return false;
+
+    // If GPS says there is a strong ride right where the family is standing,
+    // be much more conservative about sending them away as Worth the Walk.
+    if (hasStrongClosestAnchorOpportunity && ride.recommendationScore < 95) {
+      return false;
+    }
+
+    return true;
   });
 
   const primaryNearbyRides = nearbyRides.filter((ride) => {
@@ -1062,12 +1180,17 @@ export function getNextBestRides({
       // promoted into Best Move / Smart Backup / Worth the Walk. Do not also
       // frame it as "Plan Ahead" because that sends the wrong signal.
       if (
-        ride.nearbyHeadlinerOpportunityModifier >= 20 &&
+        (ride.nearbyHeadlinerOpportunityModifier >= 20 ||
+          ride.closestAnchorOpportunityModifier >= 30) &&
         (ride.waitValueStatus?.status === "great_value" ||
           ride.waitValueStatus?.status === "good_value" ||
           (parkId === "hollywood" &&
             ride.name === "Slinky Dog Dash" &&
             currentLand === "toy_story_land" &&
+            ride.waitTime != null &&
+            ride.waitTime <= 35) ||
+          (parkId === "magic_kingdom" &&
+            ride.name === "Big Thunder Mountain Railroad" &&
             ride.waitTime != null &&
             ride.waitTime <= 35))
       ) {
