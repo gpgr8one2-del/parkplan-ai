@@ -142,8 +142,51 @@ export const PARK_PROXIMITY = {
     },
   },
 
-  // Future parks: animal_kingdom,
-  // universal_studios, islands_of_adventure, epic_universe
+  animal_kingdom: {
+    // Animal Kingdom is walking-heavy and heat-sensitive.
+    // Discovery Island is the central connector.
+    // Pandora and Africa are natural left-side flows.
+    // Asia is a meaningful move from Pandora/Africa unless the family is already looping that way.
+    // Rafiki's Planet Watch is a time-block destination, not a quick nearby move.
+    // Tropical Americas is a construction/future land placeholder and should not be treated
+    // as an active recommendation area yet.
+    oasis: {
+      adjacent: ["discovery_island"],
+      nearby: ["pandora", "africa"],
+    },
+
+    discovery_island: {
+      adjacent: ["oasis", "pandora", "africa", "asia"],
+      nearby: ["rafikis_planet_watch", "tropical_americas_construction"],
+    },
+
+    pandora: {
+      adjacent: ["discovery_island", "africa"],
+      nearby: ["oasis"],
+    },
+
+    africa: {
+      adjacent: ["discovery_island", "pandora", "asia", "rafikis_planet_watch"],
+      nearby: ["oasis"],
+    },
+
+    asia: {
+      adjacent: ["discovery_island", "africa"],
+      nearby: ["pandora", "tropical_americas_construction"],
+    },
+
+    rafikis_planet_watch: {
+      adjacent: ["africa"],
+      nearby: ["discovery_island"],
+    },
+
+    tropical_americas_construction: {
+      adjacent: ["discovery_island", "asia"],
+      nearby: ["africa"],
+    },
+  },
+
+  // Future parks: universal_studios, islands_of_adventure, epic_universe
   // each gets its own adjacency map keyed by snake_case land name.
 };
 
@@ -173,17 +216,42 @@ export function resolveCurrentLand(parkId, locationContext) {
       return land;
     }
 
-    // case "gps":
-    //   return gpsToLand(parkId, locationContext.lat, locationContext.lng);
+    case "gps": {
+      const detectedParkId =
+        locationContext.detectedLocation?.parkId || locationContext.parkId;
+
+      if (detectedParkId && detectedParkId !== parkId) return null;
+
+      const land =
+        locationContext.landKey ||
+        locationContext.detectedLocation?.landKey ||
+        locationContext.land;
+
+      if (!land || land === "not_sure") return null;
+      return land;
+    }
+
+    case "last_seen": {
+      const land = locationContext.landKey || locationContext.land;
+      if (!land || land === "not_sure") return null;
+      return land;
+    }
 
     // case "ble_beacon":
     //   return beaconToLand(parkId, locationContext.beaconId);
 
-    // case "last_seen":
-    //   return locationContext.land;
+    default: {
+      // App.jsx now sends richer locationContextForDecisions objects. If a
+      // caller passes one without a recognized type, still try to resolve the
+      // land safely instead of throwing away useful context.
+      const land =
+        locationContext.landKey ||
+        locationContext.detectedLocation?.landKey ||
+        locationContext.land;
 
-    default:
-      return null;
+      if (!land || land === "not_sure") return null;
+      return land;
+    }
   }
 }
 
