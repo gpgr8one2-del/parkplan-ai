@@ -314,6 +314,165 @@ function getPlanningPriority(meta, waitValueStatus) {
   return 0;
 }
 
+function isScheduledShowMeta(meta) {
+  if (!meta) return false;
+
+  const category = meta?.planningProfile?.category;
+  const tags = meta.tags || [];
+
+  return (
+    meta.isScheduledShow === true ||
+    meta.showProfile?.type === "scheduled_show" ||
+    category === "scheduled_show" ||
+    tags.includes("scheduled-show")
+  );
+}
+
+function parseShowtimeToMinutes(showtime) {
+  const match = String(showtime || "")
+    .trim()
+    .match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+
+  if (!match) return null;
+
+  let hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const period = match[3].toUpperCase();
+
+  if (period === "PM" && hour !== 12) hour += 12;
+  if (period === "AM" && hour === 12) hour = 0;
+
+  return hour * 60 + minute;
+}
+
+function getNextShowtimeInfo(meta) {
+  const showtimes = meta?.showProfile?.showtimes || [];
+  const nowMinutes = getOrlandoTimeParts().totalMinutes;
+
+  const upcoming = showtimes
+    .map((label) => ({
+      label,
+      totalMinutes: parseShowtimeToMinutes(label),
+    }))
+    .filter((item) => item.totalMinutes != null && item.totalMinutes >= nowMinutes)
+    .sort((a, b) => a.totalMinutes - b.totalMinutes);
+
+  const next = upcoming[0] || null;
+
+  if (!next) {
+    return {
+      nextShowtime: null,
+      minutesUntilShow: null,
+      isPastFinalShow: true,
+    };
+  }
+
+  return {
+    nextShowtime: next.label,
+    minutesUntilShow: next.totalMinutes - nowMinutes,
+    isPastFinalShow: false,
+  };
+}
+
+function getScheduledShowScoreModifier(meta, weather, proximityModifier) {
+  if (!isScheduledShowMeta(meta)) return 0;
+
+  const effectiveTempF = getEffectiveTempF(weather);
+  const stormActive = isCurrentlyStorming(weather);
+  const rainActive = isRainActive(weather);
+  const nextShow = getNextShowtimeInfo(meta);
+  const arrivalBuffer =
+    effectiveTempF != null && effectiveTempF >= 87
+      ? meta?.showProfile?.middayArrivalBufferMinutes ||
+        meta?.showProfile?.arrivalBufferMinutes ||
+        20
+      : meta?.showProfile?.arrivalBufferMinutes || 15;
+
+  let mod = -45;
+
+  // Shows can be useful recovery, but they should not win because the wait feed
+  // says 0 minutes. They need showtime fit, heat/rain value, and preferably proximity.
+  if (stormActive || rainActive) mod += 10;
+  if (effectiveTempF != null && effectiveTempF >= 92 && meta.hasAC) mod += 12;
+  else if (effectiveTempF != null && effectiveTempF >= 87 && meta.hasAC) mod += 8;
+
+  if (proximityModifier > 0) mod += 8;
+  else if (proximityModifier < -8) mod -= 10;
+
+  if (nextShow.isPastFinalShow) return -120;
+
+  if (nextShow.minutesUntilShow != null) {
+    if (
+      nextShow.minutesUntilShow >= arrivalBuffer &&
+      nextShow.minutesUntilShow <= arrivalBuffer + 25
+    ) {
+      mod += 18;
+    } else if (nextShow.minutesUntilShow < arrivalBuffer) {
+      mod -= 18;
+    } else if (nextShow.minutesUntilShow > 90) {
+      mod -= 14;
+    }
+  }
+
+  return mod;
+}
+
+function getScheduledShowPlanPriority(meta, ride, currentLand, proximityModifier) {
+  if (!isScheduledShowMeta(meta)) return 0;
+
+  const nextShow = getNextShowtimeInfo(meta);
+  if (nextShow.isPastFinalShow) return -1000;
+
+  const arrivalBuffer =
+    meta?.showProfile?.arrivalBufferMinutes ||
+    meta?.showProfile?.middayArrivalBufferMinutes ||
+    20;
+
+  let priority = 60;
+
+  if (meta.land === currentLand) priority += 18;
+  else if (proximityModifier > 0) priority += 10;
+  else if (proximityModifier < -8) priority -= 12;
+
+  if (nextShow.minutesUntilShow != null) {
+    if (
+      nextShow.minutesUntilShow >= arrivalBuffer &&
+      nextShow.minutesUntilShow <= arrivalBuffer + 30
+    ) {
+      priority += 24;
+    } else if (nextShow.minutesUntilShow < arrivalBuffer) {
+      priority -= 20;
+    } else if (nextShow.minutesUntilShow > 90) {
+      priority -= 12;
+    }
+  }
+
+  return priority;
+}
+
+function buildScheduledShowReason(meta) {
+  const nextShow = getNextShowtimeInfo(meta);
+  const profile = meta?.showProfile || {};
+  const verifyText = profile.verifyDailySchedule
+    ? " Double-check My Disney Experience because showtimes can change."
+    : "";
+
+  if (nextShow.isPastFinalShow) {
+    return `Scheduled show. The final listed showtime may have passed for today.${verifyText}`;
+  }
+
+  const arrivalBuffer =
+    profile.middayArrivalBufferMinutes || profile.arrivalBufferMinutes || 20;
+
+  const nextText = nextShow.nextShowtime
+    ? `Next listed show: ${nextShow.nextShowtime}. `
+    : "";
+
+  const strategy = profile.strategy || meta?.planningProfile?.strategy || "";
+
+  return `${nextText}${strategy} Plan to arrive about ${arrivalBuffer} minutes early when needed.${verifyText}`;
+}
+
 function getUsedRideIds(...rides) {
   return new Set(
     rides
@@ -339,6 +498,11 @@ function isSoftRecoveryOnlyCandidate(parkId, ride, weather) {
     isRainActive(weather) ||
     (effectiveTempF != null && effectiveTempF >= 87);
 
+  // Scheduled shows are not standby rides. A 0-minute feed value should never
+  // make them win Best Move over true ride opportunities. They belong in
+  // showtime-based Plan Ahead / recovery logic unless the pool is otherwise empty.
+  if (isScheduledShowMeta(meta)) return true;
+
   const isRecoveryOrShow =
     category === "filler_or_recovery" ||
     tags.includes("show") ||
@@ -346,7 +510,8 @@ function isSoftRecoveryOnlyCandidate(parkId, ride, weather) {
     tags.includes("recovery");
 
   // During weather/heat, recovery options are allowed to become primary because
-  // the family may need AC/seating more than a headliner.
+  // the family may need AC/seating more than a headliner. Scheduled shows are
+  // still handled separately above because their timing matters.
   if (badWeatherOrHeat) return false;
 
   // In normal conditions, do not let low-wait shows/exhibits hijack Best Move.
@@ -797,6 +962,12 @@ function buildReason(ride, parts) {
     reasons.push("good weather-safe option");
   }
 
+  if (parts.scheduledShowModifier >= 12) {
+    reasons.push("showtime timing may work well");
+  } else if (parts.scheduledShowModifier <= -20) {
+    reasons.push("showtime timing matters");
+  }
+
   if (parts.wetRideModifier >= 8) {
     reasons.push("good water-ride timing");
   } else if (parts.wetRideModifier <= -8) {
@@ -829,6 +1000,10 @@ function buildReason(ride, parts) {
 }
 
 function buildPlanAheadReason(meta, ride, waitValueStatus) {
+  if (isScheduledShowMeta(meta)) {
+    return buildScheduledShowReason(meta);
+  }
+
   const strategy = meta?.planningProfile?.strategy;
   const label = waitValueStatus?.label;
 
@@ -982,6 +1157,11 @@ export function getNextBestRides({
     const proximityModifier = getProximityModifier(meta, currentLand, parkId);
     const waitValueStatus = getWaitValueStatus(meta, ride.waitTime);
     const waitValueModifier = waitValueStatus.modifier || 0;
+    const scheduledShowModifier = getScheduledShowScoreModifier(
+      meta,
+      weather,
+      proximityModifier
+    );
     const wetRideModifier = getWetRideTimingModifier(
       meta,
       weather,
@@ -1034,6 +1214,7 @@ export function getNextBestRides({
       contextModifier +
       proximityModifier +
       waitValueModifier +
+      scheduledShowModifier +
       wetRideModifier +
       parkStrategyModifier +
       nearbyHeadlinerOpportunityModifier +
@@ -1052,7 +1233,10 @@ export function getNextBestRides({
       proximityDistance,
       waitValueStatus,
       planningProfile: meta?.planningProfile || null,
+      showProfile: meta?.showProfile || null,
+      isScheduledShow: isScheduledShowMeta(meta),
       strategyNote: meta?.waitProfile?.strategyNote || null,
+      scheduledShowModifier,
       wetRideModifier,
       nearbyHeadlinerOpportunityModifier,
       closestAnchorOpportunityModifier,
@@ -1062,6 +1246,7 @@ export function getNextBestRides({
         contextModifier,
         proximityModifier,
         waitValueStatus,
+        scheduledShowModifier,
         wetRideModifier,
         parkStrategyModifier,
         nearbyHeadlinerOpportunityModifier,
@@ -1148,6 +1333,8 @@ export function getNextBestRides({
   const worthTheWalk =
     farRides.find((ride) => {
       if (usedAfterBackup.has(String(ride.id))) return false;
+      const meta = getMetaForRide(parkId, ride);
+      if (isScheduledShowMeta(meta)) return false;
       if (isFillerOrRecovery(ride)) return false;
 
       // Be more conservative about cross-park walks during active rain.
@@ -1174,7 +1361,9 @@ export function getNextBestRides({
         category === "plan_ahead_multi_pass" ||
         category === "plan_ahead_standby_only";
 
-      if (!isPlanAheadCategory) return false;
+      const isScheduledShow = isScheduledShowMeta(meta);
+
+      if (!isPlanAheadCategory && !isScheduledShow) return false;
 
       // If the ride is a same-area strike-now opportunity, it should have been
       // promoted into Best Move / Smart Backup / Worth the Walk. Do not also
@@ -1203,10 +1392,19 @@ export function getNextBestRides({
       const meta = getMetaForRide(parkId, ride);
       const waitValueStatus = getWaitValueStatus(meta, ride.waitTime);
 
+      const proximityModifier = getProximityModifier(meta, currentLand, parkId);
+      const scheduledShowPriority = getScheduledShowPlanPriority(
+        meta,
+        ride,
+        currentLand,
+        proximityModifier
+      );
+
       return {
         ...ride,
-        planAheadPriority:
-          getPlanningPriority(meta, waitValueStatus) + (ride.waitTime || 0),
+        planAheadPriority: isScheduledShowMeta(meta)
+          ? scheduledShowPriority
+          : getPlanningPriority(meta, waitValueStatus) + (ride.waitTime || 0),
         planAheadReason: buildPlanAheadReason(meta, ride, waitValueStatus),
       };
     })
@@ -1228,6 +1426,8 @@ export function getNextBestRides({
       const meta = getMetaForRide(parkId, ride);
       const category = meta?.planningProfile?.category;
       const status = ride.waitValueStatus?.status;
+
+      if (isScheduledShowMeta(meta)) return false;
 
       const isPlanAheadCategory =
         category === "plan_ahead_single_pass" ||
