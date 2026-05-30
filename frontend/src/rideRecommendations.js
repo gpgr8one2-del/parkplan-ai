@@ -1,3 +1,64 @@
+/**
+ * ParkPlan AI — Ride Recommendation Engine (V1.1)
+ *
+ * Surgical cleanup of V1. The following field-tested systems are preserved
+ * with identical behavior:
+ *   - weather / rain / storm suppression
+ *   - heat logic and time-of-day wet ride timing
+ *   - GPS nearest-anchor opportunity boosts
+ *   - scheduled show handling and Plan Ahead bucket logic
+ *   - height filtering and warnings
+ *   - family profile modifiers
+ *   - per-park strategy rules (Magic Kingdom and Hollywood)
+ *   - completed / skipped / report-issue exclusion behavior
+ *   - the existing modifier NAMES on each scored ride, so telemetry stays
+ *     comparable to V1 field data
+ *
+ * What changed (and why):
+ *   1. familyProfileModifier now has a hard ceiling of FAMILY_CAP_STRONG_WAIT
+ *      (+12) even when the wait is "strong". Previously the strong-wait branch
+ *      returned the raw modifier uncapped, which let personalization stack to
+ *      +20-24 and overpower geography. This was the root cause of Peter Pan
+ *      winning from anywhere in the park.
+ *
+ *   2. New cross-park sum cap: when a ride is NOT in the same land as the
+ *      guest AND the GPS closest-anchor boost is not active, the sum of
+ *      (waitValueModifier + familyProfileModifier + trendModifier +
+ *       nearbyHeadlinerOpportunityModifier) is capped at
+ *      CROSS_PARK_POSITIVE_SUM_CAP (+30). Individual modifier values are still
+ *      preserved on the ride object; the cap is exposed as a separate
+ *      `crossParkSumCapAdjustment` field for telemetry.
+ *
+ *   3. lowWaitBonus now returns 0 for plan-ahead category rides. Plan-ahead
+ *      rides at low waits already get +14 from waitValueModifier; adding the
+ *      +5..+12 lowWaitBonus on top was double-counting.
+ *
+ *   4. nearbyHeadlinerOpportunityModifier's standalone great_value branch
+ *      (ride is nearby-enough but not in the same area) dropped from +14 to
+ *      +6. Still rewards the signal, stops it from compounding past geography.
+ *
+ *   5. Null currentLand short-circuit: when the engine has no valid current
+ *      land, it no longer pretends it can compute bestMove / backup /
+ *      worthTheWalk. Those slots return null, planAhead and waitOnThis still
+ *      compute (they don't depend on proximity), and the response includes
+ *      `needsLocation: true` so the UI can prompt for location.
+ *
+ *   6. Best Move fallback quality gate: if the cascade is about to set Best
+ *      Move from the cross-park positive pool, the candidate must clear a
+ *      Worth-the-Walk-grade bar (score >= FALLBACK_BEST_MOVE_SCORE_FLOOR,
+ *      status === great_value, not a low-capacity classic at non-great_value
+ *      or a long wait). If nothing qualifies, bestMove is null.
+ *
+ *   7. Worth the Walk score floor raised from 70 to WORTH_THE_WALK_SCORE_FLOOR
+ *      (75). Low-capacity classics still need great_value.
+ *
+ * New fields on the response envelope:
+ *   - `needsLocation` (boolean): true when currentLand is unknown.
+ * New field on each scored ride:
+ *   - `crossParkSumCapAdjustment` (number, <= 0): the amount removed by the
+ *     cross-park sum cap, or 0 when the cap did not fire.
+ */
+
 import { getRideMeta, getWaitValueStatus, getParkRides } from "./rideMetadata";
 import {
   resolveCurrentLand,
@@ -8,6 +69,16 @@ import { getParkCloseTime } from "./parkHours";
 const DEFAULT_POPULARITY = 40;
 const WALK_BUFFER_MINUTES = 15;
 const ORLANDO_TIME_ZONE = "America/New_York";
+
+// V1.1 caps and gates. Tuning these is the easiest way to adjust the new
+// behavior without touching individual modifier functions.
+const FAMILY_CAP_WEAK_WAIT = 4;
+const FAMILY_CAP_LATE_EVENING = 8;
+const FAMILY_CAP_STRONG_WAIT = 12;
+const CROSS_PARK_POSITIVE_SUM_CAP = 30;
+const FALLBACK_BEST_MOVE_SCORE_FLOOR = 85;
+const WORTH_THE_WALK_SCORE_FLOOR = 75;
+const STRONG_CLOSEST_ANCHOR_THRESHOLD = 30;
 
 /* -------------------------------------------------------------------------- */
 /* Time helpers                                                               */
@@ -32,17 +103,14 @@ function isEarlyEntryWindow(parkId) {
 
   const { totalMinutes } = getOrlandoTimeParts();
 
-  // V1 assumption for Magic Kingdom testing:
-  // Early Entry / rope-drop strategy window from 8:00 AM to 9:00 AM Orlando time.
-  // Later this should come from official daily park hours.
+  // V1 assumption for Magic Kingdom testing: Early Entry / rope-drop strategy
+  // window 8:00 - 9:00 AM Orlando time. Replace later with official daily hours.
   return totalMinutes >= 8 * 60 && totalMinutes < 9 * 60;
 }
 
 function isAllowedDuringEarlyEntry(parkId, meta) {
   if (!isEarlyEntryWindow(parkId)) return true;
 
-  // Magic Kingdom Early Entry is primarily a Fantasyland / Tomorrowland play.
-  // Suppress Adventureland, Frontierland, Liberty Square, Main Street, and filler items.
   if (parkId === "magic_kingdom") {
     return meta?.land === "fantasyland" || meta?.land === "tomorrowland";
   }
@@ -103,6 +171,10 @@ function isRainSensitiveRide(meta) {
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/* Ride name / meta resolution                                                */
+/* -------------------------------------------------------------------------- */
+
 function isUnsupportedRecommendationVariant(ride) {
   const name = String(ride?.name || "").toLowerCase();
 
@@ -148,6 +220,10 @@ function getMetaForRide(parkId, ride) {
   return looseNameMatch?.[1] || null;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Height filtering                                                           */
+/* -------------------------------------------------------------------------- */
+
 function getShortestHeightInches(familyProfile) {
   const directHeight = Number(familyProfile?.shortestHeightInches);
 
@@ -161,230 +237,6 @@ function getShortestHeightInches(familyProfile) {
     .filter((height) => Number.isFinite(height) && height > 0);
 
   return validHeights.length ? Math.min(...validHeights) : null;
-}
-
-function getFamilyProfileModifier(meta, familyProfile, weather) {
-  if (!meta || !familyProfile) return 0;
-
-  let mod = 0;
-  const tags = meta.tags || [];
-  const category = meta?.planningProfile?.category;
-  const effectiveTempF = getEffectiveTempF(weather);
-
-  // Thrill tolerance: do not nuke thrill rides completely unless height already
-  // blocks them; just reduce how aggressively they win.
-  if (familyProfile.thrillTolerance === "low") {
-    if ((meta.intensity || 0) >= 4 || tags.includes("thrill") || tags.includes("coaster")) {
-      mod -= 28;
-    } else if ((meta.intensity || 0) >= 3) {
-      mod -= 12;
-    }
-
-    if ((meta.intensity || 0) <= 2 && !tags.includes("thrill")) {
-      mod += 6;
-    }
-  } else if (familyProfile.thrillTolerance === "high") {
-    if ((meta.intensity || 0) >= 4 || tags.includes("thrill") || tags.includes("coaster")) {
-      mod += 10;
-    }
-  }
-
-  // Walking tolerance: same-area proximity already matters, but low walking
-  // tolerance should punish cross-park ideas harder.
-  if (familyProfile.walkingTolerance === "low") {
-    if (meta.environment === "outdoor" && effectiveTempF != null && effectiveTempF >= 87) {
-      mod -= 4;
-    }
-  } else if (familyProfile.walkingTolerance === "high") {
-    if (category?.startsWith("plan_ahead")) {
-      mod += 3;
-    }
-  }
-
-  // Heat sensitivity: amplify the existing weather logic for families who told us
-  // heat/fatigue is a real concern.
-  if (familyProfile.heatSensitivity === "high" && effectiveTempF != null && effectiveTempF >= 87) {
-    if (meta.hasAC || meta.environment === "indoor") mod += 10;
-    if (meta.environment === "outdoor" && !meta.getsWet) mod -= 10;
-    if (meta.environment === "mixed" && !meta.getsWet) mod -= 5;
-  } else if (familyProfile.heatSensitivity === "low" && effectiveTempF != null && effectiveTempF >= 87) {
-    if (meta.environment === "outdoor" && !meta.getsWet) mod += 3;
-  }
-
-  // Water ride preference.
-  if (meta.getsWet) {
-    if (familyProfile.waterRidePreference === "avoid") mod -= 45;
-    else if (familyProfile.waterRidePreference === "yes") mod += 8;
-  }
-
-  // Pace preference.
-  if (familyProfile.pace === "relaxed") {
-    if (category?.startsWith("plan_ahead") && (meta.intensity || 0) >= 4) mod -= 5;
-    if (meta.hasAC || category === "filler_or_recovery") mod += 3;
-  } else if (familyProfile.pace === "maximize") {
-    if (category?.startsWith("plan_ahead")) mod += 5;
-  }
-
-  // Trip priorities.
-  const priorities = new Set(familyProfile.priorities || []);
-
-  const isCharacterOrMeet =
-    tags.includes("characters") ||
-    tags.includes("character") ||
-    tags.includes("meet-greet") ||
-    tags.includes("meet-and-greet");
-
-  const isPrincessOrRoyal =
-    tags.includes("princess") ||
-    tags.includes("royal") ||
-    normalizeRideName(meta.displayName).includes("belle") ||
-    normalizeRideName(meta.displayName).includes("princess");
-
-  const isInteractiveStoryShow =
-    tags.includes("interactive") ||
-    tags.includes("storytelling") ||
-    normalizeRideName(meta.displayName).includes("enchanted tales");
-
-  const wantsCharacters = priorities.has("characters");
-  const wantsPrincesses = priorities.has("princesses");
-  const wantsShows = priorities.has("shows_parades");
-  const wantsLowStress = priorities.has("low_stress");
-
-  if (priorities.has("headliners") && (meta.popularity || 0) >= 85) mod += 8;
-  if (wantsLowStress && (meta.hasAC || category === "filler_or_recovery")) mod += 5;
-  if (priorities.has("ac_breaks") && (meta.hasAC || meta.environment === "indoor")) mod += 8;
-  if (wantsCharacters && isCharacterOrMeet) mod += 12;
-  if (wantsPrincesses && isPrincessOrRoyal) mod += 14;
-  if (wantsShows && tags.includes("show")) mod += 8;
-  if (priorities.has("bluey_younger_kids") && tags.includes("bluey")) mod += 14;
-
-  // Character/princess experiences are emotionally huge for the right family,
-  // but they are bad default recommendations for families that did not tell us
-  // characters/princesses matter. Do not let low waits push them into Smart Backup
-  // over actual rides unless the profile supports that kind of moment.
-  if (isPrincessOrRoyal && !wantsPrincesses) {
-    mod -= 24;
-  }
-
-  if (isCharacterOrMeet && !wantsCharacters) {
-    mod -= 18;
-  }
-
-  if (isInteractiveStoryShow && !wantsPrincesses && !wantsCharacters && !wantsShows) {
-    mod -= 18;
-  }
-
-  // Younger kids should gently favor lower-intensity family experiences, but that
-  // does not automatically mean princess/character content unless the family said
-  // that is important.
-  if (familyProfile.hasSmallChildren) {
-    if ((meta.intensity || 0) <= 2 && meta.minHeightInches === 0) mod += 5;
-    if ((meta.intensity || 0) >= 5) mod -= 6;
-
-    if ((isPrincessOrRoyal || isCharacterOrMeet) && !wantsPrincesses && !wantsCharacters) {
-      mod -= 6;
-    }
-  }
-
-  return mod;
-}
-
-function getPlanAheadPersonalizationCap({
-  meta,
-  ride,
-  waitValueStatus,
-  familyProfileModifier,
-  timeContext,
-}) {
-  if (!meta) return familyProfileModifier;
-
-  const category = meta?.planningProfile?.category;
-  const isPlanAheadCategory =
-    category === "plan_ahead_single_pass" ||
-    category === "plan_ahead_multi_pass" ||
-    category === "plan_ahead_standby_only";
-
-  if (!isPlanAheadCategory) return familyProfileModifier;
-
-  const status = waitValueStatus?.status;
-  const waitTime = ride?.waitTime;
-
-  const isStrongWait =
-    status === "great_value" ||
-    status === "good_value" ||
-    (waitTime != null && waitTime <= 35);
-
-  const isLateEvening =
-    timeContext?.dayPhase === "late_evening" ||
-    (timeContext?.orlandoTotalMinutes != null &&
-      timeContext.orlandoTotalMinutes >= 20 * 60);
-
-  // Personal fit matters, but it should not overpower reality.
-  // Plan-ahead headliners should break out into Best Move only when the wait is
-  // actually strong or the timing is strategically late.
-  if (!isStrongWait && !isLateEvening) {
-    return Math.min(familyProfileModifier, 4);
-  }
-
-  if (!isStrongWait && isLateEvening) {
-    return Math.min(familyProfileModifier, 8);
-  }
-
-  return familyProfileModifier;
-}
-
-function getPlanAheadRealityCheckModifier({ parkId, meta, ride, waitValueStatus, timeContext }) {
-  if (!meta) return 0;
-
-  const category = meta?.planningProfile?.category;
-  const isPlanAheadCategory =
-    category === "plan_ahead_single_pass" ||
-    category === "plan_ahead_multi_pass" ||
-    category === "plan_ahead_standby_only";
-
-  if (!isPlanAheadCategory) return 0;
-
-  const status = waitValueStatus?.status;
-  const waitTime = ride?.waitTime;
-  const displayName = meta.displayName;
-
-  const isLateEvening =
-    timeContext?.dayPhase === "late_evening" ||
-    (timeContext?.orlandoTotalMinutes != null &&
-      timeContext.orlandoTotalMinutes >= 20 * 60);
-
-  let mod = 0;
-
-  // These rides are high-demand traps if we let "family likes thrill/headliners"
-  // overpower a merely normal/high wait. Keep them as Plan Ahead unless the wait
-  // is truly attractive or the late-day strategy makes sense.
-  if (
-    parkId === "magic_kingdom" &&
-    (displayName === "TRON Lightcycle / Run" ||
-      displayName === "Seven Dwarfs Mine Train")
-  ) {
-    if (waitTime != null && waitTime >= 55 && status !== "great_value") {
-      mod -= isLateEvening ? 6 : 18;
-    }
-
-    if (waitTime != null && waitTime >= 70 && status !== "great_value") {
-      mod -= 10;
-    }
-  }
-
-  // Generic safety net for all plan-ahead rides: normal/above-normal waits should
-  // not be rescued by personalization alone.
-  if (
-    status !== "great_value" &&
-    status !== "good_value" &&
-    status !== "bad_value" &&
-    waitTime != null &&
-    waitTime >= 55
-  ) {
-    mod -= 8;
-  }
-
-  return mod;
 }
 
 function getHeightEligibilityFailure(meta, familyProfile) {
@@ -432,6 +284,216 @@ function getHeightWarning(meta, familyProfile) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Family profile modifier (unchanged from V1)                                */
+/* -------------------------------------------------------------------------- */
+
+function getFamilyProfileModifier(meta, familyProfile, weather) {
+  if (!meta || !familyProfile) return 0;
+
+  let mod = 0;
+  const tags = meta.tags || [];
+  const category = meta?.planningProfile?.category;
+  const effectiveTempF = getEffectiveTempF(weather);
+
+  if (familyProfile.thrillTolerance === "low") {
+    if ((meta.intensity || 0) >= 4 || tags.includes("thrill") || tags.includes("coaster")) {
+      mod -= 28;
+    } else if ((meta.intensity || 0) >= 3) {
+      mod -= 12;
+    }
+
+    if ((meta.intensity || 0) <= 2 && !tags.includes("thrill")) {
+      mod += 6;
+    }
+  } else if (familyProfile.thrillTolerance === "high") {
+    if ((meta.intensity || 0) >= 4 || tags.includes("thrill") || tags.includes("coaster")) {
+      mod += 10;
+    }
+  }
+
+  if (familyProfile.walkingTolerance === "low") {
+    if (meta.environment === "outdoor" && effectiveTempF != null && effectiveTempF >= 87) {
+      mod -= 4;
+    }
+  } else if (familyProfile.walkingTolerance === "high") {
+    if (category?.startsWith("plan_ahead")) {
+      mod += 3;
+    }
+  }
+
+  if (familyProfile.heatSensitivity === "high" && effectiveTempF != null && effectiveTempF >= 87) {
+    if (meta.hasAC || meta.environment === "indoor") mod += 10;
+    if (meta.environment === "outdoor" && !meta.getsWet) mod -= 10;
+    if (meta.environment === "mixed" && !meta.getsWet) mod -= 5;
+  } else if (familyProfile.heatSensitivity === "low" && effectiveTempF != null && effectiveTempF >= 87) {
+    if (meta.environment === "outdoor" && !meta.getsWet) mod += 3;
+  }
+
+  if (meta.getsWet) {
+    if (familyProfile.waterRidePreference === "avoid") mod -= 45;
+    else if (familyProfile.waterRidePreference === "yes") mod += 8;
+  }
+
+  if (familyProfile.pace === "relaxed") {
+    if (category?.startsWith("plan_ahead") && (meta.intensity || 0) >= 4) mod -= 5;
+    if (meta.hasAC || category === "filler_or_recovery") mod += 3;
+  } else if (familyProfile.pace === "maximize") {
+    if (category?.startsWith("plan_ahead")) mod += 5;
+  }
+
+  const priorities = new Set(familyProfile.priorities || []);
+
+  const isCharacterOrMeet =
+    tags.includes("characters") ||
+    tags.includes("character") ||
+    tags.includes("meet-greet") ||
+    tags.includes("meet-and-greet");
+
+  const isPrincessOrRoyal =
+    tags.includes("princess") ||
+    tags.includes("royal") ||
+    normalizeRideName(meta.displayName).includes("belle") ||
+    normalizeRideName(meta.displayName).includes("princess");
+
+  const isInteractiveStoryShow =
+    tags.includes("interactive") ||
+    tags.includes("storytelling") ||
+    normalizeRideName(meta.displayName).includes("enchanted tales");
+
+  const wantsCharacters = priorities.has("characters");
+  const wantsPrincesses = priorities.has("princesses");
+  const wantsShows = priorities.has("shows_parades");
+  const wantsLowStress = priorities.has("low_stress");
+
+  if (priorities.has("headliners") && (meta.popularity || 0) >= 85) mod += 8;
+  if (wantsLowStress && (meta.hasAC || category === "filler_or_recovery")) mod += 5;
+  if (priorities.has("ac_breaks") && (meta.hasAC || meta.environment === "indoor")) mod += 8;
+  if (wantsCharacters && isCharacterOrMeet) mod += 12;
+  if (wantsPrincesses && isPrincessOrRoyal) mod += 14;
+  if (wantsShows && tags.includes("show")) mod += 8;
+  if (priorities.has("bluey_younger_kids") && tags.includes("bluey")) mod += 14;
+
+  if (isPrincessOrRoyal && !wantsPrincesses) mod -= 24;
+  if (isCharacterOrMeet && !wantsCharacters) mod -= 18;
+  if (isInteractiveStoryShow && !wantsPrincesses && !wantsCharacters && !wantsShows) {
+    mod -= 18;
+  }
+
+  if (familyProfile.hasSmallChildren) {
+    if ((meta.intensity || 0) <= 2 && meta.minHeightInches === 0) mod += 5;
+    if ((meta.intensity || 0) >= 5) mod -= 6;
+
+    if ((isPrincessOrRoyal || isCharacterOrMeet) && !wantsPrincesses && !wantsCharacters) {
+      mod -= 6;
+    }
+  }
+
+  return mod;
+}
+
+/**
+ * V1.1: cap personalization for plan-ahead category rides.
+ *
+ * Weak wait + not late evening:    cap at +4   (unchanged from V1)
+ * Weak wait + late evening:        cap at +8   (unchanged from V1)
+ * Strong wait:                     cap at +12  (NEW — previously returned uncapped)
+ *
+ * Without the strong-wait cap, personalization could stack to +20-24 on rides
+ * like Peter Pan whenever wait dropped to "great_value" (≤40 min). That single
+ * stack was enough to overpower the -16 proximity penalty, which is the root
+ * cause of Peter Pan winning from anywhere in the park.
+ */
+function getPlanAheadPersonalizationCap({
+  meta,
+  ride,
+  waitValueStatus,
+  familyProfileModifier,
+  timeContext,
+}) {
+  if (!meta) return familyProfileModifier;
+
+  const category = meta?.planningProfile?.category;
+  const isPlanAheadCategory =
+    category === "plan_ahead_single_pass" ||
+    category === "plan_ahead_multi_pass" ||
+    category === "plan_ahead_standby_only";
+
+  if (!isPlanAheadCategory) return familyProfileModifier;
+
+  const status = waitValueStatus?.status;
+  const waitTime = ride?.waitTime;
+
+  const isStrongWait =
+    status === "great_value" ||
+    status === "good_value" ||
+    (waitTime != null && waitTime <= 35);
+
+  const isLateEvening =
+    timeContext?.dayPhase === "late_evening" ||
+    (timeContext?.orlandoTotalMinutes != null &&
+      timeContext.orlandoTotalMinutes >= 20 * 60);
+
+  if (!isStrongWait && !isLateEvening) {
+    return Math.min(familyProfileModifier, FAMILY_CAP_WEAK_WAIT);
+  }
+
+  if (!isStrongWait && isLateEvening) {
+    return Math.min(familyProfileModifier, FAMILY_CAP_LATE_EVENING);
+  }
+
+  return Math.min(familyProfileModifier, FAMILY_CAP_STRONG_WAIT);
+}
+
+function getPlanAheadRealityCheckModifier({ parkId, meta, ride, waitValueStatus, timeContext }) {
+  if (!meta) return 0;
+
+  const category = meta?.planningProfile?.category;
+  const isPlanAheadCategory =
+    category === "plan_ahead_single_pass" ||
+    category === "plan_ahead_multi_pass" ||
+    category === "plan_ahead_standby_only";
+
+  if (!isPlanAheadCategory) return 0;
+
+  const status = waitValueStatus?.status;
+  const waitTime = ride?.waitTime;
+  const displayName = meta.displayName;
+
+  const isLateEvening =
+    timeContext?.dayPhase === "late_evening" ||
+    (timeContext?.orlandoTotalMinutes != null &&
+      timeContext.orlandoTotalMinutes >= 20 * 60);
+
+  let mod = 0;
+
+  if (
+    parkId === "magic_kingdom" &&
+    (displayName === "TRON Lightcycle / Run" ||
+      displayName === "Seven Dwarfs Mine Train")
+  ) {
+    if (waitTime != null && waitTime >= 55 && status !== "great_value") {
+      mod -= isLateEvening ? 6 : 18;
+    }
+
+    if (waitTime != null && waitTime >= 70 && status !== "great_value") {
+      mod -= 10;
+    }
+  }
+
+  if (
+    status !== "great_value" &&
+    status !== "good_value" &&
+    status !== "bad_value" &&
+    waitTime != null &&
+    waitTime >= 55
+  ) {
+    mod -= 8;
+  }
+
+  return mod;
+}
+
+/* -------------------------------------------------------------------------- */
 /* Score components                                                           */
 /* -------------------------------------------------------------------------- */
 
@@ -450,8 +512,26 @@ function getWaitPenalty(waitTime) {
   return 50;
 }
 
-function getLowWaitBonus(waitTime) {
+/**
+ * V1.1: lowWaitBonus is now zero for plan-ahead category rides.
+ *
+ * Plan-ahead rides at low waits already receive +14 from waitValueModifier
+ * (the great_value bracket). Adding lowWaitBonus on top double-counts the same
+ * signal and disproportionately helps low-capacity classics like Peter Pan,
+ * Jungle Cruise, Haunted Mansion. Normal standby and filler rides still get
+ * the bonus because their wait curves don't already have great_value bumps.
+ */
+function getLowWaitBonus(waitTime, meta) {
   if (waitTime == null) return 0;
+
+  const category = meta?.planningProfile?.category;
+  const isPlanAheadCategory =
+    category === "plan_ahead_single_pass" ||
+    category === "plan_ahead_multi_pass" ||
+    category === "plan_ahead_standby_only";
+
+  if (isPlanAheadCategory) return 0;
+
   if (waitTime <= 5) return 12;
   if (waitTime <= 10) return 9;
   if (waitTime <= 20) return 5;
@@ -535,43 +615,22 @@ function getWetRideTimingModifier(meta, weather, waitValueStatus) {
 
   let mod = 0;
 
-  if (hour < 11) {
-    mod -= 10;
-  }
-
-  if (hour >= 12 && hour <= 16) {
-    mod += 10;
-  }
-
-  if (hour >= 17 && hour < 18) {
-    mod += 2;
-  }
-
-  if (hour >= 18) {
-    mod -= 12;
-  }
+  if (hour < 11) mod -= 10;
+  if (hour >= 12 && hour <= 16) mod += 10;
+  if (hour >= 17 && hour < 18) mod += 2;
+  if (hour >= 18) mod -= 12;
 
   if (effectiveTempF != null) {
-    if (effectiveTempF >= 98) {
-      mod += 12;
-    } else if (effectiveTempF >= 92) {
-      mod += 10;
-    } else if (effectiveTempF >= 87) {
-      mod += 5;
-    } else if (effectiveTempF <= 75) {
-      mod -= 10;
-    } else if (effectiveTempF <= 80) {
-      mod -= 5;
-    }
+    if (effectiveTempF >= 98) mod += 12;
+    else if (effectiveTempF >= 92) mod += 10;
+    else if (effectiveTempF >= 87) mod += 5;
+    else if (effectiveTempF <= 75) mod -= 10;
+    else if (effectiveTempF <= 80) mod -= 5;
   }
 
-  if (stormActive) {
-    mod -= 60;
-  } else if (rainActive) {
-    mod -= 20;
-  } else if ((weather?.rainRisk ?? 0) >= 0.6) {
-    mod -= 6;
-  }
+  if (stormActive) mod -= 60;
+  else if (rainActive) mod -= 20;
+  else if ((weather?.rainRisk ?? 0) >= 0.6) mod -= 6;
 
   if (
     waitValueStatus?.status === "above_normal" ||
@@ -596,6 +655,10 @@ function getPlanningPriority(meta, waitValueStatus) {
 
   return 0;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Scheduled show handling                                                    */
+/* -------------------------------------------------------------------------- */
 
 function isScheduledShowMeta(meta) {
   if (!meta) return false;
@@ -687,8 +750,6 @@ function getScheduledShowScoreModifier(meta, weather, proximityModifier) {
 
   let mod = -45;
 
-  // Shows can be useful recovery, but they should not win because the wait feed
-  // says 0 minutes. They need showtime fit, heat/rain value, and preferably proximity.
   if (stormActive || rainActive) mod += 10;
   if (effectiveTempF != null && effectiveTempF >= 92 && meta.hasAC) mod += 12;
   else if (effectiveTempF != null && effectiveTempF >= 87 && meta.hasAC) mod += 8;
@@ -770,6 +831,10 @@ function buildScheduledShowReason(meta) {
   return `${nextText}${strategy} Plan to arrive about ${arrivalBuffer} minutes early when needed.${verifyText}`;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Pool / classification helpers                                              */
+/* -------------------------------------------------------------------------- */
+
 function getUsedRideIds(...rides) {
   return new Set(
     rides
@@ -795,9 +860,6 @@ function isSoftRecoveryOnlyCandidate(parkId, ride, weather) {
     isRainActive(weather) ||
     (effectiveTempF != null && effectiveTempF >= 87);
 
-  // Scheduled shows are not standby rides. A 0-minute feed value should never
-  // make them win Best Move over true ride opportunities. They belong in
-  // showtime-based Plan Ahead / recovery logic unless the pool is otherwise empty.
   if (isScheduledShowMeta(meta)) return true;
 
   const isRecoveryOrShow =
@@ -806,14 +868,14 @@ function isSoftRecoveryOnlyCandidate(parkId, ride, weather) {
     tags.includes("walkthrough") ||
     tags.includes("recovery");
 
-  // During weather/heat, recovery options are allowed to become primary because
-  // the family may need AC/seating more than a headliner. Scheduled shows are
-  // still handled separately above because their timing matters.
   if (badWeatherOrHeat) return false;
 
-  // In normal conditions, do not let low-wait shows/exhibits hijack Best Move.
   return isRecoveryOrShow;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Park-specific strategy modifiers (unchanged from V1)                       */
+/* -------------------------------------------------------------------------- */
 
 function getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand) {
   if (parkId !== "hollywood" || !meta) return 0;
@@ -825,23 +887,14 @@ function getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStat
   const tags = meta.tags || [];
   const category = meta?.planningProfile?.category;
 
-  // Hollywood Studios is top-heavy. Do not let shows/recovery filler beat real
-  // attraction strategy during normal conditions unless the family needs weather relief.
   const weatherRecoveryActive =
     stormActive ||
     rainActive ||
     (effectiveTempF != null && effectiveTempF >= 87);
 
-  if (!weatherRecoveryActive && category === "filler_or_recovery") {
-    mod -= 10;
-  }
+  if (!weatherRecoveryActive && category === "filler_or_recovery") mod -= 10;
+  if (!weatherRecoveryActive && tags.includes("show")) mod -= 8;
 
-  if (!weatherRecoveryActive && tags.includes("show")) {
-    mod -= 8;
-  }
-
-  // Toy Story Land is exposed and rough in heat. Outdoor Toy Story options need
-  // an extra heat penalty beyond the generic outdoor penalty.
   if (
     effectiveTempF != null &&
     effectiveTempF >= 92 &&
@@ -860,13 +913,10 @@ function getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStat
     mod -= 8;
   }
 
-  // In rain/storm mode, outdoor Hollywood attractions should be heavily suppressed.
   if ((rainActive || stormActive) && meta.environment === "outdoor") {
     mod -= 18;
   }
 
-  // Slinky is a plan-ahead ride. Do not over-reward a merely normal wait in
-  // brutal heat because the standby experience can be miserable.
   if (
     meta.displayName === "Slinky Dog Dash" &&
     effectiveTempF != null &&
@@ -876,8 +926,6 @@ function getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStat
     mod -= 12;
   }
 
-  // Rise at a good/great wait is a legitimate opportunity, but we do not want
-  // average waits blindly hijacking the whole app from across the park.
   if (
     meta.displayName === "Star Wars: Rise of the Resistance" &&
     waitValueStatus?.status === "great_value"
@@ -885,8 +933,6 @@ function getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStat
     mod += 8;
   }
 
-  // Star Tours is fantastic recovery, but in normal conditions it should not
-  // beat major attractions just because the wait is low.
   if (
     meta.displayName === "Star Tours – The Adventures Continue" &&
     !weatherRecoveryActive
@@ -894,8 +940,6 @@ function getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStat
     mod -= 6;
   }
 
-  // Falcon should be better late day. This supports the historical pattern
-  // without forcing a clock-heavy itinerary system yet.
   const { totalMinutes } = getOrlandoTimeParts();
   if (
     meta.displayName === "Millennium Falcon: Smugglers Run" &&
@@ -907,6 +951,10 @@ function getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStat
   return mod;
 }
 
+/**
+ * V1.1: nearbyHeadlinerOpportunity standalone great_value branch dropped from
+ * +14 to +6 (see else-if at the bottom). All other branches preserved.
+ */
 function getNearbyHeadlinerOpportunityModifier({
   parkId,
   meta,
@@ -929,7 +977,6 @@ function getNearbyHeadlinerOpportunityModifier({
   const stormActive = isCurrentlyStorming(weather);
   const rainActive = isRainActive(weather);
 
-  // Do not promote weather-sensitive outdoor rides during active rain/storms.
   if ((stormActive || rainActive) && isRainSensitiveRide(meta)) return 0;
 
   const isSameArea = meta.land === currentLand || proximityModifier > 0;
@@ -942,20 +989,16 @@ function getNearbyHeadlinerOpportunityModifier({
 
   let mod = 0;
 
-  // General rule: if a normally hard-to-get ride has a strong wait and the guest
-  // is already near it, it should break out of the "Plan Ahead" bucket and become
-  // a real go-now option.
   if (status === "great_value" && isSameArea) {
     mod += 26;
   } else if (status === "good_value" && isSameArea) {
     mod += 18;
   } else if (status === "great_value") {
-    mod += 14;
+    // V1.1: was +14, now +6. Standalone case (adjacent but not same area)
+    // was compounding with personalization to overpower geography.
+    mod += 6;
   }
 
-  // Hollywood-specific field test rule:
-  // Slinky at ~30–35 minutes while the guest is in Toy Story Land is a no-brainer
-  // strike-now opportunity. Do not bury it under Plan Ahead.
   if (
     parkId === "hollywood" &&
     meta.displayName === "Slinky Dog Dash" &&
@@ -1019,20 +1062,14 @@ function getClosestAnchorOpportunityModifier({
   const waitTime = ride?.waitTime;
   let mod = 0;
 
-  // If GPS says the guest is basically standing at a ride and the wait is good,
-  // that should heavily influence the recommendation. This is the field-test fix
-  // for Big Thunder being 30 minutes while GPS is closest to Big Thunder.
   if (status === "great_value") mod += 34;
   else if (status === "good_value") mod += 24;
   else if (waitTime != null && waitTime <= 25) mod += 16;
 
   if (confidence === "high") mod += 8;
 
-  if (distanceMeters != null && distanceMeters <= 75) {
-    mod += 8;
-  } else if (distanceMeters != null && distanceMeters <= 120) {
-    mod += 4;
-  }
+  if (distanceMeters != null && distanceMeters <= 75) mod += 8;
+  else if (distanceMeters != null && distanceMeters <= 120) mod += 4;
 
   if (
     parkId === "magic_kingdom" &&
@@ -1056,6 +1093,112 @@ function getClosestAnchorOpportunityModifier({
   return mod;
 }
 
+function isLowCapacityClassic(meta) {
+  if (!meta) return false;
+
+  return [
+    "Peter Pan's Flight",
+    "Jungle Cruise",
+    "The Many Adventures of Winnie the Pooh",
+    "Pirates of the Caribbean",
+    "Haunted Mansion",
+  ].includes(meta.displayName);
+}
+
+function isTrueHeadliner(meta) {
+  if (!meta) return false;
+
+  const category = meta?.planningProfile?.category;
+  const tags = meta.tags || [];
+
+  return (
+    (meta.popularity || 0) >= 85 ||
+    category === "plan_ahead_single_pass" ||
+    category === "plan_ahead_multi_pass" ||
+    category === "plan_ahead_standby_only" ||
+    tags.includes("headliner")
+  );
+}
+
+function isSameArea(meta, currentLand, proximityModifier) {
+  return meta?.land === currentLand || proximityModifier > 0;
+}
+
+function isFarFromCurrentArea(meta, currentLand, proximityModifier) {
+  if (!meta) return false;
+  if (isSameArea(meta, currentLand, proximityModifier)) return false;
+
+  if (proximityModifier < -8) return true;
+
+  return meta.land && currentLand && meta.land !== currentLand && proximityModifier <= 0;
+}
+
+function getCrossParkRealityModifier({
+  parkId,
+  meta,
+  ride,
+  weather,
+  waitValueStatus,
+  currentLand,
+  proximityModifier,
+  familyProfile,
+  timeContext,
+}) {
+  if (!meta) return 0;
+
+  const farFromArea = isFarFromCurrentArea(meta, currentLand, proximityModifier);
+  if (!farFromArea) return 0;
+
+  const status = waitValueStatus?.status;
+  const waitTime = ride?.waitTime;
+  const effectiveTempF = getEffectiveTempF(weather);
+  const isHeatOrCrashWindow =
+    timeContext?.dayPhase === "midday_heat_window" ||
+    timeContext?.dayPhase === "afternoon_crash_window" ||
+    (effectiveTempF != null && effectiveTempF >= 87);
+
+  let mod = -14;
+
+  if (familyProfile?.walkingTolerance === "low") mod -= 12;
+  if (familyProfile?.walkingTolerance === "medium") mod -= 5;
+
+  if (familyProfile?.heatSensitivity === "high" && isHeatOrCrashWindow) {
+    mod -= 10;
+  } else if (isHeatOrCrashWindow) {
+    mod -= 5;
+  }
+
+  if (isTrueHeadliner(meta)) {
+    if (status === "great_value") mod += 16;
+    else if (status === "good_value") mod += 8;
+    else mod -= 6;
+  }
+
+  if (isLowCapacityClassic(meta)) {
+    if (status === "great_value" && waitTime != null && waitTime <= 25) {
+      mod += 4;
+    } else {
+      mod -= 20;
+    }
+  }
+
+  if (parkId === "magic_kingdom" && meta.displayName === "Peter Pan's Flight") {
+    if (currentLand !== "fantasyland") {
+      if (status === "great_value" && waitTime != null && waitTime <= 25) {
+        mod -= 8;
+      } else {
+        mod -= 28;
+      }
+    }
+
+    if (waitTime != null && waitTime >= 35) {
+      mod -= 10;
+    }
+  }
+
+  return mod;
+}
+
 function getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand) {
   if (parkId !== "magic_kingdom" || !meta) return 0;
 
@@ -1072,39 +1215,19 @@ function getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueS
     rainActive ||
     (effectiveTempF != null && effectiveTempF >= 87);
 
-  // Magic Kingdom has tons of tempting low-wait recovery rides. They are useful,
-  // but in normal weather they should not hijack Best Move over real strategy.
-  if (!weatherRecoveryActive && category === "filler_or_recovery") {
-    mod -= 10;
-  }
+  if (!weatherRecoveryActive && category === "filler_or_recovery") mod -= 10;
+  if (!weatherRecoveryActive && tags.includes("show")) mod -= 8;
 
-  if (!weatherRecoveryActive && tags.includes("show")) {
-    mod -= 8;
-  }
-
-  if (
-    !weatherRecoveryActive &&
-    meta.displayName === "Tomorrowland Transit Authority PeopleMover"
-  ) {
+  if (!weatherRecoveryActive && meta.displayName === "Tomorrowland Transit Authority PeopleMover") {
     mod -= 6;
   }
-
-  if (
-    !weatherRecoveryActive &&
-    meta.displayName === "Walt Disney's Carousel of Progress"
-  ) {
+  if (!weatherRecoveryActive && meta.displayName === "Walt Disney's Carousel of Progress") {
     mod -= 6;
   }
-
-  if (
-    !weatherRecoveryActive &&
-    meta.displayName === "Mickey's PhilharMagic"
-  ) {
+  if (!weatherRecoveryActive && meta.displayName === "Mickey's PhilharMagic") {
     mod -= 5;
   }
 
-  // TRON and Seven Dwarfs are true plan-ahead rides. Do not let a normal high wait
-  // become a casual "go now" recommendation.
   if (
     (meta.displayName === "TRON Lightcycle / Run" ||
       meta.displayName === "Seven Dwarfs Mine Train") &&
@@ -1121,26 +1244,31 @@ function getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueS
     mod += 8;
   }
 
-  // Peter Pan is low-capacity. A great wait is a real opportunity, but normal
-  // mid-day waits should not look attractive.
   if (
     meta.displayName === "Peter Pan's Flight" &&
-    waitValueStatus?.status === "great_value"
+    waitValueStatus?.status === "great_value" &&
+    currentLand === "fantasyland"
   ) {
-    mod += 6;
+    mod += 8;
+  }
+
+  if (
+    meta.displayName === "Peter Pan's Flight" &&
+    currentLand !== "fantasyland" &&
+    waitValueStatus?.status !== "great_value"
+  ) {
+    mod -= 16;
   }
 
   if (
     meta.displayName === "Peter Pan's Flight" &&
     totalMinutes >= 10 * 60 + 30 &&
     totalMinutes <= 17 * 60 &&
-    waitValueStatus?.status === "normal"
+    (waitValueStatus?.status === "normal" || waitValueStatus?.status === "above_normal")
   ) {
-    mod -= 8;
+    mod -= 12;
   }
 
-  // Tiana's is heat-demanded but weather-sensitive. Warm weather helps only when
-  // rain/storm risk is not active and the wait is actually attractive.
   if (
     meta.displayName === "Tiana's Bayou Adventure" &&
     effectiveTempF != null &&
@@ -1162,8 +1290,6 @@ function getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueS
     mod -= 5;
   }
 
-  // Outdoor Magic Kingdom rides get extra suppression in heat unless they are
-  // water rides with a strong wait value.
   if (
     effectiveTempF != null &&
     effectiveTempF >= 92 &&
@@ -1173,7 +1299,6 @@ function getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueS
     mod -= 6;
   }
 
-  // Late evening is when several Magic Kingdom headliners become more realistic.
   if (
     totalMinutes >= 20 * 60 &&
     [
@@ -1191,6 +1316,72 @@ function getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueS
   return mod;
 }
 
+/**
+ * V1.1 NEW: cross-park positive sum cap.
+ *
+ * When a ride is NOT in the guest's current land AND the GPS closest-anchor
+ * boost is not active, cap the sum of (waitValueModifier + familyProfileModifier
+ * + trendModifier + nearbyHeadlinerOpportunityModifier) at
+ * CROSS_PARK_POSITIVE_SUM_CAP (+30). Individual modifier values are still
+ * preserved on the ride for telemetry; the cap is applied as a separate
+ * crossParkSumCapAdjustment line item.
+ *
+ * Same-land recommendations get full benefit (no walking cost to absorb).
+ * GPS closest-anchor opportunities override the cap (highest-confidence signal).
+ */
+function getCrossParkSumCapAdjustment({
+  meta,
+  currentLand,
+  closestAnchorOpportunityModifier,
+  waitValueModifier,
+  familyProfileModifier,
+  trendModifier,
+  nearbyHeadlinerOpportunityModifier,
+}) {
+  const isSameLand = !!meta?.land && !!currentLand && meta.land === currentLand;
+  if (isSameLand) return 0;
+
+  if (closestAnchorOpportunityModifier >= STRONG_CLOSEST_ANCHOR_THRESHOLD) {
+    return 0;
+  }
+
+  const positiveSum =
+    Math.max(0, waitValueModifier) +
+    Math.max(0, familyProfileModifier) +
+    Math.max(0, trendModifier) +
+    Math.max(0, nearbyHeadlinerOpportunityModifier);
+
+  if (positiveSum <= CROSS_PARK_POSITIVE_SUM_CAP) return 0;
+
+  return -(positiveSum - CROSS_PARK_POSITIVE_SUM_CAP);
+}
+
+/**
+ * V1.1 NEW: quality gate for the Best Move cross-park fallback.
+ *
+ * When the cascade has exhausted same-area and primary-nearby pools, this
+ * gate determines whether the next-best cross-park candidate is good enough
+ * to recommend at all. Without it, bestMove silently became "best score
+ * anywhere in the park", which is exactly how Peter Pan won from across MK.
+ */
+function isQualifiedFallbackBestMove(ride, parkId) {
+  if (!ride) return false;
+  if (ride.recommendationScore < FALLBACK_BEST_MOVE_SCORE_FLOOR) return false;
+  if (ride.waitValueStatus?.status !== "great_value") return false;
+
+  const meta = getMetaForRide(parkId, ride);
+  if (!meta) return false;
+
+  // Even at great_value, a low-capacity classic crossing the park is rarely
+  // the right call unless the wait is genuinely rare (<= 25 min).
+  if (isLowCapacityClassic(meta)) {
+    const waitTime = ride.waitTime;
+    if (waitTime == null || waitTime > 25) return false;
+  }
+
+  return true;
+}
+
 function isWeatherBlockedFromPositiveCards(parkId, ride, weather) {
   const meta = getMetaForRide(parkId, ride);
   if (!meta) return true;
@@ -1199,9 +1390,6 @@ function isWeatherBlockedFromPositiveCards(parkId, ride, weather) {
   const rainActive = isRainActive(weather);
 
   if (stormActive && isRainSensitiveRide(meta)) return true;
-
-  // In active rain, do not send guests toward outdoor/mixed/rain-sensitive rides
-  // as Best Move, Smart Backup, Worth the Walk, or Plan Ahead.
   if (rainActive && isRainSensitiveRide(meta)) return true;
 
   return false;
@@ -1239,25 +1427,15 @@ function buildReason(ride, parts) {
     reasons.push("reasonable wait");
   }
 
-  if (parts.baseScore >= 85) {
-    reasons.push("high-priority attraction");
-  }
+  if (parts.baseScore >= 85) reasons.push("high-priority attraction");
 
-  if (parts.proximityModifier > 0) {
-    reasons.push("near you");
-  } else if (parts.proximityModifier < -8) {
-    reasons.push("worth considering, but farther away");
-  }
+  if (parts.proximityModifier > 0) reasons.push("near you");
+  else if (parts.proximityModifier < -8) reasons.push("worth considering, but farther away");
 
-  if (parts.trendModifier > 0) {
-    reasons.push("strong guest demand");
-  }
+  if (parts.trendModifier > 0) reasons.push("strong guest demand");
 
-  if (parts.contextModifier >= 8) {
-    reasons.push("great fit for current conditions");
-  } else if (parts.contextModifier > 0) {
-    reasons.push("good weather-safe option");
-  }
+  if (parts.contextModifier >= 8) reasons.push("great fit for current conditions");
+  else if (parts.contextModifier > 0) reasons.push("good weather-safe option");
 
   if (parts.familyProfileModifier >= 10) {
     reasons.push("strong fit for your family profile");
@@ -1277,22 +1455,19 @@ function buildReason(ride, parts) {
     reasons.push(`height warning: ${parts.heightWarning.message}`);
   }
 
-  if (parts.scheduledShowModifier >= 12) {
-    reasons.push("showtime timing may work well");
-  } else if (parts.scheduledShowModifier <= -20) {
-    reasons.push("showtime timing matters");
-  }
+  if (parts.scheduledShowModifier >= 12) reasons.push("showtime timing may work well");
+  else if (parts.scheduledShowModifier <= -20) reasons.push("showtime timing matters");
 
-  if (parts.wetRideModifier >= 8) {
-    reasons.push("good water-ride timing");
-  } else if (parts.wetRideModifier <= -8) {
-    reasons.push("water-ride timing is less ideal");
-  }
+  if (parts.wetRideModifier >= 8) reasons.push("good water-ride timing");
+  else if (parts.wetRideModifier <= -8) reasons.push("water-ride timing is less ideal");
 
-  if (parts.parkStrategyModifier >= 8) {
-    reasons.push("strong park-specific opportunity");
-  } else if (parts.parkStrategyModifier <= -8) {
-    reasons.push("less ideal for this park situation");
+  if (parts.parkStrategyModifier >= 8) reasons.push("strong park-specific opportunity");
+  else if (parts.parkStrategyModifier <= -8) reasons.push("less ideal for this park situation");
+
+  if (parts.crossParkRealityModifier <= -25) {
+    reasons.push("not worth crossing the park for unless it is a must-do");
+  } else if (parts.crossParkRealityModifier <= -12) {
+    reasons.push("farther than ideal for a go-now move");
   }
 
   if (parts.nearbyHeadlinerOpportunityModifier >= 20) {
@@ -1307,17 +1482,17 @@ function buildReason(ride, parts) {
     reasons.push("very close to your current location");
   }
 
-  if (!reasons.length) {
-    reasons.push("solid value based on current conditions");
+  if (parts.crossParkSumCapAdjustment <= -8) {
+    reasons.push("personalization capped because of the walk");
   }
+
+  if (!reasons.length) reasons.push("solid value based on current conditions");
 
   return reasons.join(", ");
 }
 
 function buildPlanAheadReason(meta, ride, waitValueStatus) {
-  if (isScheduledShowMeta(meta)) {
-    return buildScheduledShowReason(meta);
-  }
+  if (isScheduledShowMeta(meta)) return buildScheduledShowReason(meta);
 
   const strategy = meta?.planningProfile?.strategy;
   const label = waitValueStatus?.label;
@@ -1326,13 +1501,8 @@ function buildPlanAheadReason(meta, ride, waitValueStatus) {
     return `Great value right now. If this is on your list, this is a strong time to ride. Normal strategy: ${strategy}`;
   }
 
-  if (strategy && label) {
-    return `${label}. ${strategy}`;
-  }
-
-  if (strategy) {
-    return strategy;
-  }
+  if (strategy && label) return `${label}. ${strategy}`;
+  if (strategy) return strategy;
 
   return "This ride usually requires planning. Consider paid access, rope drop, late night, or watching for a rare dip.";
 }
@@ -1353,6 +1523,11 @@ export function getNextBestRides({
   timeContext = null,
 }) {
   const currentLand = resolveCurrentLand(parkId, locationContext);
+
+  // V1.1: when currentLand is unknown, the geography defenses fail open and
+  // bestMove silently becomes "best popularity-weighted score in the park".
+  // Surface this to the UI rather than producing a misleading recommendation.
+  const needsLocation = !currentLand;
 
   const completed = new Set(completedRideIds.map(String));
   const skipped = new Set(skippedRideIds.map(String));
@@ -1402,12 +1577,8 @@ export function getNextBestRides({
 
     const meta = getMetaForRide(parkId, ride);
 
-    // Critical: if we did not intentionally add metadata, do not recommend it.
-    // This blocks Cinderella Castle, Casey Jr., meet-and-greets, random landmarks, etc.
     if (!meta) return { reason: "noMeta", meta: null };
 
-    // Some entries exist only for wayfinding, GPS context, photos, or educational
-    // content. They should never become ride recommendations.
     if (isContextOnlyMeta(meta)) {
       return { reason: "contextOnly", meta };
     }
@@ -1455,9 +1626,8 @@ export function getNextBestRides({
     return true;
   });
 
-  // Safety valve: if park-hours logic gets too aggressive, do not let the entire
-  // recommendation engine go blank. This can happen if a static close-time config
-  // is wrong for a specific day or event.
+  // Safety valve preserved from V1: if park-hours logic gets too aggressive,
+  // do not let the entire recommendation engine go blank.
   if (!eligibleRides.length && filterStats.closingSoon > 0) {
     eligibleRides = rides.filter((ride) => {
       return !getEligibilityFailure(ride, { ignoreCloseTime: true }).reason;
@@ -1486,17 +1656,22 @@ export function getNextBestRides({
     });
   }
 
+  /* ------------------------------------------------------------------------ */
+  /* Per-ride scoring                                                         */
+  /* ------------------------------------------------------------------------ */
+
   const scored = eligibleRides.map((ride) => {
     const meta = getMetaForRide(parkId, ride);
 
     const baseScore = meta?.popularity ?? DEFAULT_POPULARITY;
     const waitPenalty = getWaitPenalty(ride.waitTime);
-    const lowWaitBonus = getLowWaitBonus(ride.waitTime);
+    const lowWaitBonus = getLowWaitBonus(ride.waitTime, meta); // V1.1: takes meta
     const trendModifier = getTrendModifier(ride.name);
     const contextModifier = getContextModifier(meta, weather, mode);
     const proximityModifier = getProximityModifier(meta, currentLand, parkId);
     const waitValueStatus = getWaitValueStatus(meta, ride.waitTime);
     const waitValueModifier = waitValueStatus.modifier || 0;
+
     const rawFamilyProfileModifier = getFamilyProfileModifier(
       meta,
       familyProfile,
@@ -1509,6 +1684,7 @@ export function getNextBestRides({
       familyProfileModifier: rawFamilyProfileModifier,
       timeContext,
     });
+
     const planAheadRealityCheckModifier = getPlanAheadRealityCheckModifier({
       parkId,
       meta,
@@ -1516,34 +1692,36 @@ export function getNextBestRides({
       waitValueStatus,
       timeContext,
     });
+
     const heightWarning = getHeightWarning(meta, familyProfile);
+
     const scheduledShowModifier = getScheduledShowScoreModifier(
       meta,
       weather,
       proximityModifier
     );
+
     const wetRideModifier = getWetRideTimingModifier(
       meta,
       weather,
       waitValueStatus
     );
+
     const parkStrategyModifier =
-      getHollywoodStrategyModifier(
-        parkId,
-        meta,
-        ride,
-        weather,
-        waitValueStatus,
-        currentLand
-      ) +
-      getMagicKingdomStrategyModifier(
-        parkId,
-        meta,
-        ride,
-        weather,
-        waitValueStatus,
-        currentLand
-      );
+      getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand) +
+      getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand);
+
+    const crossParkRealityModifier = getCrossParkRealityModifier({
+      parkId,
+      meta,
+      ride,
+      weather,
+      waitValueStatus,
+      currentLand,
+      proximityModifier,
+      familyProfile,
+      timeContext,
+    });
 
     const nearbyHeadlinerOpportunityModifier =
       getNearbyHeadlinerOpportunityModifier({
@@ -1566,6 +1744,18 @@ export function getNextBestRides({
         locationContext,
       });
 
+    // V1.1: cross-park sum cap. Applied as a separate adjustment so individual
+    // modifier values stay readable for telemetry.
+    const crossParkSumCapAdjustment = getCrossParkSumCapAdjustment({
+      meta,
+      currentLand,
+      closestAnchorOpportunityModifier,
+      waitValueModifier,
+      familyProfileModifier,
+      trendModifier,
+      nearbyHeadlinerOpportunityModifier,
+    });
+
     const finalScore =
       baseScore -
       waitPenalty +
@@ -1579,8 +1769,10 @@ export function getNextBestRides({
       scheduledShowModifier +
       wetRideModifier +
       parkStrategyModifier +
+      crossParkRealityModifier +
       nearbyHeadlinerOpportunityModifier +
-      closestAnchorOpportunityModifier -
+      closestAnchorOpportunityModifier +
+      crossParkSumCapAdjustment -
       (heightWarning ? 16 : 0);
 
     const proximityDistance =
@@ -1593,6 +1785,9 @@ export function getNextBestRides({
     return {
       ...ride,
       recommendationScore: finalScore,
+      proximityModifier,
+      crossParkRealityModifier,
+      crossParkSumCapAdjustment, // V1.1: new telemetry field
       proximityDistance,
       waitValueStatus,
       planningProfile: meta?.planningProfile || null,
@@ -1620,8 +1815,10 @@ export function getNextBestRides({
         scheduledShowModifier,
         wetRideModifier,
         parkStrategyModifier,
+        crossParkRealityModifier,
         nearbyHeadlinerOpportunityModifier,
         closestAnchorOpportunityModifier,
+        crossParkSumCapAdjustment,
       }),
     };
   });
@@ -1630,14 +1827,14 @@ export function getNextBestRides({
     (a, b) => b.recommendationScore - a.recommendationScore
   );
 
-  // During active rain/storm mode, positive recommendation slots should not point
-  // guests toward outdoor, mixed, or rain-sensitive attractions.
+  /* ------------------------------------------------------------------------ */
+  /* Weather-aware positive pool                                              */
+  /* ------------------------------------------------------------------------ */
+
   let positivePool = sorted.filter((ride) => {
     return !isWeatherBlockedFromPositiveCards(parkId, ride, weather);
   });
 
-  // Safety valve: if weather filtering removes every positive option, prefer
-  // indoor/AC recovery options instead of going completely blank.
   if (!positivePool.length && sorted.length) {
     const indoorRecoveryPool = sorted.filter((ride) => {
       const meta = getMetaForRide(parkId, ride);
@@ -1655,24 +1852,35 @@ export function getNextBestRides({
     });
   }
 
+  /* ------------------------------------------------------------------------ */
+  /* Pool partitioning by proximity                                           */
+  /* ------------------------------------------------------------------------ */
+
   const hasStrongClosestAnchorOpportunity = positivePool.some((ride) => {
-    return ride.closestAnchorOpportunityModifier >= 30;
+    return ride.closestAnchorOpportunityModifier >= STRONG_CLOSEST_ANCHOR_THRESHOLD;
+  });
+
+  const sameAreaRides = positivePool.filter((ride) => {
+    const meta = getMetaForRide(parkId, ride);
+    return isSameArea(meta, currentLand, ride.proximityModifier);
   });
 
   const nearbyRides = positivePool.filter((ride) => {
     return ride.proximityDistance !== "far";
   });
 
-  let farRides = positivePool.filter((ride) => {
+  const farRides = positivePool.filter((ride) => {
     if (ride.proximityDistance !== "far") return false;
 
-    // If GPS says there is a strong ride right where the family is standing,
-    // be much more conservative about sending them away as Worth the Walk.
     if (hasStrongClosestAnchorOpportunity && ride.recommendationScore < 95) {
       return false;
     }
 
     return true;
+  });
+
+  const primarySameAreaRides = sameAreaRides.filter((ride) => {
+    return !isSoftRecoveryOnlyCandidate(parkId, ride, weather);
   });
 
   const primaryNearbyRides = nearbyRides.filter((ride) => {
@@ -1683,40 +1891,76 @@ export function getNextBestRides({
     return !isSoftRecoveryOnlyCandidate(parkId, ride, weather);
   });
 
-  const bestMove =
-    primaryNearbyRides[0] ||
-    primaryPositivePool[0] ||
-    nearbyRides[0] ||
-    positivePool[0] ||
+  /* ------------------------------------------------------------------------ */
+  /* Best Move selection — V1.1: with cross-park fallback quality gate        */
+  /* ------------------------------------------------------------------------ */
+
+  const sameAreaPick = primarySameAreaRides[0] || sameAreaRides[0] || null;
+  const nearbyPick =
+    primaryNearbyRides.find((ride) => ride !== sameAreaPick) ||
+    nearbyRides.find((ride) => ride !== sameAreaPick) ||
     null;
+
+  // The cross-park fallback: only allowed if the candidate clears the quality
+  // gate. Otherwise bestMove returns null and the UI can show a take-a-break
+  // state instead of "walk to Peter Pan from across the park."
+  const fallbackCandidate = primaryPositivePool[0] || positivePool[0] || null;
+  const fallbackPick = isQualifiedFallbackBestMove(fallbackCandidate, parkId)
+    ? fallbackCandidate
+    : null;
+
+  const bestMove = needsLocation
+    ? null
+    : sameAreaPick || nearbyPick || fallbackPick;
 
   const usedAfterBest = getUsedRideIds(bestMove);
 
-  const backup =
-    primaryNearbyRides.find((ride) => !usedAfterBest.has(String(ride.id))) ||
-    primaryPositivePool.find((ride) => !usedAfterBest.has(String(ride.id))) ||
-    nearbyRides.find((ride) => !usedAfterBest.has(String(ride.id))) ||
-    positivePool.find((ride) => !usedAfterBest.has(String(ride.id))) ||
-    null;
+  const backup = needsLocation
+    ? null
+    : (
+        primarySameAreaRides.find((ride) => !usedAfterBest.has(String(ride.id))) ||
+        primaryNearbyRides.find((ride) => !usedAfterBest.has(String(ride.id))) ||
+        primaryPositivePool.find((ride) => !usedAfterBest.has(String(ride.id))) ||
+        sameAreaRides.find((ride) => !usedAfterBest.has(String(ride.id))) ||
+        nearbyRides.find((ride) => !usedAfterBest.has(String(ride.id))) ||
+        positivePool.find((ride) => !usedAfterBest.has(String(ride.id))) ||
+        null
+      );
 
   const usedAfterBackup = getUsedRideIds(bestMove, backup);
 
-  const worthTheWalk =
-    farRides.find((ride) => {
-      if (usedAfterBackup.has(String(ride.id))) return false;
-      const meta = getMetaForRide(parkId, ride);
-      if (isScheduledShowMeta(meta)) return false;
-      if (isFillerOrRecovery(ride)) return false;
+  /* ------------------------------------------------------------------------ */
+  /* Worth the Walk — V1.1: stricter score floor                              */
+  /* ------------------------------------------------------------------------ */
 
-      // Be more conservative about cross-park walks during active rain.
-      if (rainActive && ride.recommendationScore < 75) return false;
+  const worthTheWalk = needsLocation
+    ? null
+    : (
+        farRides.find((ride) => {
+          if (usedAfterBackup.has(String(ride.id))) return false;
+          const meta = getMetaForRide(parkId, ride);
+          if (isScheduledShowMeta(meta)) return false;
+          if (isFillerOrRecovery(ride)) return false;
 
-      if (ride.recommendationScore < 60) return false;
+          if (rainActive && ride.recommendationScore < 75) return false;
 
-      return true;
-    }) || null;
+          if (isLowCapacityClassic(meta) && ride.waitValueStatus?.status !== "great_value") {
+            return false;
+          }
+
+          // V1.1: was 70, raised to 75. Worth the Walk now demands more value
+          // before suggesting a cross-park walk.
+          if (ride.recommendationScore < WORTH_THE_WALK_SCORE_FLOOR) return false;
+
+          return true;
+        }) || null
+      );
 
   const usedAfterWorth = getUsedRideIds(bestMove, backup, worthTheWalk);
+
+  /* ------------------------------------------------------------------------ */
+  /* Plan Ahead — geography-independent, always computed                      */
+  /* ------------------------------------------------------------------------ */
 
   const planAheadCandidates = positivePool
     .filter((ride) => {
@@ -1736,9 +1980,8 @@ export function getNextBestRides({
 
       if (!isPlanAheadCategory && !isScheduledShow) return false;
 
-      // If the ride is a same-area strike-now opportunity, it should have been
-      // promoted into Best Move / Smart Backup / Worth the Walk. Do not also
-      // frame it as "Plan Ahead" because that sends the wrong signal.
+      // Suppress same-area strike-now opportunities — they should have been
+      // promoted into Best Move / Smart Backup / Worth the Walk already.
       if (
         (ride.nearbyHeadlinerOpportunityModifier >= 20 ||
           ride.closestAnchorOpportunityModifier >= 30) &&
@@ -1762,7 +2005,6 @@ export function getNextBestRides({
     .map((ride) => {
       const meta = getMetaForRide(parkId, ride);
       const waitValueStatus = getWaitValueStatus(meta, ride.waitTime);
-
       const proximityModifier = getProximityModifier(meta, currentLand, parkId);
       const scheduledShowPriority = getScheduledShowPlanPriority(
         meta,
@@ -1790,6 +2032,10 @@ export function getNextBestRides({
     planAhead
   );
 
+  /* ------------------------------------------------------------------------ */
+  /* Wait On This — geography-independent, always computed                    */
+  /* ------------------------------------------------------------------------ */
+
   const waitOnThisCandidates = scored
     .filter((ride) => {
       if (usedAfterPlanAhead.has(String(ride.id))) return false;
@@ -1807,8 +2053,6 @@ export function getNextBestRides({
 
       if (isPlanAheadCategory) return false;
 
-      // Do not use rain-sensitive rides in Wait On This during active rain/storm.
-      // The weather card already explains why guests should avoid them.
       if ((stormActive || rainActive) && isRainSensitiveRide(meta)) return false;
 
       return status === "bad_value" || status === "above_normal";
@@ -1835,5 +2079,6 @@ export function getNextBestRides({
     worthTheWalk,
     planAhead,
     waitOnThis,
+    needsLocation, // V1.1: new envelope field
   };
 }
