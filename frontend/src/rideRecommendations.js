@@ -228,18 +228,62 @@ function getFamilyProfileModifier(meta, familyProfile, weather) {
   // Trip priorities.
   const priorities = new Set(familyProfile.priorities || []);
 
+  const isCharacterOrMeet =
+    tags.includes("characters") ||
+    tags.includes("character") ||
+    tags.includes("meet-greet") ||
+    tags.includes("meet-and-greet");
+
+  const isPrincessOrRoyal =
+    tags.includes("princess") ||
+    tags.includes("royal") ||
+    normalizeRideName(meta.displayName).includes("belle") ||
+    normalizeRideName(meta.displayName).includes("princess");
+
+  const isInteractiveStoryShow =
+    tags.includes("interactive") ||
+    tags.includes("storytelling") ||
+    normalizeRideName(meta.displayName).includes("enchanted tales");
+
+  const wantsCharacters = priorities.has("characters");
+  const wantsPrincesses = priorities.has("princesses");
+  const wantsShows = priorities.has("shows_parades");
+  const wantsLowStress = priorities.has("low_stress");
+
   if (priorities.has("headliners") && (meta.popularity || 0) >= 85) mod += 8;
-  if (priorities.has("low_stress") && (meta.hasAC || category === "filler_or_recovery")) mod += 5;
+  if (wantsLowStress && (meta.hasAC || category === "filler_or_recovery")) mod += 5;
   if (priorities.has("ac_breaks") && (meta.hasAC || meta.environment === "indoor")) mod += 8;
-  if (priorities.has("characters") && tags.includes("characters")) mod += 10;
-  if (priorities.has("princesses") && tags.includes("princess")) mod += 10;
-  if (priorities.has("shows_parades") && tags.includes("show")) mod += 8;
+  if (wantsCharacters && isCharacterOrMeet) mod += 12;
+  if (wantsPrincesses && isPrincessOrRoyal) mod += 14;
+  if (wantsShows && tags.includes("show")) mod += 8;
   if (priorities.has("bluey_younger_kids") && tags.includes("bluey")) mod += 14;
 
-  // Younger kids should gently favor lower-intensity family experiences.
+  // Character/princess experiences are emotionally huge for the right family,
+  // but they are bad default recommendations for families that did not tell us
+  // characters/princesses matter. Do not let low waits push them into Smart Backup
+  // over actual rides unless the profile supports that kind of moment.
+  if (isPrincessOrRoyal && !wantsPrincesses) {
+    mod -= 24;
+  }
+
+  if (isCharacterOrMeet && !wantsCharacters) {
+    mod -= 18;
+  }
+
+  if (isInteractiveStoryShow && !wantsPrincesses && !wantsCharacters && !wantsShows) {
+    mod -= 18;
+  }
+
+  // Younger kids should gently favor lower-intensity family experiences, but that
+  // does not automatically mean princess/character content unless the family said
+  // that is important.
   if (familyProfile.hasSmallChildren) {
     if ((meta.intensity || 0) <= 2 && meta.minHeightInches === 0) mod += 5;
     if ((meta.intensity || 0) >= 5) mod -= 6;
+
+    if ((isPrincessOrRoyal || isCharacterOrMeet) && !wantsPrincesses && !wantsCharacters) {
+      mod -= 6;
+    }
   }
 
   return mod;
