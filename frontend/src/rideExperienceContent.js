@@ -967,6 +967,366 @@ export const RIDE_EXPERIENCE_CONTENT = {
       ],
     },
   },
+  animal_kingdom: {
+    // ---------- Pandora ----------
+    "Avatar Flight of Passage": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "Flight of Passage is designed to feel like you are linking to a banshee, not just boarding a simulator. The breathing motion, wind, scent, and sweeping visuals are all there to sell that connection.",
+        },
+        {
+          title: "Queue Detail",
+          text: "The queue moves through caves, RDA research areas, and the famous avatar lab. Look for the massive avatar floating in the tank before the link chamber.",
+        },
+        {
+          title: "Family Tip",
+          text: "This is intense and can bother motion-sensitive riders. If someone is nervous, remind them to look straight ahead, breathe, and close their eyes for a second if needed.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "If you could ride any creature from a movie, would you pick a banshee, dragon, dinosaur, or giant bird?",
+        },
+      ],
+    },
+
+    "Na'vi River Journey": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "Na’vi River Journey is intentionally calmer than Flight of Passage. It is more about atmosphere, music, lighting, and the feeling of drifting through Pandora at night.",
+        },
+        {
+          title: "Look For This",
+          text: "Watch how many creatures and plants are built into the scenery. Some are obvious, but others blend into the glowing forest.",
+        },
+        {
+          title: "Cool Detail",
+          text: "The Shaman of Songs figure is one of Disney’s most advanced Audio-Animatronics, with very fluid face and hand movement.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Would you rather explore Pandora during the day or at night when everything glows?",
+        },
+      ],
+    },
+
+    // ---------- Africa ----------
+    "Kilimanjaro Safaris": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "Kilimanjaro Safaris covers a huge area and is meant to feel like a real wildlife reserve, not a traditional theme park ride.",
+        },
+        {
+          title: "Best Time Clue",
+          text: "Animals are often more active earlier in the morning, later in the day, or after rain. Midday heat can make them quieter.",
+        },
+        {
+          title: "Look For This",
+          text: "Once you board, have everyone pick one animal they hope to see. Then compare who got their wish by the end.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "If you could safely spend one day with any animal from the safari, which one would you choose?",
+        },
+      ],
+    },
+
+    "Festival of the Lion King": {
+      whileWaiting: [
+        {
+          title: "Why It Helps",
+          text: "This is one of Animal Kingdom’s best family reset anchors: indoors, seated, energetic, emotional, and a real break from walking and heat.",
+        },
+        {
+          title: "Quick Backstory",
+          text: "The show is not a simple retelling of The Lion King. It is more like a festival celebration built around the movie’s music, acrobatics, costumes, and audience energy.",
+        },
+        {
+          title: "Family Tip",
+          text: "If your group is hot, tired, or starting to unravel, this can be a better move than forcing one more outdoor ride.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Which Lion King song would get your family singing the loudest?",
+        },
+      ],
+    },
+
+    "Gorilla Falls Exploration Trail": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "Gorilla Falls is a self-paced animal trail, which means it works best when your group has the patience to slow down and look carefully.",
+        },
+        {
+          title: "Look For This",
+          text: "Do not rush the smaller habitats. Birds, fish, and tiny animals can be easier to miss than the gorillas, but they make the trail more fun.",
+        },
+        {
+          title: "Family Tip",
+          text: "This is not a great choice if everyone is overheated and begging for air conditioning. It is better when the family still has walking energy.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Would you rather be the animal spotter, photographer, map reader, or snack keeper?",
+        },
+      ],
+    },
+
+    "Wildlife Express Train": {
+      whileWaiting: [
+        {
+          title: "Important Strategy",
+          text: "This is not a quick filler ride. The train takes you out to Rafiki’s Planet Watch, so it works best as a planned block, especially if Bluey or animal-care experiences matter to your family.",
+        },
+        {
+          title: "Quick Backstory",
+          text: "The train gives guests a behind-the-scenes style look at Animal Kingdom’s animal care areas on the way to Rafiki’s Planet Watch.",
+        },
+        {
+          title: "Family Tip",
+          text: "Before boarding, make sure your group actually wants the full Rafiki’s loop. If everyone is hungry or trying to squeeze in Everest, this may be the wrong moment.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Would you rather take a secret backstage train, explore an animal care center, or meet a favorite character?",
+        },
+      ],
+    },
+
+    // ---------- Asia ----------
+    "Expedition Everest - Legend of the Forbidden Mountain": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "Expedition Everest is themed around a forbidden mountain protected by the Yeti. The queue is built like an expedition company and museum.",
+        },
+        {
+          title: "Queue Detail",
+          text: "Look for hiking gear, tea crates, photos, maps, and artifacts that build the story before you ever board.",
+        },
+        {
+          title: "Family Tip",
+          text: "This ride goes backward and gets dark. It is not just a normal family coaster, so check your group’s thrill tolerance before pushing it.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Would you rather see the Yeti from very far away or accidentally find its cave?",
+        },
+      ],
+    },
+
+    "Kali River Rapids": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "Kali is built around a conservation message, with the story moving from lush forest into areas affected by illegal logging.",
+        },
+        {
+          title: "Family Warning",
+          text: "This is not a cute sprinkle ride. Someone can get soaked. If you have dinner plans, sensitive kids, or no change of clothes, think carefully.",
+        },
+        {
+          title: "Look For This",
+          text: "In the queue, look for statues, bells, carved details, prayer flags, and signs of the Anandapur setting.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Who is most likely to get soaked, and who will act like they are fine but secretly be mad?",
+        },
+      ],
+    },
+
+    "Maharajah Jungle Trek": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "Maharajah Jungle Trek is designed around the ruins of a fictional royal hunting lodge in Anandapur.",
+        },
+        {
+          title: "Look For This",
+          text: "The murals, stonework, aviary, and animal habitats make this feel more like exploring ruins than walking through a zoo trail.",
+        },
+        {
+          title: "Family Tip",
+          text: "This is best when you are already in Asia and the group has energy to wander. It should not hijack your plan from across the park.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Would you rather find a tiger, giant bat, colorful bird, or hidden temple room?",
+        },
+      ],
+    },
+
+    "Feathered Friends in Flight!": {
+      whileWaiting: [
+        {
+          title: "Why It Helps",
+          text: "This can be a nice lower-pressure seated break in Asia, especially for animal-loving families, but it is not true air conditioning.",
+        },
+        {
+          title: "Quick Backstory",
+          text: "The show highlights natural bird behaviors with trainers, humor, and live demonstrations.",
+        },
+        {
+          title: "Look For This",
+          text: "Watch how the birds fly between specific points. A lot of the magic is training, timing, and trust.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "If you could have one bird deliver something to you in the park, what would you ask it to bring?",
+        },
+      ],
+    },
+
+    // ---------- Discovery Island ----------
+    "Zootopia: Better Zoogether!": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "Zootopia: Better Zoogether! takes over the Tree of Life Theater as a newer Animal Kingdom show experience built around the world of Zootopia.",
+        },
+        {
+          title: "Why It Helps",
+          text: "This should work well as a Discovery Island indoor reset when your group needs seats, AC, and something family-friendly near the center of the park.",
+        },
+        {
+          title: "Family Tip",
+          text: "Treat this like a show-cycle attraction. The smartest move is timing arrival around the next performance instead of waiting around too early.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "If your family lived in Zootopia, which district would you want to visit first?",
+        },
+      ],
+    },
+
+    "Finding Nemo: The Big Blue... and Beyond!": {
+      whileWaiting: [
+        {
+          title: "Why It Helps",
+          text: "This is a seated indoor show, which makes it valuable when Animal Kingdom heat and walking start catching up with the group.",
+        },
+        {
+          title: "Quick Backstory",
+          text: "The show uses puppetry, performers, songs, and theater staging to retell the Nemo story in a way that feels different from a ride.",
+        },
+        {
+          title: "Family Tip",
+          text: "If your group is already near Discovery Island or Asia, this can be a smart reset before deciding whether to push toward another major ride.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Who is your group today: Nemo, Dory, Marlin, Crush, or the seagulls yelling mine?",
+        },
+      ],
+    },
+
+    "Tree of Life": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "The Tree of Life is Animal Kingdom’s central icon and has hundreds of animal carvings built into the trunk and roots.",
+        },
+        {
+          title: "Look For This",
+          text: "Pick one section of the tree and see how many animals your group can spot in 60 seconds.",
+        },
+        {
+          title: "Family Tip",
+          text: "This is a good slow-down/photo/orientation moment, not something worth dragging the whole group across the park for by itself.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "If one animal carving could come to life and guide your day, which animal would you pick?",
+        },
+      ],
+    },
+
+    "Adventurers Outpost": {
+      whileWaiting: [
+        {
+          title: "Why It Matters",
+          text: "Character meets can be emotional anchors for some families. If Mickey and Minnie matter to your kids, this is more than filler.",
+        },
+        {
+          title: "Family Tip",
+          text: "If characters are not a priority, do not let this eat too much park time. If they are a priority, treat it like a protected moment.",
+        },
+        {
+          title: "Look For This",
+          text: "The explorer theme fits Animal Kingdom’s adventure style, so look for travel and expedition details around the area.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "If Mickey and Minnie asked where your family should explore next, what would you tell them?",
+        },
+      ],
+    },
+
+    // ---------- Rafiki’s Planet Watch ----------
+    "Bluey's Wild World at Conservation Station": {
+      whileWaiting: [
+        {
+          title: "Important Strategy",
+          text: "Bluey’s Wild World can be a huge win for younger kids, but it requires the Wildlife Express Train and a real time commitment. It is not a quick detour.",
+        },
+        {
+          title: "Why It Matters",
+          text: "For toddlers, preschoolers, or Bluey-loving families, this may be an emotional highlight of the day — the kind of thing ParkPlan should protect.",
+        },
+        {
+          title: "Family Tip",
+          text: "Before committing, check whether your group needs food, water, bathroom, or a stroller reset. Once you start the Rafiki’s loop, you are in that block for a while.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Which Bluey game would your family be best at: Keepy Uppy, Magic Xylophone, Shadowlands, or Dance Mode?",
+        },
+      ],
+    },
+
+    "The Animation Experience at Conservation Station": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "The Animation Experience lets guests learn to draw a Disney character in a guided class setting.",
+        },
+        {
+          title: "Why It Helps",
+          text: "This is a calmer creative break, especially for families who like art or need a slower indoor moment.",
+        },
+        {
+          title: "Family Tip",
+          text: "Because it is at Rafiki’s Planet Watch, it should be part of a planned train-loop block, not a last-second filler suggestion.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Would you rather draw an animal, a Disney character, or design your own park mascot?",
+        },
+      ],
+    },
+
+    "Affection Section": {
+      whileWaiting: [
+        {
+          title: "Quick Backstory",
+          text: "Affection Section is an animal interaction area at Rafiki’s Planet Watch where younger kids may especially enjoy slowing down.",
+        },
+        {
+          title: "Family Tip",
+          text: "This can be great for animal-loving families, but it is not worth the train commitment if your group is only chasing rides.",
+        },
+        {
+          title: "Ask Your Group",
+          text: "Would you rather brush a goat, feed an animal, or help a keeper for the day?",
+        },
+      ],
+    },
+  },
+
 };
 
 function normalizeRideExperienceName(value) {
@@ -1044,6 +1404,76 @@ function getRideExperienceAliases(normalizedName) {
 
   if (normalizedName.includes("tron")) {
     aliases.add("tron lightcycle run");
+  }
+
+  if (normalizedName.includes("flight of passage") || normalizedName.includes("avatar")) {
+    aliases.add("avatar flight of passage");
+    aliases.add("flight of passage");
+  }
+
+  if (normalizedName.includes("navi") || normalizedName.includes("na vi")) {
+    aliases.add("navi river journey");
+    aliases.add("na vi river journey");
+  }
+
+  if (normalizedName.includes("kilimanjaro") || normalizedName.includes("safaris")) {
+    aliases.add("kilimanjaro safaris");
+    aliases.add("safaris");
+  }
+
+  if (normalizedName.includes("everest")) {
+    aliases.add("expedition everest legend of the forbidden mountain");
+    aliases.add("expedition everest");
+  }
+
+  if (normalizedName.includes("kali")) {
+    aliases.add("kali river rapids");
+  }
+
+  if (normalizedName.includes("lion king")) {
+    aliases.add("festival of the lion king");
+  }
+
+  if (normalizedName.includes("zootopia") || normalizedName.includes("better zoogether")) {
+    aliases.add("zootopia better zoogether");
+  }
+
+  if (normalizedName.includes("nemo") || normalizedName.includes("big blue")) {
+    aliases.add("finding nemo the big blue and beyond");
+  }
+
+  if (normalizedName.includes("bluey")) {
+    aliases.add("blueys wild world at conservation station");
+    aliases.add("bluey wild world");
+  }
+
+  if (normalizedName.includes("animation experience")) {
+    aliases.add("the animation experience at conservation station");
+    aliases.add("animation experience");
+  }
+
+  if (normalizedName.includes("wildlife express")) {
+    aliases.add("wildlife express train");
+  }
+
+  if (normalizedName.includes("gorilla falls")) {
+    aliases.add("gorilla falls exploration trail");
+  }
+
+  if (normalizedName.includes("maharajah")) {
+    aliases.add("maharajah jungle trek");
+  }
+
+  if (normalizedName.includes("feathered friends")) {
+    aliases.add("feathered friends in flight");
+  }
+
+  if (normalizedName.includes("adventurers outpost")) {
+    aliases.add("adventurers outpost");
+  }
+
+  if (normalizedName.includes("tree of life")) {
+    aliases.add("tree of life");
   }
 
   return aliases;
