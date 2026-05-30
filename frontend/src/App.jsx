@@ -9,6 +9,7 @@ import { formatCloseTimeLabel } from "./parkHours";
 import { getRideExperienceContent } from "./rideExperienceContent";
 import { getRideMeta } from "./rideMetadata";
 import { shouldShowRideInWaitList } from "./attractionDisplayFilters";
+import { getResortOptions, getResortProfile } from "./resortProfiles";
 import { getMiniGameForContext, MINI_GAME_TYPES } from "./data/miniGames/magicKingdomMiniGames";
 import { detectNearestLocationZone, getCurrentPosition } from "./utils/locationDetection";
 
@@ -178,7 +179,9 @@ const DEFAULT_FAMILY_PROFILE = {
   priorities: [],
   resortContext: {
     stayingOnProperty: "unknown",
+    resortId: "",
     resortName: "",
+    offPropertyHotelName: "",
     transportationMode: "unknown",
   },
   lightningLanePreference: "undecided",
@@ -270,8 +273,11 @@ function buildFamilyProfileSummary(profile) {
     ? Math.min(...validHeights)
     : null;
 
+  const resortProfile = getResortProfile(safeProfile.resortContext?.resortId);
+
   return {
     ...safeProfile,
+    resortProfile,
     ageSummary,
     shortestHeightInches,
     hasUnder3: ageSummary.under3Count > 0,
@@ -571,6 +577,10 @@ function App() {
   const familyProfileSummary = useMemo(() => {
     return buildFamilyProfileSummary(familyProfile);
   }, [familyProfile]);
+
+  const resortOptions = useMemo(() => {
+    return getResortOptions();
+  }, []);
 
   const loadData = useCallback(
     async (force = false) => {
@@ -1328,19 +1338,34 @@ function App() {
 
               <div>
                 <strong>Trip context</strong>
+                <p style={{ margin: "5px 0 10px", color: "#64748b", fontSize: 13 }}>
+                  Resort context helps ParkPlan give realistic break, rope-drop, and
+                  transportation advice.
+                </p>
+
                 <div style={{ display: "grid", gap: 10, marginTop: 8 }}>
                   <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
                     Staying on Disney property?
                     <select
                       value={familyProfile.resortContext.stayingOnProperty}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const stayingOnProperty = e.target.value;
+
                         updateFamilyProfile({
                           resortContext: {
                             ...familyProfile.resortContext,
-                            stayingOnProperty: e.target.value,
+                            stayingOnProperty,
+                            resortId:
+                              stayingOnProperty === "yes"
+                                ? familyProfile.resortContext.resortId
+                                : "",
+                            resortName:
+                              stayingOnProperty === "yes"
+                                ? familyProfile.resortContext.resortName
+                                : "",
                           },
-                        })
-                      }
+                        });
+                      }}
                       style={{
                         border: "1px solid #cbd5e1",
                         borderRadius: 14,
@@ -1350,34 +1375,98 @@ function App() {
                       }}
                     >
                       <option value="unknown">Not sure / skip for now</option>
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
+                      <option value="yes">Yes, Disney resort</option>
+                      <option value="no">No, off-property hotel</option>
                     </select>
                   </label>
 
-                  <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
-                    Resort or hotel name
-                    <input
-                      value={familyProfile.resortContext.resortName}
-                      onChange={(e) =>
-                        updateFamilyProfile({
-                          resortContext: {
-                            ...familyProfile.resortContext,
-                            resortName: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="ex: Pop Century, Wilderness Lodge, off-property hotel"
-                      style={{
-                        border: "1px solid #cbd5e1",
-                        borderRadius: 14,
-                        padding: "10px 12px",
-                      }}
-                    />
-                  </label>
+                  {familyProfile.resortContext.stayingOnProperty === "yes" && (
+                    <>
+                      <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+                        Disney resort
+                        <select
+                          value={familyProfile.resortContext.resortId}
+                          onChange={(e) => {
+                            const resortId = e.target.value;
+                            const selectedResort = getResortProfile(resortId);
+
+                            updateFamilyProfile({
+                              resortContext: {
+                                ...familyProfile.resortContext,
+                                stayingOnProperty: "yes",
+                                resortId,
+                                resortName: selectedResort?.name || "",
+                              },
+                            });
+                          }}
+                          style={{
+                            border: "1px solid #cbd5e1",
+                            borderRadius: 14,
+                            padding: "10px 12px",
+                            fontWeight: 800,
+                            background: "white",
+                          }}
+                        >
+                          <option value="">Select your Disney resort</option>
+                          {resortOptions.map((resort) => (
+                            <option key={resort.value} value={resort.value}>
+                              {resort.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      {familyProfileSummary.resortProfile && (
+                        <div
+                          style={{
+                            padding: 12,
+                            borderRadius: 16,
+                            border: "1px solid #bbf7d0",
+                            background: "#f0fdf4",
+                          }}
+                        >
+                          <strong>{familyProfileSummary.resortProfile.name}</strong>
+                          <p style={{ margin: "6px 0 0", color: "#334155", fontSize: 13 }}>
+                            {familyProfileSummary.resortProfile.areaLabel} · Transportation:{" "}
+                            {familyProfileSummary.resortProfile.transportation.join(", ")}
+                          </p>
+
+                          {familyProfileSummary.resortProfile.breakStrategy?.[activePark] && (
+                            <p style={{ margin: "6px 0 0", color: "#166534", fontSize: 13 }}>
+                              Current park break note:{" "}
+                              {familyProfileSummary.resortProfile.breakStrategy[activePark]}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {familyProfile.resortContext.stayingOnProperty === "no" && (
+                    <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+                      Off-property hotel name
+                      <input
+                        value={familyProfile.resortContext.offPropertyHotelName}
+                        onChange={(e) =>
+                          updateFamilyProfile({
+                            resortContext: {
+                              ...familyProfile.resortContext,
+                              offPropertyHotelName: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="ex: hotel name or area"
+                        style={{
+                          border: "1px solid #cbd5e1",
+                          borderRadius: 14,
+                          padding: "10px 12px",
+                        }}
+                      />
+                    </label>
+                  )}
 
                   <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
-                    Transportation
+                    Main transportation today
                     <select
                       value={familyProfile.resortContext.transportationMode}
                       onChange={(e) =>
