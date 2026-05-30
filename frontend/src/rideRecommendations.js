@@ -328,6 +328,20 @@ function isScheduledShowMeta(meta) {
   );
 }
 
+function isContextOnlyMeta(meta) {
+  if (!meta) return false;
+
+  const category = meta?.planningProfile?.category;
+  const tags = meta.tags || [];
+
+  return (
+    meta.recommendationEligible === false ||
+    category === "context_only" ||
+    tags.includes("context-only") ||
+    tags.includes("landmark")
+  );
+}
+
 function parseShowtimeToMinutes(showtime) {
   const match = String(showtime || "")
     .trim()
@@ -1053,6 +1067,7 @@ export function getNextBestRides({
     completed: 0,
     skipped: 0,
     unsupportedVariant: 0,
+    contextOnly: 0,
     earlyEntryBlocked: 0,
     closingSoon: 0,
     eligible: 0,
@@ -1064,6 +1079,7 @@ export function getNextBestRides({
     completed: [],
     skipped: [],
     unsupportedVariant: [],
+    contextOnly: [],
     earlyEntryBlocked: [],
     closingSoon: [],
     eligible: [],
@@ -1084,6 +1100,12 @@ export function getNextBestRides({
     // Critical: if we did not intentionally add metadata, do not recommend it.
     // This blocks Cinderella Castle, Casey Jr., meet-and-greets, random landmarks, etc.
     if (!meta) return { reason: "noMeta", meta: null };
+
+    // Some entries exist only for wayfinding, GPS context, photos, or educational
+    // content. They should never become ride recommendations.
+    if (isContextOnlyMeta(meta)) {
+      return { reason: "contextOnly", meta };
+    }
 
     if (!ride.isOpen) return { reason: "closed", meta };
     if (completed.has(String(ride.id))) return { reason: "completed", meta };
