@@ -2368,30 +2368,31 @@ export const RIDE_METADATA = {
     "Tree of Life": {
       displayName: "Tree of Life",
       land: "discovery_island",
+      recommendationEligible: false,
       minHeightInches: 0,
       environment: "outdoor",
       hasAC: false,
       getsWet: false,
       closesInRain: true,
       intensity: 1,
-      popularity: 50,
+      popularity: 0,
       waitProfile: {
-        averageWait: 5,
-        goodDealUnder: 5,
-        normalRange: [5, 10],
-        badValueOver: 15,
+        averageWait: 0,
+        goodDealUnder: 0,
+        normalRange: [0, 0],
+        badValueOver: 0,
         usuallyHighAllDay: false,
         strategyNote:
-          "Central landmark and slow-down moment. Use as orientation, photos, and low-pressure exploring rather than a normal ride target.",
+          "Central landmark, photo spot, and orientation point. Do not recommend as a ride or wait-time attraction.",
       },
       planningProfile: {
-        category: "filler_or_recovery",
+        category: "context_only",
         paidAccess: "none",
-        appStatus: "filler",
+        appStatus: "context_only",
         strategy:
-          "Use as a calm reset/photo/orientation point near Discovery Island, not as a cross-park recommendation.",
+          "Use for wayfinding, photos, and Discovery Island context only. It should not appear as Best Move, Smart Backup, Worth the Walk, Plan Ahead, or Wait On This.",
       },
-      tags: ["landmark", "trail", "photos", "outdoor", "filler"],
+      tags: ["landmark", "photos", "orientation", "context-only"],
     },
 
     "Adventurers Outpost": {
