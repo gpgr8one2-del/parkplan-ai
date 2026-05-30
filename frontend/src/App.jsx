@@ -162,6 +162,11 @@ const FAMILY_PROFILE_STORAGE_KEY = "parkplan.familyProfile";
 
 const AUTO_REFRESH_MS = 3 * 60 * 1000;
 
+// Testing safety valve: while building, Gabe can still preview and test the full app
+// before a normal guest completes onboarding. Later this can move to an env var.
+const DEV_ALLOW_FULL_APP_WITHOUT_PROFILE = true;
+const DEV_PREVIEW_STORAGE_KEY = "parkplan.devPreviewFullApp";
+
 const DEFAULT_FAMILY_PROFILE = {
   isSetupComplete: false,
   adultCount: 2,
@@ -256,6 +261,78 @@ function getDateAccessStatus(tripContext = {}) {
 
 function getParkLabel(parkId) {
   return DISNEY_PARK_OPTIONS.find((park) => park.value === parkId)?.label || "Not set";
+}
+
+function getFamilyProfileCompletion(profile = {}) {
+  const safeProfile = normalizeFamilyProfile(profile);
+  const missing = [];
+
+  if (!safeProfile.adultCount || safeProfile.adultCount < 1) {
+    missing.push("adult count");
+  }
+
+  if (safeProfile.childCount > 0) {
+    const missingChildAge = safeProfile.children.some((child) => child.age === "");
+    const missingChildHeight = safeProfile.children.some(
+      (child) => child.heightInches === ""
+    );
+
+    if (missingChildAge) missing.push("child ages");
+    if (missingChildHeight) missing.push("child heights");
+  }
+
+  if (!safeProfile.tripContext.tripStartDate || !safeProfile.tripContext.tripEndDate) {
+    missing.push("trip dates");
+  }
+
+  if (!safeProfile.tripContext.selectedParks?.length) {
+    missing.push("parks");
+  }
+
+  if (!safeProfile.tripContext.firstPark) {
+    missing.push("first park");
+  }
+
+  if (!safeProfile.tripContext.priorityPark) {
+    missing.push("priority park");
+  }
+
+  if (
+    safeProfile.resortContext.stayingOnProperty === "yes" &&
+    !safeProfile.resortContext.resortId
+  ) {
+    missing.push("Disney resort");
+  }
+
+  if (
+    safeProfile.resortContext.stayingOnProperty === "no" &&
+    !safeProfile.resortContext.offPropertyHotelName
+  ) {
+    missing.push("hotel / area");
+  }
+
+  return {
+    isComplete: missing.length === 0,
+    missing,
+  };
+}
+
+function readDevPreviewFullApp() {
+  if (!DEV_ALLOW_FULL_APP_WITHOUT_PROFILE) return false;
+
+  try {
+    return localStorage.getItem(DEV_PREVIEW_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function writeDevPreviewFullApp(enabled) {
+  try {
+    localStorage.setItem(DEV_PREVIEW_STORAGE_KEY, enabled ? "true" : "false");
+  } catch (err) {
+    console.warn("ParkPlan: could not save dev preview flag", err);
+  }
 }
 
 function normalizeFamilyProfile(profile = {}) {
@@ -459,6 +536,34 @@ const actionButton = {
   fontSize: 12,
   fontWeight: 800,
   cursor: "pointer",
+};
+
+const premiumHeroCard = {
+  ...card,
+  background:
+    "radial-gradient(circle at top left, #ffedd5 0%, #ffffff 42%, #eef2ff 100%)",
+  border: "1px solid #fed7aa",
+  boxShadow: "0 18px 45px rgba(124, 58, 237, .14)",
+};
+
+const premiumBadge = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  border: "1px solid #fed7aa",
+  background: "#fff7ed",
+  color: "#9a3412",
+  borderRadius: 999,
+  padding: "6px 10px",
+  fontSize: 12,
+  fontWeight: 900,
+};
+
+const lockedCardStyle = {
+  ...card,
+  border: "1px dashed #cbd5e1",
+  background: "rgba(248,250,252,.92)",
+  boxShadow: "none",
 };
 
 function readStoredParkState(parkId) {
@@ -675,6 +780,9 @@ function App() {
   const [activeScreen, setActiveScreen] = useState(() =>
     readStoredFamilyProfile().isSetupComplete ? "main" : "family_profile"
   );
+  const [devPreviewFullApp, setDevPreviewFullApp] = useState(() =>
+    readDevPreviewFullApp()
+  );
   const [familyProfileStep, setFamilyProfileStep] = useState(1);
 
   const [currentLand, setCurrentLand] = useState(() => getDefaultLandForPark("magic_kingdom"));
@@ -692,9 +800,22 @@ function App() {
     writeStoredFamilyProfile(familyProfile);
   }, [familyProfile]);
 
+  useEffect(() => {
+    writeDevPreviewFullApp(devPreviewFullApp);
+  }, [devPreviewFullApp]);
+
   const familyProfileSummary = useMemo(() => {
     return buildFamilyProfileSummary(familyProfile);
   }, [familyProfile]);
+
+  const profileCompletion = useMemo(() => {
+    return getFamilyProfileCompletion(familyProfileSummary);
+  }, [familyProfileSummary]);
+
+  const hasPersonalizedAccess =
+    profileCompletion.isComplete || (DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && devPreviewFullApp);
+
+  const isProfileIncomplete = !profileCompletion.isComplete;
 
   const timeContext = useMemo(() => {
     return getCurrentTimeContext({
@@ -1091,13 +1212,18 @@ function App() {
   }
 
   function handleFamilyProfileDone() {
+    const completion = getFamilyProfileCompletion(familyProfile);
+
     setFamilyProfile((prev) =>
       normalizeFamilyProfile({
         ...prev,
-        isSetupComplete: true,
+        isSetupComplete: completion.isComplete,
       })
     );
-    setActiveScreen("main");
+
+    if (completion.isComplete || (DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && devPreviewFullApp)) {
+      setActiveScreen("main");
+    }
   }
 
   function handleInLine(ride) {
@@ -1221,34 +1347,60 @@ function App() {
                 color: "#64748b",
               }}
             >
-              ← Back to park
+              ← View basic waits
             </button>
 
-            <h1 style={{ fontSize: 34, margin: 0, letterSpacing: -1 }}>
-              Family Profile
-            </h1>
-            <p style={{ color: "#64748b", marginTop: 6, lineHeight: 1.45 }}>
-              Tell ParkPlan who is in your group so it can avoid bad recommendations,
-              protect energy, and stop treating every family like the same family.
-            </p>
+            <div style={premiumHeroCard}>
+              <span style={premiumBadge}>TOHI Trip Setup</span>
+              <h1 style={{ fontSize: 34, margin: "10px 0 0", letterSpacing: -1 }}>
+                Build your family’s park plan
+              </h1>
+              <p style={{ color: "#475569", marginTop: 8, lineHeight: 1.5 }}>
+                A generic wait-time app cannot know your kids are hot, your youngest is
+                39 inches, your family wants princesses, or your resort break is not
+                realistic from this park. This setup is what makes TOHI personal.
+              </p>
+
+              {isProfileIncomplete && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: 12,
+                    borderRadius: 16,
+                    background: "#fff7ed",
+                    border: "1px solid #fed7aa",
+                    color: "#9a3412",
+                    fontSize: 13,
+                    fontWeight: 800,
+                  }}
+                >
+                  Finish setup to unlock personalized recommendations, AI guidance,
+                  height-aware filtering, and day-of family flow.
+                </div>
+              )}
+            </div>
           </header>
 
           <section style={card}>
             <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-              {[1, 2, 3].map((step) => (
+              {[
+                { step: 1, label: "Trip" },
+                { step: 2, label: "Style" },
+                { step: 3, label: "Stay" },
+              ].map((item) => (
                 <button
-                  key={step}
+                  key={item.step}
                   type="button"
-                  onClick={() => setFamilyProfileStep(step)}
+                  onClick={() => setFamilyProfileStep(item.step)}
                   style={{
                     ...button,
                     flex: 1,
-                    background: familyProfileStep === step ? "#0f172a" : "white",
-                    color: familyProfileStep === step ? "white" : "#0f172a",
+                    background: familyProfileStep === item.step ? "#0f172a" : "white",
+                    color: familyProfileStep === item.step ? "white" : "#0f172a",
                     borderRadius: 14,
                   }}
                 >
-                  {step}
+                  {item.step}. {item.label}
                 </button>
               ))}
             </div>
@@ -2243,6 +2395,22 @@ function App() {
                   </p>
                 </div>
 
+                {profileCompletion.missing.length > 0 && (
+                  <div
+                    style={{
+                      padding: 12,
+                      borderRadius: 16,
+                      border: "1px solid #fed7aa",
+                      background: "#fff7ed",
+                      color: "#9a3412",
+                      fontSize: 13,
+                      fontWeight: 800,
+                    }}
+                  >
+                    Still needed: {profileCompletion.missing.join(", ")}.
+                  </div>
+                )}
+
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button
                     type="button"
@@ -2257,18 +2425,77 @@ function App() {
                     onClick={handleFamilyProfileDone}
                     style={{
                       ...button,
-                      background: "#0f172a",
+                      background: profileCompletion.isComplete ? "#0f172a" : "#94a3b8",
                       color: "white",
                     }}
                   >
-                    Save Family Profile
+                    {profileCompletion.isComplete ? "Unlock My Family Plan" : "Finish Setup First"}
                   </button>
+
+                  {DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDevPreviewFullApp(true);
+                        setActiveScreen("main");
+                      }}
+                      style={{
+                        ...button,
+                        color: "#7c3aed",
+                        borderColor: "#ddd6fe",
+                      }}
+                    >
+                      Dev Preview Full App
+                    </button>
+                  )}
                 </div>
               </div>
             )}
           </section>
         </div>
       </main>
+    );
+  }
+
+  function renderLockedFeatureCard({ title, body, actionLabel = "Finish trip setup" }) {
+    return (
+      <section style={lockedCardStyle}>
+        <div style={{ fontSize: 12, fontWeight: 900, color: "#7c3aed" }}>
+          PERSONALIZED FEATURE
+        </div>
+        <h3 style={{ margin: "6px 0 6px" }}>{title}</h3>
+        <p style={{ margin: 0, color: "#475569", fontSize: 14, lineHeight: 1.45 }}>
+          {body}
+        </p>
+
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+          <button
+            type="button"
+            onClick={() => setActiveScreen("family_profile")}
+            style={{
+              ...button,
+              background: "#0f172a",
+              color: "white",
+            }}
+          >
+            {actionLabel}
+          </button>
+
+          {DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && (
+            <button
+              type="button"
+              onClick={() => setDevPreviewFullApp(true)}
+              style={{
+                ...button,
+                color: "#7c3aed",
+                borderColor: "#ddd6fe",
+              }}
+            >
+              Dev Preview
+            </button>
+          )}
+        </div>
+      </section>
     );
   }
 
@@ -2696,15 +2923,80 @@ function App() {
               onClick={() => setActiveScreen("family_profile")}
               style={{
                 ...button,
-                color: familyProfileSummary.isSetupComplete ? "#166534" : "#9a3412",
-                borderColor: familyProfileSummary.isSetupComplete ? "#bbf7d0" : "#fed7aa",
+                color: profileCompletion.isComplete ? "#166534" : "#9a3412",
+                borderColor: profileCompletion.isComplete ? "#bbf7d0" : "#fed7aa",
                 whiteSpace: "nowrap",
               }}
             >
-              {familyProfileSummary.isSetupComplete ? "Family Profile" : "Set Up Family"}
+              {profileCompletion.isComplete ? "Trip Setup" : "Finish Setup"}
             </button>
           </div>
         </header>
+
+        {isProfileIncomplete && !hasPersonalizedAccess && (
+          <section style={premiumHeroCard}>
+            <span style={premiumBadge}>Basic Wait Times Mode</span>
+            <h2 style={{ margin: "10px 0 6px", fontSize: 24 }}>
+              Finish setup to unlock the real TOHI experience
+            </h2>
+            <p style={{ margin: 0, color: "#475569", lineHeight: 1.5 }}>
+              You can still browse live waits and weather, but personalized Best Move,
+              AI guidance, height filtering, resort-break logic, and day-of support need
+              your family trip setup first.
+            </p>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+              <button
+                type="button"
+                onClick={() => setActiveScreen("family_profile")}
+                style={{
+                  ...button,
+                  background: "#0f172a",
+                  color: "white",
+                }}
+              >
+                Finish Trip Setup
+              </button>
+
+              {DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && (
+                <button
+                  type="button"
+                  onClick={() => setDevPreviewFullApp(true)}
+                  style={{
+                    ...button,
+                    color: "#7c3aed",
+                    borderColor: "#ddd6fe",
+                  }}
+                >
+                  Dev Preview Full App
+                </button>
+              )}
+            </div>
+          </section>
+        )}
+
+        {isProfileIncomplete && hasPersonalizedAccess && DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && (
+          <section
+            style={{
+              ...card,
+              border: "1px solid #ddd6fe",
+              background: "#f5f3ff",
+            }}
+          >
+            <strong style={{ color: "#6d28d9" }}>Developer Preview Active</strong>
+            <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 13 }}>
+              You are seeing the full app even though the guest profile is incomplete.
+              Normal guests would only see basic wait times until setup is finished.
+            </p>
+            <button
+              type="button"
+              onClick={() => setDevPreviewFullApp(false)}
+              style={{ ...button, marginTop: 10, color: "#6d28d9" }}
+            >
+              Turn Off Preview Gate Bypass
+            </button>
+          </section>
+        )}
 
         <section style={card}>
           <div
@@ -2911,7 +3203,8 @@ function App() {
 
         {renderWhileYouWaitCard()}
 
-        <section style={card}>
+        {hasPersonalizedAccess ? (
+          <section style={card}>
           <h3 style={{ marginTop: 0 }}>Best Move Right Now</h3>
 
           <div style={{ marginBottom: 12 }}>
@@ -3222,6 +3515,14 @@ function App() {
           )}
         </section>
 
+        ) : (
+          renderLockedFeatureCard({
+            title: "Personalized Best Move is locked until setup is finished",
+            body:
+              "Without your family profile, TOHI cannot safely know height limits, thrill comfort, heat sensitivity, resort-break realism, or what kind of day you are trying to protect.",
+          })
+        )}
+
         <section style={card}>
           <h3 style={{ marginTop: 0 }}>Wait Times</h3>
 
@@ -3272,7 +3573,8 @@ function App() {
           </div>
         </section>
 
-        <section style={card}>
+        {hasPersonalizedAccess ? (
+          <section style={card}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <MessageCircle size={18} />
             <h3 style={{ margin: 0 }}>AI Park Assistant</h3>
@@ -3321,6 +3623,14 @@ function App() {
             </button>
           </form>
         </section>
+        ) : (
+          renderLockedFeatureCard({
+            title: "AI guidance needs your trip setup",
+            body:
+              "AI is only useful when it knows your family, dates, park goals, resort context, and energy style. Basic wait times stay available while setup is incomplete.",
+            actionLabel: "Set up AI guidance",
+          })
+        )}
       </div>
     </main>
   );
