@@ -148,6 +148,147 @@ function getMetaForRide(parkId, ride) {
   return looseNameMatch?.[1] || null;
 }
 
+function getShortestHeightInches(familyProfile) {
+  const directHeight = Number(familyProfile?.shortestHeightInches);
+
+  if (Number.isFinite(directHeight) && directHeight > 0) {
+    return directHeight;
+  }
+
+  const guests = Array.isArray(familyProfile?.guests) ? familyProfile.guests : [];
+  const validHeights = guests
+    .map((guest) => Number(guest.heightInches))
+    .filter((height) => Number.isFinite(height) && height > 0);
+
+  return validHeights.length ? Math.min(...validHeights) : null;
+}
+
+function getFamilyProfileModifier(meta, familyProfile, weather) {
+  if (!meta || !familyProfile) return 0;
+
+  let mod = 0;
+  const tags = meta.tags || [];
+  const category = meta?.planningProfile?.category;
+  const effectiveTempF = getEffectiveTempF(weather);
+
+  // Thrill tolerance: do not nuke thrill rides completely unless height already
+  // blocks them; just reduce how aggressively they win.
+  if (familyProfile.thrillTolerance === "low") {
+    if ((meta.intensity || 0) >= 4 || tags.includes("thrill") || tags.includes("coaster")) {
+      mod -= 28;
+    } else if ((meta.intensity || 0) >= 3) {
+      mod -= 12;
+    }
+
+    if ((meta.intensity || 0) <= 2 && !tags.includes("thrill")) {
+      mod += 6;
+    }
+  } else if (familyProfile.thrillTolerance === "high") {
+    if ((meta.intensity || 0) >= 4 || tags.includes("thrill") || tags.includes("coaster")) {
+      mod += 10;
+    }
+  }
+
+  // Walking tolerance: same-area proximity already matters, but low walking
+  // tolerance should punish cross-park ideas harder.
+  if (familyProfile.walkingTolerance === "low") {
+    if (meta.environment === "outdoor" && effectiveTempF != null && effectiveTempF >= 87) {
+      mod -= 4;
+    }
+  } else if (familyProfile.walkingTolerance === "high") {
+    if (category?.startsWith("plan_ahead")) {
+      mod += 3;
+    }
+  }
+
+  // Heat sensitivity: amplify the existing weather logic for families who told us
+  // heat/fatigue is a real concern.
+  if (familyProfile.heatSensitivity === "high" && effectiveTempF != null && effectiveTempF >= 87) {
+    if (meta.hasAC || meta.environment === "indoor") mod += 10;
+    if (meta.environment === "outdoor" && !meta.getsWet) mod -= 10;
+    if (meta.environment === "mixed" && !meta.getsWet) mod -= 5;
+  } else if (familyProfile.heatSensitivity === "low" && effectiveTempF != null && effectiveTempF >= 87) {
+    if (meta.environment === "outdoor" && !meta.getsWet) mod += 3;
+  }
+
+  // Water ride preference.
+  if (meta.getsWet) {
+    if (familyProfile.waterRidePreference === "avoid") mod -= 45;
+    else if (familyProfile.waterRidePreference === "yes") mod += 8;
+  }
+
+  // Pace preference.
+  if (familyProfile.pace === "relaxed") {
+    if (category?.startsWith("plan_ahead") && (meta.intensity || 0) >= 4) mod -= 5;
+    if (meta.hasAC || category === "filler_or_recovery") mod += 3;
+  } else if (familyProfile.pace === "maximize") {
+    if (category?.startsWith("plan_ahead")) mod += 5;
+  }
+
+  // Trip priorities.
+  const priorities = new Set(familyProfile.priorities || []);
+
+  if (priorities.has("headliners") && (meta.popularity || 0) >= 85) mod += 8;
+  if (priorities.has("low_stress") && (meta.hasAC || category === "filler_or_recovery")) mod += 5;
+  if (priorities.has("ac_breaks") && (meta.hasAC || meta.environment === "indoor")) mod += 8;
+  if (priorities.has("characters") && tags.includes("characters")) mod += 10;
+  if (priorities.has("princesses") && tags.includes("princess")) mod += 10;
+  if (priorities.has("shows_parades") && tags.includes("show")) mod += 8;
+  if (priorities.has("bluey_younger_kids") && tags.includes("bluey")) mod += 14;
+
+  // Younger kids should gently favor lower-intensity family experiences.
+  if (familyProfile.hasSmallChildren) {
+    if ((meta.intensity || 0) <= 2 && meta.minHeightInches === 0) mod += 5;
+    if ((meta.intensity || 0) >= 5) mod -= 6;
+  }
+
+  return mod;
+}
+
+function getHeightEligibilityFailure(meta, familyProfile) {
+  if (!meta || !familyProfile) return null;
+
+  const requiredHeight = Number(meta.minHeightInches || 0);
+  if (!requiredHeight) return null;
+
+  const shortestHeight = getShortestHeightInches(familyProfile);
+  if (shortestHeight == null) return null;
+
+  if (shortestHeight >= requiredHeight) return null;
+
+  const preference = familyProfile.wholeGroupRidesTogether || "warn";
+
+  if (preference === "yes") {
+    return {
+      reason: "heightRestricted",
+      requiredHeight,
+      shortestHeight,
+      mode: "exclude",
+    };
+  }
+
+  return null;
+}
+
+function getHeightWarning(meta, familyProfile) {
+  if (!meta || !familyProfile) return null;
+
+  const requiredHeight = Number(meta.minHeightInches || 0);
+  if (!requiredHeight) return null;
+
+  const shortestHeight = getShortestHeightInches(familyProfile);
+  if (shortestHeight == null || shortestHeight >= requiredHeight) return null;
+
+  return {
+    requiredHeight,
+    shortestHeight,
+    message:
+      familyProfile.wholeGroupRidesTogether === "rider_switch"
+        ? `Some riders may be under ${requiredHeight} inches. Use Rider Switch or split up if needed.`
+        : `Not everyone may meet the ${requiredHeight}-inch height requirement.`,
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Score components                                                           */
 /* -------------------------------------------------------------------------- */
@@ -976,6 +1117,16 @@ function buildReason(ride, parts) {
     reasons.push("good weather-safe option");
   }
 
+  if (parts.familyProfileModifier >= 10) {
+    reasons.push("strong fit for your family profile");
+  } else if (parts.familyProfileModifier <= -15) {
+    reasons.push("less ideal for your family profile");
+  }
+
+  if (parts.heightWarning) {
+    reasons.push(`height warning: ${parts.heightWarning.message}`);
+  }
+
   if (parts.scheduledShowModifier >= 12) {
     reasons.push("showtime timing may work well");
   } else if (parts.scheduledShowModifier <= -20) {
@@ -1048,6 +1199,7 @@ export function getNextBestRides({
   locationContext = null,
   completedRideIds = [],
   skippedRideIds = [],
+  familyProfile = null,
 }) {
   const currentLand = resolveCurrentLand(parkId, locationContext);
 
@@ -1068,6 +1220,7 @@ export function getNextBestRides({
     skipped: 0,
     unsupportedVariant: 0,
     contextOnly: 0,
+    heightRestricted: 0,
     earlyEntryBlocked: 0,
     closingSoon: 0,
     eligible: 0,
@@ -1080,6 +1233,7 @@ export function getNextBestRides({
     skipped: [],
     unsupportedVariant: [],
     contextOnly: [],
+    heightRestricted: [],
     earlyEntryBlocked: [],
     closingSoon: [],
     eligible: [],
@@ -1107,6 +1261,15 @@ export function getNextBestRides({
       return { reason: "contextOnly", meta };
     }
 
+    const heightFailure = getHeightEligibilityFailure(meta, familyProfile);
+    if (heightFailure?.mode === "exclude") {
+      return {
+        reason: "heightRestricted",
+        meta,
+        extra: ` · requires ${heightFailure.requiredHeight} in / shortest ${heightFailure.shortestHeight} in`,
+      };
+    }
+
     if (!ride.isOpen) return { reason: "closed", meta };
     if (completed.has(String(ride.id))) return { reason: "completed", meta };
     if (skipped.has(String(ride.id))) return { reason: "skipped", meta };
@@ -1128,7 +1291,11 @@ export function getNextBestRides({
 
     if (reason) {
       filterStats[reason] += 1;
-      addExample(reason, ride, result.meta?.land ? ` · ${result.meta.land}` : "");
+      addExample(
+        reason,
+        ride,
+        result.extra || (result.meta?.land ? ` · ${result.meta.land}` : "")
+      );
       return false;
     }
 
@@ -1179,6 +1346,8 @@ export function getNextBestRides({
     const proximityModifier = getProximityModifier(meta, currentLand, parkId);
     const waitValueStatus = getWaitValueStatus(meta, ride.waitTime);
     const waitValueModifier = waitValueStatus.modifier || 0;
+    const familyProfileModifier = getFamilyProfileModifier(meta, familyProfile, weather);
+    const heightWarning = getHeightWarning(meta, familyProfile);
     const scheduledShowModifier = getScheduledShowScoreModifier(
       meta,
       weather,
@@ -1236,11 +1405,13 @@ export function getNextBestRides({
       contextModifier +
       proximityModifier +
       waitValueModifier +
+      familyProfileModifier +
       scheduledShowModifier +
       wetRideModifier +
       parkStrategyModifier +
       nearbyHeadlinerOpportunityModifier +
-      closestAnchorOpportunityModifier;
+      closestAnchorOpportunityModifier -
+      (heightWarning ? 16 : 0);
 
     const proximityDistance =
       proximityModifier > 0
@@ -1257,7 +1428,9 @@ export function getNextBestRides({
       planningProfile: meta?.planningProfile || null,
       showProfile: meta?.showProfile || null,
       isScheduledShow: isScheduledShowMeta(meta),
+      heightWarning,
       strategyNote: meta?.waitProfile?.strategyNote || null,
+      familyProfileModifier,
       scheduledShowModifier,
       wetRideModifier,
       nearbyHeadlinerOpportunityModifier,
@@ -1268,6 +1441,8 @@ export function getNextBestRides({
         contextModifier,
         proximityModifier,
         waitValueStatus,
+        familyProfileModifier,
+        heightWarning,
         scheduledShowModifier,
         wetRideModifier,
         parkStrategyModifier,
