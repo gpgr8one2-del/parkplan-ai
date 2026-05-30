@@ -156,8 +156,129 @@ function getSafeLandForPark(parkId, land) {
 }
 
 const STORAGE_KEY = "parkplan.state";
+const FAMILY_PROFILE_STORAGE_KEY = "parkplan.familyProfile";
 
 const AUTO_REFRESH_MS = 3 * 60 * 1000;
+
+const DEFAULT_FAMILY_PROFILE = {
+  isSetupComplete: false,
+  partySize: 4,
+  guests: [
+    { id: "guest_1", age: "", heightInches: "" },
+    { id: "guest_2", age: "", heightInches: "" },
+    { id: "guest_3", age: "", heightInches: "" },
+    { id: "guest_4", age: "", heightInches: "" },
+  ],
+  wholeGroupRidesTogether: "warn",
+  thrillTolerance: "mixed",
+  walkingTolerance: "medium",
+  heatSensitivity: "medium",
+  waterRidePreference: "depends",
+  pace: "balanced",
+  priorities: [],
+  resortContext: {
+    stayingOnProperty: "unknown",
+    resortName: "",
+    transportationMode: "unknown",
+  },
+  lightningLanePreference: "undecided",
+};
+
+const FAMILY_PRIORITY_OPTIONS = [
+  { value: "headliners", label: "Big rides" },
+  { value: "low_stress", label: "Low-stress flow" },
+  { value: "characters", label: "Characters" },
+  { value: "princesses", label: "Princesses" },
+  { value: "shows_parades", label: "Shows / parades" },
+  { value: "food_snacks", label: "Food / snacks" },
+  { value: "bluey_younger_kids", label: "Bluey / younger kids" },
+  { value: "ac_breaks", label: "AC / recovery" },
+];
+
+function getDisneyAgeClass(age) {
+  const numericAge = Number(age);
+  if (!Number.isFinite(numericAge)) return "unknown";
+  if (numericAge <= 2) return "under_3";
+  if (numericAge >= 3 && numericAge <= 9) return "child";
+  return "adult";
+}
+
+function getDisneyAgeLabel(ageClass) {
+  if (ageClass === "under_3") return "Under 3 / no ticket";
+  if (ageClass === "child") return "Disney child";
+  if (ageClass === "adult") return "Disney adult";
+  return "Age not set";
+}
+
+function normalizeFamilyProfile(profile = {}) {
+  const merged = {
+    ...DEFAULT_FAMILY_PROFILE,
+    ...profile,
+    resortContext: {
+      ...DEFAULT_FAMILY_PROFILE.resortContext,
+      ...(profile.resortContext || {}),
+    },
+  };
+  const partySize = Math.max(1, Math.min(12, Number(merged.partySize) || 1));
+  const existingGuests = Array.isArray(merged.guests) ? merged.guests : [];
+  const guests = Array.from({ length: partySize }, (_, index) => {
+    const existing = existingGuests[index] || {};
+    return {
+      id: existing.id || `guest_${index + 1}`,
+      age: existing.age ?? "",
+      heightInches: existing.heightInches ?? "",
+    };
+  });
+  return {
+    ...merged,
+    partySize,
+    guests,
+    priorities: Array.isArray(merged.priorities) ? merged.priorities : [],
+  };
+}
+
+function buildFamilyProfileSummary(profile) {
+  const safeProfile = normalizeFamilyProfile(profile);
+  const ageSummary = safeProfile.guests.reduce(
+    (summary, guest) => {
+      const ageClass = getDisneyAgeClass(guest.age);
+      if (ageClass === "under_3") summary.under3Count += 1;
+      if (ageClass === "child") summary.childCount += 1;
+      if (ageClass === "adult") summary.disneyAdultCount += 1;
+      return summary;
+    },
+    { under3Count: 0, childCount: 0, disneyAdultCount: 0 }
+  );
+  const validHeights = safeProfile.guests
+    .map((guest) => Number(guest.heightInches))
+    .filter((height) => Number.isFinite(height) && height > 0);
+  const shortestHeightInches = validHeights.length ? Math.min(...validHeights) : null;
+  return {
+    ...safeProfile,
+    ageSummary,
+    shortestHeightInches,
+    hasUnder3: ageSummary.under3Count > 0,
+    hasSmallChildren: ageSummary.under3Count > 0 || ageSummary.childCount > 0,
+    hasHeightLimitedRiders: shortestHeightInches != null && shortestHeightInches < 48,
+  };
+}
+
+function readStoredFamilyProfile() {
+  try {
+    const raw = localStorage.getItem(FAMILY_PROFILE_STORAGE_KEY);
+    return normalizeFamilyProfile(raw ? JSON.parse(raw) : DEFAULT_FAMILY_PROFILE);
+  } catch {
+    return normalizeFamilyProfile(DEFAULT_FAMILY_PROFILE);
+  }
+}
+
+function writeStoredFamilyProfile(profile) {
+  try {
+    localStorage.setItem(FAMILY_PROFILE_STORAGE_KEY, JSON.stringify(normalizeFamilyProfile(profile)));
+  } catch (err) {
+    console.warn("ParkPlan: could not save family profile", err);
+  }
+}
 
 const page = {
   minHeight: "100vh",
@@ -406,6 +527,10 @@ function App() {
   const [lastAutoUpdateAt, setLastAutoUpdateAt] = useState("");
   const [lastLocationUpdateAt, setLastLocationUpdateAt] = useState("");
   const [detectedLocationContext, setDetectedLocationContext] = useState(null);
+  const [familyProfile, setFamilyProfile] = useState(() => readStoredFamilyProfile());
+  const [familyProfileExpanded, setFamilyProfileExpanded] = useState(() => {
+    return !readStoredFamilyProfile().isSetupComplete;
+  });
 
   const [currentLand, setCurrentLand] = useState(() => getDefaultLandForPark("magic_kingdom"));
   const [completedRideIds, setCompletedRideIds] = useState([]);
@@ -417,6 +542,14 @@ function App() {
   const [revealedTriviaAnswer, setRevealedTriviaAnswer] = useState(false);
 
   const isRestoringParkState = useRef(false);
+
+  useEffect(() => {
+    writeStoredFamilyProfile(familyProfile);
+  }, [familyProfile]);
+
+  const familyProfileSummary = useMemo(() => {
+    return buildFamilyProfileSummary(familyProfile);
+  }, [familyProfile]);
 
   const loadData = useCallback(
     async (force = false) => {
@@ -656,6 +789,7 @@ function App() {
       locationContext: locationContextForDecisions,
       completedRideIds,
       skippedRideIds: recommendationAvoidedRideIds,
+      familyProfile: familyProfileSummary,
     });
   }, [
     activePark,
@@ -664,6 +798,7 @@ function App() {
     locationContextForDecisions,
     completedRideIds,
     recommendationAvoidedRideIds,
+    familyProfileSummary,
   ]);
 
   const weatherMode = useMemo(() => {
@@ -793,6 +928,248 @@ function App() {
     setSkippedRideIds([]);
     setReportedRideIssueIds([]);
     setCurrentActivity(null);
+  }
+
+  function updateFamilyProfile(patch) {
+    setFamilyProfile((prev) => normalizeFamilyProfile({ ...prev, ...patch }));
+  }
+
+  function handlePartySizeChange(nextPartySize) {
+    setFamilyProfile((prev) => normalizeFamilyProfile({ ...prev, partySize: nextPartySize }));
+  }
+
+  function handleGuestChange(index, field, value) {
+    setFamilyProfile((prev) => {
+      const safeProfile = normalizeFamilyProfile(prev);
+      const guests = [...safeProfile.guests];
+      guests[index] = { ...guests[index], [field]: value };
+      return normalizeFamilyProfile({ ...safeProfile, guests });
+    });
+  }
+
+  function handlePriorityToggle(priorityValue) {
+    setFamilyProfile((prev) => {
+      const safeProfile = normalizeFamilyProfile(prev);
+      const priorities = new Set(safeProfile.priorities || []);
+      priorities.has(priorityValue) ? priorities.delete(priorityValue) : priorities.add(priorityValue);
+      return normalizeFamilyProfile({ ...safeProfile, priorities: Array.from(priorities) });
+    });
+  }
+
+  function handleFamilyProfileDone() {
+    setFamilyProfile((prev) => normalizeFamilyProfile({ ...prev, isSetupComplete: true }));
+    setFamilyProfileExpanded(false);
+  }
+
+  function renderFamilyProfileCard() {
+    const summary = familyProfileSummary;
+    const shortestHeightText = summary.shortestHeightInches != null
+      ? `${summary.shortestHeightInches} in shortest rider`
+      : "height not set yet";
+
+    return (
+      <section
+        style={{
+          ...card,
+          border: summary.isSetupComplete ? "1px solid #bbf7d0" : "1px solid #fed7aa",
+          background: summary.isSetupComplete ? "#f0fdf4" : "#fff7ed",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 12, color: summary.isSetupComplete ? "#166534" : "#9a3412", fontWeight: 900 }}>
+              FAMILY PROFILE
+            </div>
+            <h3 style={{ margin: "5px 0 6px", fontSize: 20 }}>
+              Help ParkPlan avoid bad recommendations
+            </h3>
+            <p style={{ margin: 0, color: "#475569", fontSize: 13 }}>
+              {summary.partySize} guests · {summary.ageSummary.under3Count} under 3 · {summary.ageSummary.childCount} Disney child · {summary.ageSummary.disneyAdultCount} Disney adult · {shortestHeightText}
+            </p>
+          </div>
+          <button type="button" onClick={() => setFamilyProfileExpanded((prev) => !prev)} style={{ ...button, color: "#6d28d9" }}>
+            {familyProfileExpanded ? "Collapse" : summary.isSetupComplete ? "Edit" : "Set Up"}
+          </button>
+        </div>
+
+        {!familyProfileExpanded && (
+          <p style={{ margin: "10px 0 0", color: "#334155", fontSize: 13 }}>
+            I’ll use this for height limits, family pace, heat sensitivity, ride style, hotel context, and AI chat.
+          </p>
+        )}
+
+        {familyProfileExpanded && (
+          <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
+            <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+              Party size
+              <select
+                value={familyProfile.partySize}
+                onChange={(e) => handlePartySizeChange(e.target.value)}
+                style={{ border: "1px solid #cbd5e1", borderRadius: 14, padding: "10px 12px", fontWeight: 800, background: "white" }}
+              >
+                {Array.from({ length: 12 }, (_, index) => index + 1).map((size) => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+            </label>
+
+            <div>
+              <strong>Who’s in your group?</strong>
+              <p style={{ margin: "5px 0 10px", color: "#64748b", fontSize: 13 }}>
+                Ages help with Disney child/adult classification. Heights help avoid recommending rides not everyone can ride.
+              </p>
+              <div style={{ display: "grid", gap: 10 }}>
+                {familyProfile.guests.map((guest, index) => {
+                  const ageClass = getDisneyAgeClass(guest.age);
+                  return (
+                    <div key={guest.id} style={{ padding: 12, borderRadius: 16, border: "1px solid #e2e8f0", background: "white" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 800 }}>
+                          Age
+                          <input type="number" min="0" max="120" value={guest.age} onChange={(e) => handleGuestChange(index, "age", e.target.value)} placeholder="ex: 7" style={{ border: "1px solid #cbd5e1", borderRadius: 12, padding: "9px 10px" }} />
+                        </label>
+                        <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 800 }}>
+                          Height in inches
+                          <input type="number" min="0" max="90" value={guest.heightInches} onChange={(e) => handleGuestChange(index, "heightInches", e.target.value)} placeholder="ex: 42" style={{ border: "1px solid #cbd5e1", borderRadius: 12, padding: "9px 10px" }} />
+                        </label>
+                      </div>
+                      <p style={{ margin: "8px 0 0", color: "#64748b", fontSize: 12 }}>
+                        Guest {index + 1}: {getDisneyAgeLabel(ageClass)}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+              Should ParkPlan keep the whole group together for ride recommendations?
+              <select value={familyProfile.wholeGroupRidesTogether} onChange={(e) => updateFamilyProfile({ wholeGroupRidesTogether: e.target.value })} style={{ border: "1px solid #cbd5e1", borderRadius: 14, padding: "10px 12px", fontWeight: 800, background: "white" }}>
+                <option value="yes">Yes, only recommend rides everyone can do</option>
+                <option value="warn">Warn me if not everyone can ride</option>
+                <option value="rider_switch">We’re okay splitting up / Rider Switch</option>
+              </select>
+            </label>
+
+            <div style={{ display: "grid", gap: 10 }}>
+              <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+                Thrill tolerance
+                <select value={familyProfile.thrillTolerance} onChange={(e) => updateFamilyProfile({ thrillTolerance: e.target.value })} style={{ border: "1px solid #cbd5e1", borderRadius: 14, padding: "10px 12px", fontWeight: 800, background: "white" }}>
+                  <option value="low">Low — avoid intense rides</option>
+                  <option value="mixed">Mixed — balance thrills and family rides</option>
+                  <option value="high">High — thrill rides are a priority</option>
+                </select>
+              </label>
+              <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+                Walking tolerance
+                <select value={familyProfile.walkingTolerance} onChange={(e) => updateFamilyProfile({ walkingTolerance: e.target.value })} style={{ border: "1px solid #cbd5e1", borderRadius: 14, padding: "10px 12px", fontWeight: 800, background: "white" }}>
+                  <option value="low">Low — minimize backtracking</option>
+                  <option value="medium">Medium — normal family pace</option>
+                  <option value="high">High — we can cover ground</option>
+                </select>
+              </label>
+              <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+                Heat / fatigue sensitivity
+                <select value={familyProfile.heatSensitivity} onChange={(e) => updateFamilyProfile({ heatSensitivity: e.target.value })} style={{ border: "1px solid #cbd5e1", borderRadius: 14, padding: "10px 12px", fontWeight: 800, background: "white" }}>
+                  <option value="low">Low — we handle heat well</option>
+                  <option value="medium">Medium — watch our energy</option>
+                  <option value="high">High — prioritize shade, AC, food, breaks</option>
+                </select>
+              </label>
+              <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+                Water rides
+                <select value={familyProfile.waterRidePreference} onChange={(e) => updateFamilyProfile({ waterRidePreference: e.target.value })} style={{ border: "1px solid #cbd5e1", borderRadius: 14, padding: "10px 12px", fontWeight: 800, background: "white" }}>
+                  <option value="yes">Yes, we like water rides</option>
+                  <option value="depends">Depends on heat / timing</option>
+                  <option value="avoid">Avoid getting wet</option>
+                </select>
+              </label>
+              <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+                Family pace
+                <select value={familyProfile.pace} onChange={(e) => updateFamilyProfile({ pace: e.target.value })} style={{ border: "1px solid #cbd5e1", borderRadius: 14, padding: "10px 12px", fontWeight: 800, background: "white" }}>
+                  <option value="relaxed">Relaxed — fewer things, less stress</option>
+                  <option value="balanced">Balanced — smart but flexible</option>
+                  <option value="maximize">Maximize — help us do a lot</option>
+                </select>
+              </label>
+            </div>
+
+            <div>
+              <strong>What matters most this trip?</strong>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                {FAMILY_PRIORITY_OPTIONS.map((option) => {
+                  const selected = familyProfile.priorities.includes(option.value);
+                  return (
+                    <button key={option.value} type="button" onClick={() => handlePriorityToggle(option.value)} style={{ ...actionButton, background: selected ? "#6d28d9" : "white", color: selected ? "white" : "#6d28d9", borderColor: "#c4b5fd" }}>
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <strong>Trip context</strong>
+              <div style={{ display: "grid", gap: 10, marginTop: 8 }}>
+                <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+                  Staying on Disney property?
+                  <select value={familyProfile.resortContext.stayingOnProperty} onChange={(e) => updateFamilyProfile({ resortContext: { ...familyProfile.resortContext, stayingOnProperty: e.target.value } })} style={{ border: "1px solid #cbd5e1", borderRadius: 14, padding: "10px 12px", fontWeight: 800, background: "white" }}>
+                    <option value="unknown">Not sure / skip for now</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </label>
+                <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+                  Resort or hotel name
+                  <input value={familyProfile.resortContext.resortName} onChange={(e) => updateFamilyProfile({ resortContext: { ...familyProfile.resortContext, resortName: e.target.value } })} placeholder="ex: Pop Century, Wilderness Lodge, off-property hotel" style={{ border: "1px solid #cbd5e1", borderRadius: 14, padding: "10px 12px" }} />
+                </label>
+                <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+                  Transportation
+                  <select value={familyProfile.resortContext.transportationMode} onChange={(e) => updateFamilyProfile({ resortContext: { ...familyProfile.resortContext, transportationMode: e.target.value } })} style={{ border: "1px solid #cbd5e1", borderRadius: 14, padding: "10px 12px", fontWeight: 800, background: "white" }}>
+                    <option value="unknown">Not sure / depends</option>
+                    <option value="bus">Bus</option>
+                    <option value="monorail">Monorail</option>
+                    <option value="skyliner">Skyliner</option>
+                    <option value="boat">Boat</option>
+                    <option value="walking">Walking</option>
+                    <option value="car">Car / rideshare</option>
+                  </select>
+                </label>
+                <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+                  Lightning Lane / Single Pass preference
+                  <select value={familyProfile.lightningLanePreference} onChange={(e) => updateFamilyProfile({ lightningLanePreference: e.target.value })} style={{ border: "1px solid #cbd5e1", borderRadius: 14, padding: "10px 12px", fontWeight: 800, background: "white" }}>
+                    <option value="undecided">Undecided</option>
+                    <option value="avoid_paid">Avoid paid options if possible</option>
+                    <option value="open_to_paid">Open if it protects the day</option>
+                    <option value="use_paid">Plan around paid access</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div style={{ padding: 12, borderRadius: 16, border: "1px solid #bfdbfe", background: "#eff6ff" }}>
+              <strong>Disney classification reminder</strong>
+              <p style={{ margin: "6px 0 0", color: "#334155", fontSize: 13 }}>
+                Ages 0–2 are under 3 / no ticket. Ages 3–9 are Disney child. Ages 10+ count as Disney adults for tickets and dining.
+              </p>
+            </div>
+
+            {summary.shortestHeightInches != null && (
+              <div style={{ padding: 12, borderRadius: 16, border: "1px solid #bbf7d0", background: "#f0fdf4" }}>
+                <strong>Height profile ready</strong>
+                <p style={{ margin: "6px 0 0", color: "#334155", fontSize: 13 }}>
+                  Shortest rider: {summary.shortestHeightInches} inches. Next pass, we’ll use this to suppress or warn on rides not everyone can ride.
+                </p>
+              </div>
+            )}
+
+            <button type="button" onClick={handleFamilyProfileDone} style={{ ...button, background: "#0f172a", color: "white", justifySelf: "start" }}>
+              Save Family Profile
+            </button>
+          </div>
+        )}
+      </section>
+    );
   }
 
   function renderRideActions(ride) {
@@ -1142,6 +1519,7 @@ function App() {
         skippedRideIds,
         reportedRideIssueIds,
         currentLand,
+        familyProfile: familyProfileSummary,
         locationContext: locationContextForDecisions,
         currentActivity: currentActivityContext,
         currentActivityContext,
@@ -1304,6 +1682,8 @@ function App() {
 
           <DataStatusBanner source={weather?.source} />
         </section>
+
+        {renderFamilyProfileCard()}
 
         {weatherMode.mode !== "normal" && (
           <section style={card}>
