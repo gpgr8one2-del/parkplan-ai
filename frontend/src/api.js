@@ -9,7 +9,9 @@ function sleep(ms) {
 function stableStringify(value) {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+
   const keys = Object.keys(value).sort();
+
   return `{${keys
     .map((k) => `${JSON.stringify(k)}:${stableStringify(value[k])}`)
     .join(",")}}`;
@@ -18,11 +20,13 @@ function stableStringify(value) {
 function buildRequestKey(path, options = {}) {
   const method = options.method || "GET";
   let body = "";
+
   try {
     body = options.body ? stableStringify(JSON.parse(options.body)) : "";
   } catch {
     body = options.body || "";
   }
+
   return `${method}:${path}:${body}`;
 }
 
@@ -95,6 +99,176 @@ async function apiFetch(path, options = {}, config = {}) {
   }
 
   return requestPromise;
+}
+
+function getOrCreateAnonymousUserId() {
+  const storageKey = "parkplan.anonymousUserId";
+
+  try {
+    const existing = localStorage.getItem(storageKey);
+    if (existing) return existing;
+
+    const id =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `anon_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+    localStorage.setItem(storageKey, id);
+    return id;
+  } catch {
+    return "anonymous_unavailable";
+  }
+}
+
+function getOrCreateSessionId() {
+  const storageKey = "parkplan.sessionId";
+
+  try {
+    const existingRaw = sessionStorage.getItem(storageKey);
+    const existing = existingRaw ? JSON.parse(existingRaw) : null;
+    const now = Date.now();
+
+    // Refresh session after 4 hours of inactivity / browser session weirdness.
+    if (existing?.id && existing?.createdAt && now - existing.createdAt < 4 * 60 * 60 * 1000) {
+      return existing.id;
+    }
+
+    const id =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `session_${now}_${Math.random().toString(16).slice(2)}`;
+
+    sessionStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        id,
+        createdAt: now,
+      })
+    );
+
+    return id;
+  } catch {
+    return "session_unavailable";
+  }
+}
+
+function sanitizeTimeContext(timeContext = {}) {
+  return {
+    orlandoDate: timeContext.orlandoDate,
+    orlandoTimeLabel: timeContext.orlandoTimeLabel,
+    dayPhase: timeContext.dayPhase,
+    planningMode: timeContext.planningMode,
+    tripStatus: timeContext.tripStatus?.status,
+  };
+}
+
+function sanitizeFamilyProfileSnapshot(familyProfile = {}) {
+  return {
+    adultCount: familyProfile.adultCount ?? null,
+    childCount: familyProfile.childCount ?? null,
+    partySize: familyProfile.partySize ?? null,
+    shortestHeightInches: familyProfile.shortestHeightInches ?? null,
+    hasSmallChildren: familyProfile.hasSmallChildren,
+
+    thrillTolerance: familyProfile.thrillTolerance,
+    walkingTolerance: familyProfile.walkingTolerance,
+    heatSensitivity: familyProfile.heatSensitivity,
+    waterRidePreference: familyProfile.waterRidePreference,
+    pace: familyProfile.pace,
+    priorities: familyProfile.priorities || [],
+
+    selectedParks: familyProfile.tripContext?.selectedParks || [],
+    firstPark: familyProfile.tripContext?.firstPark,
+    priorityPark: familyProfile.tripContext?.priorityPark,
+    parkHopper: familyProfile.tripContext?.parkHopper,
+
+    planningMode: familyProfile.planningPreferences?.planningMode,
+    ropeDropStyle: familyProfile.planningPreferences?.ropeDropStyle,
+    middayBreakStyle: familyProfile.planningPreferences?.middayBreakStyle,
+
+    stayingOnProperty: familyProfile.resortContext?.stayingOnProperty,
+    resortId: familyProfile.resortContext?.resortId,
+    transportationMode: familyProfile.resortContext?.transportationMode,
+  };
+}
+
+function sanitizeRecommendation(recommendation = {}, slot = "") {
+  if (!recommendation) return null;
+
+  return {
+    slot,
+    rideId: recommendation.id,
+    rideName: recommendation.name,
+    waitTime: recommendation.waitTime ?? null,
+    land: recommendation.land,
+    waitValueStatus: recommendation.waitValueStatus?.status,
+    recommendationScore: recommendation.recommendationScore,
+    familyProfileModifier: recommendation.familyProfileModifier,
+    planAheadRealityCheckModifier: recommendation.planAheadRealityCheckModifier,
+    heightWarning: Boolean(recommendation.heightWarning),
+  };
+}
+
+function sanitizeLocationContext(locationContext = {}) {
+  if (!locationContext) return null;
+
+  return {
+    source: locationContext.source || locationContext.type,
+    landKey: locationContext.landKey || locationContext.land,
+    landLabel: locationContext.landLabel,
+    nearestAnchorName: locationContext.nearestAnchorName,
+    nearestAnchorType: locationContext.nearestAnchorType,
+    confidence: locationContext.confidence,
+    distanceMeters: locationContext.distanceMeters,
+  };
+}
+
+/**
+ * Anonymous product analytics.
+ *
+ * Privacy guardrails:
+ * - Do not send names, emails, raw GPS coordinates, child names, or full AI chat text.
+ * - Use behavior signals only: actions, profile categories, recommendation decisions.
+ * - This is fire-and-forget so analytics never breaks the guest experience.
+ */
+export function trackEvent(eventType, payload = {}) {
+  const event = {
+    eventType,
+    sessionId: getOrCreateSessionId(),
+    anonymousUserId: getOrCreateAnonymousUserId(),
+    timestamp: new Date().toISOString(),
+
+    activePark: payload.activePark,
+    currentLand: payload.currentLand,
+    source: payload.source,
+    screen: payload.screen,
+
+    profileComplete: payload.profileComplete,
+    devPreviewFullApp: payload.devPreviewFullApp,
+
+    timeContext: sanitizeTimeContext(payload.timeContext),
+    familyProfileSnapshot: sanitizeFamilyProfileSnapshot(payload.familyProfile),
+    recommendation: payload.recommendation
+      ? sanitizeRecommendation(payload.recommendation, payload.recommendationSlot)
+      : undefined,
+    action: payload.action,
+    locationContext: sanitizeLocationContext(payload.locationContext),
+    metadata: payload.metadata,
+  };
+
+  // Do not use apiFetch here. Events should not retry aggressively or block UX.
+  fetch(`${BASE_URL}/api/events`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(event),
+    keepalive: true,
+  }).catch((err) => {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("ParkPlan analytics event failed", err);
+    }
+  });
 }
 
 export async function fetchParkData(parkId, options = {}) {
