@@ -162,9 +162,9 @@ const FAMILY_PROFILE_STORAGE_KEY = "parkplan.familyProfile";
 
 const AUTO_REFRESH_MS = 3 * 60 * 1000;
 
-// Testing safety valve: while building, Gabe can still preview and test the full app
-// before a normal guest completes onboarding. Later this can move to an env var.
-const DEV_ALLOW_FULL_APP_WITHOUT_PROFILE = true;
+// Testing safety valve: while building, Gabe can still preview and test the full app.
+// This must never appear in production because it makes the onboarding gate meaningless.
+const DEV_ALLOW_FULL_APP_WITHOUT_PROFILE = process.env.NODE_ENV !== "production";
 const DEV_PREVIEW_STORAGE_KEY = "parkplan.devPreviewFullApp";
 
 const DEFAULT_FAMILY_PROFILE = {
@@ -329,6 +329,11 @@ function readDevPreviewFullApp() {
 
 function writeDevPreviewFullApp(enabled) {
   try {
+    if (!DEV_ALLOW_FULL_APP_WITHOUT_PROFILE) {
+      localStorage.removeItem(DEV_PREVIEW_STORAGE_KEY);
+      return;
+    }
+
     localStorage.setItem(DEV_PREVIEW_STORAGE_KEY, enabled ? "true" : "false");
   } catch (err) {
     console.warn("ParkPlan: could not save dev preview flag", err);
@@ -819,7 +824,7 @@ function App() {
   );
   const [familyProfileStep, setFamilyProfileStep] = useState(1);
 
-  const [currentLand, setCurrentLand] = useState(() => getDefaultLandForPark("magic_kingdom"));
+  const [currentLand, setCurrentLand] = useState(null);
   const [completedRideIds, setCompletedRideIds] = useState([]);
   const [skippedRideIds, setSkippedRideIds] = useState([]);
   const [reportedRideIssueIds, setReportedRideIssueIds] = useState([]);
@@ -1051,7 +1056,7 @@ function App() {
 
     const saved = readStoredParkState(activePark);
 
-    setCurrentLand(getSafeLandForPark(activePark, saved.currentLand));
+    setCurrentLand(saved.currentLand ? getSafeLandForPark(activePark, saved.currentLand) : null);
     setCompletedRideIds(saved.completedRideIds || []);
     setSkippedRideIds(saved.skippedRideIds || []);
     setReportedRideIssueIds(saved.reportedRideIssueIds || []);
@@ -1113,9 +1118,13 @@ function App() {
     const safeDetectedLocation =
       detectedLocationContext?.parkId === activePark ? detectedLocationContext : null;
 
+    if (!safeDetectedLocation && !currentLand) {
+      return null;
+    }
+
     return {
       type: safeDetectedLocation ? "gps" : "manual_land",
-      land: currentLand,
+      land: safeDetectedLocation?.landKey || currentLand,
       landKey: safeDetectedLocation?.landKey || currentLand,
       landLabel:
         safeDetectedLocation?.landLabel ||
@@ -1565,9 +1574,9 @@ function App() {
                 Build your family’s park plan
               </h1>
               <p style={{ color: "#475569", marginTop: 8, lineHeight: 1.5 }}>
-                A generic wait-time app cannot know your kids are hot, your youngest is
-                39 inches, your family wants princesses, or your resort break is not
-                realistic from this park. This setup is what makes TOHI personal.
+                Every family does the parks differently. Tell TOHI who’s going,
+                where you’re staying, and what kind of day you want — then we’ll
+                help you make smarter, calmer choices in the park.
               </p>
 
               {isProfileIncomplete && (
@@ -3142,9 +3151,7 @@ function App() {
   const primaryRecommendation =
     recommendations.bestMove ||
     recommendations.backup ||
-    recommendations.worthTheWalk ||
-    recommendations.planAhead ||
-    recommendations.waitOnThis;
+    recommendations.worthTheWalk;
 
   const hasAnyRecommendation = Boolean(primaryRecommendation);
 
@@ -3531,8 +3538,27 @@ function App() {
             </label>
             <select
               id="current-land"
-              value={currentLand}
-              onChange={(e) => setCurrentLand(e.target.value)}
+              value={currentLand || ""}
+              onChange={(e) => {
+                const nextLand = e.target.value || null;
+
+                setCurrentLand(nextLand);
+                setDetectedLocationContext(null);
+                setLocationAutoEnabled(false);
+                setLocationMessage(
+                  nextLand
+                    ? "Using your selected park area. You can update it anytime."
+                    : ""
+                );
+
+                trackAppEvent("manual_location_selected", {
+                  source: "current_land_dropdown",
+                  currentLand: nextLand,
+                  metadata: {
+                    nextLand,
+                  },
+                });
+              }}
               style={{
                 width: "100%",
                 border: "1px solid #cbd5e1",
@@ -3543,6 +3569,7 @@ function App() {
                 color: "#0f172a",
               }}
             >
+              <option value="">Pick where you are now</option>
               {landOptions.map((land) => (
                 <option key={land.value} value={land.value}>
                   {land.label}
@@ -3674,7 +3701,37 @@ function App() {
             </button>
           )}
 
-          {hasAnyRecommendation ? (
+          {recommendations.needsLocation || !currentLand ? (
+            <div
+              style={{
+                padding: 14,
+                borderRadius: 18,
+                border: "1px solid #bfdbfe",
+                background: "#eff6ff",
+              }}
+            >
+              <strong>Pick where you are first.</strong>
+              <p style={{ margin: "6px 0 0", color: "#334155" }}>
+                TOHI can show wait times without your location, but personalized next
+                moves need your current park area so we do not send your family on a
+                bad cross-park walk.
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                <button
+                  type="button"
+                  onClick={handleUseMyLocation}
+                  disabled={locationLoading}
+                  style={{
+                    ...button,
+                    background: "#0f172a",
+                    color: "white",
+                  }}
+                >
+                  {locationLoading ? "Finding you..." : "Use My Location"}
+                </button>
+              </div>
+            </div>
+          ) : hasAnyRecommendation ? (
             <div style={{ display: "grid", gap: 10 }}>
               <div
                 style={{
