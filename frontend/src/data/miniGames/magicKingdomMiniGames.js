@@ -1544,40 +1544,619 @@ const HOLLYWOOD_WOULD_YOU_RATHER_PROMPTS = [
   "Would you rather pilot the Falcon perfectly once or crash it badly but make your whole family laugh?",
 ];
 
+
+const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
+  "Avatar Flight of Passage": [
+    {
+      question: "On Avatar Flight of Passage, what creature are you linking with?",
+      choices: ["A banshee", "A dragon", "A direhorse", "A giant bird"],
+      answer: "A banshee",
+      fact:
+        "The whole ride is built around the idea that you are linking to an avatar and flying on the back of a mountain banshee.",
+    },
+    {
+      question: "Flight of Passage is best described as what kind of attraction?",
+      choices: ["A flying simulator", "A boat ride", "A drop tower", "A spinning coaster"],
+      answer: "A flying simulator",
+      fact:
+        "It combines motion, wind, scent, screen scale, and breathing effects to make the banshee feel alive.",
+    },
+    {
+      question: "What detail can riders often feel from the banshee during the ride?",
+      choices: ["Breathing", "Purring", "Sneezing", "Singing"],
+      answer: "Breathing",
+      fact:
+        "The ride vehicle helps create the feeling that the banshee is breathing beneath you. It is one of the coolest small touches in the attraction.",
+    },
+  ],
+
+  "Na'vi River Journey": [
+    {
+      question: "Na'vi River Journey takes place in what kind of environment?",
+      choices: ["A glowing bioluminescent rainforest", "A desert canyon", "A frozen cave", "A spaceport"],
+      answer: "A glowing bioluminescent rainforest",
+      fact:
+        "The ride is all about atmosphere: glowing plants, music, creatures, and the feeling of drifting through Pandora at night.",
+    },
+    {
+      question: "What is the famous Audio-Animatronic near the end called?",
+      choices: ["The Shaman of Songs", "The Forest Queen", "The River Spirit", "The Banshee Keeper"],
+      answer: "The Shaman of Songs",
+      fact:
+        "The Shaman of Songs is known for extremely fluid facial and hand movement.",
+    },
+  ],
+
+  "Kilimanjaro Safaris": [
+    {
+      question: "Kilimanjaro Safaris is designed to feel like what?",
+      choices: ["A wildlife reserve", "A roller coaster", "A zoo tram only", "A jungle cruise with jokes"],
+      answer: "A wildlife reserve",
+      fact:
+        "The attraction covers a massive area and is built to feel like a living animal reserve rather than a normal ride.",
+    },
+    {
+      question: "When are animals often more active?",
+      choices: ["Morning or later day", "Only at noon", "Only during fireworks", "Only after closing"],
+      answer: "Morning or later day",
+      fact:
+        "Heat matters. Animals may be more active in the morning, later in the day, or after rain.",
+    },
+    {
+      question: "What should families remember about every safari ride?",
+      choices: ["It can be different each time", "It is always exactly the same", "There are no real animals", "It is indoors"],
+      answer: "It can be different each time",
+      fact:
+        "Because the animals are real, each safari can feel different depending on weather, time, and animal behavior.",
+    },
+  ],
+
+  "Festival of the Lion King": [
+    {
+      question: "Festival of the Lion King is best described as what?",
+      choices: ["A live musical celebration", "A boat ride", "A coaster", "A 3D movie"],
+      answer: "A live musical celebration",
+      fact:
+        "It blends music, acrobatics, costumes, puppetry, and audience energy into one of Animal Kingdom’s best reset shows.",
+    },
+    {
+      question: "Why is Festival of the Lion King so valuable on a hot Animal Kingdom day?",
+      choices: ["Seats and AC", "It sprays everyone", "It exits straight to the hotel", "It has no music"],
+      answer: "Seats and AC",
+      fact:
+        "Sometimes the smartest family move is sitting down in air conditioning before everyone melts.",
+    },
+  ],
+
+  "Expedition Everest - Legend of the Forbidden Mountain": [
+    {
+      question: "Expedition Everest is themed around which legendary creature?",
+      choices: ["The Yeti", "Bigfoot", "A dragon", "A kraken"],
+      answer: "The Yeti",
+      fact:
+        "The whole story is that your expedition enters a forbidden mountain protected by the Yeti.",
+    },
+    {
+      question: "What surprise does Everest include?",
+      choices: ["A backward section", "A water splash", "A spinning teacup section", "A 3D glasses scene"],
+      answer: "A backward section",
+      fact:
+        "The backward section is one reason Everest feels more intense than a standard family coaster.",
+    },
+    {
+      question: "Everest is located in which Animal Kingdom area?",
+      choices: ["Asia", "Africa", "Pandora", "Oasis"],
+      answer: "Asia",
+      fact:
+        "Asia is one of Animal Kingdom’s most walking-heavy areas, so nearby timing matters.",
+    },
+  ],
+
+  "Kali River Rapids": [
+    {
+      question: "What is the biggest practical warning for Kali River Rapids?",
+      choices: ["You may get soaked", "It is indoors", "It goes upside down", "It has no water"],
+      answer: "You may get soaked",
+      fact:
+        "Kali is not a tiny sprinkle ride. Someone can get absolutely drenched.",
+    },
+    {
+      question: "Kali’s story includes a message about what?",
+      choices: ["Conservation", "Space travel", "Toy repair", "Pirate treasure"],
+      answer: "Conservation",
+      fact:
+        "The ride moves through lush scenery and areas affected by logging to support its conservation theme.",
+    },
+  ],
+
+  "Zootopia: Better Zoogether!": [
+    {
+      question: "Zootopia: Better Zoogether! is located near which Animal Kingdom icon?",
+      choices: ["Tree of Life", "Expedition Everest", "Spaceship Earth", "Cinderella Castle"],
+      answer: "Tree of Life",
+      fact:
+        "It uses the Tree of Life Theater area, making it a convenient Discovery Island reset.",
+    },
+    {
+      question: "What kind of family moment should ParkPlan treat Zootopia as?",
+      choices: ["Indoor show reset", "Huge thrill ride", "Water ride", "Long train detour"],
+      answer: "Indoor show reset",
+      fact:
+        "It can be useful when the family needs seats, AC, and something easy near the center of the park.",
+    },
+  ],
+
+  "Finding Nemo: The Big Blue... and Beyond!": [
+    {
+      question: "Finding Nemo: The Big Blue... and Beyond! is what type of experience?",
+      choices: ["A live theater show", "A coaster", "A safari truck ride", "A boat flume"],
+      answer: "A live theater show",
+      fact:
+        "It uses performers, puppetry, staging, and songs instead of a ride vehicle.",
+    },
+    {
+      question: "Which character is most likely to say something like 'just keep swimming'?",
+      choices: ["Dory", "Marlin", "Bruce", "Crush"],
+      answer: "Dory",
+      fact:
+        "Dory energy is basically the official strategy for surviving a hot park day with kids.",
+    },
+  ],
+
+  "Bluey's Wild World at Conservation Station": [
+    {
+      question: "Bluey's Wild World is located in which Animal Kingdom area?",
+      choices: ["Rafiki’s Planet Watch", "Pandora", "Asia", "Oasis"],
+      answer: "Rafiki’s Planet Watch",
+      fact:
+        "That matters because it requires the Wildlife Express Train loop. It can be amazing, but it is not a quick detour.",
+    },
+    {
+      question: "For families with toddlers or preschoolers, Bluey’s Wild World may be what kind of stop?",
+      choices: ["An emotional anchor", "A thrill ride", "A fireworks show", "A water ride"],
+      answer: "An emotional anchor",
+      fact:
+        "For a Bluey-loving kid, this could be one of the memories the family talks about later.",
+    },
+    {
+      question: "Which Bluey game would be most dangerous in a crowded theme park line?",
+      choices: ["Keepy Uppy", "Dance Mode", "Shadowlands", "Magic Xylophone"],
+      answer: "Keepy Uppy",
+      fact:
+        "A balloon in a theme park queue would create immediate family chaos. Fun chaos, but chaos.",
+    },
+  ],
+
+  "Wildlife Express Train": [
+    {
+      question: "What is the most important strategy note for Wildlife Express Train?",
+      choices: ["It is a time commitment", "It is a thrill coaster", "It is inside Pandora", "It is a water ride"],
+      answer: "It is a time commitment",
+      fact:
+        "The train takes you out to Rafiki’s Planet Watch, so treat it like a planned block, not quick filler.",
+    },
+    {
+      question: "Where does Wildlife Express Train take guests?",
+      choices: ["Rafiki’s Planet Watch", "EPCOT", "Magic Kingdom", "Galaxy’s Edge"],
+      answer: "Rafiki’s Planet Watch",
+      fact:
+        "It is a great fit if your family wants Bluey, animal-care experiences, or a slower block away from the main park loop.",
+    },
+  ],
+
+  "Gorilla Falls Exploration Trail": [
+    {
+      question: "Gorilla Falls is best enjoyed how?",
+      choices: ["Slowly and self-paced", "As a roller coaster", "Only at night", "Without looking around"],
+      answer: "Slowly and self-paced",
+      fact:
+        "Animal trails work best when your family slows down and actually looks.",
+    },
+  ],
+
+  "Maharajah Jungle Trek": [
+    {
+      question: "Maharajah Jungle Trek is located in which area?",
+      choices: ["Asia", "Africa", "Pandora", "Oasis"],
+      answer: "Asia",
+      fact:
+        "It pairs naturally with Everest, Kali, and Feathered Friends if the family still has walking energy.",
+    },
+  ],
+
+  "Feathered Friends in Flight!": [
+    {
+      question: "Feathered Friends in Flight! focuses on what animals?",
+      choices: ["Birds", "Tigers", "Gorillas", "Dinosaurs"],
+      answer: "Birds",
+      fact:
+        "It uses trained bird behaviors, humor, and live demonstrations.",
+    },
+  ],
+
+  "Tree of Life": [
+    {
+      question: "The Tree of Life is covered with carvings of what?",
+      choices: ["Animals", "Planets", "Cars", "Pirates"],
+      answer: "Animals",
+      fact:
+        "There are hundreds of animal carvings built into the trunk and roots.",
+    },
+  ],
+
+  "Adventurers Outpost": [
+    {
+      question: "Adventurers Outpost is mainly known as what kind of experience?",
+      choices: ["Character meet-and-greet", "Water ride", "Coaster", "Train station"],
+      answer: "Character meet-and-greet",
+      fact:
+        "For character-focused families, this can be more emotionally important than a short wait-time calculation suggests.",
+    },
+  ],
+
+  "The Animation Experience at Conservation Station": [
+    {
+      question: "The Animation Experience lets guests do what?",
+      choices: ["Learn to draw a Disney character", "Ride a coaster", "Feed a banshee", "Drive a safari truck"],
+      answer: "Learn to draw a Disney character",
+      fact:
+        "It is a calmer creative break, but remember it is part of the Rafiki’s Planet Watch train loop.",
+    },
+  ],
+
+  "Affection Section": [
+    {
+      question: "Affection Section is best described as what?",
+      choices: ["Animal interaction area", "Roller coaster", "Indoor 4D show", "Boat ride"],
+      answer: "Animal interaction area",
+      fact:
+        "It can be a sweet slower moment for animal-loving kids if the family already committed to Rafiki’s Planet Watch.",
+    },
+  ],
+};
+
+const ANIMAL_KINGDOM_TRIVIA_BY_LAND = {
+  oasis: [
+    {
+      question: "The Oasis area is mostly designed to do what?",
+      choices: ["Ease you into the park", "Launch you into space", "Start a parade", "Hide a roller coaster"],
+      answer: "Ease you into the park",
+      fact:
+        "The Oasis sets the tone with paths, greenery, and animal exhibits before the park fully opens up.",
+    },
+  ],
+
+  discovery_island: [
+    {
+      question: "Discovery Island sits around which park icon?",
+      choices: ["Tree of Life", "Cinderella Castle", "Spaceship Earth", "Hollywood Tower Hotel"],
+      answer: "Tree of Life",
+      fact:
+        "It is the central connector for Animal Kingdom, so it matters a lot for family flow.",
+    },
+  ],
+
+  pandora: [
+    {
+      question: "Pandora is based on what movie world?",
+      choices: ["Avatar", "Zootopia", "The Lion King", "Moana"],
+      answer: "Avatar",
+      fact:
+        "Pandora is designed to feel alien, lush, glowing, and alive.",
+    },
+  ],
+
+  africa: [
+    {
+      question: "Africa is home to which major Animal Kingdom anchor?",
+      choices: ["Kilimanjaro Safaris", "TRON", "Slinky Dog Dash", "Frozen Ever After"],
+      answer: "Kilimanjaro Safaris",
+      fact:
+        "Safaris is one of the biggest reasons many families visit Animal Kingdom.",
+    },
+  ],
+
+  asia: [
+    {
+      question: "Asia is home to which mountain coaster?",
+      choices: ["Expedition Everest", "Big Thunder", "Space Mountain", "Seven Dwarfs Mine Train"],
+      answer: "Expedition Everest",
+      fact:
+        "Asia can be a great area when your group has thrill energy, but it is a meaningful walk from some parts of the park.",
+    },
+  ],
+
+  rafikis_planet_watch: [
+    {
+      question: "Rafiki’s Planet Watch usually requires what to reach it?",
+      choices: ["Wildlife Express Train", "Monorail", "Skyliner", "Boat from Magic Kingdom"],
+      answer: "Wildlife Express Train",
+      fact:
+        "That is why ParkPlan should treat it as a planned block, not a quick nearby filler.",
+    },
+  ],
+};
+
+const ANIMAL_KINGDOM_LOOK_AROUND_BY_RIDE = {
+  "Avatar Flight of Passage": [
+    {
+      task: "In the queue, find the avatar floating in the tank.",
+      hint: "The lab section is the big payoff before the link chamber.",
+    },
+    {
+      task: "Everyone pick whether the cave, lab, or link room feels the coolest.",
+      hint: "This queue changes tone a lot as you move through it.",
+    },
+  ],
+
+  "Na'vi River Journey": [
+    {
+      task: "Look for the most unusual glowing plant or creature before you board.",
+      hint: "Pandora hides details in the layers, not just the obvious places.",
+    },
+    {
+      task: "Everyone pick one color that feels most like Pandora.",
+      hint: "Blue and purple are strong choices, but let the kids argue.",
+    },
+  ],
+
+  "Kilimanjaro Safaris": [
+    {
+      task: "Everyone pick one animal they hope to see before boarding.",
+      hint: "Compare your picks after the safari.",
+    },
+    {
+      task: "Look for signs, crates, maps, or reserve details that make the area feel like a real expedition.",
+      hint: "The story starts before the truck.",
+    },
+  ],
+
+  "Festival of the Lion King": [
+    {
+      task: "Before the show, everyone pick which Lion King song they hope to hear.",
+      hint: "There are no wrong answers, but someone will absolutely pick Hakuna Matata.",
+    },
+    {
+      task: "Pick your family’s show role: singer, dancer, acrobat, drummer, or person enjoying the AC.",
+      hint: "The AC role is underrated.",
+    },
+  ],
+
+  "Expedition Everest - Legend of the Forbidden Mountain": [
+    {
+      task: "Find one expedition object: rope, gear, crate, map, boot, photo, or artifact.",
+      hint: "The queue is basically a museum of terrible mountain decisions.",
+    },
+    {
+      task: "Everyone pick who would keep hiking toward the Yeti and who would turn around immediately.",
+      hint: "Be honest. Survival matters.",
+    },
+  ],
+
+  "Kali River Rapids": [
+    {
+      task: "Look for prayer flags, carved details, bells, or signs of Anandapur while you wait.",
+      hint: "The queue is doing more storytelling than people notice.",
+    },
+    {
+      task: "Everyone vote who is most likely to get soaked.",
+      hint: "Do not say it too confidently. The raft hears you.",
+    },
+  ],
+
+  "Zootopia: Better Zoogether!": [
+    {
+      task: "Before the show, everyone pick which Zootopia district they would visit first.",
+      hint: "Tundratown, Sahara Square, Little Rodentia, and the Rainforest District all have strong arguments.",
+    },
+    {
+      task: "Pick who in your family is most like Judy, Nick, Flash, or Clawhauser.",
+      hint: "This could get very personal very fast.",
+    },
+  ],
+
+  "Finding Nemo: The Big Blue... and Beyond!": [
+    {
+      task: "Everyone pick which Nemo character matches their current park mood.",
+      hint: "Dory is optimism. Marlin is stress. Crush is vacation mode. The seagulls are snack mode.",
+    },
+    {
+      task: "Look for ocean colors, bubbles, or sea-life design details around the theater area.",
+      hint: "Animal Kingdom loves natural textures even near shows.",
+    },
+  ],
+
+  "Bluey's Wild World at Conservation Station": [
+    {
+      task: "Everyone pick which Bluey game your family would be best at.",
+      hint: "Dance Mode is dangerous if Dad commits too hard.",
+    },
+    {
+      task: "Before committing to the loop, do a family check: snack, water, bathroom, stroller, or patience?",
+      hint: "Rafiki’s is a block, not a quick pop-in.",
+    },
+  ],
+
+  "Wildlife Express Train": [
+    {
+      task: "Look for backstage animal-care buildings or train details as you ride.",
+      hint: "This is one of the few attractions where the travel is part of the point.",
+    },
+    {
+      task: "Everyone decide: is this a Bluey mission, animal mission, art mission, or reset mission?",
+      hint: "Knowing why you are going makes the time commitment feel better.",
+    },
+  ],
+
+  "Gorilla Falls Exploration Trail": [
+    {
+      task: "Move slowly and find one animal, bird, or habitat detail most people would walk past.",
+      hint: "Trails reward patient families.",
+    },
+  ],
+
+  "Maharajah Jungle Trek": [
+    {
+      task: "Find one detail that makes the area feel like ancient ruins.",
+      hint: "Look for murals, stonework, weathered walls, and carved shapes.",
+    },
+  ],
+
+  "Feathered Friends in Flight!": [
+    {
+      task: "Watch where the birds fly from and to. Can you spot the trainer cues?",
+      hint: "The show is training, trust, and timing.",
+    },
+  ],
+
+  "Tree of Life": [
+    {
+      task: "Pick one section of the Tree of Life and count how many animal carvings you can find in 60 seconds.",
+      hint: "There are way more animals than you notice at first.",
+    },
+  ],
+
+  "Adventurers Outpost": [
+    {
+      task: "Look for explorer or travel details around the meet-and-greet area.",
+      hint: "The theme is Mickey and Minnie as adventurers.",
+    },
+  ],
+
+  "The Animation Experience at Conservation Station": [
+    {
+      task: "Before class, everyone guesses which animal or character would be easiest to draw.",
+      hint: "The easiest-looking one is not always easy.",
+    },
+  ],
+
+  "Affection Section": [
+    {
+      task: "Everyone pick which animal interaction would make the best vacation story.",
+      hint: "The sillier the story, the better.",
+    },
+  ],
+};
+
+const ANIMAL_KINGDOM_LOOK_AROUND_BY_LAND = {
+  oasis: [
+    {
+      task: "Find one animal exhibit, water feature, or quiet path detail before reaching Discovery Island.",
+      hint: "Most families rush through the Oasis. Slow down for 30 seconds.",
+    },
+  ],
+  discovery_island: [
+    {
+      task: "Find three different animal carvings on or near the Tree of Life.",
+      hint: "Look at roots, branches, and carved surfaces.",
+    },
+  ],
+  pandora: [
+    {
+      task: "Find something that looks alive but might be a plant, animal, or alien rock.",
+      hint: "Pandora is intentionally weird.",
+    },
+  ],
+  africa: [
+    {
+      task: "Find a sign, drum, market detail, or animal-care clue that makes Harambe feel lived-in.",
+      hint: "Africa has some of the best environmental storytelling in the park.",
+    },
+  ],
+  asia: [
+    {
+      task: "Find prayer flags, bells, weathered signs, or mountain details nearby.",
+      hint: "Asia rewards looking up and around.",
+    },
+  ],
+  rafikis_planet_watch: [
+    {
+      task: "Find one animal-care or conservation detail that shows this area is more than just a character stop.",
+      hint: "Look for clinic, care, or learning details.",
+    },
+  ],
+};
+
+const ANIMAL_KINGDOM_FAMILY_VOTE_PROMPTS = [
+  {
+    prompt: "What does the family need most in Animal Kingdom right now?",
+    options: ["Shade", "Water", "AC seats", "A slower animal moment"],
+  },
+  {
+    prompt: "Pick the Animal Kingdom mission:",
+    options: ["Big thrill", "Animal spotting", "Bluey / kid magic", "Cool down and reset"],
+  },
+  {
+    prompt: "Who in the group would make the best safari guide?",
+    options: ["Animal expert", "Map reader", "Joke maker", "Person who packed snacks"],
+  },
+  {
+    prompt: "If the family joined an expedition, who gets each job?",
+    options: ["Leader", "Photographer", "Snack guard", "Person yelling “wait for me”"],
+  },
+  {
+    prompt: "Which Animal Kingdom area fits your family mood right now?",
+    options: ["Pandora wonder", "Africa animals", "Asia adventure", "Discovery Island reset"],
+  },
+  {
+    prompt: "Before committing to Rafiki’s Planet Watch, what must be checked?",
+    options: ["Time", "Bathroom", "Snacks/water", "Does the group actually want the train loop?"],
+  },
+];
+
+const ANIMAL_KINGDOM_WOULD_YOU_RATHER_PROMPTS = [
+  "Would you rather fly on a banshee over Pandora or ride in the front row on Everest?",
+  "Would you rather spot a lion on safari or see a gorilla up close on a trail?",
+  "Would you rather get totally soaked on Kali or walk across the park in full afternoon sun?",
+  "Would you rather have Bluey plan your family day or Timon and Pumbaa plan it?",
+  "Would you rather be able to talk to animals for one park day or teleport to any land instantly?",
+  "Would you rather sleep in a safe treehouse above the safari or inside a glowing cave in Pandora?",
+  "Would you rather draw a perfect Disney animal or take the perfect Tree of Life family photo?",
+  "Would you rather have a bird deliver your snacks or a goat carry your backpack?",
+  "Would you rather be the calm safari guide or the dramatic Everest expedition leader?",
+  "Would you rather find a secret animal trail or a secret air-conditioned lounge?",
+];
+
 const TRIVIA_BY_PARK_AND_RIDE = {
   magic_kingdom: MAGIC_KINGDOM_TRIVIA_BY_RIDE,
   epcot: EPCOT_TRIVIA_BY_RIDE,
   hollywood: HOLLYWOOD_TRIVIA_BY_RIDE,
+  animal_kingdom: ANIMAL_KINGDOM_TRIVIA_BY_RIDE,
 };
 
 const TRIVIA_BY_PARK_AND_LAND = {
   magic_kingdom: MAGIC_KINGDOM_TRIVIA_BY_LAND,
   epcot: {},
   hollywood: {},
+  animal_kingdom: ANIMAL_KINGDOM_TRIVIA_BY_LAND,
 };
 
 const LOOK_AROUND_BY_PARK_AND_RIDE = {
   magic_kingdom: LOOK_AROUND_BY_RIDE,
   epcot: EPCOT_LOOK_AROUND_BY_RIDE,
   hollywood: HOLLYWOOD_LOOK_AROUND_BY_RIDE,
+  animal_kingdom: ANIMAL_KINGDOM_LOOK_AROUND_BY_RIDE,
 };
 
 const LOOK_AROUND_BY_PARK_AND_LAND = {
   magic_kingdom: LOOK_AROUND_BY_LAND,
   epcot: {},
   hollywood: {},
+  animal_kingdom: ANIMAL_KINGDOM_LOOK_AROUND_BY_LAND,
 };
 
 const FAMILY_VOTE_BY_PARK = {
   magic_kingdom: FAMILY_VOTE_PROMPTS,
   epcot: EPCOT_FAMILY_VOTE_PROMPTS,
   hollywood: HOLLYWOOD_FAMILY_VOTE_PROMPTS,
+  animal_kingdom: ANIMAL_KINGDOM_FAMILY_VOTE_PROMPTS,
 };
 
 const WOULD_YOU_RATHER_BY_PARK = {
   magic_kingdom: WOULD_YOU_RATHER_PROMPTS,
   epcot: EPCOT_WOULD_YOU_RATHER_PROMPTS,
   hollywood: HOLLYWOOD_WOULD_YOU_RATHER_PROMPTS,
+  animal_kingdom: ANIMAL_KINGDOM_WOULD_YOU_RATHER_PROMPTS,
 };
 
 
@@ -1739,6 +2318,80 @@ function getRideNameAliases(value) {
   if (normalized.includes("star tours")) {
     aliases.add("star tours the adventures continue");
     aliases.add("star tours");
+  }
+
+  if (normalized.includes("flight of passage") || normalized.includes("avatar")) {
+    aliases.add("avatar flight of passage");
+    aliases.add("flight of passage");
+  }
+
+  if (normalized.includes("navi") || normalized.includes("na vi")) {
+    aliases.add("navi river journey");
+    aliases.add("na vi river journey");
+  }
+
+  if (normalized.includes("kilimanjaro") || normalized.includes("safaris")) {
+    aliases.add("kilimanjaro safaris");
+    aliases.add("safaris");
+  }
+
+  if (normalized.includes("lion king")) {
+    aliases.add("festival of the lion king");
+  }
+
+  if (normalized.includes("everest")) {
+    aliases.add("expedition everest legend of the forbidden mountain");
+    aliases.add("expedition everest");
+  }
+
+  if (normalized.includes("kali")) {
+    aliases.add("kali river rapids");
+  }
+
+  if (normalized.includes("zootopia") || normalized.includes("better zoogether")) {
+    aliases.add("zootopia better zoogether");
+  }
+
+  if (normalized.includes("bluey")) {
+    aliases.add("blueys wild world at conservation station");
+    aliases.add("bluey wild world");
+  }
+
+  if (normalized.includes("wildlife express")) {
+    aliases.add("wildlife express train");
+  }
+
+  if (normalized.includes("nemo") || normalized.includes("big blue")) {
+    aliases.add("finding nemo the big blue and beyond");
+  }
+
+  if (normalized.includes("gorilla falls")) {
+    aliases.add("gorilla falls exploration trail");
+  }
+
+  if (normalized.includes("maharajah")) {
+    aliases.add("maharajah jungle trek");
+  }
+
+  if (normalized.includes("feathered friends")) {
+    aliases.add("feathered friends in flight");
+  }
+
+  if (normalized.includes("tree of life")) {
+    aliases.add("tree of life");
+  }
+
+  if (normalized.includes("adventurers outpost")) {
+    aliases.add("adventurers outpost");
+  }
+
+  if (normalized.includes("animation experience")) {
+    aliases.add("the animation experience at conservation station");
+    aliases.add("animation experience");
+  }
+
+  if (normalized.includes("affection section")) {
+    aliases.add("affection section");
   }
 
   return aliases;
