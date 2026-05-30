@@ -7,6 +7,7 @@ import { getNextBestRides } from "./rideRecommendations";
 import { getWeatherMode, getRecoverySuggestions } from "./utils/weatherAdvice";
 import { formatCloseTimeLabel } from "./parkHours";
 import { getRideExperienceContent } from "./rideExperienceContent";
+import { getRideMeta } from "./rideMetadata";
 import { shouldShowRideInWaitList } from "./attractionDisplayFilters";
 import { getMiniGameForContext, MINI_GAME_TYPES } from "./data/miniGames/magicKingdomMiniGames";
 import { detectNearestLocationZone, getCurrentPosition } from "./utils/locationDetection";
@@ -383,6 +384,10 @@ function formatLandLabel(parkId, land) {
   };
 
   return labels[parkId]?.[land] || land || "Unknown area";
+}
+
+function getRideMetaForDisplay(parkId, ride) {
+  return getRideMeta(parkId, ride?.id ?? ride?.name) || getRideMeta(parkId, ride?.name);
 }
 
 function App() {
@@ -847,7 +852,8 @@ function App() {
   }
 
   function renderShowtimeInfo(ride) {
-    const showProfile = ride?.showProfile;
+    const meta = getRideMetaForDisplay(activePark, ride);
+    const showProfile = ride?.showProfile || meta?.showProfile;
 
     if (!showProfile?.showtimes?.length) return null;
 
@@ -1735,6 +1741,7 @@ function App() {
                     </div>
                   </div>
 
+                  {renderShowtimeInfo(ride)}
                   {renderRideActions(ride)}
                 </div>
               );
