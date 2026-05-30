@@ -110,6 +110,37 @@ const LAND_OPTIONS = {
       label: "Commissary Lane / near ABC Commissary, Sci-Fi Dine-In",
     },
   ],
+
+  animal_kingdom: [
+    {
+      value: "oasis",
+      label: "Oasis / near front entrance, ticket tapstiles, Oasis trails",
+    },
+    {
+      value: "discovery_island",
+      label: "Discovery Island / near Tree of Life, Zootopia, Nemo, Adventurers Outpost, Flame Tree",
+    },
+    {
+      value: "pandora",
+      label: "Pandora / near Flight of Passage, Na’vi River Journey, Satu’li Canteen",
+    },
+    {
+      value: "africa",
+      label: "Africa / near Kilimanjaro Safaris, Festival of the Lion King, Gorilla Falls, Harambe",
+    },
+    {
+      value: "asia",
+      label: "Asia / near Expedition Everest, Kali River Rapids, Maharajah Jungle Trek, Yak & Yeti",
+    },
+    {
+      value: "rafikis_planet_watch",
+      label: "Rafiki’s Planet Watch / near Bluey’s Wild World, Animation Experience, Affection Section",
+    },
+    {
+      value: "tropical_americas_construction",
+      label: "Tropical Americas construction / former DinoLand side, near Nemo theater path",
+    },
+  ],
 };
 
 function getDefaultLandForPark(parkId) {
@@ -338,6 +369,16 @@ function formatLandLabel(parkId, land) {
       toy_story_land: "Toy Story Land",
       animation_courtyard: "Animation Courtyard",
       commissary_lane: "Commissary Lane",
+    },
+
+    animal_kingdom: {
+      oasis: "Oasis",
+      discovery_island: "Discovery Island",
+      pandora: "Pandora",
+      africa: "Africa",
+      asia: "Asia",
+      rafikis_planet_watch: "Rafiki’s Planet Watch",
+      tropical_americas_construction: "Tropical Americas Construction",
     },
   };
 
