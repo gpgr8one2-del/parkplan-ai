@@ -153,17 +153,21 @@ function getOrCreateSessionId() {
 }
 
 function sanitizeTimeContext(timeContext = {}) {
-  return {
+  if (!timeContext) return null;
+
+  return removeEmptyFields({
     orlandoDate: timeContext.orlandoDate,
     orlandoTimeLabel: timeContext.orlandoTimeLabel,
     dayPhase: timeContext.dayPhase,
     planningMode: timeContext.planningMode,
     tripStatus: timeContext.tripStatus?.status,
-  };
+  });
 }
 
 function sanitizeFamilyProfileSnapshot(familyProfile = {}) {
-  return {
+  if (!familyProfile) return null;
+
+  return removeEmptyFields({
     adultCount: familyProfile.adultCount ?? null,
     childCount: familyProfile.childCount ?? null,
     partySize: familyProfile.partySize ?? null,
@@ -189,13 +193,13 @@ function sanitizeFamilyProfileSnapshot(familyProfile = {}) {
     stayingOnProperty: familyProfile.resortContext?.stayingOnProperty,
     resortId: familyProfile.resortContext?.resortId,
     transportationMode: familyProfile.resortContext?.transportationMode,
-  };
+  });
 }
 
 function sanitizeRecommendation(recommendation = {}, slot = "") {
   if (!recommendation) return null;
 
-  return {
+  return removeEmptyFields({
     slot,
     rideId: recommendation.id,
     rideName: recommendation.name,
@@ -205,14 +209,17 @@ function sanitizeRecommendation(recommendation = {}, slot = "") {
     recommendationScore: recommendation.recommendationScore,
     familyProfileModifier: recommendation.familyProfileModifier,
     planAheadRealityCheckModifier: recommendation.planAheadRealityCheckModifier,
+    crossParkRealityModifier: recommendation.crossParkRealityModifier,
+    positiveStackCapModifier: recommendation.positiveStackCapModifier,
+    proximityDistance: recommendation.proximityDistance,
     heightWarning: Boolean(recommendation.heightWarning),
-  };
+  });
 }
 
 function sanitizeLocationContext(locationContext = {}) {
   if (!locationContext) return null;
 
-  return {
+  return removeEmptyFields({
     source: locationContext.source || locationContext.type,
     landKey: locationContext.landKey || locationContext.land,
     landLabel: locationContext.landLabel,
@@ -220,19 +227,136 @@ function sanitizeLocationContext(locationContext = {}) {
     nearestAnchorType: locationContext.nearestAnchorType,
     confidence: locationContext.confidence,
     distanceMeters: locationContext.distanceMeters,
-  };
+  });
 }
 
-/**
- * Anonymous product analytics.
- *
- * Privacy guardrails:
- * - Do not send names, emails, raw GPS coordinates, child names, or full AI chat text.
- * - Use behavior signals only: actions, profile categories, recommendation decisions.
- * - This is fire-and-forget so analytics never breaks the guest experience.
- */
-export function trackEvent(eventType, payload = {}) {
-  const event = {
+function truncateString(value, maxLength = 500) {
+  if (typeof value !== "string") return value;
+  return value.length > maxLength ? `${value.slice(0, maxLength)}…` : value;
+}
+
+function sanitizeMetadata(value) {
+  if (value == null) return undefined;
+
+  if (Array.isArray(value)) {
+    return value.slice(0, 30).map(sanitizeMetadata).filter((item) => item !== undefined);
+  }
+
+  if (typeof value === "object") {
+    const cleaned = {};
+
+    Object.entries(value).forEach(([key, item]) => {
+      // Never allow obvious sensitive/raw fields into analytics metadata.
+      if (
+        [
+          "message",
+          "chat",
+          "conversation",
+          "conversationHistory",
+          "email",
+          "name",
+          "childName",
+          "lat",
+          "lng",
+          "latitude",
+          "longitude",
+          "rawPosition",
+          "coords",
+        ].includes(key)
+      ) {
+        return;
+      }
+
+      const cleanedValue = sanitizeMetadata(item);
+
+      if (cleanedValue !== undefined) {
+        cleaned[key] = cleanedValue;
+      }
+    });
+
+    return Object.keys(cleaned).length ? cleaned : undefined;
+  }
+
+  if (typeof value === "string") return truncateString(value, 500);
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value === "boolean") return value;
+
+  return undefined;
+}
+
+function removeEmptyFields(object = {}) {
+  const cleaned = {};
+
+  Object.entries(object).forEach(([key, value]) => {
+    if (value === undefined) return;
+    if (value === null) {
+      cleaned[key] = value;
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      cleaned[key] = value;
+      return;
+    }
+
+    if (typeof value === "object") {
+      const nested = removeEmptyFields(value);
+
+      if (Object.keys(nested).length > 0) {
+        cleaned[key] = nested;
+      }
+
+      return;
+    }
+
+    cleaned[key] = value;
+  });
+
+  return cleaned;
+}
+
+function shouldIncludeFamilyProfile(eventType) {
+  return (
+    eventType === "profile_completed" ||
+    eventType === "profile_completion_blocked" ||
+    eventType === "profile_screen_viewed" ||
+    eventType.startsWith("recommendation_") ||
+    eventType === "ride_issue_reported"
+  );
+}
+
+function shouldIncludeTimeContext(eventType) {
+  return (
+    eventType === "profile_completed" ||
+    eventType === "profile_completion_blocked" ||
+    eventType.startsWith("recommendation_") ||
+    eventType === "ride_issue_reported" ||
+    eventType === "ai_chat_sent" ||
+    eventType === "location_detected" ||
+    eventType === "location_failed"
+  );
+}
+
+function shouldIncludeRecommendation(eventType, payload = {}) {
+  return Boolean(
+    payload.recommendation &&
+      (eventType.startsWith("recommendation_") || eventType === "ride_issue_reported")
+  );
+}
+
+function shouldIncludeLocationContext(eventType, payload = {}) {
+  return Boolean(
+    payload.locationContext &&
+      (eventType === "location_detected" ||
+        eventType === "location_failed" ||
+        eventType === "manual_location_selected" ||
+        eventType.startsWith("recommendation_") ||
+        eventType === "ride_issue_reported")
+  );
+}
+
+function buildAnalyticsEvent(eventType, payload = {}) {
+  const baseEvent = {
     eventType,
     sessionId: getOrCreateSessionId(),
     anonymousUserId: getOrCreateAnonymousUserId(),
@@ -245,16 +369,43 @@ export function trackEvent(eventType, payload = {}) {
 
     profileComplete: payload.profileComplete,
     devPreviewFullApp: payload.devPreviewFullApp,
-
-    timeContext: sanitizeTimeContext(payload.timeContext),
-    familyProfileSnapshot: sanitizeFamilyProfileSnapshot(payload.familyProfile),
-    recommendation: payload.recommendation
-      ? sanitizeRecommendation(payload.recommendation, payload.recommendationSlot)
-      : undefined,
     action: payload.action,
-    locationContext: sanitizeLocationContext(payload.locationContext),
-    metadata: payload.metadata,
+    metadata: sanitizeMetadata(payload.metadata),
   };
+
+  if (shouldIncludeTimeContext(eventType)) {
+    baseEvent.timeContext = sanitizeTimeContext(payload.timeContext);
+  }
+
+  if (shouldIncludeFamilyProfile(eventType)) {
+    baseEvent.familyProfileSnapshot = sanitizeFamilyProfileSnapshot(payload.familyProfile);
+  }
+
+  if (shouldIncludeRecommendation(eventType, payload)) {
+    baseEvent.recommendation = sanitizeRecommendation(
+      payload.recommendation,
+      payload.recommendationSlot
+    );
+  }
+
+  if (shouldIncludeLocationContext(eventType, payload)) {
+    baseEvent.locationContext = sanitizeLocationContext(payload.locationContext);
+  }
+
+  return removeEmptyFields(baseEvent);
+}
+
+/**
+ * Anonymous product analytics.
+ *
+ * Privacy guardrails:
+ * - Do not send names, emails, raw GPS coordinates, child names, or full AI chat text.
+ * - Use behavior signals only: actions, profile categories, recommendation decisions.
+ * - Only include family/time/location context on events where that context is actually useful.
+ * - This is fire-and-forget so analytics never breaks the guest experience.
+ */
+export function trackEvent(eventType, payload = {}) {
+  const event = buildAnalyticsEvent(eventType, payload);
 
   // Do not use apiFetch here. Events should not retry aggressively or block UX.
   fetch(`${BASE_URL}/api/events`, {
