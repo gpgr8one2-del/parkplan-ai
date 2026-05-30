@@ -36,7 +36,7 @@ const LAND_OPTIONS = {
     },
     {
       value: "frontierland",
-      label: "Frontierland / near Big Thunder, Tianaâs, Country Bears",
+      label: "Frontierland / near Big Thunder, Tiana’s, Country Bears",
     },
     {
       value: "liberty_square",
@@ -63,7 +63,7 @@ const LAND_OPTIONS = {
     },
     {
       value: "world_nature",
-      label: "World Nature / near Soarinâ, The Land, The Seas, Moana",
+      label: "World Nature / near Soarin’, The Land, The Seas, Moana",
     },
     {
       value: "world_showcase_west",
@@ -82,11 +82,11 @@ const LAND_OPTIONS = {
   hollywood: [
     {
       value: "hollywood_boulevard",
-      label: "Hollywood Boulevard / near Mickey & Minnieâs Runaway Railway",
+      label: "Hollywood Boulevard / near Mickey & Minnie’s Runaway Railway",
     },
     {
       value: "sunset_boulevard",
-      label: "Sunset Boulevard / near Tower of Terror, Rock ânâ Roller",
+      label: "Sunset Boulevard / near Tower of Terror, Rock ’n’ Roller",
     },
     {
       value: "echo_lake",
@@ -98,7 +98,7 @@ const LAND_OPTIONS = {
     },
     {
       value: "star_wars_galaxys_edge",
-      label: "Galaxyâs Edge / near Rise, Falcon, Docking Bay 7",
+      label: "Galaxy’s Edge / near Rise, Falcon, Docking Bay 7",
     },
     {
       value: "toy_story_land",
@@ -125,7 +125,7 @@ const LAND_OPTIONS = {
     },
     {
       value: "pandora",
-      label: "Pandora / near Flight of Passage, Naâvi River Journey, Satuâli Canteen",
+      label: "Pandora / near Flight of Passage, Na’vi River Journey, Satu’li Canteen",
     },
     {
       value: "africa",
@@ -137,7 +137,7 @@ const LAND_OPTIONS = {
     },
     {
       value: "rafikis_planet_watch",
-      label: "Rafikiâs Planet Watch / near Blueyâs Wild World, Animation Experience, Affection Section",
+      label: "Rafiki’s Planet Watch / near Bluey’s Wild World, Animation Experience, Affection Section",
     },
     {
       value: "tropical_americas_construction",
@@ -352,7 +352,7 @@ function writeDevPreviewFullApp(enabled) {
 
     localStorage.setItem(DEV_PREVIEW_STORAGE_KEY, enabled ? "true" : "false");
   } catch (err) {
-    console.warn("ParkPlan: could not save dev preview flag", err);
+    console.warn("TOHI: could not save dev preview flag", err);
   }
 }
 
@@ -518,7 +518,7 @@ function writeStoredFamilyProfile(profile) {
       JSON.stringify(normalizeFamilyProfile(profile))
     );
   } catch (err) {
-    console.warn("ParkPlan: could not save family profile", err);
+    console.warn("TOHI: could not save family profile", err);
   }
 }
 
@@ -625,7 +625,7 @@ function writeStoredParkState(parkId, parkState) {
     stored[parkId] = parkState;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
   } catch (err) {
-    console.warn("ParkPlan: could not save state", err);
+    console.warn("TOHI: could not save state", err);
   }
 }
 
@@ -705,18 +705,18 @@ function buildLocalChatFallback({
     const posted = currentActivityContext.postedWaitAtStart;
     const rideName = currentActivityContext.rideName || "this ride";
     const elapsedText =
-      elapsed != null ? `youâve already waited about ${elapsed} minutes` : "youâre already in line";
+      elapsed != null ? `you’ve already waited about ${elapsed} minutes` : "you’re already in line";
     const postedText =
       posted != null ? `the posted wait was ${posted} minutes when you joined` : "I do not have the original posted wait";
 
-    return `Iâm having trouble reaching AI chat right now, but hereâs the safe ParkPlan call: since ${elapsedText} for ${rideName} and ${postedText}, donât automatically bail unless the line has stopped, someone feels overheated, or the kids are close to a true meltdown. If the line is moving and this ride matters to your family, try to finish it, then make food, water, and AC the immediate next move.`;
+    return `I’m having trouble reaching AI chat right now, but here’s the safe TOHI call: since ${elapsedText} for ${rideName} and ${postedText}, don’t automatically bail unless the line has stopped, someone feels overheated, or the kids are close to a true meltdown. If the line is moving and this ride matters to your family, try to finish it, then make food, water, and AC the immediate next move.`;
   }
 
   if (weatherMode?.mode && weatherMode.mode !== "normal") {
-    return `Iâm having trouble reaching AI chat right now, but based on current weather mode, keep the plan simple: favor nearby indoor options, water, shade, food, or a seated reset before chasing a farther ride.`;
+    return `I’m having trouble reaching AI chat right now, but based on current weather mode, keep the plan simple: favor nearby indoor options, water, shade, food, or a seated reset before chasing a farther ride.`;
   }
 
-  return "Iâm having trouble reaching AI chat right now. Try again in a minute. If the family is tired or hot, use this as a good moment for water, AC, food, or a nearby low-stress ride before making a big walk.";
+  return "I’m having trouble reaching AI chat right now. Try again in a minute. If the family is tired or hot, use this as a good moment for water, AC, food, or a nearby low-stress ride before making a big walk.";
 }
 
 function buildWeatherDisplay(weather) {
@@ -725,7 +725,7 @@ function buildWeatherDisplay(weather) {
   const parts = [];
 
   if (weather.tempF != null) {
-    parts.push(`${weather.tempF}Â°F`);
+    parts.push(`${weather.tempF}°F`);
   }
 
   if (
@@ -733,7 +733,7 @@ function buildWeatherDisplay(weather) {
     weather.tempF != null &&
     Math.abs(weather.feelsLikeF - weather.tempF) >= 2
   ) {
-    parts.push(`feels like ${weather.feelsLikeF}Â°F`);
+    parts.push(`feels like ${weather.feelsLikeF}°F`);
   }
 
   if (weather.humidity != null) {
@@ -748,7 +748,7 @@ function buildWeatherDisplay(weather) {
     parts.push("Storm Mode active");
   }
 
-  return parts.length ? parts.join(" Â· ") : "Loading weather...";
+  return parts.length ? parts.join(" · ") : "Loading weather...";
 }
 
 function formatLandLabel(parkId, land) {
@@ -778,7 +778,7 @@ function formatLandLabel(parkId, land) {
       sunset_boulevard: "Sunset Boulevard",
       echo_lake: "Echo Lake",
       grand_avenue: "Grand Avenue",
-      star_wars_galaxys_edge: "Star Wars: Galaxyâs Edge",
+      star_wars_galaxys_edge: "Star Wars: Galaxy’s Edge",
       toy_story_land: "Toy Story Land",
       animation_courtyard: "Animation Courtyard",
       commissary_lane: "Commissary Lane",
@@ -790,7 +790,7 @@ function formatLandLabel(parkId, land) {
       pandora: "Pandora",
       africa: "Africa",
       asia: "Asia",
-      rafikis_planet_watch: "Rafikiâs Planet Watch",
+      rafikis_planet_watch: "Rafiki’s Planet Watch",
       tropical_americas_construction: "Tropical Americas Construction",
     },
   };
@@ -1075,7 +1075,7 @@ function App() {
         if (!silent) {
           setLocationError(
             denied
-              ? "Location permission was denied. No problem â pick the closest area manually."
+              ? "Location permission was denied. No problem — pick the closest area manually."
               : "I could not get your location right now. Pick the closest area manually."
           );
         }
@@ -1609,7 +1609,7 @@ function App() {
   }
 
   function triggerMiniCelebration() {
-    const shapes = ["ð", "â¨", "ð", "â­"];
+    const shapes = ["🎈", "✨", "🎉", "⭐"];
     const pieces = Array.from({ length: 18 }, (_, index) => ({
       id: `${Date.now()}_${index}`,
       left: 12 + Math.random() * 76,
@@ -1755,17 +1755,17 @@ function App() {
                 color: "#64748b",
               }}
             >
-              â View basic waits
+              ← View basic waits
             </button>
 
             <div style={premiumHeroCard}>
               <span style={premiumBadge}>TOHI Trip Setup</span>
               <h1 style={{ fontSize: 34, margin: "10px 0 0", letterSpacing: -1 }}>
-                Build your familyâs park plan
+                Build your family’s park plan
               </h1>
               <p style={{ color: "#475569", marginTop: 8, lineHeight: 1.5 }}>
-                Every family does the parks differently. Tell TOHI whoâs going,
-                where youâre staying, and what kind of day you want â then weâll
+                Every family does the parks differently. Tell TOHI who’s going,
+                where you’re staying, and what kind of day you want — then we’ll
                 help you make smarter, calmer choices in the park.
               </p>
 
@@ -1836,17 +1836,17 @@ function App() {
                 {stepDescription}
               </p>
               <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 12 }}>
-                {summary.partySize} guests Â· {summary.ageSummary.under3Count} under 3 Â·{" "}
-                {summary.ageSummary.childCount} Disney child Â·{" "}
-                {summary.ageSummary.disneyAdultCount} Disney adult Â· {shortestHeightText}
+                {summary.partySize} guests · {summary.ageSummary.under3Count} under 3 ·{" "}
+                {summary.ageSummary.childCount} Disney child ·{" "}
+                {summary.ageSummary.disneyAdultCount} Disney adult · {shortestHeightText}
               </p>
               <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 12 }}>
-                First park: {getParkLabel(summary.tripContext.firstPark)} Â· Priority park:{" "}
-                {getParkLabel(summary.tripContext.priorityPark)} Â· {summary.tripAccessStatus.message}
+                First park: {getParkLabel(summary.tripContext.firstPark)} · Priority park:{" "}
+                {getParkLabel(summary.tripContext.priorityPark)} · {summary.tripAccessStatus.message}
               </p>
               <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 12 }}>
-                Ride comfort: {summary.thrillTolerance || "not set"} Â·
-                Walking: {summary.walkingTolerance || "not set"} Â·
+                Ride comfort: {summary.thrillTolerance || "not set"} ·
+                Walking: {summary.walkingTolerance || "not set"} ·
                 Heat: {summary.heatSensitivity || "not set"}
               </p>
             </div>
@@ -1854,10 +1854,10 @@ function App() {
             {familyProfileStep === 1 && (
               <div style={{ display: "grid", gap: 14 }}>
                 <div>
-                  <strong>Whoâs in your group?</strong>
+                  <strong>Who’s in your group?</strong>
                   <p style={{ margin: "5px 0 10px", color: "#64748b", fontSize: 13 }}>
-                    Adults do not need height entry. We only need childrenâs ages and
-                    heights so ParkPlan can avoid rides they cannot ride.
+                    Adults do not need height entry. We only need children’s ages and
+                    heights so TOHI can avoid rides they cannot ride.
                   </p>
 
                   <div
@@ -2000,7 +2000,7 @@ function App() {
                     >
                       <strong>Adults-only group</strong>
                       <p style={{ margin: "6px 0 0", color: "#334155", fontSize: 13 }}>
-                        No child heights needed. ParkPlan will not apply child-height
+                        No child heights needed. TOHI will not apply child-height
                         restrictions unless you add children later.
                       </p>
                     </div>
@@ -2011,7 +2011,7 @@ function App() {
                   <strong>Trip length and parks</strong>
                   <p style={{ margin: "5px 0 10px", color: "#64748b", fontSize: 13 }}>
                     Dates help control when AI chat should be available later and let
-                    ParkPlan understand whether this is pre-trip planning or an active park day.
+                    TOHI understand whether this is pre-trip planning or an active park day.
                   </p>
 
                   <div style={{ display: "grid", gap: 10, marginTop: 8 }}>
@@ -2152,8 +2152,8 @@ function App() {
                         }}
                       >
                         <option value="unknown">Not sure yet</option>
-                        <option value="no">No â one park per day</option>
-                        <option value="yes">Yes â planning to park hop</option>
+                        <option value="no">No — one park per day</option>
+                        <option value="yes">Yes — planning to park hop</option>
                       </select>
                     </label>
                   </div>
@@ -2405,7 +2405,7 @@ function App() {
                     lineHeight: 1.45,
                   }}
                 >
-                  Weâll ask about rope drop, meals, breaks, and deeper planning later
+                  We’ll ask about rope drop, meals, breaks, and deeper planning later
                   when it actually matters. This keeps setup fast while still giving
                   TOHI enough to avoid bad recommendations.
                 </div>
@@ -2437,7 +2437,7 @@ function App() {
                       color: "white",
                     }}
                   >
-                    Next: Where Youâre Staying
+                    Next: Where You’re Staying
                   </button>
                 </div>
               </div>
@@ -2448,7 +2448,7 @@ function App() {
                 <div>
                   <strong>Trip context</strong>
                   <p style={{ margin: "5px 0 10px", color: "#64748b", fontSize: 13 }}>
-                    Resort context helps ParkPlan give realistic break, rope-drop, and
+                    Resort context helps TOHI give realistic break, rope-drop, and
                     transportation advice.
                   </p>
 
@@ -2536,7 +2536,7 @@ function App() {
                           >
                             <strong>{familyProfileSummary.resortProfile.name}</strong>
                             <p style={{ margin: "6px 0 0", color: "#334155", fontSize: 13 }}>
-                              {familyProfileSummary.resortProfile.areaLabel} Â· Transportation:{" "}
+                              {familyProfileSummary.resortProfile.areaLabel} · Transportation:{" "}
                               {familyProfileSummary.resortProfile.transportation.join(", ")}
                             </p>
 
@@ -2638,7 +2638,7 @@ function App() {
                 >
                   <strong>Disney classification reminder</strong>
                   <p style={{ margin: "6px 0 0", color: "#334155", fontSize: 13 }}>
-                    Ages 0â2 are under 3 / no ticket. Ages 3â9 are Disney child.
+                    Ages 0–2 are under 3 / no ticket. Ages 3–9 are Disney child.
                     Ages 10+ count as Disney adults for tickets and dining.
                   </p>
                 </div>
@@ -2838,7 +2838,7 @@ function App() {
             fontWeight: 700,
           }}
         >
-          {showProfile.showtimes.join(" Â· ")}
+          {showProfile.showtimes.join(" · ")}
         </p>
 
         {showProfile.recommendedShowtimes?.length > 0 && (
@@ -2851,7 +2851,7 @@ function App() {
           <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 12 }}>
             Arrival buffer:{" "}
             {showProfile.middayArrivalBufferMinutes
-              ? `${showProfile.arrivalBufferMinutes || 15}â${showProfile.middayArrivalBufferMinutes} min depending on heat/crowds`
+              ? `${showProfile.arrivalBufferMinutes || 15}–${showProfile.middayArrivalBufferMinutes} min depending on heat/crowds`
               : `${showProfile.arrivalBufferMinutes} min`}
           </p>
         )}
@@ -3301,10 +3301,10 @@ function App() {
           >
             <div>
               <h1 style={{ fontSize: 36, margin: 0, letterSpacing: -1 }}>
-                ParkPlan AI
+                TOHI
               </h1>
               <p style={{ color: "#64748b", marginTop: 6 }}>
-                Smart park planning for Disney World and Universal Orlando.
+                A calm family park companion for Disney World and Universal Orlando.
               </p>
             </div>
 
@@ -3331,7 +3331,7 @@ function App() {
             </h2>
             <p style={{ margin: 0, color: "#475569", lineHeight: 1.5 }}>
               You can still browse live waits and weather, but personalized Best Move,
-              AI guidance, height filtering, resort-break logic, and day-of support need
+              TOHI guidance, height filtering, resort-break logic, and day-of support need
               your family trip setup first.
             </p>
 
@@ -3431,7 +3431,7 @@ function App() {
               </div>
               <p style={{ margin: "7px 0 0", color: "#64748b", fontSize: 13 }}>
                 {sortedRides.length} rides loaded
-                {closeTimeLabel ? ` Â· closes ${closeTimeLabel}` : ""}
+                {closeTimeLabel ? ` · closes ${closeTimeLabel}` : ""}
               </p>
             </div>
 
@@ -3528,8 +3528,8 @@ function App() {
           </p>
 
           <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 13 }}>
-            Mode: {timeContext.planningMode.replace(/_/g, " ")} Â· AI:{" "}
-            {access.canUseAiChat ? "available" : "not available"} Â· {access.aiLockedReason}
+            Mode: {timeContext.planningMode.replace(/_/g, " ")} · AI:{" "}
+            {access.canUseAiChat ? "available" : "not available"} · {access.aiLockedReason}
           </p>
         </section>
 
@@ -3584,15 +3584,15 @@ function App() {
                 ? `Posted wait when you joined: ${currentActivity.postedWaitAtStart} min`
                 : "You marked this as your current line."}
               {currentActivity.startedAt
-                ? ` Â· Started around ${formatActivityStartTime(currentActivity.startedAt)}`
+                ? ` · Started around ${formatActivityStartTime(currentActivity.startedAt)}`
                 : ""}
               {currentActivityContext?.elapsedMinutesInLine != null
-                ? ` Â· About ${currentActivityContext.elapsedMinutesInLine} min in line`
+                ? ` · About ${currentActivityContext.elapsedMinutesInLine} min in line`
                 : ""}
             </p>
 
             <p style={{ margin: "0 0 12px", color: "#334155" }}>
-              Iâll stop recommending this against itself while youâre waiting. Mark it
+              I’ll stop recommending this against itself while you’re waiting. Mark it
               done when you finish, or cancel if you leave the line.
             </p>
 
@@ -3713,10 +3713,10 @@ function App() {
               >
                 Auto-updates while the app is open
                 {lastAutoUpdateAt
-                  ? ` Â· waits/weather ${formatAutoUpdateTime(lastAutoUpdateAt)}`
+                  ? ` · waits/weather ${formatAutoUpdateTime(lastAutoUpdateAt)}`
                   : ""}
                 {lastLocationUpdateAt
-                  ? ` Â· location ${formatAutoUpdateTime(lastLocationUpdateAt)}`
+                  ? ` · location ${formatAutoUpdateTime(lastLocationUpdateAt)}`
                   : ""}
               </p>
             )}
@@ -3774,7 +3774,7 @@ function App() {
             >
               <strong>Ride issue reported</strong>
               <p style={{ margin: "6px 0 0", color: "#64748b" }}>
-                Iâll avoid recommending reported rides for now. Use reset to bring
+                I’ll avoid recommending reported rides for now. Use reset to bring
                 them back once things look normal.
               </p>
             </div>
@@ -3991,7 +3991,7 @@ function App() {
 
           <p style={{ marginTop: -4, color: "#64748b", fontSize: 13 }}>
             Riding something that is not on a recommendation card? Mark it here so
-            ParkPlan can keep up with your real day.
+            TOHI can keep up with your real day.
           </p>
 
           <div style={{ display: "grid", gap: 10 }}>
@@ -4019,7 +4019,7 @@ function App() {
                     <div>
                       <strong>{ride.name}</strong>
                       <div style={{ color: "#64748b", fontSize: 12 }}>
-                        {formatLandLabel(activePark, ride.land)} Â· {ride.isOpen ? "Open" : "Closed"}
+                        {formatLandLabel(activePark, ride.land)} · {ride.isOpen ? "Open" : "Closed"}
                       </div>
                     </div>
 
@@ -4040,14 +4040,14 @@ function App() {
           <section style={card}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <MessageCircle size={18} />
-            <h3 style={{ margin: 0 }}>AI Park Assistant</h3>
+            <h3 style={{ margin: 0 }}>TOHI Assistant</h3>
           </div>
 
           <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
             {chat.length === 0 && (
               <p style={{ color: "#64748b" }}>
-                Ask what to ride next, how to handle weather, or how to plan your
-                afternoon.
+                Ask what to ride next, how to handle heat or weather, or how to keep your
+                family’s day moving without overdoing it.
               </p>
             )}
 
@@ -4060,7 +4060,7 @@ function App() {
                   background: msg.role === "user" ? "#e0f2fe" : "#f1f5f9",
                 }}
               >
-                <strong>{msg.role === "user" ? "You" : "ParkPlan AI"}: </strong>
+                <strong>{msg.role === "user" ? "You" : "TOHI"}: </strong>
                 {msg.content}
               </div>
             ))}
@@ -4073,7 +4073,7 @@ function App() {
             <input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Ask ParkPlan AI..."
+              placeholder="Ask TOHI..."
               style={{
                 flex: 1,
                 border: "1px solid #cbd5e1",
