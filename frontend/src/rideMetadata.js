@@ -1883,6 +1883,11 @@ export const RIDE_METADATA = {
   // DinoLand U.S.A. / DINOSAUR are intentionally excluded as active
   // recommendations because that area has closed for the Tropical Americas /
   // Pueblo Esperanza transformation.
+  //
+  // Current/future-facing replacements:
+  // - Zootopia: Better Zoogether! replaces It's Tough to be a Bug! at Tree of Life Theater.
+  // - Bluey's Wild World at Conservation Station replaces generic Conservation Station
+  //   as the guest-facing family experience at Rafiki's Planet Watch.
   // ============================================================
   animal_kingdom: {
     "Avatar Flight of Passage": {
@@ -2098,33 +2103,33 @@ export const RIDE_METADATA = {
       tags: ["show", "family", "indoor", "ac", "recovery"],
     },
 
-    "It's Tough to be a Bug!": {
-      displayName: "It's Tough to be a Bug!",
+    "Zootopia: Better Zoogether!": {
+      displayName: "Zootopia: Better Zoogether!",
       land: "discovery_island",
       minHeightInches: 0,
       environment: "indoor",
       hasAC: true,
       getsWet: false,
       closesInRain: false,
-      intensity: 3,
-      popularity: 42,
+      intensity: 2,
+      popularity: 70,
       waitProfile: {
-        averageWait: 15,
-        goodDealUnder: 10,
-        normalRange: [10, 20],
-        badValueOver: 30,
+        averageWait: 25,
+        goodDealUnder: 15,
+        normalRange: [20, 35],
+        badValueOver: 45,
         usuallyHighAllDay: false,
         strategyNote:
-          "Indoor Tree of Life theater show. It can be intense for little kids, so do not treat it as a universal calm break.",
+          "Indoor Tree of Life Theater show. Treat as a family-friendly Discovery Island reset, but still plan around show cycles and child interest.",
       },
       planningProfile: {
         category: "filler_or_recovery",
         paidAccess: "none",
-        appStatus: "filler",
+        appStatus: "recovery",
         strategy:
-          "Use as nearby indoor filler if the group is okay with a slightly startling show. Avoid for easily scared young kids.",
+          "Good indoor reset near Tree of Life when showtime lines up, especially for families who care about Zootopia or need seats and AC.",
       },
-      tags: ["show", "indoor", "ac", "may-scare-kids", "filler"],
+      tags: ["show", "zootopia", "family", "indoor", "ac", "recovery"],
     },
 
     "Gorilla Falls Exploration Trail": {
@@ -2187,7 +2192,7 @@ export const RIDE_METADATA = {
 
     "Wildlife Express Train": {
       displayName: "Wildlife Express Train",
-      land: "rafikis_planet_watch",
+      land: "africa",
       minHeightInches: 0,
       environment: "outdoor",
       hasAC: false,
@@ -2202,20 +2207,20 @@ export const RIDE_METADATA = {
         badValueOver: 30,
         usuallyHighAllDay: false,
         strategyNote:
-          "This is a time commitment because it takes you out to Rafiki's Planet Watch and back. Great for animal-loving families, not a quick filler.",
+          "This is a time commitment because it takes you out to Rafiki's Planet Watch and back. Great for animal-loving families or Bluey-focused younger kids, not a quick filler.",
       },
       planningProfile: {
         category: "plan_ahead_standby_only",
         paidAccess: "none",
         appStatus: "plan_ahead",
         strategy:
-          "Only recommend when the family intentionally wants Rafiki's Planet Watch or a slower animal-focused block.",
+          "Only recommend when the family intentionally wants Rafiki's Planet Watch, Bluey's Wild World, or a slower animal-focused block.",
       },
-      tags: ["train", "animals", "rafikis", "outdoor", "plan-ahead"],
+      tags: ["train", "animals", "rafikis", "bluey", "outdoor", "plan-ahead"],
     },
 
-    "Conservation Station": {
-      displayName: "Conservation Station",
+    "Bluey's Wild World at Conservation Station": {
+      displayName: "Bluey's Wild World at Conservation Station",
       land: "rafikis_planet_watch",
       minHeightInches: 0,
       environment: "indoor",
@@ -2223,24 +2228,24 @@ export const RIDE_METADATA = {
       getsWet: false,
       closesInRain: false,
       intensity: 1,
-      popularity: 30,
+      popularity: 72,
       waitProfile: {
-        averageWait: 10,
-        goodDealUnder: 10,
-        normalRange: [5, 15],
-        badValueOver: 25,
+        averageWait: 25,
+        goodDealUnder: 15,
+        normalRange: [20, 40],
+        badValueOver: 50,
         usuallyHighAllDay: false,
         strategyNote:
-          "Indoor animal-care and conservation area at Rafiki's Planet Watch. Useful only if the family has committed to the train trip.",
+          "Major younger-kid emotional anchor at Rafiki's Planet Watch. Great for Bluey fans, but it requires the Wildlife Express Train time commitment.",
       },
       planningProfile: {
-        category: "filler_or_recovery",
+        category: "character_priority",
         paidAccess: "none",
-        appStatus: "recovery",
+        appStatus: "plan_ahead",
         strategy:
-          "Good AC once at Rafiki's, but do not suggest it as a quick recovery option from the main park path.",
+          "Prioritize for toddler/preschool or Bluey-focused families. Do not suggest as a quick break from the main park path because it requires the train loop.",
       },
-      tags: ["animals", "education", "indoor", "ac", "rafikis", "recovery"],
+      tags: ["bluey", "characters", "interactive", "toddlers", "kids", "indoor", "ac", "rafikis", "plan-ahead"],
     },
 
     "The Animation Experience at Conservation Station": {
@@ -2270,6 +2275,35 @@ export const RIDE_METADATA = {
           "Recommend only when the family wants a slower creative break and has time for the Rafiki's Planet Watch loop.",
       },
       tags: ["drawing", "creative", "indoor", "ac", "rafikis", "plan-ahead"],
+    },
+
+    "Affection Section": {
+      displayName: "Affection Section",
+      land: "rafikis_planet_watch",
+      minHeightInches: 0,
+      environment: "outdoor",
+      hasAC: false,
+      getsWet: false,
+      closesInRain: true,
+      intensity: 1,
+      popularity: 30,
+      waitProfile: {
+        averageWait: 10,
+        goodDealUnder: 10,
+        normalRange: [5, 15],
+        badValueOver: 25,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Animal interaction area at Rafiki's Planet Watch. Best when the family already planned the train loop.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "filler",
+        strategy:
+          "Use as part of a Rafiki's Planet Watch block, not as a quick main-park detour.",
+      },
+      tags: ["animals", "interactive", "kids", "outdoor", "rafikis", "filler"],
     },
 
     "Feathered Friends in Flight!": {
@@ -2359,6 +2393,7 @@ export const RIDE_METADATA = {
       tags: ["characters", "mickey", "minnie", "indoor", "ac", "family"],
     },
   },
+
 
   // Future parks: animal_kingdom,
   // universal_studios, islands_of_adventure, epic_universe
