@@ -7,7 +7,7 @@
  * Do not let raw feed entries decide the product experience.
  * Some entries are useful operationally, but make the wait-time list feel dumb:
  * galleries, passive exhibits, Kidcot stops, Single Rider variants, character greetings,
- * and venue-name filler entries.
+ * venue-name filler entries, landmarks, walking trails, and construction/legacy items.
  */
 
 function normalizeName(value) {
@@ -55,6 +55,43 @@ const EXACT_HIDE_NAMES_BY_PARK = {
       "Meet Chewbacca at Star Wars Launch Bay",
     ].map(normalizeName)
   ),
+
+  animal_kingdom: new Set(
+    [
+      // Single-rider / operational variants
+      "Expedition Everest - Legend of the Forbidden Mountain Single Rider",
+
+      // Landmarks / context-only / photo spots
+      "Tree of Life",
+
+      // Walking trails / exhibits / self-paced areas that should not look like lines
+      "Gorilla Falls Exploration Trail",
+      "Maharajah Jungle Trek",
+      "Discovery Island Trails",
+      "The Oasis Exhibits",
+
+      // Wilderness Explorers is an activity program, not a line-based attraction
+      "Wilderness Explorers",
+
+      // Character meets should eventually be handled by character/family profile logic,
+      // not as normal wait-time ride cards.
+      "Meet Favorite Disney Pals at Adventurers Outpost",
+      "Meet Moana at Character Landing",
+
+      // Rafiki's / legacy items that should not appear as normal ride waits
+      "Animal Care at Conservation Station",
+      "Conservation Station",
+      "Affection Section",
+
+      // Old / closed / transition items
+      "It's Tough to be a Bug!",
+      "DINOSAUR",
+      "TriceraTop Spin",
+      "The Boneyard",
+      "Fossil Fun Games",
+      "Finding Nemo: The Big Blue... and Beyond! Single Rider",
+    ].map(normalizeName)
+  ),
 };
 
 const GENERIC_HIDE_PATTERNS_BY_PARK = {
@@ -83,6 +120,38 @@ const GENERIC_HIDE_PATTERNS_BY_PARK = {
     /walt disney presents/i,
     /vacation fun/i,
     /disney junior/i,
+  ],
+
+  animal_kingdom: [
+    /single rider/i,
+    /single-rider/i,
+    /lightning lane/i,
+    /^meet /i,
+    /meet .* at /i,
+    /character landing/i,
+
+    // Trails / exhibits / activities
+    /trail/i,
+    /trails/i,
+    /exhibit/i,
+    /exhibits/i,
+    /wilderness explorers/i,
+
+    // Context-only / landmark
+    /^tree of life$/i,
+
+    // Rafiki's legacy/feed items that are not normal line-based rides
+    /animal care/i,
+    /conservation station/i,
+    /affection section/i,
+
+    // Closed / transition / legacy DinoLand items
+    /dinoland/i,
+    /dinosaur/i,
+    /tricera/i,
+    /boneyard/i,
+    /fossil/i,
+    /primeval/i,
   ],
 };
 
