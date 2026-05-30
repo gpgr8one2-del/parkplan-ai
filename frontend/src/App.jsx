@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CloudSun, MapPin, MessageCircle, RefreshCw, Send } from "lucide-react";
-import { fetchParkData, fetchWeather, sendChatMessage } from "./api";
+import { fetchParkData, fetchWeather, sendChatMessage, trackEvent } from "./api";
 import { FreshnessBadge } from "./components/FreshnessBadge";
 import { DataStatusBanner } from "./components/DataStatusBanner";
 import { getNextBestRides } from "./rideRecommendations";
@@ -760,6 +760,40 @@ function getRideMetaForDisplay(parkId, ride) {
   return getRideMeta(parkId, ride?.id ?? ride?.name) || getRideMeta(parkId, ride?.name);
 }
 
+function getRecommendationSlotForRide(recommendations = {}, rideId) {
+  if (rideId == null) return "";
+
+  const targetId = String(rideId);
+  const slots = [
+    ["bestMove", recommendations.bestMove],
+    ["backup", recommendations.backup],
+    ["worthTheWalk", recommendations.worthTheWalk],
+    ["planAhead", recommendations.planAhead],
+    ["waitOnThis", recommendations.waitOnThis],
+  ];
+
+  const match = slots.find(([, ride]) => ride?.id != null && String(ride.id) === targetId);
+
+  return match?.[0] || "wait_times";
+}
+
+function getRecommendationForRide(recommendations = {}, rideId) {
+  if (rideId == null) return null;
+
+  const targetId = String(rideId);
+
+  return (
+    [
+      recommendations.bestMove,
+      recommendations.backup,
+      recommendations.worthTheWalk,
+      recommendations.planAhead,
+      recommendations.waitOnThis,
+    ].find((ride) => ride?.id != null && String(ride.id) === targetId) || null
+  );
+}
+
+
 function App() {
   const [activePark, setActivePark] = useState("magic_kingdom");
   const [parkData, setParkData] = useState(null);
@@ -914,6 +948,24 @@ function App() {
 
         setLocationError("");
         setLocationAutoEnabled(true);
+
+        trackEvent("location_detected", {
+          activePark,
+          currentLand: detectedZone.landKey,
+          screen: activeScreen,
+          profileComplete: profileCompletion.isComplete,
+          devPreviewFullApp,
+          familyProfile: familyProfileSummary,
+          timeContext,
+          locationContext: structuredLocation,
+          source: silent ? "auto_location_refresh" : "use_my_location",
+          metadata: {
+            confidence: detectedZone.confidence,
+            nearestAnchorName: detectedZone.anchorName,
+            distanceMeters: detectedZone.distanceMeters,
+          },
+        });
+
         return detectedZone;
       } catch (err) {
         const denied =
@@ -933,6 +985,21 @@ function App() {
           setDetectedLocationContext(null);
         }
 
+        trackEvent("location_failed", {
+          activePark,
+          currentLand,
+          screen: activeScreen,
+          profileComplete: profileCompletion.isComplete,
+          devPreviewFullApp,
+          familyProfile: familyProfileSummary,
+          timeContext,
+          source: silent ? "auto_location_refresh" : "use_my_location",
+          metadata: {
+            denied,
+            message: err?.message || "unknown",
+          },
+        });
+
         return null;
       } finally {
         if (!silent) {
@@ -940,7 +1007,15 @@ function App() {
         }
       }
     },
-    [activePark]
+    [
+      activePark,
+      activeScreen,
+      currentLand,
+      devPreviewFullApp,
+      familyProfileSummary,
+      profileCompletion.isComplete,
+      timeContext,
+    ]
   );
 
   useEffect(() => {
@@ -1124,6 +1199,43 @@ function App() {
     return buildCurrentActivityContext(currentActivity);
   }, [currentActivity]);
 
+  const trackAppEvent = useCallback(
+    (eventType, payload = {}) => {
+      trackEvent(eventType, {
+        activePark,
+        currentLand,
+        screen: activeScreen,
+        profileComplete: profileCompletion.isComplete,
+        devPreviewFullApp,
+        familyProfile: familyProfileSummary,
+        timeContext,
+        locationContext: locationContextForDecisions,
+        ...payload,
+      });
+    },
+    [
+      activePark,
+      currentLand,
+      activeScreen,
+      profileCompletion.isComplete,
+      devPreviewFullApp,
+      familyProfileSummary,
+      timeContext,
+      locationContextForDecisions,
+    ]
+  );
+
+  useEffect(() => {
+    trackAppEvent(activeScreen === "family_profile" ? "profile_screen_viewed" : "main_screen_viewed", {
+      source: "screen",
+      metadata: {
+        familyProfileStep,
+        hasPersonalizedAccess,
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeScreen]);
+
   function updateFamilyProfile(patch) {
     setFamilyProfile((prev) => normalizeFamilyProfile({ ...prev, ...patch }));
   }
@@ -1214,6 +1326,15 @@ function App() {
   function handleFamilyProfileDone() {
     const completion = getFamilyProfileCompletion(familyProfile);
 
+    trackAppEvent(completion.isComplete ? "profile_completed" : "profile_completion_blocked", {
+      source: "profile_setup",
+      profileComplete: completion.isComplete,
+      metadata: {
+        missing: completion.missing,
+        familyProfileStep,
+      },
+    });
+
     setFamilyProfile((prev) =>
       normalizeFamilyProfile({
         ...prev,
@@ -1230,6 +1351,22 @@ function App() {
     if (!ride?.id) return;
 
     const id = String(ride.id);
+    const recommendationSlot = getRecommendationSlotForRide(recommendations, id);
+    const recommendation = getRecommendationForRide(recommendations, id) || ride;
+
+    trackAppEvent("recommendation_in_line_clicked", {
+      source: recommendationSlot === "wait_times" ? "wait_times" : "recommendation_card",
+      recommendationSlot,
+      recommendation,
+      action: {
+        type: "in_line",
+        label: "In Line",
+      },
+      metadata: {
+        rideId: id,
+        rideName: ride.name,
+      },
+    });
 
     setCurrentActivity({
       type: "in_line",
@@ -1248,6 +1385,21 @@ function App() {
   function handleDone(rideId) {
     if (rideId == null) return;
     const id = String(rideId);
+    const recommendationSlot = getRecommendationSlotForRide(recommendations, id);
+    const recommendation = getRecommendationForRide(recommendations, id);
+
+    trackAppEvent("recommendation_done_clicked", {
+      source: recommendationSlot === "wait_times" ? "wait_times" : "recommendation_card",
+      recommendationSlot,
+      recommendation,
+      action: {
+        type: "done",
+        label: "Done",
+      },
+      metadata: {
+        rideId: id,
+      },
+    });
 
     setCompletedRideIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
     setSkippedRideIds((prev) => prev.filter((existingId) => existingId !== id));
@@ -1261,6 +1413,21 @@ function App() {
   function handleSkip(rideId) {
     if (rideId == null) return;
     const id = String(rideId);
+    const recommendationSlot = getRecommendationSlotForRide(recommendations, id);
+    const recommendation = getRecommendationForRide(recommendations, id);
+
+    trackAppEvent("recommendation_skipped", {
+      source: recommendationSlot === "wait_times" ? "wait_times" : "recommendation_card",
+      recommendationSlot,
+      recommendation,
+      action: {
+        type: "skip",
+        label: "Skip",
+      },
+      metadata: {
+        rideId: id,
+      },
+    });
 
     setSkippedRideIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
     setCompletedRideIds((prev) => prev.filter((existingId) => existingId !== id));
@@ -1275,6 +1442,22 @@ function App() {
     if (!ride?.id) return;
 
     const id = String(ride.id);
+    const recommendationSlot = getRecommendationSlotForRide(recommendations, id);
+    const recommendation = getRecommendationForRide(recommendations, id) || ride;
+
+    trackAppEvent("ride_issue_reported", {
+      source: recommendationSlot === "wait_times" ? "wait_times" : "recommendation_card",
+      recommendationSlot,
+      recommendation,
+      action: {
+        type: "report_issue",
+        label: "Report Issue",
+      },
+      metadata: {
+        rideId: id,
+        rideName: ride.name,
+      },
+    });
 
     setReportedRideIssueIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
     setCompletedRideIds((prev) => prev.filter((existingId) => existingId !== id));
@@ -1286,6 +1469,19 @@ function App() {
   }
 
   function handleCancelCurrentActivity() {
+    trackAppEvent("current_activity_cancelled", {
+      source: "while_you_wait",
+      action: {
+        type: "cancel_current_activity",
+        label: "Cancel",
+      },
+      metadata: {
+        rideId: currentActivity?.rideId,
+        rideName: currentActivity?.rideName,
+        elapsedMinutesInLine: currentActivityContext?.elapsedMinutesInLine,
+      },
+    });
+
     setCurrentActivity(null);
   }
 
@@ -1305,6 +1501,19 @@ function App() {
   }
 
   function handleResetRecs() {
+    trackAppEvent("recommendation_state_reset", {
+      source: "recommendation_controls",
+      action: {
+        type: "reset",
+        label: "Reset recommendations",
+      },
+      metadata: {
+        completedCount: completedRideIds.length,
+        skippedCount: skippedRideIds.length,
+        reportedIssueCount: reportedRideIssueIds.length,
+      },
+    });
+
     setCompletedRideIds([]);
     setSkippedRideIds([]);
     setReportedRideIssueIds([]);
@@ -1391,7 +1600,16 @@ function App() {
                 <button
                   key={item.step}
                   type="button"
-                  onClick={() => setFamilyProfileStep(item.step)}
+                  onClick={() => {
+                    trackAppEvent("profile_step_selected", {
+                      source: "profile_setup",
+                      metadata: {
+                        fromStep: familyProfileStep,
+                        toStep: item.step,
+                      },
+                    });
+                    setFamilyProfileStep(item.step);
+                  }}
                   style={{
                     ...button,
                     flex: 1,
@@ -1836,7 +2054,16 @@ function App() {
 
                 <button
                   type="button"
-                  onClick={() => setFamilyProfileStep(2)}
+                  onClick={() => {
+                    trackAppEvent("profile_step_next", {
+                      source: "profile_setup",
+                      metadata: {
+                        fromStep: 1,
+                        toStep: 2,
+                      },
+                    });
+                    setFamilyProfileStep(2);
+                  }}
                   style={{
                     ...button,
                     background: "#0f172a",
@@ -2182,7 +2409,16 @@ function App() {
 
                   <button
                     type="button"
-                    onClick={() => setFamilyProfileStep(3)}
+                    onClick={() => {
+                      trackAppEvent("profile_step_next", {
+                        source: "profile_setup",
+                        metadata: {
+                          fromStep: 2,
+                          toStep: 3,
+                        },
+                      });
+                      setFamilyProfileStep(3);
+                    }}
                     style={{
                       ...button,
                       background: "#0f172a",
@@ -2436,6 +2672,13 @@ function App() {
                     <button
                       type="button"
                       onClick={() => {
+                        trackAppEvent("dev_preview_enabled", {
+                          source: "profile_setup",
+                          metadata: {
+                            familyProfileStep,
+                            missing: profileCompletion.missing,
+                          },
+                        });
                         setDevPreviewFullApp(true);
                         setActiveScreen("main");
                       }}
@@ -2830,6 +3073,18 @@ function App() {
     const trimmed = message.trim();
     if (!trimmed) return;
 
+    trackAppEvent("ai_chat_sent", {
+      source: "ai_chat",
+      action: {
+        type: "send_chat",
+        label: "Send",
+      },
+      metadata: {
+        messageLength: trimmed.length,
+        hasCurrentActivity: Boolean(currentActivityContext),
+      },
+    });
+
     const nextChat = [...chat, { role: "user", content: trimmed }];
     setChat(nextChat);
     setMessage("");
@@ -2892,6 +3147,36 @@ function App() {
     recommendations.waitOnThis;
 
   const hasAnyRecommendation = Boolean(primaryRecommendation);
+
+  useEffect(() => {
+    if (!hasPersonalizedAccess) return;
+
+    const cards = [
+      ["bestMove", recommendations.bestMove],
+      ["backup", recommendations.backup],
+      ["worthTheWalk", recommendations.worthTheWalk],
+      ["planAhead", recommendations.planAhead],
+      ["waitOnThis", recommendations.waitOnThis],
+    ].filter(([, ride]) => ride?.id);
+
+    if (!cards.length) return;
+
+    cards.forEach(([slot, ride]) => {
+      trackAppEvent("recommendation_shown", {
+        source: "recommendation_card",
+        recommendationSlot: slot,
+        recommendation: ride,
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    hasPersonalizedAccess,
+    recommendations.bestMove?.id,
+    recommendations.backup?.id,
+    recommendations.worthTheWalk?.id,
+    recommendations.planAhead?.id,
+    recommendations.waitOnThis?.id,
+  ]);
 
   if (activeScreen === "family_profile") {
     return renderFamilyProfileScreen();
@@ -2961,7 +3246,15 @@ function App() {
               {DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && (
                 <button
                   type="button"
-                  onClick={() => setDevPreviewFullApp(true)}
+                  onClick={() => {
+                    trackAppEvent("dev_preview_enabled", {
+                      source: "locked_feature",
+                      metadata: {
+                        missing: profileCompletion.missing,
+                      },
+                    });
+                    setDevPreviewFullApp(true);
+                  }}
                   style={{
                     ...button,
                     color: "#7c3aed",
@@ -2990,7 +3283,12 @@ function App() {
             </p>
             <button
               type="button"
-              onClick={() => setDevPreviewFullApp(false)}
+              onClick={() => {
+                trackAppEvent("dev_preview_disabled", {
+                  source: "developer_preview_banner",
+                });
+                setDevPreviewFullApp(false);
+              }}
               style={{ ...button, marginTop: 10, color: "#6d28d9" }}
             >
               Turn Off Preview Gate Bypass
@@ -3062,7 +3360,18 @@ function App() {
             {PARKS.map((park) => (
               <button
                 key={park.id}
-                onClick={() => setActivePark(park.id)}
+                onClick={() => {
+                  trackAppEvent("park_selected", {
+                    source: "park_tabs",
+                    activePark: park.id,
+                    metadata: {
+                      previousPark: activePark,
+                      nextPark: park.id,
+                    },
+                  });
+
+                  setActivePark(park.id);
+                }}
                 style={{
                   ...button,
                   background: activePark === park.id ? "#0f172a" : "white",
