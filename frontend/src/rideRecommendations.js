@@ -289,6 +289,104 @@ function getFamilyProfileModifier(meta, familyProfile, weather) {
   return mod;
 }
 
+function getPlanAheadPersonalizationCap({
+  meta,
+  ride,
+  waitValueStatus,
+  familyProfileModifier,
+  timeContext,
+}) {
+  if (!meta) return familyProfileModifier;
+
+  const category = meta?.planningProfile?.category;
+  const isPlanAheadCategory =
+    category === "plan_ahead_single_pass" ||
+    category === "plan_ahead_multi_pass" ||
+    category === "plan_ahead_standby_only";
+
+  if (!isPlanAheadCategory) return familyProfileModifier;
+
+  const status = waitValueStatus?.status;
+  const waitTime = ride?.waitTime;
+
+  const isStrongWait =
+    status === "great_value" ||
+    status === "good_value" ||
+    (waitTime != null && waitTime <= 35);
+
+  const isLateEvening =
+    timeContext?.dayPhase === "late_evening" ||
+    (timeContext?.orlandoTotalMinutes != null &&
+      timeContext.orlandoTotalMinutes >= 20 * 60);
+
+  // Personal fit matters, but it should not overpower reality.
+  // Plan-ahead headliners should break out into Best Move only when the wait is
+  // actually strong or the timing is strategically late.
+  if (!isStrongWait && !isLateEvening) {
+    return Math.min(familyProfileModifier, 4);
+  }
+
+  if (!isStrongWait && isLateEvening) {
+    return Math.min(familyProfileModifier, 8);
+  }
+
+  return familyProfileModifier;
+}
+
+function getPlanAheadRealityCheckModifier({ parkId, meta, ride, waitValueStatus, timeContext }) {
+  if (!meta) return 0;
+
+  const category = meta?.planningProfile?.category;
+  const isPlanAheadCategory =
+    category === "plan_ahead_single_pass" ||
+    category === "plan_ahead_multi_pass" ||
+    category === "plan_ahead_standby_only";
+
+  if (!isPlanAheadCategory) return 0;
+
+  const status = waitValueStatus?.status;
+  const waitTime = ride?.waitTime;
+  const displayName = meta.displayName;
+
+  const isLateEvening =
+    timeContext?.dayPhase === "late_evening" ||
+    (timeContext?.orlandoTotalMinutes != null &&
+      timeContext.orlandoTotalMinutes >= 20 * 60);
+
+  let mod = 0;
+
+  // These rides are high-demand traps if we let "family likes thrill/headliners"
+  // overpower a merely normal/high wait. Keep them as Plan Ahead unless the wait
+  // is truly attractive or the late-day strategy makes sense.
+  if (
+    parkId === "magic_kingdom" &&
+    (displayName === "TRON Lightcycle / Run" ||
+      displayName === "Seven Dwarfs Mine Train")
+  ) {
+    if (waitTime != null && waitTime >= 55 && status !== "great_value") {
+      mod -= isLateEvening ? 6 : 18;
+    }
+
+    if (waitTime != null && waitTime >= 70 && status !== "great_value") {
+      mod -= 10;
+    }
+  }
+
+  // Generic safety net for all plan-ahead rides: normal/above-normal waits should
+  // not be rescued by personalization alone.
+  if (
+    status !== "great_value" &&
+    status !== "good_value" &&
+    status !== "bad_value" &&
+    waitTime != null &&
+    waitTime >= 55
+  ) {
+    mod -= 8;
+  }
+
+  return mod;
+}
+
 function getHeightEligibilityFailure(meta, familyProfile) {
   if (!meta || !familyProfile) return null;
 
@@ -1163,8 +1261,16 @@ function buildReason(ride, parts) {
 
   if (parts.familyProfileModifier >= 10) {
     reasons.push("strong fit for your family profile");
+  } else if (parts.rawFamilyProfileModifier >= 10 && parts.familyProfileModifier < 10) {
+    reasons.push("fits your profile, but the wait still matters");
   } else if (parts.familyProfileModifier <= -15) {
     reasons.push("less ideal for your family profile");
+  }
+
+  if (parts.planAheadRealityCheckModifier <= -15) {
+    reasons.push("better as a plan-ahead target unless the wait drops");
+  } else if (parts.planAheadRealityCheckModifier <= -8) {
+    reasons.push("wait is still a bit high for a go-now move");
   }
 
   if (parts.heightWarning) {
@@ -1244,6 +1350,7 @@ export function getNextBestRides({
   completedRideIds = [],
   skippedRideIds = [],
   familyProfile = null,
+  timeContext = null,
 }) {
   const currentLand = resolveCurrentLand(parkId, locationContext);
 
@@ -1390,7 +1497,25 @@ export function getNextBestRides({
     const proximityModifier = getProximityModifier(meta, currentLand, parkId);
     const waitValueStatus = getWaitValueStatus(meta, ride.waitTime);
     const waitValueModifier = waitValueStatus.modifier || 0;
-    const familyProfileModifier = getFamilyProfileModifier(meta, familyProfile, weather);
+    const rawFamilyProfileModifier = getFamilyProfileModifier(
+      meta,
+      familyProfile,
+      weather
+    );
+    const familyProfileModifier = getPlanAheadPersonalizationCap({
+      meta,
+      ride,
+      waitValueStatus,
+      familyProfileModifier: rawFamilyProfileModifier,
+      timeContext,
+    });
+    const planAheadRealityCheckModifier = getPlanAheadRealityCheckModifier({
+      parkId,
+      meta,
+      ride,
+      waitValueStatus,
+      timeContext,
+    });
     const heightWarning = getHeightWarning(meta, familyProfile);
     const scheduledShowModifier = getScheduledShowScoreModifier(
       meta,
@@ -1450,6 +1575,7 @@ export function getNextBestRides({
       proximityModifier +
       waitValueModifier +
       familyProfileModifier +
+      planAheadRealityCheckModifier +
       scheduledShowModifier +
       wetRideModifier +
       parkStrategyModifier +
@@ -1475,6 +1601,8 @@ export function getNextBestRides({
       heightWarning,
       strategyNote: meta?.waitProfile?.strategyNote || null,
       familyProfileModifier,
+      rawFamilyProfileModifier,
+      planAheadRealityCheckModifier,
       scheduledShowModifier,
       wetRideModifier,
       nearbyHeadlinerOpportunityModifier,
@@ -1486,6 +1614,8 @@ export function getNextBestRides({
         proximityModifier,
         waitValueStatus,
         familyProfileModifier,
+        rawFamilyProfileModifier,
+        planAheadRealityCheckModifier,
         heightWarning,
         scheduledShowModifier,
         wetRideModifier,
