@@ -163,12 +163,11 @@ const AUTO_REFRESH_MS = 3 * 60 * 1000;
 
 const DEFAULT_FAMILY_PROFILE = {
   isSetupComplete: false,
-  partySize: 4,
-  guests: [
-    { id: "guest_1", label: "Guest 1", age: "", heightInches: "" },
-    { id: "guest_2", label: "Guest 2", age: "", heightInches: "" },
-    { id: "guest_3", label: "Guest 3", age: "", heightInches: "" },
-    { id: "guest_4", label: "Guest 4", age: "", heightInches: "" },
+  adultCount: 2,
+  childCount: 2,
+  children: [
+    { id: "child_1", label: "Child 1", age: "", heightInches: "" },
+    { id: "child_2", label: "Child 2", age: "", heightInches: "" },
   ],
   wholeGroupRidesTogether: "warn",
   thrillTolerance: "mixed",
@@ -226,15 +225,44 @@ function normalizeFamilyProfile(profile = {}) {
     },
   };
 
-  const partySize = Math.max(1, Math.min(12, Number(merged.partySize) || 1));
-  const existingGuests = Array.isArray(merged.guests) ? merged.guests : [];
+  // Backward compatibility: older saved profiles used partySize + guests.
+  const oldGuests = Array.isArray(profile.guests) ? profile.guests : [];
+  const oldAdults = oldGuests.filter((guest) => getDisneyAgeClass(guest.age) === "adult");
+  const oldChildren = oldGuests.filter((guest) => getDisneyAgeClass(guest.age) !== "adult");
 
-  const guests = Array.from({ length: partySize }, (_, index) => {
-    const existing = existingGuests[index] || {};
+  const adultCount = Math.max(
+    1,
+    Math.min(
+      12,
+      Number(merged.adultCount) ||
+        oldAdults.length ||
+        Math.max(1, Number(merged.partySize || 0) - oldChildren.length) ||
+        1
+    )
+  );
+
+  const childCount = Math.max(
+    0,
+    Math.min(
+      12,
+      Number(merged.childCount) ||
+        oldChildren.length ||
+        (Array.isArray(merged.children) ? merged.children.length : 0) ||
+        0
+    )
+  );
+
+  const existingChildren =
+    Array.isArray(merged.children) && merged.children.length
+      ? merged.children
+      : oldChildren;
+
+  const children = Array.from({ length: childCount }, (_, index) => {
+    const existing = existingChildren[index] || {};
 
     return {
-      id: existing.id || `guest_${index + 1}`,
-      label: existing.label || `Guest ${index + 1}`,
+      id: existing.id || `child_${index + 1}`,
+      label: existing.label || `Child ${index + 1}`,
       age: existing.age ?? "",
       heightInches: existing.heightInches ?? "",
     };
@@ -242,31 +270,50 @@ function normalizeFamilyProfile(profile = {}) {
 
   return {
     ...merged,
-    partySize,
-    guests,
+    adultCount,
+    childCount,
+    partySize: adultCount + childCount,
+    children,
+    // Keep guests available for any older logic, but do not ask adults for height.
+    guests: [
+      ...Array.from({ length: adultCount }, (_, index) => ({
+        id: `adult_${index + 1}`,
+        label: `Adult ${index + 1}`,
+        age: 10,
+        heightInches: "",
+        isAdultPlaceholder: true,
+      })),
+      ...children,
+    ],
     priorities: Array.isArray(merged.priorities) ? merged.priorities : [],
   };
 }
 
 function buildFamilyProfileSummary(profile) {
   const safeProfile = normalizeFamilyProfile(profile);
-  const guests = safeProfile.guests || [];
+  const children = safeProfile.children || [];
 
-  const ageSummary = guests.reduce(
-    (summary, guest) => {
-      const ageClass = getDisneyAgeClass(guest.age);
+  const childAgeSummary = children.reduce(
+    (summary, child) => {
+      const ageClass = getDisneyAgeClass(child.age);
 
       if (ageClass === "under_3") summary.under3Count += 1;
       if (ageClass === "child") summary.childCount += 1;
-      if (ageClass === "adult") summary.disneyAdultCount += 1;
+      if (ageClass === "adult") summary.disneyAdultChildCount += 1;
 
       return summary;
     },
-    { under3Count: 0, childCount: 0, disneyAdultCount: 0 }
+    { under3Count: 0, childCount: 0, disneyAdultChildCount: 0 }
   );
 
-  const validHeights = guests
-    .map((guest) => Number(guest.heightInches))
+  const ageSummary = {
+    under3Count: childAgeSummary.under3Count,
+    childCount: childAgeSummary.childCount,
+    disneyAdultCount: safeProfile.adultCount + childAgeSummary.disneyAdultChildCount,
+  };
+
+  const validHeights = children
+    .map((child) => Number(child.heightInches))
     .filter((height) => Number.isFinite(height) && height > 0);
 
   const shortestHeightInches = validHeights.length
@@ -880,28 +927,37 @@ function App() {
     setFamilyProfile((prev) => normalizeFamilyProfile({ ...prev, ...patch }));
   }
 
-  function handlePartySizeChange(nextPartySize) {
+  function handleAdultCountChange(nextAdultCount) {
     setFamilyProfile((prev) =>
       normalizeFamilyProfile({
         ...prev,
-        partySize: nextPartySize,
+        adultCount: nextAdultCount,
       })
     );
   }
 
-  function handleGuestChange(index, field, value) {
+  function handleChildCountChange(nextChildCount) {
+    setFamilyProfile((prev) =>
+      normalizeFamilyProfile({
+        ...prev,
+        childCount: nextChildCount,
+      })
+    );
+  }
+
+  function handleChildChange(index, field, value) {
     setFamilyProfile((prev) => {
       const safeProfile = normalizeFamilyProfile(prev);
-      const guests = [...safeProfile.guests];
+      const children = [...safeProfile.children];
 
-      guests[index] = {
-        ...guests[index],
+      children[index] = {
+        ...children[index],
         [field]: value,
       };
 
       return normalizeFamilyProfile({
         ...safeProfile,
-        guests,
+        children,
       });
     });
   }
@@ -1075,115 +1131,157 @@ function App() {
               </div>
 
               <div>
-                <label
-                  htmlFor="party-size"
-                  style={{
-                    display: "block",
-                    fontSize: 13,
-                    fontWeight: 900,
-                    color: "#475569",
-                    marginBottom: 6,
-                  }}
-                >
-                  Party size
-                </label>
-                <select
-                  id="party-size"
-                  value={familyProfile.partySize}
-                  onChange={(e) => handlePartySizeChange(e.target.value)}
-                  style={{
-                    width: "100%",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: 14,
-                    padding: "10px 12px",
-                    fontWeight: 800,
-                    background: "white",
-                  }}
-                >
-                  {Array.from({ length: 12 }, (_, index) => index + 1).map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
                 <strong>Who’s in your group?</strong>
                 <p style={{ margin: "5px 0 10px", color: "#64748b", fontSize: 13 }}>
-                  Ages help with Disney child/adult classification. Heights help avoid
-                  recommending rides not everyone can ride.
+                  Adults do not need height entry. We only need children’s ages and
+                  heights so ParkPlan can avoid rides they cannot ride.
                 </p>
 
-                <div style={{ display: "grid", gap: 10 }}>
-                  {familyProfile.guests.map((guest, index) => {
-                    const ageClass = getDisneyAgeClass(guest.age);
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 10,
+                  }}
+                >
+                  <label
+                    htmlFor="adult-count"
+                    style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}
+                  >
+                    Adults
+                    <select
+                      id="adult-count"
+                      value={familyProfile.adultCount}
+                      onChange={(e) => handleAdultCountChange(e.target.value)}
+                      style={{
+                        border: "1px solid #cbd5e1",
+                        borderRadius: 14,
+                        padding: "10px 12px",
+                        fontWeight: 800,
+                        background: "white",
+                      }}
+                    >
+                      {Array.from({ length: 12 }, (_, index) => index + 1).map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-                    return (
-                      <div
-                        key={guest.id}
-                        style={{
-                          padding: 12,
-                          borderRadius: 16,
-                          border: "1px solid #e2e8f0",
-                          background: "white",
-                        }}
-                      >
-                        <strong style={{ display: "block", marginBottom: 8 }}>
-                          Guest {index + 1}
-                        </strong>
+                  <label
+                    htmlFor="child-count"
+                    style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}
+                  >
+                    Children
+                    <select
+                      id="child-count"
+                      value={familyProfile.childCount}
+                      onChange={(e) => handleChildCountChange(e.target.value)}
+                      style={{
+                        border: "1px solid #cbd5e1",
+                        borderRadius: 14,
+                        padding: "10px 12px",
+                        fontWeight: 800,
+                        background: "white",
+                      }}
+                    >
+                      {Array.from({ length: 13 }, (_, index) => index).map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
 
+                {familyProfile.childCount > 0 ? (
+                  <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                    {familyProfile.children.map((child, index) => {
+                      const ageClass = getDisneyAgeClass(child.age);
+
+                      return (
                         <div
+                          key={child.id}
                           style={{
-                            display: "grid",
-                            gridTemplateColumns: "1fr 1fr",
-                            gap: 8,
+                            padding: 12,
+                            borderRadius: 16,
+                            border: "1px solid #e2e8f0",
+                            background: "white",
                           }}
                         >
-                          <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 800 }}>
-                            Age
-                            <input
-                              type="number"
-                              min="0"
-                              max="120"
-                              value={guest.age}
-                              onChange={(e) => handleGuestChange(index, "age", e.target.value)}
-                              placeholder="ex: 7"
-                              style={{
-                                border: "1px solid #cbd5e1",
-                                borderRadius: 12,
-                                padding: "9px 10px",
-                              }}
-                            />
-                          </label>
+                          <strong style={{ display: "block", marginBottom: 8 }}>
+                            Child {index + 1}
+                          </strong>
 
-                          <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 800 }}>
-                            Height in inches
-                            <input
-                              type="number"
-                              min="0"
-                              max="90"
-                              value={guest.heightInches}
-                              onChange={(e) =>
-                                handleGuestChange(index, "heightInches", e.target.value)
-                              }
-                              placeholder="ex: 42"
-                              style={{
-                                border: "1px solid #cbd5e1",
-                                borderRadius: 12,
-                                padding: "9px 10px",
-                              }}
-                            />
-                          </label>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "1fr 1fr",
+                              gap: 8,
+                            }}
+                          >
+                            <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 800 }}>
+                              Age
+                              <input
+                                type="number"
+                                min="0"
+                                max="17"
+                                value={child.age}
+                                onChange={(e) => handleChildChange(index, "age", e.target.value)}
+                                placeholder="ex: 7"
+                                style={{
+                                  border: "1px solid #cbd5e1",
+                                  borderRadius: 12,
+                                  padding: "9px 10px",
+                                }}
+                              />
+                            </label>
+
+                            <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 800 }}>
+                              Height in inches
+                              <input
+                                type="number"
+                                min="0"
+                                max="72"
+                                value={child.heightInches}
+                                onChange={(e) =>
+                                  handleChildChange(index, "heightInches", e.target.value)
+                                }
+                                placeholder="ex: 42"
+                                style={{
+                                  border: "1px solid #cbd5e1",
+                                  borderRadius: 12,
+                                  padding: "9px 10px",
+                                }}
+                              />
+                            </label>
+                          </div>
+
+                          <p style={{ margin: "8px 0 0", color: "#64748b", fontSize: 12 }}>
+                            {getDisneyAgeLabel(ageClass)}
+                          </p>
                         </div>
-
-                        <p style={{ margin: "8px 0 0", color: "#64748b", fontSize: 12 }}>
-                          {getDisneyAgeLabel(ageClass)}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      marginTop: 12,
+                      padding: 12,
+                      borderRadius: 16,
+                      border: "1px solid #bbf7d0",
+                      background: "#f0fdf4",
+                    }}
+                  >
+                    <strong>Adults-only group</strong>
+                    <p style={{ margin: "6px 0 0", color: "#334155", fontSize: 13 }}>
+                      No child heights needed. ParkPlan will not apply child-height
+                      restrictions unless you add children later.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div
