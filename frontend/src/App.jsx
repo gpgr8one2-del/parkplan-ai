@@ -846,6 +846,60 @@ function App() {
     );
   }
 
+  function renderShowtimeInfo(ride) {
+    const showProfile = ride?.showProfile;
+
+    if (!showProfile?.showtimes?.length) return null;
+
+    return (
+      <div
+        style={{
+          marginTop: 10,
+          padding: 10,
+          borderRadius: 14,
+          border: "1px solid #e9d5ff",
+          background: "rgba(250,245,255,.75)",
+        }}
+      >
+        <div style={{ fontSize: 12, color: "#6d28d9", fontWeight: 900 }}>
+          SHOWTIMES
+        </div>
+
+        <p
+          style={{
+            margin: "5px 0 0",
+            color: "#334155",
+            fontSize: 13,
+            fontWeight: 700,
+          }}
+        >
+          {showProfile.showtimes.join(" · ")}
+        </p>
+
+        {showProfile.recommendedShowtimes?.length > 0 && (
+          <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 12 }}>
+            Best target: {showProfile.recommendedShowtimes.join(" or ")}
+          </p>
+        )}
+
+        {(showProfile.arrivalBufferMinutes || showProfile.middayArrivalBufferMinutes) && (
+          <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 12 }}>
+            Arrival buffer:{" "}
+            {showProfile.middayArrivalBufferMinutes
+              ? `${showProfile.arrivalBufferMinutes || 15}–${showProfile.middayArrivalBufferMinutes} min depending on heat/crowds`
+              : `${showProfile.arrivalBufferMinutes} min`}
+          </p>
+        )}
+
+        {showProfile.verifyDailySchedule && (
+          <p style={{ margin: "6px 0 0", color: "#9a3412", fontSize: 12 }}>
+            Verify in My Disney Experience. Showtimes can change by day.
+          </p>
+        )}
+      </div>
+    );
+  }
+
   function renderLineTimeCompanion() {
     if (currentActivity?.type !== "in_line") return null;
 
@@ -1511,6 +1565,7 @@ function App() {
                 <p style={{ margin: "8px 0 0", color: "#334155" }}>
                   Why: {primaryRecommendation.reason || "best available option based on current conditions"}.
                 </p>
+                {renderShowtimeInfo(primaryRecommendation)}
                 {renderRideActions(primaryRecommendation)}
               </div>
 
@@ -1535,6 +1590,7 @@ function App() {
                   <p style={{ margin: "8px 0 0", color: "#334155" }}>
                     Why: {recommendations.backup.reason}.
                   </p>
+                  {renderShowtimeInfo(recommendations.backup)}
                   {renderRideActions(recommendations.backup)}
                 </div>
               )}
@@ -1560,6 +1616,7 @@ function App() {
                   <p style={{ margin: "8px 0 0", color: "#334155" }}>
                     Not nearby, but the current wait is strong enough that it may be worth crossing over for.
                   </p>
+                  {renderShowtimeInfo(recommendations.worthTheWalk)}
                   {renderRideActions(recommendations.worthTheWalk)}
                 </div>
               )}
@@ -1586,6 +1643,7 @@ function App() {
                     {recommendations.planAhead.planAheadReason ||
                       "This ride usually needs a strategy. Consider Lightning Lane, rope drop, late night, or watching for a rare dip."}
                   </p>
+                  {renderShowtimeInfo(recommendations.planAhead)}
                   {renderRideActions(recommendations.planAhead)}
                 </div>
               )}
@@ -1611,6 +1669,7 @@ function App() {
                   <p style={{ margin: "8px 0 0", color: "#334155" }}>
                     This wait is higher than this ride is usually worth. Check again later when crowds shift.
                   </p>
+                  {renderShowtimeInfo(recommendations.waitOnThis)}
                   {renderRideActions(recommendations.waitOnThis)}
                 </div>
               )}
