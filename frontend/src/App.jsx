@@ -5,6 +5,7 @@ import { FreshnessBadge } from "./components/FreshnessBadge";
 import { DataStatusBanner } from "./components/DataStatusBanner";
 import { getNextBestRides } from "./rideRecommendations";
 import { getWeatherMode, getRecoverySuggestions } from "./utils/weatherAdvice";
+import { getCurrentTimeContext } from "./utils/timeContext";
 import { formatCloseTimeLabel } from "./parkHours";
 import { getRideExperienceContent } from "./rideExperienceContent";
 import { getRideMeta } from "./rideMetadata";
@@ -244,58 +245,13 @@ function getDisneyAgeLabel(ageClass) {
   return "Age not set";
 }
 
-function getTodayDateString() {
-  const now = new Date();
-  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
-}
-
 function getDateAccessStatus(tripContext = {}) {
-  const today = getTodayDateString();
-  const start = tripContext.tripStartDate || "";
-  const end = tripContext.tripEndDate || "";
-
-  if (!start || !end) {
-    return {
-      hasDates: false,
-      isBeforeTrip: false,
-      isDuringTrip: false,
-      isAfterTrip: false,
-      status: "dates_missing",
-      message: "Trip dates are not set yet.",
-    };
-  }
-
-  if (today < start) {
-    return {
-      hasDates: true,
-      isBeforeTrip: true,
-      isDuringTrip: false,
-      isAfterTrip: false,
-      status: "before_trip",
-      message: "Trip is upcoming.",
-    };
-  }
-
-  if (today > end) {
-    return {
-      hasDates: true,
-      isBeforeTrip: false,
-      isDuringTrip: false,
-      isAfterTrip: true,
-      status: "after_trip",
-      message: "Trip dates have passed.",
-    };
-  }
-
-  return {
-    hasDates: true,
-    isBeforeTrip: false,
-    isDuringTrip: true,
-    isAfterTrip: false,
-    status: "during_trip",
-    message: "Trip is active today.",
-  };
+  return getCurrentTimeContext({
+    familyProfile: {
+      tripContext,
+      planningPreferences: DEFAULT_FAMILY_PROFILE.planningPreferences,
+    },
+  }).tripStatus;
 }
 
 function getParkLabel(parkId) {
@@ -740,6 +696,13 @@ function App() {
     return buildFamilyProfileSummary(familyProfile);
   }, [familyProfile]);
 
+  const timeContext = useMemo(() => {
+    return getCurrentTimeContext({
+      activePark,
+      familyProfile: familyProfileSummary,
+    });
+  }, [activePark, familyProfileSummary]);
+
   const resortOptions = useMemo(() => {
     return getResortOptions();
   }, []);
@@ -983,6 +946,7 @@ function App() {
       completedRideIds,
       skippedRideIds: recommendationAvoidedRideIds,
       familyProfile: familyProfileSummary,
+      timeContext,
     });
   }, [
     activePark,
@@ -992,6 +956,7 @@ function App() {
     completedRideIds,
     recommendationAvoidedRideIds,
     familyProfileSummary,
+    timeContext,
   ]);
 
   const weatherMode = useMemo(() => {
@@ -2655,6 +2620,7 @@ function App() {
         reportedRideIssueIds,
         currentLand,
         familyProfile: familyProfileSummary,
+        timeContext,
         locationContext: locationContextForDecisions,
         currentActivity: currentActivityContext,
         currentActivityContext,
@@ -2844,6 +2810,22 @@ function App() {
           </p>
 
           <DataStatusBanner source={weather?.source} />
+        </section>
+
+        <section style={card}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <strong>Planning Status</strong>
+          </div>
+
+          <p style={{ margin: "10px 0 0", color: "#334155" }}>
+            {timeContext.summary}
+          </p>
+
+          <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 13 }}>
+            Mode: {timeContext.planningMode.replace(/_/g, " ")} · AI:{" "}
+            {timeContext.aiAccess.shouldAllowAi ? "available" : "not available"} ·{" "}
+            {timeContext.aiAccess.reason}
+          </p>
         </section>
 
         {weatherMode.mode !== "normal" && (
