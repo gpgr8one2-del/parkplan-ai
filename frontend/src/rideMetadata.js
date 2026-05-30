@@ -2055,6 +2055,7 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 78,
+      isScheduledShow: true,
       waitProfile: {
         averageWait: 20,
         goodDealUnder: 15,
@@ -2062,16 +2063,30 @@ export const RIDE_METADATA = {
         badValueOver: 40,
         usuallyHighAllDay: false,
         strategyNote:
-          "Major indoor show and one of the best family energy resets in Animal Kingdom. Usually arriving about 20 minutes before showtime is enough outside peak holiday capacity; Multi Pass mainly helps if the family wants less waiting for seats.",
+          "Scheduled theater-in-the-round show. Do not treat a 0-minute wait as a walk-on ride. Use showtimes and arrival buffer instead. Best at 10:00 AM or 4:00 PM to avoid the worst mid-day heat; mid-day arrivals may need 30–40 minutes because the queue is outdoors and unshaded.",
+      },
+      showProfile: {
+        type: "scheduled_show",
+        showtimes: ["10:00 AM", "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"],
+        recommendedShowtimes: ["10:00 AM", "4:00 PM"],
+        arrivalBufferMinutes: 20,
+        middayArrivalBufferMinutes: 40,
+        queueExposure: "outdoor_unshaded",
+        theaterType: "indoor_theater_in_the_round",
+        hasAC: true,
+        bestUse: "family_energy_reset",
+        verifyDailySchedule: true,
+        strategy:
+          "No bad seats, but the outdoor queue can be brutal. Prefer 10:00 AM or 4:00 PM. If targeting a mid-day show, arrive 30–40 minutes early and use it as a deliberate seated AC reset.",
       },
       planningProfile: {
-        category: "filler_or_recovery",
+        category: "scheduled_show",
         paidAccess: "LLMP",
-        appStatus: "recovery",
+        appStatus: "showtime_based",
         strategy:
-          "Use as a scheduled family-energy reset when the group needs AC, seats, and a high-quality emotional lift.",
+          "Recommend around the next showtime, not because the wait feed says 0. Strong family reset if the group is near Africa or needs AC/seats, but avoid making it Best Move purely from wait time.",
       },
-      tags: ["show", "family", "indoor", "ac", "recovery", "must-do-show"],
+      tags: ["show", "scheduled-show", "family", "indoor", "ac", "recovery", "must-do-show"],
     },
 
     "Finding Nemo: The Big Blue... and Beyond!": {
@@ -2084,6 +2099,7 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 48,
+      isScheduledShow: true,
       waitProfile: {
         averageWait: 15,
         goodDealUnder: 15,
@@ -2091,16 +2107,30 @@ export const RIDE_METADATA = {
         badValueOver: 30,
         usuallyHighAllDay: false,
         strategyNote:
-          "Huge air-conditioned theater show. Useful as a sit-down AC reset during the hottest part of the afternoon when showtime lines up.",
+          "Scheduled air-conditioned theater show. Do not treat a 0-minute wait as a walk-on ride. Use showtimes and arrival buffer instead. The 2:30 PM or 3:30 PM shows are excellent hot-afternoon AC resets.",
+      },
+      showProfile: {
+        type: "scheduled_show",
+        showtimes: ["11:00 AM", "12:00 PM", "1:00 PM", "2:30 PM", "3:30 PM", "4:30 PM"],
+        recommendedShowtimes: ["2:30 PM", "3:30 PM"],
+        arrivalBufferMinutes: 15,
+        middayArrivalBufferMinutes: 20,
+        queueExposure: "mostly_indoor_or_theater_area",
+        theaterType: "large_indoor_ac_theater",
+        hasAC: true,
+        bestUse: "hot_afternoon_ac_reset",
+        verifyDailySchedule: true,
+        strategy:
+          "Use as a hot-afternoon AC reset, especially around 2:30 PM or 3:30 PM. Usually arrive 15–20 minutes before showtime to secure a seat.",
       },
       planningProfile: {
-        category: "filler_or_recovery",
+        category: "scheduled_show",
         paidAccess: "LLMP",
-        appStatus: "recovery",
+        appStatus: "showtime_based",
         strategy:
-          "Use when nearby or when the group needs seats and AC. Do not cross the park just for it unless the family specifically wants Nemo.",
+          "Recommend around the next showtime, not because the wait feed says 0. Strong recovery option when the family is hot, tired, or near Discovery Island / Theater in the Wild.",
       },
-      tags: ["show", "family", "indoor", "ac", "recovery"],
+      tags: ["show", "scheduled-show", "family", "indoor", "ac", "recovery"],
     },
 
     "Zootopia: Better Zoogether!": {
