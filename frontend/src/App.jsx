@@ -36,7 +36,7 @@ const LAND_OPTIONS = {
     },
     {
       value: "frontierland",
-      label: "Frontierland / near Big Thunder, Tiana’s, Country Bears",
+      label: "Frontierland / near Big Thunder, Tianaâs, Country Bears",
     },
     {
       value: "liberty_square",
@@ -63,7 +63,7 @@ const LAND_OPTIONS = {
     },
     {
       value: "world_nature",
-      label: "World Nature / near Soarin’, The Land, The Seas, Moana",
+      label: "World Nature / near Soarinâ, The Land, The Seas, Moana",
     },
     {
       value: "world_showcase_west",
@@ -82,11 +82,11 @@ const LAND_OPTIONS = {
   hollywood: [
     {
       value: "hollywood_boulevard",
-      label: "Hollywood Boulevard / near Mickey & Minnie’s Runaway Railway",
+      label: "Hollywood Boulevard / near Mickey & Minnieâs Runaway Railway",
     },
     {
       value: "sunset_boulevard",
-      label: "Sunset Boulevard / near Tower of Terror, Rock ’n’ Roller",
+      label: "Sunset Boulevard / near Tower of Terror, Rock ânâ Roller",
     },
     {
       value: "echo_lake",
@@ -98,7 +98,7 @@ const LAND_OPTIONS = {
     },
     {
       value: "star_wars_galaxys_edge",
-      label: "Galaxy’s Edge / near Rise, Falcon, Docking Bay 7",
+      label: "Galaxyâs Edge / near Rise, Falcon, Docking Bay 7",
     },
     {
       value: "toy_story_land",
@@ -125,7 +125,7 @@ const LAND_OPTIONS = {
     },
     {
       value: "pandora",
-      label: "Pandora / near Flight of Passage, Na’vi River Journey, Satu’li Canteen",
+      label: "Pandora / near Flight of Passage, Naâvi River Journey, Satuâli Canteen",
     },
     {
       value: "africa",
@@ -137,7 +137,7 @@ const LAND_OPTIONS = {
     },
     {
       value: "rafikis_planet_watch",
-      label: "Rafiki’s Planet Watch / near Bluey’s Wild World, Animation Experience, Affection Section",
+      label: "Rafikiâs Planet Watch / near Blueyâs Wild World, Animation Experience, Affection Section",
     },
     {
       value: "tropical_americas_construction",
@@ -587,6 +587,27 @@ const lockedCardStyle = {
   boxShadow: "none",
 };
 
+const celebrationOverlayStyle = {
+  position: "fixed",
+  inset: 0,
+  pointerEvents: "none",
+  overflow: "hidden",
+  zIndex: 9999,
+};
+
+const celebrationPieceBase = {
+  position: "absolute",
+  bottom: "-30px",
+  width: 14,
+  height: 18,
+  borderRadius: "999px 999px 999px 999px",
+  opacity: 0,
+  animationName: "tohiFloatCelebrate",
+  animationDuration: "1150ms",
+  animationTimingFunction: "ease-out",
+  animationFillMode: "forwards",
+};
+
 function readStoredParkState(parkId) {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -684,18 +705,18 @@ function buildLocalChatFallback({
     const posted = currentActivityContext.postedWaitAtStart;
     const rideName = currentActivityContext.rideName || "this ride";
     const elapsedText =
-      elapsed != null ? `you’ve already waited about ${elapsed} minutes` : "you’re already in line";
+      elapsed != null ? `youâve already waited about ${elapsed} minutes` : "youâre already in line";
     const postedText =
       posted != null ? `the posted wait was ${posted} minutes when you joined` : "I do not have the original posted wait";
 
-    return `I’m having trouble reaching AI chat right now, but here’s the safe ParkPlan call: since ${elapsedText} for ${rideName} and ${postedText}, don’t automatically bail unless the line has stopped, someone feels overheated, or the kids are close to a true meltdown. If the line is moving and this ride matters to your family, try to finish it, then make food, water, and AC the immediate next move.`;
+    return `Iâm having trouble reaching AI chat right now, but hereâs the safe ParkPlan call: since ${elapsedText} for ${rideName} and ${postedText}, donât automatically bail unless the line has stopped, someone feels overheated, or the kids are close to a true meltdown. If the line is moving and this ride matters to your family, try to finish it, then make food, water, and AC the immediate next move.`;
   }
 
   if (weatherMode?.mode && weatherMode.mode !== "normal") {
-    return `I’m having trouble reaching AI chat right now, but based on current weather mode, keep the plan simple: favor nearby indoor options, water, shade, food, or a seated reset before chasing a farther ride.`;
+    return `Iâm having trouble reaching AI chat right now, but based on current weather mode, keep the plan simple: favor nearby indoor options, water, shade, food, or a seated reset before chasing a farther ride.`;
   }
 
-  return "I’m having trouble reaching AI chat right now. Try again in a minute. If the family is tired or hot, use this as a good moment for water, AC, food, or a nearby low-stress ride before making a big walk.";
+  return "Iâm having trouble reaching AI chat right now. Try again in a minute. If the family is tired or hot, use this as a good moment for water, AC, food, or a nearby low-stress ride before making a big walk.";
 }
 
 function buildWeatherDisplay(weather) {
@@ -704,7 +725,7 @@ function buildWeatherDisplay(weather) {
   const parts = [];
 
   if (weather.tempF != null) {
-    parts.push(`${weather.tempF}°F`);
+    parts.push(`${weather.tempF}Â°F`);
   }
 
   if (
@@ -712,7 +733,7 @@ function buildWeatherDisplay(weather) {
     weather.tempF != null &&
     Math.abs(weather.feelsLikeF - weather.tempF) >= 2
   ) {
-    parts.push(`feels like ${weather.feelsLikeF}°F`);
+    parts.push(`feels like ${weather.feelsLikeF}Â°F`);
   }
 
   if (weather.humidity != null) {
@@ -727,7 +748,7 @@ function buildWeatherDisplay(weather) {
     parts.push("Storm Mode active");
   }
 
-  return parts.length ? parts.join(" · ") : "Loading weather...";
+  return parts.length ? parts.join(" Â· ") : "Loading weather...";
 }
 
 function formatLandLabel(parkId, land) {
@@ -757,7 +778,7 @@ function formatLandLabel(parkId, land) {
       sunset_boulevard: "Sunset Boulevard",
       echo_lake: "Echo Lake",
       grand_avenue: "Grand Avenue",
-      star_wars_galaxys_edge: "Star Wars: Galaxy’s Edge",
+      star_wars_galaxys_edge: "Star Wars: Galaxyâs Edge",
       toy_story_land: "Toy Story Land",
       animation_courtyard: "Animation Courtyard",
       commissary_lane: "Commissary Lane",
@@ -769,7 +790,7 @@ function formatLandLabel(parkId, land) {
       pandora: "Pandora",
       africa: "Africa",
       asia: "Asia",
-      rafikis_planet_watch: "Rafiki’s Planet Watch",
+      rafikis_planet_watch: "Rafikiâs Planet Watch",
       tropical_americas_construction: "Tropical Americas Construction",
     },
   };
@@ -848,6 +869,10 @@ function App() {
   const [activeMiniGameType, setActiveMiniGameType] = useState("trivia");
   const [miniGameSeed, setMiniGameSeed] = useState(0);
   const [revealedTriviaAnswer, setRevealedTriviaAnswer] = useState(false);
+  const [selectedTriviaChoice, setSelectedTriviaChoice] = useState("");
+  const [selectedFamilyVoteOption, setSelectedFamilyVoteOption] = useState("");
+  const [lookAroundFound, setLookAroundFound] = useState(false);
+  const [celebrationPieces, setCelebrationPieces] = useState([]);
 
   const isRestoringParkState = useRef(false);
 
@@ -858,6 +883,16 @@ function App() {
   useEffect(() => {
     writeDevPreviewFullApp(devPreviewFullApp);
   }, [devPreviewFullApp]);
+
+  useEffect(() => {
+    if (!celebrationPieces.length) return undefined;
+
+    const timeoutId = setTimeout(() => {
+      setCelebrationPieces([]);
+    }, 1400);
+
+    return () => clearTimeout(timeoutId);
+  }, [celebrationPieces]);
 
   const familyProfileSummary = useMemo(() => {
     return buildFamilyProfileSummary(familyProfile);
@@ -996,7 +1031,7 @@ function App() {
         if (!silent) {
           setLocationError(
             denied
-              ? "Location permission was denied. No problem — pick the closest area manually."
+              ? "Location permission was denied. No problem â pick the closest area manually."
               : "I could not get your location right now. Pick the closest area manually."
           );
         }
@@ -1219,6 +1254,11 @@ function App() {
     currentLand,
     miniGameSeed,
   ]);
+
+  useEffect(() => {
+    resetMiniGameInteractionState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeMiniGame?.title, activeMiniGameType, currentActivity?.rideId]);
 
   const currentActivityContext = useMemo(() => {
     return buildCurrentActivityContext(currentActivity);
@@ -1510,15 +1550,98 @@ function App() {
     setCurrentActivity(null);
   }
 
+  function resetMiniGameInteractionState() {
+    setRevealedTriviaAnswer(false);
+    setSelectedTriviaChoice("");
+    setSelectedFamilyVoteOption("");
+    setLookAroundFound(false);
+  }
+
+  function triggerMiniCelebration() {
+    const shapes = ["ð", "â¨", "ð", "â­"];
+    const pieces = Array.from({ length: 18 }, (_, index) => ({
+      id: `${Date.now()}_${index}`,
+      left: 12 + Math.random() * 76,
+      drift: -90 + Math.random() * 180,
+      delay: Math.random() * 160,
+      size: 16 + Math.random() * 13,
+      shape: shapes[index % shapes.length],
+      rotate: -35 + Math.random() * 70,
+    }));
+
+    setCelebrationPieces(pieces);
+  }
+
+  function handleTriviaChoice(choice) {
+    if (!activeMiniGame || revealedTriviaAnswer) return;
+
+    const isCorrect = choice === activeMiniGame.answer;
+
+    setSelectedTriviaChoice(choice);
+    setRevealedTriviaAnswer(true);
+
+    trackAppEvent("mini_game_trivia_answered", {
+      source: "while_you_wait",
+      action: {
+        type: isCorrect ? "correct_answer" : "wrong_answer",
+        label: choice,
+      },
+      metadata: {
+        rideName: currentActivity?.rideName,
+        gameTitle: activeMiniGame.title,
+        selectedChoice: choice,
+        correctAnswer: activeMiniGame.answer,
+        isCorrect,
+      },
+    });
+
+    if (isCorrect) {
+      triggerMiniCelebration();
+    }
+  }
+
+  function handleFamilyVote(option) {
+    setSelectedFamilyVoteOption(option);
+
+    trackAppEvent("mini_game_family_vote_selected", {
+      source: "while_you_wait",
+      action: {
+        type: "family_vote",
+        label: option,
+      },
+      metadata: {
+        rideName: currentActivity?.rideName,
+        gameTitle: activeMiniGame?.title,
+      },
+    });
+  }
+
+  function handleLookAroundFound() {
+    setLookAroundFound(true);
+    triggerMiniCelebration();
+
+    trackAppEvent("mini_game_lookaround_found", {
+      source: "while_you_wait",
+      action: {
+        type: "found_it",
+        label: "Found it",
+      },
+      metadata: {
+        rideName: currentActivity?.rideName,
+        gameTitle: activeMiniGame?.title,
+      },
+    });
+  }
+
   function handleMiniGameTypeChange(type) {
     setActiveMiniGameType(type);
     setMiniGameSeed(0);
-    setRevealedTriviaAnswer(false);
+    resetMiniGameInteractionState();
   }
 
   function handleNextMiniGame() {
     setMiniGameSeed((prev) => prev + 1);
-    setRevealedTriviaAnswer(false);
+    resetMiniGameInteractionState();
   }
 
   async function handleUseMyLocation() {
@@ -1581,17 +1704,17 @@ function App() {
                 color: "#64748b",
               }}
             >
-              ← View basic waits
+              â View basic waits
             </button>
 
             <div style={premiumHeroCard}>
               <span style={premiumBadge}>TOHI Trip Setup</span>
               <h1 style={{ fontSize: 34, margin: "10px 0 0", letterSpacing: -1 }}>
-                Build your family’s park plan
+                Build your familyâs park plan
               </h1>
               <p style={{ color: "#475569", marginTop: 8, lineHeight: 1.5 }}>
-                Every family does the parks differently. Tell TOHI who’s going,
-                where you’re staying, and what kind of day you want — then we’ll
+                Every family does the parks differently. Tell TOHI whoâs going,
+                where youâre staying, and what kind of day you want â then weâll
                 help you make smarter, calmer choices in the park.
               </p>
 
@@ -1662,17 +1785,17 @@ function App() {
                 {stepDescription}
               </p>
               <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 12 }}>
-                {summary.partySize} guests · {summary.ageSummary.under3Count} under 3 ·{" "}
-                {summary.ageSummary.childCount} Disney child ·{" "}
-                {summary.ageSummary.disneyAdultCount} Disney adult · {shortestHeightText}
+                {summary.partySize} guests Â· {summary.ageSummary.under3Count} under 3 Â·{" "}
+                {summary.ageSummary.childCount} Disney child Â·{" "}
+                {summary.ageSummary.disneyAdultCount} Disney adult Â· {shortestHeightText}
               </p>
               <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 12 }}>
-                First park: {getParkLabel(summary.tripContext.firstPark)} · Priority park:{" "}
-                {getParkLabel(summary.tripContext.priorityPark)} · {summary.tripAccessStatus.message}
+                First park: {getParkLabel(summary.tripContext.firstPark)} Â· Priority park:{" "}
+                {getParkLabel(summary.tripContext.priorityPark)} Â· {summary.tripAccessStatus.message}
               </p>
               <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 12 }}>
-                Ride comfort: {summary.thrillTolerance || "not set"} ·
-                Walking: {summary.walkingTolerance || "not set"} ·
+                Ride comfort: {summary.thrillTolerance || "not set"} Â·
+                Walking: {summary.walkingTolerance || "not set"} Â·
                 Heat: {summary.heatSensitivity || "not set"}
               </p>
             </div>
@@ -1680,9 +1803,9 @@ function App() {
             {familyProfileStep === 1 && (
               <div style={{ display: "grid", gap: 14 }}>
                 <div>
-                  <strong>Who’s in your group?</strong>
+                  <strong>Whoâs in your group?</strong>
                   <p style={{ margin: "5px 0 10px", color: "#64748b", fontSize: 13 }}>
-                    Adults do not need height entry. We only need children’s ages and
+                    Adults do not need height entry. We only need childrenâs ages and
                     heights so ParkPlan can avoid rides they cannot ride.
                   </p>
 
@@ -1978,8 +2101,8 @@ function App() {
                         }}
                       >
                         <option value="unknown">Not sure yet</option>
-                        <option value="no">No — one park per day</option>
-                        <option value="yes">Yes — planning to park hop</option>
+                        <option value="no">No â one park per day</option>
+                        <option value="yes">Yes â planning to park hop</option>
                       </select>
                     </label>
                   </div>
@@ -2231,7 +2354,7 @@ function App() {
                     lineHeight: 1.45,
                   }}
                 >
-                  We’ll ask about rope drop, meals, breaks, and deeper planning later
+                  Weâll ask about rope drop, meals, breaks, and deeper planning later
                   when it actually matters. This keeps setup fast while still giving
                   TOHI enough to avoid bad recommendations.
                 </div>
@@ -2263,7 +2386,7 @@ function App() {
                       color: "white",
                     }}
                   >
-                    Next: Where You’re Staying
+                    Next: Where Youâre Staying
                   </button>
                 </div>
               </div>
@@ -2362,7 +2485,7 @@ function App() {
                           >
                             <strong>{familyProfileSummary.resortProfile.name}</strong>
                             <p style={{ margin: "6px 0 0", color: "#334155", fontSize: 13 }}>
-                              {familyProfileSummary.resortProfile.areaLabel} · Transportation:{" "}
+                              {familyProfileSummary.resortProfile.areaLabel} Â· Transportation:{" "}
                               {familyProfileSummary.resortProfile.transportation.join(", ")}
                             </p>
 
@@ -2464,7 +2587,7 @@ function App() {
                 >
                   <strong>Disney classification reminder</strong>
                   <p style={{ margin: "6px 0 0", color: "#334155", fontSize: 13 }}>
-                    Ages 0–2 are under 3 / no ticket. Ages 3–9 are Disney child.
+                    Ages 0â2 are under 3 / no ticket. Ages 3â9 are Disney child.
                     Ages 10+ count as Disney adults for tickets and dining.
                   </p>
                 </div>
@@ -2612,7 +2735,7 @@ function App() {
           onClick={() => handleDone(ride.id)}
           style={{ ...actionButton, color: "#166534" }}
         >
-          ✓ Done
+          â Done
         </button>
 
         <button
@@ -2664,7 +2787,7 @@ function App() {
             fontWeight: 700,
           }}
         >
-          {showProfile.showtimes.join(" · ")}
+          {showProfile.showtimes.join(" Â· ")}
         </p>
 
         {showProfile.recommendedShowtimes?.length > 0 && (
@@ -2677,7 +2800,7 @@ function App() {
           <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 12 }}>
             Arrival buffer:{" "}
             {showProfile.middayArrivalBufferMinutes
-              ? `${showProfile.arrivalBufferMinutes || 15}–${showProfile.middayArrivalBufferMinutes} min depending on heat/crowds`
+              ? `${showProfile.arrivalBufferMinutes || 15}â${showProfile.middayArrivalBufferMinutes} min depending on heat/crowds`
               : `${showProfile.arrivalBufferMinutes} min`}
           </p>
         )}
@@ -2758,20 +2881,42 @@ function App() {
                   return (
                     <button
                       key={choice}
-                      onClick={() => setRevealedTriviaAnswer(true)}
+                      type="button"
+                      onClick={() => handleTriviaChoice(choice)}
+                      disabled={revealedTriviaAnswer}
                       style={{
                         ...button,
                         borderRadius: 14,
                         textAlign: "left",
                         background:
-                          revealedTriviaAnswer && isCorrect ? "#dcfce7" : "white",
+                          revealedTriviaAnswer && isCorrect
+                            ? "#dcfce7"
+                            : revealedTriviaAnswer && selectedTriviaChoice === choice
+                            ? "#fee2e2"
+                            : "white",
                         borderColor:
-                          revealedTriviaAnswer && isCorrect ? "#86efac" : "#e2e8f0",
+                          revealedTriviaAnswer && isCorrect
+                            ? "#86efac"
+                            : revealedTriviaAnswer && selectedTriviaChoice === choice
+                            ? "#fecaca"
+                            : "#e2e8f0",
                         color:
-                          revealedTriviaAnswer && isCorrect ? "#166534" : "#0f172a",
+                          revealedTriviaAnswer && isCorrect
+                            ? "#166534"
+                            : revealedTriviaAnswer && selectedTriviaChoice === choice
+                            ? "#991b1b"
+                            : "#0f172a",
+                        opacity:
+                          revealedTriviaAnswer && !isCorrect && selectedTriviaChoice !== choice
+                            ? 0.72
+                            : 1,
                       }}
                     >
                       {choice}
+                      {revealedTriviaAnswer && isCorrect ? "  â" : ""}
+                      {revealedTriviaAnswer && selectedTriviaChoice === choice && !isCorrect
+                        ? "  â"
+                        : ""}
                     </button>
                   );
                 })}
@@ -2779,7 +2924,10 @@ function App() {
 
               {!revealedTriviaAnswer ? (
                 <button
-                  onClick={() => setRevealedTriviaAnswer(true)}
+                  onClick={() => {
+                    setRevealedTriviaAnswer(true);
+                    setSelectedTriviaChoice("");
+                  }}
                   style={{ ...button, marginTop: 10, color: "#6d28d9" }}
                 >
                   Show Answer
@@ -2794,8 +2942,15 @@ function App() {
                     border: "1px solid #bbf7d0",
                   }}
                 >
-                  <strong style={{ color: "#166534" }}>
-                    Answer: {activeMiniGame.answer}
+                  <strong style={{ color: selectedTriviaChoice && selectedTriviaChoice !== activeMiniGame.answer ? "#991b1b" : "#166534" }}>
+                    {selectedTriviaChoice
+                      ? selectedTriviaChoice === activeMiniGame.answer
+                        ? "Correct!"
+                        : "Good guess!"
+                      : "Answer"}{" "}
+                    {selectedTriviaChoice && selectedTriviaChoice !== activeMiniGame.answer
+                      ? `The answer is ${activeMiniGame.answer}.`
+                      : activeMiniGame.answer}
                   </strong>
                   <p style={{ margin: "6px 0 0", color: "#334155" }}>
                     {activeMiniGame.fact}
@@ -2813,8 +2968,17 @@ function App() {
               <p style={{ margin: "0 0 10px", color: "#64748b" }}>
                 Hint: {activeMiniGame.hint}
               </p>
-              <button style={{ ...button, color: "#166534" }}>
-                Found it!
+              <button
+                type="button"
+                onClick={handleLookAroundFound}
+                style={{
+                  ...button,
+                  color: lookAroundFound ? "#166534" : "#0f172a",
+                  background: lookAroundFound ? "#dcfce7" : "white",
+                  borderColor: lookAroundFound ? "#86efac" : "#e2e8f0",
+                }}
+              >
+                {lookAroundFound ? "Nice find! â" : "Found it!"}
               </button>
             </>
           )}
@@ -2825,19 +2989,35 @@ function App() {
                 {activeMiniGame.prompt}
               </p>
               <div style={{ display: "grid", gap: 8 }}>
-                {activeMiniGame.options.map((option) => (
-                  <button
-                    key={option}
-                    style={{
-                      ...button,
-                      borderRadius: 14,
-                      textAlign: "left",
-                    }}
-                  >
-                    {option}
-                  </button>
-                ))}
+                {activeMiniGame.options.map((option) => {
+                  const selected = selectedFamilyVoteOption === option;
+
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => handleFamilyVote(option)}
+                      style={{
+                        ...button,
+                        borderRadius: 14,
+                        textAlign: "left",
+                        background: selected ? "#ede9fe" : "white",
+                        borderColor: selected ? "#c4b5fd" : "#e2e8f0",
+                        color: selected ? "#5b21b6" : "#0f172a",
+                      }}
+                    >
+                      {option}
+                      {selected ? "  â" : ""}
+                    </button>
+                  );
+                })}
               </div>
+
+              {selectedFamilyVoteOption && (
+                <p style={{ margin: "8px 0 0", color: "#5b21b6", fontSize: 13, fontWeight: 800 }}>
+                  Vote locked in: {selectedFamilyVoteOption}
+                </p>
+              )}
             </>
           )}
 
@@ -3020,6 +3200,44 @@ function App() {
 
   return (
     <main style={page}>
+      <style>
+        {`
+          @keyframes tohiFloatCelebrate {
+            0% {
+              opacity: 0;
+              transform: translate3d(0, 0, 0) scale(.75) rotate(0deg);
+            }
+            12% {
+              opacity: 1;
+            }
+            100% {
+              opacity: 0;
+              transform: translate3d(var(--tohi-drift), -92vh, 0) scale(1.15) rotate(var(--tohi-rotate));
+            }
+          }
+        `}
+      </style>
+
+      {celebrationPieces.length > 0 && (
+        <div style={celebrationOverlayStyle}>
+          {celebrationPieces.map((piece) => (
+            <div
+              key={piece.id}
+              style={{
+                ...celebrationPieceBase,
+                left: `${piece.left}%`,
+                fontSize: piece.size,
+                animationDelay: `${piece.delay}ms`,
+                "--tohi-drift": `${piece.drift}px`,
+                "--tohi-rotate": `${piece.rotate}deg`,
+              }}
+            >
+              {piece.shape}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div style={shell}>
         <header style={{ padding: "18px 0" }}>
           <div
@@ -3162,7 +3380,7 @@ function App() {
               </div>
               <p style={{ margin: "7px 0 0", color: "#64748b", fontSize: 13 }}>
                 {sortedRides.length} rides loaded
-                {closeTimeLabel ? ` · closes ${closeTimeLabel}` : ""}
+                {closeTimeLabel ? ` Â· closes ${closeTimeLabel}` : ""}
               </p>
             </div>
 
@@ -3259,8 +3477,8 @@ function App() {
           </p>
 
           <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 13 }}>
-            Mode: {timeContext.planningMode.replace(/_/g, " ")} · AI:{" "}
-            {timeContext.aiAccess.shouldAllowAi ? "available" : "not available"} ·{" "}
+            Mode: {timeContext.planningMode.replace(/_/g, " ")} Â· AI:{" "}
+            {timeContext.aiAccess.shouldAllowAi ? "available" : "not available"} Â·{" "}
             {timeContext.aiAccess.reason}
           </p>
         </section>
@@ -3316,15 +3534,15 @@ function App() {
                 ? `Posted wait when you joined: ${currentActivity.postedWaitAtStart} min`
                 : "You marked this as your current line."}
               {currentActivity.startedAt
-                ? ` · Started around ${formatActivityStartTime(currentActivity.startedAt)}`
+                ? ` Â· Started around ${formatActivityStartTime(currentActivity.startedAt)}`
                 : ""}
               {currentActivityContext?.elapsedMinutesInLine != null
-                ? ` · About ${currentActivityContext.elapsedMinutesInLine} min in line`
+                ? ` Â· About ${currentActivityContext.elapsedMinutesInLine} min in line`
                 : ""}
             </p>
 
             <p style={{ margin: "0 0 12px", color: "#334155" }}>
-              I’ll stop recommending this against itself while you’re waiting. Mark it
+              Iâll stop recommending this against itself while youâre waiting. Mark it
               done when you finish, or cancel if you leave the line.
             </p>
 
@@ -3333,7 +3551,7 @@ function App() {
                 onClick={() => handleDone(currentActivity.rideId)}
                 style={{ ...button, color: "#166534", borderColor: "#bbf7d0" }}
               >
-                ✓ Mark Done
+                â Mark Done
               </button>
 
               <button
@@ -3445,10 +3663,10 @@ function App() {
               >
                 Auto-updates while the app is open
                 {lastAutoUpdateAt
-                  ? ` · waits/weather ${formatAutoUpdateTime(lastAutoUpdateAt)}`
+                  ? ` Â· waits/weather ${formatAutoUpdateTime(lastAutoUpdateAt)}`
                   : ""}
                 {lastLocationUpdateAt
-                  ? ` · location ${formatAutoUpdateTime(lastLocationUpdateAt)}`
+                  ? ` Â· location ${formatAutoUpdateTime(lastLocationUpdateAt)}`
                   : ""}
               </p>
             )}
@@ -3506,7 +3724,7 @@ function App() {
             >
               <strong>Ride issue reported</strong>
               <p style={{ margin: "6px 0 0", color: "#64748b" }}>
-                I’ll avoid recommending reported rides for now. Use reset to bring
+                Iâll avoid recommending reported rides for now. Use reset to bring
                 them back once things look normal.
               </p>
             </div>
@@ -3751,7 +3969,7 @@ function App() {
                     <div>
                       <strong>{ride.name}</strong>
                       <div style={{ color: "#64748b", fontSize: 12 }}>
-                        {formatLandLabel(activePark, ride.land)} · {ride.isOpen ? "Open" : "Closed"}
+                        {formatLandLabel(activePark, ride.land)} Â· {ride.isOpen ? "Open" : "Closed"}
                       </div>
                     </div>
 
