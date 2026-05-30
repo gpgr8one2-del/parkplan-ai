@@ -176,9 +176,9 @@ const DEFAULT_FAMILY_PROFILE = {
     { id: "child_2", label: "Child 2", age: "", heightInches: "" },
   ],
   wholeGroupRidesTogether: "warn",
-  thrillTolerance: "mixed",
-  walkingTolerance: "medium",
-  heatSensitivity: "medium",
+  thrillTolerance: "",
+  walkingTolerance: "",
+  heatSensitivity: "",
   waterRidePreference: "depends",
   pace: "balanced",
   priorities: [],
@@ -283,6 +283,22 @@ function getFamilyProfileCompletion(profile = {}) {
 
   if (!safeProfile.tripContext.tripStartDate || !safeProfile.tripContext.tripEndDate) {
     missing.push("trip dates");
+  }
+
+  if (!safeProfile.thrillTolerance) {
+    missing.push("ride comfort");
+  }
+
+  if (!safeProfile.walkingTolerance) {
+    missing.push("walking pace");
+  }
+
+  if (!safeProfile.heatSensitivity) {
+    missing.push("heat sensitivity");
+  }
+
+  if (!safeProfile.priorities?.length) {
+    missing.push("trip priorities");
   }
 
   if (!safeProfile.tripContext.selectedParks?.length) {
@@ -1542,14 +1558,14 @@ function App() {
       familyProfileStep === 1
         ? "Quick trip setup"
         : familyProfileStep === 2
-        ? "Planning style"
+        ? "Family comfort"
         : "Resort and travel details";
 
     const stepDescription =
       familyProfileStep === 1
         ? "Start with only the essentials: who is going, how many days, and which parks matter."
         : familyProfileStep === 2
-        ? "This is the meat and potatoes: how ParkPlan should help before the trip and in the park."
+        ? "A few quick choices so TOHI knows what your family will actually enjoy."
         : "Resort context helps ParkPlan avoid bad transportation and break advice.";
 
     return (
@@ -1655,9 +1671,9 @@ function App() {
                 {getParkLabel(summary.tripContext.priorityPark)} · {summary.tripAccessStatus.message}
               </p>
               <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 12 }}>
-                Planning: {summary.planningPreferences.planningMode.replace(/_/g, " ")} ·
-                Rope drop: {summary.planningPreferences.ropeDropStyle.replace(/_/g, " ")} ·
-                Breaks: {summary.planningPreferences.middayBreakStyle.replace(/_/g, " ")}
+                Ride comfort: {summary.thrillTolerance || "not set"} ·
+                Walking: {summary.walkingTolerance || "not set"} ·
+                Heat: {summary.heatSensitivity || "not set"}
               </p>
             </div>
 
@@ -2088,23 +2104,20 @@ function App() {
             {familyProfileStep === 2 && (
               <div style={{ display: "grid", gap: 14 }}>
                 <div>
-                  <strong>Planning help</strong>
+                  <strong>What should TOHI protect?</strong>
                   <p style={{ margin: "5px 0 10px", color: "#64748b", fontSize: 13 }}>
-                    This keeps the app from being vanilla. Day-before planning should
-                    feel different from day-of in-park rescue mode.
+                    Keep this quick. We only need the choices that change real park-day
+                    recommendations right away.
                   </p>
 
                   <div style={{ display: "grid", gap: 10 }}>
                     <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
-                      What kind of help do you want most?
+                      Ride comfort
                       <select
-                        value={familyProfile.planningPreferences.planningMode}
+                        value={familyProfile.thrillTolerance}
                         onChange={(e) =>
                           updateFamilyProfile({
-                            planningPreferences: {
-                              ...familyProfile.planningPreferences,
-                              planningMode: e.target.value,
-                            },
+                            thrillTolerance: e.target.value,
                           })
                         }
                         style={{
@@ -2115,23 +2128,20 @@ function App() {
                           background: "white",
                         }}
                       >
-                        <option value="low_stress">Low-stress guidance / avoid meltdowns</option>
-                        <option value="balanced">Balanced plan / smart but flexible</option>
-                        <option value="maximize">Maximize rides and value</option>
-                        <option value="first_timer">First-timer handholding</option>
+                        <option value="">Choose one</option>
+                        <option value="low">Mostly gentle rides</option>
+                        <option value="mixed">A mix of gentle and exciting</option>
+                        <option value="high">Big thrills are a priority</option>
                       </select>
                     </label>
 
                     <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
-                      Day-before help
+                      Walking pace
                       <select
-                        value={familyProfile.planningPreferences.dayBeforeHelp}
+                        value={familyProfile.walkingTolerance}
                         onChange={(e) =>
                           updateFamilyProfile({
-                            planningPreferences: {
-                              ...familyProfile.planningPreferences,
-                              dayBeforeHelp: e.target.value,
-                            },
+                            walkingTolerance: e.target.value,
                           })
                         }
                         style={{
@@ -2142,22 +2152,20 @@ function App() {
                           background: "white",
                         }}
                       >
-                        <option value="yes">Yes — help me prep the night before</option>
-                        <option value="minimal">Minimal — only important reminders</option>
-                        <option value="no">No — day-of only</option>
+                        <option value="">Choose one</option>
+                        <option value="low">Keep walking low when possible</option>
+                        <option value="medium">Balanced walking is okay</option>
+                        <option value="high">We are fine covering ground</option>
                       </select>
                     </label>
 
                     <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
-                      Day-of help
+                      Heat and fatigue
                       <select
-                        value={familyProfile.planningPreferences.dayOfHelp}
+                        value={familyProfile.heatSensitivity}
                         onChange={(e) =>
                           updateFamilyProfile({
-                            planningPreferences: {
-                              ...familyProfile.planningPreferences,
-                              dayOfHelp: e.target.value,
-                            },
+                            heatSensitivity: e.target.value,
                           })
                         }
                         style={{
@@ -2168,223 +2176,22 @@ function App() {
                           background: "white",
                         }}
                       >
-                        <option value="yes">Yes — actively guide us in the park</option>
-                        <option value="light">Light touch — only major moments</option>
-                        <option value="no">No — I’ll check manually</option>
-                      </select>
-                    </label>
-
-                    <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
-                      Rope drop style
-                      <select
-                        value={familyProfile.planningPreferences.ropeDropStyle}
-                        onChange={(e) =>
-                          updateFamilyProfile({
-                            planningPreferences: {
-                              ...familyProfile.planningPreferences,
-                              ropeDropStyle: e.target.value,
-                            },
-                          })
-                        }
-                        style={{
-                          border: "1px solid #cbd5e1",
-                          borderRadius: 14,
-                          padding: "10px 12px",
-                          fontWeight: 800,
-                          background: "white",
-                        }}
-                      >
-                        <option value="hardcore">Hardcore — front of pack</option>
-                        <option value="flexible">Flexible — early, but not stressful</option>
-                        <option value="slow_morning">Slow morning — do not force rope drop</option>
-                        <option value="not_sure">Not sure yet</option>
-                      </select>
-                    </label>
-
-                    <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
-                      Midday break style
-                      <select
-                        value={familyProfile.planningPreferences.middayBreakStyle}
-                        onChange={(e) =>
-                          updateFamilyProfile({
-                            planningPreferences: {
-                              ...familyProfile.planningPreferences,
-                              middayBreakStyle: e.target.value,
-                            },
-                          })
-                        }
-                        style={{
-                          border: "1px solid #cbd5e1",
-                          borderRadius: 14,
-                          padding: "10px 12px",
-                          fontWeight: 800,
-                          background: "white",
-                        }}
-                      >
-                        <option value="resort_break">Prefer resort/pool break</option>
-                        <option value="in_park_reset">Prefer in-park AC/food reset</option>
-                        <option value="flexible">Flexible based on heat and crowds</option>
-                        <option value="push_through">Usually push through</option>
-                      </select>
-                    </label>
-
-                    <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
-                      Food strategy
-                      <select
-                        value={familyProfile.planningPreferences.diningStyle}
-                        onChange={(e) =>
-                          updateFamilyProfile({
-                            planningPreferences: {
-                              ...familyProfile.planningPreferences,
-                              diningStyle: e.target.value,
-                            },
-                          })
-                        }
-                        style={{
-                          border: "1px solid #cbd5e1",
-                          borderRadius: 14,
-                          padding: "10px 12px",
-                          fontWeight: 800,
-                          background: "white",
-                        }}
-                      >
-                        <option value="quick_service">Quick service / mobile order</option>
-                        <option value="table_service">Table-service breaks</option>
-                        <option value="snack_based">Snack-based / flexible</option>
-                        <option value="mixed">Mixed</option>
+                        <option value="">Choose one</option>
+                        <option value="high">We need breaks before things fall apart</option>
+                        <option value="medium">Watch it and suggest breaks when smart</option>
+                        <option value="low">We usually handle heat pretty well</option>
                       </select>
                     </label>
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    display: "grid",
-                    gap: 10,
-                  }}
-                >
-                  <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
-                    Should ParkPlan keep the whole group together for ride recommendations?
-                    <select
-                      value={familyProfile.wholeGroupRidesTogether}
-                      onChange={(e) =>
-                        updateFamilyProfile({ wholeGroupRidesTogether: e.target.value })
-                      }
-                      style={{
-                        border: "1px solid #cbd5e1",
-                        borderRadius: 14,
-                        padding: "10px 12px",
-                        fontWeight: 800,
-                        background: "white",
-                      }}
-                    >
-                      <option value="yes">Yes, only recommend rides everyone can do</option>
-                      <option value="warn">Warn me if not everyone can ride</option>
-                      <option value="rider_switch">We’re okay splitting up / Rider Switch</option>
-                    </select>
-                  </label>
-
-                  <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
-                    Thrill tolerance
-                    <select
-                      value={familyProfile.thrillTolerance}
-                      onChange={(e) => updateFamilyProfile({ thrillTolerance: e.target.value })}
-                      style={{
-                        border: "1px solid #cbd5e1",
-                        borderRadius: 14,
-                        padding: "10px 12px",
-                        fontWeight: 800,
-                        background: "white",
-                      }}
-                    >
-                      <option value="low">Low — avoid intense rides</option>
-                      <option value="mixed">Mixed — balance thrills and family rides</option>
-                      <option value="high">High — thrill rides are a priority</option>
-                    </select>
-                  </label>
-
-                  <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
-                    Walking tolerance
-                    <select
-                      value={familyProfile.walkingTolerance}
-                      onChange={(e) => updateFamilyProfile({ walkingTolerance: e.target.value })}
-                      style={{
-                        border: "1px solid #cbd5e1",
-                        borderRadius: 14,
-                        padding: "10px 12px",
-                        fontWeight: 800,
-                        background: "white",
-                      }}
-                    >
-                      <option value="low">Low — minimize backtracking</option>
-                      <option value="medium">Medium — normal family pace</option>
-                      <option value="high">High — we can cover ground</option>
-                    </select>
-                  </label>
-
-                  <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
-                    Heat / fatigue sensitivity
-                    <select
-                      value={familyProfile.heatSensitivity}
-                      onChange={(e) => updateFamilyProfile({ heatSensitivity: e.target.value })}
-                      style={{
-                        border: "1px solid #cbd5e1",
-                        borderRadius: 14,
-                        padding: "10px 12px",
-                        fontWeight: 800,
-                        background: "white",
-                      }}
-                    >
-                      <option value="low">Low — we handle heat well</option>
-                      <option value="medium">Medium — watch our energy</option>
-                      <option value="high">High — prioritize shade, AC, food, breaks</option>
-                    </select>
-                  </label>
-
-                  <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
-                    Water rides
-                    <select
-                      value={familyProfile.waterRidePreference}
-                      onChange={(e) =>
-                        updateFamilyProfile({ waterRidePreference: e.target.value })
-                      }
-                      style={{
-                        border: "1px solid #cbd5e1",
-                        borderRadius: 14,
-                        padding: "10px 12px",
-                        fontWeight: 800,
-                        background: "white",
-                      }}
-                    >
-                      <option value="yes">Yes, we like water rides</option>
-                      <option value="depends">Depends on heat / timing</option>
-                      <option value="avoid">Avoid getting wet</option>
-                    </select>
-                  </label>
-
-                  <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
-                    Family pace
-                    <select
-                      value={familyProfile.pace}
-                      onChange={(e) => updateFamilyProfile({ pace: e.target.value })}
-                      style={{
-                        border: "1px solid #cbd5e1",
-                        borderRadius: 14,
-                        padding: "10px 12px",
-                        fontWeight: 800,
-                        background: "white",
-                      }}
-                    >
-                      <option value="relaxed">Relaxed — fewer things, less stress</option>
-                      <option value="balanced">Balanced — smart but flexible</option>
-                      <option value="maximize">Maximize — help us do a lot</option>
-                    </select>
-                  </label>
-                </div>
-
                 <div>
                   <strong>What matters most this trip?</strong>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                  <p style={{ margin: "5px 0 10px", color: "#64748b", fontSize: 13 }}>
+                    Pick the moments TOHI should protect. You can choose more than one.
+                  </p>
+
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {FAMILY_PRIORITY_OPTIONS.map((option) => {
                       const selected = familyProfile.priorities.includes(option.value);
 
@@ -2395,9 +2202,9 @@ function App() {
                           onClick={() => handlePriorityToggle(option.value)}
                           style={{
                             ...actionButton,
-                            background: selected ? "#6d28d9" : "white",
-                            color: selected ? "white" : "#6d28d9",
-                            borderColor: "#c4b5fd",
+                            background: selected ? "#0f172a" : "white",
+                            color: selected ? "white" : "#0f172a",
+                            borderColor: selected ? "#0f172a" : "#cbd5e1",
                           }}
                         >
                           {option.label}
@@ -2405,6 +2212,28 @@ function App() {
                       );
                     })}
                   </div>
+
+                  {!familyProfile.priorities.length && (
+                    <p style={{ margin: "8px 0 0", color: "#9a3412", fontSize: 12, fontWeight: 800 }}>
+                      Pick at least one priority so recommendations do not feel generic.
+                    </p>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    padding: 12,
+                    borderRadius: 16,
+                    border: "1px solid #e2e8f0",
+                    background: "#f8fafc",
+                    color: "#475569",
+                    fontSize: 13,
+                    lineHeight: 1.45,
+                  }}
+                >
+                  We’ll ask about rope drop, meals, breaks, and deeper planning later
+                  when it actually matters. This keeps setup fast while still giving
+                  TOHI enough to avoid bad recommendations.
                 </div>
 
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -2434,7 +2263,7 @@ function App() {
                       color: "white",
                     }}
                   >
-                    Next: Resort Details
+                    Next: Where You’re Staying
                   </button>
                 </div>
               </div>
