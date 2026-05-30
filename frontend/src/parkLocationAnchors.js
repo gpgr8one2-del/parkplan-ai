@@ -47,6 +47,22 @@ const LAND_LABELS = {
     "Animation Courtyard / near Disney Junior, Little Mermaid, Mickey Mouse Clubhouse",
   commissary_lane:
     "Commissary Lane / near ABC Commissary, Sci-Fi Dine-In",
+
+  // Animal Kingdom
+  oasis:
+    "Oasis / near entrance paths and Oasis trails",
+  discovery_island:
+    "Discovery Island / near Tree of Life, Zootopia, Nemo, Adventurers Outpost",
+  pandora:
+    "Pandora / near Flight of Passage, Na’vi River Journey, Satu’li",
+  africa:
+    "Africa / near Kilimanjaro Safaris, Festival of the Lion King, Gorilla Falls",
+  asia:
+    "Asia / near Expedition Everest, Kali River Rapids, Maharajah Jungle Trek",
+  rafikis_planet_watch:
+    "Rafiki’s Planet Watch / Bluey’s Wild World, Animation Experience, Affection Section",
+  tropical_americas_construction:
+    "Tropical Americas construction area / former DinoLand side",
 };
 
 const MAGIC_KINGDOM_ANCHORS = [
@@ -203,6 +219,55 @@ const HOLLYWOOD_ANCHORS = [
 ];
 
 
+
+const ANIMAL_KINGDOM_ANCHORS = [
+  // Oasis / Entrance
+  { id: "ak_entrance", name: "Animal Kingdom Entrance", landKey: "oasis", type: "Entrance", lat: 28.3578, lng: -81.5905 },
+  { id: "oasis_trails", name: "Oasis Trails / Oasis Exhibits", landKey: "oasis", type: "Area", lat: 28.3585, lng: -81.5904 },
+
+  // Discovery Island
+  { id: "tree_of_life", name: "Tree of Life", landKey: "discovery_island", type: "Landmark", lat: 28.3592, lng: -81.5900 },
+  { id: "zootopia_better_zoogether", name: "Zootopia: Better Zoogether!", landKey: "discovery_island", type: "Show", lat: 28.3592, lng: -81.5900 },
+  { id: "nemo_show", name: "Finding Nemo: The Big Blue... and Beyond!", landKey: "discovery_island", type: "Show", lat: 28.3578, lng: -81.5872 },
+  { id: "adventurers_outpost", name: "Adventurers Outpost", landKey: "discovery_island", type: "Characters", lat: 28.3597, lng: -81.5893 },
+  { id: "discovery_island_trails", name: "Discovery Island Trails", landKey: "discovery_island", type: "Walk-Through", lat: 28.3595, lng: -81.5905 },
+  { id: "flame_tree_area", name: "Flame Tree Barbecue / Discovery Island food area", landKey: "discovery_island", type: "Dining", lat: 28.3587, lng: -81.5888 },
+
+  // Pandora
+  { id: "fop", name: "Avatar Flight of Passage", landKey: "pandora", type: "Ride", lat: 28.3563, lng: -81.5932 },
+  { id: "navi", name: "Na'vi River Journey", landKey: "pandora", type: "Ride", lat: 28.3569, lng: -81.5923 },
+  { id: "satuli", name: "Satu'li Canteen", landKey: "pandora", type: "Dining", lat: 28.3562, lng: -81.5925 },
+  { id: "pongu", name: "Pongu Pongu / Pandora central area", landKey: "pandora", type: "Dining", lat: 28.3566, lng: -81.5920 },
+
+  // Africa
+  { id: "safaris", name: "Kilimanjaro Safaris", landKey: "africa", type: "Ride", lat: 28.3619, lng: -81.5928 },
+  { id: "fotlk", name: "Festival of the Lion King", landKey: "africa", type: "Show", lat: 28.3601, lng: -81.5932 },
+  { id: "gorilla_falls", name: "Gorilla Falls Exploration Trail", landKey: "africa", type: "Walk-Through", lat: 28.3621, lng: -81.5919 },
+  { id: "harambe_market", name: "Harambe Market", landKey: "africa", type: "Dining", lat: 28.3608, lng: -81.5912 },
+  { id: "wildlife_express_station", name: "Wildlife Express Train Station", landKey: "africa", type: "Train", lat: 28.3612, lng: -81.5907 },
+
+  // Asia
+  { id: "everest", name: "Expedition Everest - Legend of the Forbidden Mountain", landKey: "asia", type: "Ride", lat: 28.3584, lng: -81.5843 },
+  { id: "kali", name: "Kali River Rapids", landKey: "asia", type: "Ride", lat: 28.3605, lng: -81.5852 },
+  { id: "maharajah", name: "Maharajah Jungle Trek", landKey: "asia", type: "Walk-Through", lat: 28.3613, lng: -81.5853 },
+  { id: "feathered_friends", name: "Feathered Friends in Flight!", landKey: "asia", type: "Show", lat: 28.3598, lng: -81.5866 },
+  { id: "yak_yeti", name: "Yak & Yeti / Asia central area", landKey: "asia", type: "Dining", lat: 28.3594, lng: -81.5866 },
+
+  // Rafiki’s Planet Watch
+  { id: "wildlife_express_rafiki_arrival", name: "Wildlife Express Train arrival area", landKey: "rafikis_planet_watch", type: "Train", lat: 28.3688, lng: -81.5900 },
+  { id: "bluey_wild_world", name: "Bluey’s Wild World at Conservation Station", landKey: "rafikis_planet_watch", type: "Interactive", lat: 28.3703, lng: -81.5896 },
+  { id: "animation_experience", name: "The Animation Experience at Conservation Station", landKey: "rafikis_planet_watch", type: "Show", lat: 28.3702, lng: -81.5896 },
+  { id: "affection_section", name: "Affection Section", landKey: "rafikis_planet_watch", type: "Animal Experience", lat: 28.3696, lng: -81.5893 },
+
+  // Tropical Americas / Former DinoLand Side
+  // Kept as construction/future-area context so GPS does not misclassify this side
+  // of the park, but the recommendation engine should not treat it as active ride inventory yet.
+  { id: "tropical_americas_entry", name: "Tropical Americas construction area / former DinoLand entry", landKey: "tropical_americas_construction", type: "Area", lat: 28.3577, lng: -81.5882 },
+  { id: "discovery_to_tropical_bridge", name: "Discovery Island to Tropical Americas bridge", landKey: "tropical_americas_construction", type: "Area", lat: 28.3584, lng: -81.5880 },
+  { id: "asia_to_tropical_path", name: "Asia to Tropical Americas path", landKey: "tropical_americas_construction", type: "Area", lat: 28.3578, lng: -81.5859 },
+];
+
+
 function buildZones(anchors) {
   return anchors.reduce((zones, anchor) => {
     const { landKey, ...cleanAnchor } = anchor;
@@ -224,6 +289,7 @@ export const PARK_LOCATION_ANCHORS = {
   magic_kingdom: buildZones(MAGIC_KINGDOM_ANCHORS),
   epcot: buildZones(EPCOT_ANCHORS),
   hollywood: buildZones(HOLLYWOOD_ANCHORS),
+  animal_kingdom: buildZones(ANIMAL_KINGDOM_ANCHORS),
 };
 
 export function getLocationZonesForPark(parkId) {
