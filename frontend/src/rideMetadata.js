@@ -1901,20 +1901,20 @@ export const RIDE_METADATA = {
       intensity: 5,
       popularity: 99,
       waitProfile: {
-        averageWait: 95,
+        averageWait: 85,
         goodDealUnder: 65,
-        normalRange: [80, 115],
-        badValueOver: 130,
+        normalRange: [75, 100],
+        badValueOver: 115,
         usuallyHighAllDay: true,
         strategyNote:
-          "Animal Kingdom's biggest headliner. Rope drop only works if you are truly near the front. Otherwise use Single Pass, watch for late-day dips, or ride near park close.",
+          "The undisputed Animal Kingdom headliner. If you do not buy Single Pass, the best play is being truly front-of-pack at Early Entry or joining near park close when posted waits are often inflated.",
       },
       planningProfile: {
         category: "plan_ahead_single_pass",
         paidAccess: "LLSP",
         appStatus: "plan_ahead",
         strategy:
-          "Buy Single Pass if this is a must-do, be at the front for Early Entry, or save for the final hour. Do not burn the family's energy chasing an average mid-day wait.",
+          "Buy Single Pass if this is a must-do, be at the front for Early Entry, or save for the final 15–45 minutes. Do not burn the family's energy chasing a normal mid-day wait.",
       },
       tags: [
         "headliner",
@@ -1940,22 +1940,22 @@ export const RIDE_METADATA = {
       intensity: 1,
       popularity: 76,
       waitProfile: {
-        averageWait: 55,
-        goodDealUnder: 35,
-        normalRange: [45, 65],
+        averageWait: 60,
+        goodDealUnder: 40,
+        normalRange: [45, 70],
         badValueOver: 80,
         usuallyHighAllDay: true,
         strategyNote:
-          "Beautiful but short, with lower capacity. Worth doing if the wait dips or if Pandora is a major priority for the family.",
+          "Beautiful but short, with lower capacity. Mid-morning can spike when Flight of Passage guests exit and flow into Na’vi. Worth doing early, late, with Multi Pass, or when it dips under about 40 minutes.",
       },
       planningProfile: {
-        category: "wait_for_drop",
+        category: "plan_ahead_multi_pass",
         paidAccess: "LLMP",
-        appStatus: "wait_for_drop",
+        appStatus: "plan_ahead",
         strategy:
-          "Ride when nearby and under about 35–40 minutes. If it is high, protect the family's energy and check back later.",
+          "Use Multi Pass if Pandora is important, ride in the first 30 minutes, or check late evening. Avoid the grueling outdoor queue during peak mid-day heat.",
       },
-      tags: ["boat", "family", "pandora", "indoor", "ac", "wait-for-drop"],
+      tags: ["boat", "family", "pandora", "indoor", "ac", "plan-ahead"],
     },
 
     "Kilimanjaro Safaris": {
@@ -1969,20 +1969,20 @@ export const RIDE_METADATA = {
       intensity: 2,
       popularity: 92,
       waitProfile: {
-        averageWait: 55,
-        goodDealUnder: 35,
-        normalRange: [45, 65],
-        badValueOver: 80,
-        usuallyHighAllDay: true,
+        averageWait: 45,
+        goodDealUnder: 30,
+        normalRange: [35, 60],
+        badValueOver: 70,
+        usuallyHighAllDay: false,
         strategyNote:
-          "Best earlier in the morning or later in the day when animals are more active and heat is less brutal. Midday waits can feel worse because the payoff may be weaker.",
+          "Best before 10 AM, later in the day, or after heavy rain when animals may be more active. Avoid treating a late-afternoon wait drop as automatically perfect on very hot days because animal visibility can also drop. Safaris often closes earlier than the rest of the park.",
       },
       planningProfile: {
         category: "plan_ahead_multi_pass",
         paidAccess: "LLMP",
         appStatus: "plan_ahead",
         strategy:
-          "Make this an early anchor for families who care about animals. If it is hot and late morning, weigh the wait against family energy.",
+          "Make this an early anchor for families who care about animals. If it is hot and late morning, weigh the wait against family energy and animal activity.",
       },
       tags: ["animals", "safari", "family", "outdoor", "plan-ahead"],
     },
@@ -1998,20 +1998,20 @@ export const RIDE_METADATA = {
       intensity: 5,
       popularity: 86,
       waitProfile: {
-        averageWait: 40,
-        goodDealUnder: 25,
-        normalRange: [35, 55],
-        badValueOver: 70,
+        averageWait: 35,
+        goodDealUnder: 20,
+        normalRange: [25, 45],
+        badValueOver: 55,
         usuallyHighAllDay: false,
         strategyNote:
-          "High-priority thrill ride that can drop later in the day. Single Rider can help thrill-seekers, but do not push it as the default family strategy.",
+          "High-priority thrill ride and strong people-eater. Early morning or late afternoon are usually best. Single Rider can cut the wait significantly for thrill-seekers who do not mind splitting up, but do not push it as the default family strategy.",
       },
       planningProfile: {
         category: "wait_for_drop",
         paidAccess: "LLMP",
         appStatus: "wait_for_drop",
         strategy:
-          "Great when under 30 minutes, especially if you are already in Asia. Avoid dragging tired non-thrill riders across the park.",
+          "Great when under 20–25 minutes, especially if you are already in Asia. Avoid dragging tired non-thrill riders across the park unless the wait is clearly strong.",
       },
       tags: ["coaster", "thrill", "asia", "weather-sensitive", "wait-for-drop"],
     },
@@ -2027,20 +2027,20 @@ export const RIDE_METADATA = {
       intensity: 3,
       popularity: 72,
       waitProfile: {
-        averageWait: 40,
-        goodDealUnder: 25,
-        normalRange: [35, 55],
-        badValueOver: 70,
+        averageWait: 35,
+        goodDealUnder: 20,
+        normalRange: [25, 50],
+        badValueOver: 60,
         usuallyHighAllDay: false,
         strategyNote:
-          "Demand spikes hard in heat because it is the main water ride. Great hot-day reset if your family is okay getting soaked.",
+          "Demand is tied directly to heat and sun. It can be near walk-on on cooler mornings and spike hard during the 1–4 PM heat window. Great hot-day reset if your family is okay getting soaked.",
       },
       planningProfile: {
-        category: "weather_dependent",
+        category: "wait_for_drop",
         paidAccess: "LLMP",
         appStatus: "go_now_if_low",
         strategy:
-          "Strong heat-day option if nearby and under 30 minutes. Avoid if the family hates getting wet, has dinner plans soon, or storms are active.",
+          "Strong if nearby and under 20–25 minutes. Use Multi Pass if the family wants to ride during peak heat. Avoid if the family hates getting wet, has dinner plans soon, or storms are active.",
       },
       tags: ["water", "family", "asia", "outdoor", "gets-wet", "weather-sensitive"],
     },
@@ -2056,20 +2056,20 @@ export const RIDE_METADATA = {
       intensity: 1,
       popularity: 78,
       waitProfile: {
-        averageWait: 25,
+        averageWait: 20,
         goodDealUnder: 15,
-        normalRange: [20, 35],
-        badValueOver: 45,
+        normalRange: [20, 30],
+        badValueOver: 40,
         usuallyHighAllDay: false,
         strategyNote:
-          "Major indoor show and one of the best family energy resets in Animal Kingdom. Plan around showtimes rather than treating it like a normal standby line.",
+          "Major indoor show and one of the best family energy resets in Animal Kingdom. Usually arriving about 20 minutes before showtime is enough outside peak holiday capacity; Multi Pass mainly helps if the family wants less waiting for seats.",
       },
       planningProfile: {
-        category: "plan_ahead_show",
+        category: "filler_or_recovery",
         paidAccess: "LLMP",
-        appStatus: "plan_ahead",
+        appStatus: "recovery",
         strategy:
-          "Use as a scheduled anchor when the family needs AC, seats, and a high-quality emotional reset.",
+          "Use as a scheduled family-energy reset when the group needs AC, seats, and a high-quality emotional lift.",
       },
       tags: ["show", "family", "indoor", "ac", "recovery", "must-do-show"],
     },
@@ -2085,17 +2085,17 @@ export const RIDE_METADATA = {
       intensity: 1,
       popularity: 48,
       waitProfile: {
-        averageWait: 20,
-        goodDealUnder: 10,
-        normalRange: [15, 30],
-        badValueOver: 40,
+        averageWait: 15,
+        goodDealUnder: 15,
+        normalRange: [15, 25],
+        badValueOver: 30,
         usuallyHighAllDay: false,
         strategyNote:
-          "Indoor theater show. Useful as a sit-down AC reset when showtime lines up, especially during heat.",
+          "Huge air-conditioned theater show. Useful as a sit-down AC reset during the hottest part of the afternoon when showtime lines up.",
       },
       planningProfile: {
         category: "filler_or_recovery",
-        paidAccess: "LLMP_not_needed",
+        paidAccess: "LLMP",
         appStatus: "recovery",
         strategy:
           "Use when nearby or when the group needs seats and AC. Do not cross the park just for it unless the family specifically wants Nemo.",
@@ -2114,17 +2114,17 @@ export const RIDE_METADATA = {
       intensity: 2,
       popularity: 70,
       waitProfile: {
-        averageWait: 25,
-        goodDealUnder: 15,
-        normalRange: [20, 35],
-        badValueOver: 45,
+        averageWait: 15,
+        goodDealUnder: 10,
+        normalRange: [15, 25],
+        badValueOver: 35,
         usuallyHighAllDay: false,
         strategyNote:
-          "Indoor Tree of Life Theater show. Treat as a family-friendly Discovery Island reset, but still plan around show cycles and child interest.",
+          "Indoor Tree of Life Theater show. Usually the wait is mostly the prior show cycle, with only brief mid-day spikes. Treat it as a central Discovery Island reset when the family wants seats, AC, and something easy.",
       },
       planningProfile: {
         category: "filler_or_recovery",
-        paidAccess: "none",
+        paidAccess: "LLMP",
         appStatus: "recovery",
         strategy:
           "Good indoor reset near Tree of Life when showtime lines up, especially for families who care about Zootopia or need seats and AC.",
@@ -2201,22 +2201,22 @@ export const RIDE_METADATA = {
       intensity: 1,
       popularity: 32,
       waitProfile: {
-        averageWait: 15,
+        averageWait: 10,
         goodDealUnder: 10,
-        normalRange: [10, 20],
-        badValueOver: 30,
+        normalRange: [10, 15],
+        badValueOver: 20,
         usuallyHighAllDay: false,
         strategyNote:
-          "This is a time commitment because it takes you out to Rafiki's Planet Watch and back. Great for animal-loving families or Bluey-focused younger kids, not a quick filler.",
+          "Usually just waiting for the next train. It is relaxing and seated, but it is also the only way to reach Rafiki's Planet Watch and often closes earlier than the rest of the park. Great for animal-loving families or Bluey-focused younger kids, not a quick filler.",
       },
       planningProfile: {
-        category: "plan_ahead_standby_only",
+        category: "filler_or_recovery",
         paidAccess: "none",
-        appStatus: "plan_ahead",
+        appStatus: "recovery",
         strategy:
-          "Only recommend when the family intentionally wants Rafiki's Planet Watch, Bluey's Wild World, or a slower animal-focused block.",
+          "Recommend when the family intentionally wants Rafiki's Planet Watch, Bluey's Wild World, or a slower animal-focused block. Check operating hours before sending the family there.",
       },
-      tags: ["train", "animals", "rafikis", "bluey", "outdoor", "plan-ahead"],
+      tags: ["train", "animals", "rafikis", "bluey", "outdoor", "recovery"],
     },
 
     "Bluey's Wild World at Conservation Station": {
@@ -2319,15 +2319,15 @@ export const RIDE_METADATA = {
       waitProfile: {
         averageWait: 15,
         goodDealUnder: 10,
-        normalRange: [10, 20],
+        normalRange: [15, 20],
         badValueOver: 30,
         usuallyHighAllDay: false,
         strategyNote:
-          "Covered bird show in Asia. Good lower-stress option if showtime is convenient, but not true AC.",
+          "Outdoor shaded bird show in Asia. Arrive about 15 minutes before showtime. Good lower-stress option if showtime is convenient, but not true AC and it may end earlier in the day.",
       },
       planningProfile: {
         category: "filler_or_recovery",
-        paidAccess: "none",
+        paidAccess: "LLMP",
         appStatus: "filler",
         strategy:
           "Use if already nearby and showtime lines up, especially for animal-loving families.",
