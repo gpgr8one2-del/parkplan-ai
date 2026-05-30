@@ -177,9 +177,13 @@ const DEFAULT_FAMILY_PROFILE = {
   pace: "balanced",
   priorities: [],
   tripContext: {
+    tripStartDate: "",
+    tripEndDate: "",
     tripLengthDays: 1,
     parkDays: 1,
     selectedParks: ["magic_kingdom"],
+    firstPark: "magic_kingdom",
+    priorityPark: "magic_kingdom",
     parkHopper: "unknown",
   },
   resortContext: {
@@ -226,6 +230,64 @@ function getDisneyAgeLabel(ageClass) {
   if (ageClass === "adult") return "Disney adult";
 
   return "Age not set";
+}
+
+function getTodayDateString() {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+function getDateAccessStatus(tripContext = {}) {
+  const today = getTodayDateString();
+  const start = tripContext.tripStartDate || "";
+  const end = tripContext.tripEndDate || "";
+
+  if (!start || !end) {
+    return {
+      hasDates: false,
+      isBeforeTrip: false,
+      isDuringTrip: false,
+      isAfterTrip: false,
+      status: "dates_missing",
+      message: "Trip dates are not set yet.",
+    };
+  }
+
+  if (today < start) {
+    return {
+      hasDates: true,
+      isBeforeTrip: true,
+      isDuringTrip: false,
+      isAfterTrip: false,
+      status: "before_trip",
+      message: "Trip is upcoming.",
+    };
+  }
+
+  if (today > end) {
+    return {
+      hasDates: true,
+      isBeforeTrip: false,
+      isDuringTrip: false,
+      isAfterTrip: true,
+      status: "after_trip",
+      message: "Trip dates have passed.",
+    };
+  }
+
+  return {
+    hasDates: true,
+    isBeforeTrip: false,
+    isDuringTrip: true,
+    isAfterTrip: false,
+    status: "during_trip",
+    message: "Trip is active today.",
+  };
+}
+
+function getParkLabel(parkId) {
+  return DISNEY_PARK_OPTIONS.find((park) => park.value === parkId)?.label || "Not set";
 }
 
 function normalizeFamilyProfile(profile = {}) {
@@ -292,11 +354,15 @@ function normalizeFamilyProfile(profile = {}) {
     partySize: adultCount + childCount,
     tripContext: {
       ...merged.tripContext,
+      tripStartDate: merged.tripContext?.tripStartDate || "",
+      tripEndDate: merged.tripContext?.tripEndDate || "",
       tripLengthDays: Math.max(1, Math.min(21, Number(merged.tripContext?.tripLengthDays) || 1)),
       parkDays: Math.max(1, Math.min(21, Number(merged.tripContext?.parkDays) || 1)),
       selectedParks: Array.isArray(merged.tripContext?.selectedParks)
         ? merged.tripContext.selectedParks
         : [],
+      firstPark: merged.tripContext?.firstPark || "",
+      priorityPark: merged.tripContext?.priorityPark || "",
       parkHopper: merged.tripContext?.parkHopper || "unknown",
     },
     children,
@@ -347,10 +413,12 @@ function buildFamilyProfileSummary(profile) {
     : null;
 
   const resortProfile = getResortProfile(safeProfile.resortContext?.resortId);
+  const tripAccessStatus = getDateAccessStatus(safeProfile.tripContext);
 
   return {
     ...safeProfile,
     resortProfile,
+    tripAccessStatus,
     ageSummary,
     shortestHeightInches,
     hasUnder3: ageSummary.under3Count > 0,
@@ -1018,11 +1086,20 @@ function App() {
         selectedParks.add(parkValue);
       }
 
+      const nextSelectedParks = Array.from(selectedParks);
+      const fallbackPark = nextSelectedParks[0] || "";
+
       return normalizeFamilyProfile({
         ...safeProfile,
         tripContext: {
           ...safeProfile.tripContext,
-          selectedParks: Array.from(selectedParks),
+          selectedParks: nextSelectedParks,
+          firstPark: nextSelectedParks.includes(safeProfile.tripContext.firstPark)
+            ? safeProfile.tripContext.firstPark
+            : fallbackPark,
+          priorityPark: nextSelectedParks.includes(safeProfile.tripContext.priorityPark)
+            ? safeProfile.tripContext.priorityPark
+            : fallbackPark,
         },
       });
     });
@@ -1209,6 +1286,10 @@ function App() {
                 {summary.ageSummary.childCount} Disney child ·{" "}
                 {summary.ageSummary.disneyAdultCount} Disney adult · {shortestHeightText}
               </p>
+              <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 12 }}>
+                First park: {getParkLabel(summary.tripContext.firstPark)} · Priority park:{" "}
+                {getParkLabel(summary.tripContext.priorityPark)} · {summary.tripAccessStatus.message}
+              </p>
             </div>
 
             {familyProfileStep === 1 && (
@@ -1369,7 +1450,72 @@ function App() {
 
                 <div>
                   <strong>Trip length and parks</strong>
+                  <p style={{ margin: "5px 0 10px", color: "#64748b", fontSize: 13 }}>
+                    Dates help control when AI chat should be available later and let
+                    ParkPlan understand whether this is pre-trip planning or an active park day.
+                  </p>
+
                   <div style={{ display: "grid", gap: 10, marginTop: 8 }}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: 10,
+                      }}
+                    >
+                      <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+                        Trip start date
+                        <input
+                          type="date"
+                          value={familyProfile.tripContext.tripStartDate}
+                          onChange={(e) =>
+                            updateFamilyProfile({
+                              tripContext: {
+                                ...familyProfile.tripContext,
+                                tripStartDate: e.target.value,
+                                tripEndDate:
+                                  familyProfile.tripContext.tripEndDate &&
+                                  familyProfile.tripContext.tripEndDate < e.target.value
+                                    ? e.target.value
+                                    : familyProfile.tripContext.tripEndDate,
+                              },
+                            })
+                          }
+                          style={{
+                            border: "1px solid #cbd5e1",
+                            borderRadius: 14,
+                            padding: "10px 12px",
+                            fontWeight: 800,
+                            background: "white",
+                          }}
+                        />
+                      </label>
+
+                      <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+                        Trip end date
+                        <input
+                          type="date"
+                          value={familyProfile.tripContext.tripEndDate}
+                          min={familyProfile.tripContext.tripStartDate || undefined}
+                          onChange={(e) =>
+                            updateFamilyProfile({
+                              tripContext: {
+                                ...familyProfile.tripContext,
+                                tripEndDate: e.target.value,
+                              },
+                            })
+                          }
+                          style={{
+                            border: "1px solid #cbd5e1",
+                            borderRadius: 14,
+                            padding: "10px 12px",
+                            fontWeight: 800,
+                            background: "white",
+                          }}
+                        />
+                      </label>
+                    </div>
+
                     <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
                       Total trip length
                       <select
@@ -1478,6 +1624,72 @@ function App() {
                       );
                     })}
                   </div>
+
+                  {familyProfile.tripContext.selectedParks.length > 0 && (
+                    <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                      <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+                        Which park do you want to do first?
+                        <select
+                          value={familyProfile.tripContext.firstPark || ""}
+                          onChange={(e) =>
+                            updateFamilyProfile({
+                              tripContext: {
+                                ...familyProfile.tripContext,
+                                firstPark: e.target.value,
+                              },
+                            })
+                          }
+                          style={{
+                            border: "1px solid #cbd5e1",
+                            borderRadius: 14,
+                            padding: "10px 12px",
+                            fontWeight: 800,
+                            background: "white",
+                          }}
+                        >
+                          <option value="">Not sure yet</option>
+                          {DISNEY_PARK_OPTIONS.filter((park) =>
+                            familyProfile.tripContext.selectedParks.includes(park.value)
+                          ).map((park) => (
+                            <option key={park.value} value={park.value}>
+                              {park.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 900 }}>
+                        Main priority park
+                        <select
+                          value={familyProfile.tripContext.priorityPark || ""}
+                          onChange={(e) =>
+                            updateFamilyProfile({
+                              tripContext: {
+                                ...familyProfile.tripContext,
+                                priorityPark: e.target.value,
+                              },
+                            })
+                          }
+                          style={{
+                            border: "1px solid #cbd5e1",
+                            borderRadius: 14,
+                            padding: "10px 12px",
+                            fontWeight: 800,
+                            background: "white",
+                          }}
+                        >
+                          <option value="">Not sure yet</option>
+                          {DISNEY_PARK_OPTIONS.filter((park) =>
+                            familyProfile.tripContext.selectedParks.includes(park.value)
+                          ).map((park) => (
+                            <option key={park.value} value={park.value}>
+                              {park.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  )}
                 </div>
 
                 <button
