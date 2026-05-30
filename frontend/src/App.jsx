@@ -835,6 +835,41 @@ function getRecommendationForRide(recommendations = {}, rideId) {
   );
 }
 
+function buildAccessState({ profileCompletion, devPreviewFullApp, timeContext }) {
+  const profileComplete = Boolean(profileCompletion?.isComplete);
+  const isDevPreviewing = Boolean(
+    DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && devPreviewFullApp
+  );
+  const hasPersonalizedAccess = profileComplete || isDevPreviewing;
+  const aiAllowedByTime = Boolean(timeContext?.aiAccess?.shouldAllowAi);
+
+  const setupReason = profileComplete
+    ? "Trip setup is complete."
+    : "Finish trip setup to unlock personalized guidance.";
+
+  const aiLockedReason = !hasPersonalizedAccess
+    ? "Finish trip setup before using AI guidance."
+    : !aiAllowedByTime && !isDevPreviewing
+    ? timeContext?.aiAccess?.reason ||
+      "AI guidance is not available for this trip timing yet."
+    : "AI guidance is available.";
+
+  return {
+    plan: isDevPreviewing ? "dev_preview" : profileComplete ? "personalized" : "basic",
+    isDevPreviewing,
+    profileComplete,
+
+    canViewWaitTimes: true,
+    canUseRecommendations: hasPersonalizedAccess,
+    canUseAiChat: isDevPreviewing || (hasPersonalizedAccess && aiAllowedByTime),
+    canUseMiniGames: true,
+    canUseDayOfGuidance: hasPersonalizedAccess,
+
+    setupReason,
+    recommendationLockedReason: setupReason,
+    aiLockedReason,
+  };
+}
 
 function App() {
   const [activePark, setActivePark] = useState("magic_kingdom");
@@ -902,9 +937,6 @@ function App() {
     return getFamilyProfileCompletion(familyProfileSummary);
   }, [familyProfileSummary]);
 
-  const hasPersonalizedAccess =
-    profileCompletion.isComplete || (DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && devPreviewFullApp);
-
   const isProfileIncomplete = !profileCompletion.isComplete;
 
   const timeContext = useMemo(() => {
@@ -913,6 +945,18 @@ function App() {
       familyProfile: familyProfileSummary,
     });
   }, [activePark, familyProfileSummary]);
+
+  const access = useMemo(
+    () =>
+      buildAccessState({
+        profileCompletion,
+        devPreviewFullApp,
+        timeContext,
+      }),
+    [profileCompletion, devPreviewFullApp, timeContext]
+  );
+
+  const hasPersonalizedAccess = access.canUseRecommendations;
 
   const resortOptions = useMemo(() => {
     return getResortOptions();
@@ -1276,6 +1320,10 @@ function App() {
         timeContext,
         locationContext: locationContextForDecisions,
         ...payload,
+        metadata: {
+          accessPlan: access.plan,
+          ...(payload.metadata || {}),
+        },
       });
     },
     [
@@ -1287,6 +1335,7 @@ function App() {
       familyProfileSummary,
       timeContext,
       locationContextForDecisions,
+      access.plan,
     ]
   );
 
@@ -1295,7 +1344,9 @@ function App() {
       source: "screen",
       metadata: {
         familyProfileStep,
-        hasPersonalizedAccess,
+        accessPlan: access.plan,
+        canUseRecommendations: access.canUseRecommendations,
+        canUseAiChat: access.canUseAiChat,
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3322,7 +3373,7 @@ function App() {
           </section>
         )}
 
-        {isProfileIncomplete && hasPersonalizedAccess && DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && (
+        {isProfileIncomplete && access.isDevPreviewing && DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && (
           <section
             style={{
               ...card,
@@ -3478,8 +3529,7 @@ function App() {
 
           <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 13 }}>
             Mode: {timeContext.planningMode.replace(/_/g, " ")} Â· AI:{" "}
-            {timeContext.aiAccess.shouldAllowAi ? "available" : "not available"} Â·{" "}
-            {timeContext.aiAccess.reason}
+            {access.canUseAiChat ? "available" : "not available"} Â· {access.aiLockedReason}
           </p>
         </section>
 
@@ -3986,7 +4036,7 @@ function App() {
           </div>
         </section>
 
-        {hasPersonalizedAccess ? (
+        {access.canUseAiChat ? (
           <section style={card}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <MessageCircle size={18} />
@@ -4038,10 +4088,11 @@ function App() {
         </section>
         ) : (
           renderLockedFeatureCard({
-            title: "AI guidance needs your trip setup",
-            body:
-              "AI is only useful when it knows your family, dates, park goals, resort context, and energy style. Basic wait times stay available while setup is incomplete.",
-            actionLabel: "Set up AI guidance",
+            title: access.profileComplete
+              ? "AI guidance is not available for this trip timing yet"
+              : "AI guidance needs your trip setup",
+            body: access.aiLockedReason,
+            actionLabel: access.profileComplete ? "Review Trip Setup" : "Set up AI guidance",
           })
         )}
       </div>
