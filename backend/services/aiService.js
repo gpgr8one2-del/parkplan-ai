@@ -10,8 +10,10 @@ You help guests make practical in-park decisions using the live context provided
 Rules:
 - Be concise, useful, and practical.
 - Act like a calm park expert, not a generic travel blogger.
-- Prioritize current park, current land, current activity, weather mode, live waits, and the recommendation cards.
-- Use the app's recommendation cards as the source of truth when available.
+- Prioritize current park, current land, current activity, time context, family profile, weather mode, live waits, and the recommendation cards.
+- Use the app's recommendation cards as the source of truth when available, but explain them through the family profile and time context.
+- Do not act like every guest is the same. Use children’s ages/heights, thrill tolerance, walking tolerance, heat sensitivity, park goals, trip dates, resort context, and planning preferences when available.
+- If a family profile is incomplete, keep guidance more general and encourage completing setup for personalized recommendations.
 - If the guest is currently in line for a ride, respect that choice. Do not tell them to skip it unless they say the ride is down, the line is unsafe, someone may be overheating/sick, there is true meltdown risk, or they ask whether to leave.
 - If the guest is currently in line, use elapsed line time, posted wait when joined, weather, ride value, and family energy before advising them to stay or leave.
 - When the user is already in line and asks whether to leave, do not give a hard "leave the line" answer unless safety/health, a stopped line, true meltdown risk, ride closure, or severe family distress clearly outweighs the ride value.
@@ -22,6 +24,11 @@ Rules:
 - If live data may be stale or missing, say so briefly and advise refreshing or checking the official park app before walking far.
 - Do not recommend outdoor or mixed attractions during active storm/lightning conditions unless the context clearly says it is safe.
 - During heat mode, suggest water, shade, AC, indoor rides, quick-service water stops, and resort breaks when appropriate.
+- During midday heat or afternoon crash windows, protect family energy before optimization.
+- If time context says day_before, behave like a night-before trip planner: packing, timing, first moves, rope drop, food, transportation, and realistic expectations.
+- If time context says day_of_rope_drop, focus on arrival, first attraction choice, avoiding wasted walking, and quick pivots.
+- If time context says day_of_energy_management, prioritize shade, AC, food, hydration, lower walking, and family reset logic.
+- If time context says day_of_evening_strategy, focus on final high-value rides, nighttime shows, transportation, tired kids, and exit strategy.
 - Keep responses easy to act on while walking in a park.
 - Avoid long essays. Give the next best move and why.
 - If the user asks for a plan, give a simple ordered plan.
@@ -31,7 +38,9 @@ Rules:
 - From Magic Kingdom, Wilderness Lodge is a nearby resort/lunch-break option by boat/bus, but Pop Century is not a quick Skyliner move from Magic Kingdom.
 - Skyliner logic mainly applies to EPCOT, Hollywood Studios, Riviera, Caribbean Beach, Pop Century, and Art of Animation.
 - If the guest has a dining reservation or planned meal near the current park, use that as the natural reset point before suggesting a far resort break.
+- If resortProfile is available, use its directAccess and breakStrategy before suggesting a resort break.
 - Do not recommend park → far resort → another resort movements unless the user clearly has enough time and wants a full reset.
+- Do not suggest a resort as a quick break just because it is geographically nearby or has a transportation mode somewhere on property. Direct access from the current park matters.
 - If GPS/current location context includes a nearest anchor, use it carefully. Treat it as "near X," not proof that the guest is in line for X unless current activity says they tapped In Line.
 - If GPS confidence is low or border-area context is mentioned, avoid overconfident location claims and suggest confirming the closest area in the app.
 
@@ -172,8 +181,19 @@ function formatRideCard(label, ride) {
   const waitStatus = ride.waitValueStatus?.status
     ? ` · wait value: ${ride.waitValueStatus.status}`
     : "";
+  const heightWarning = ride.heightWarning?.message
+    ? ` · height warning: ${ride.heightWarning.message}`
+    : "";
+  const familyFit =
+    ride.familyProfileModifier !== undefined
+      ? ` · family fit modifier: ${ride.familyProfileModifier}`
+      : "";
+  const realityCheck =
+    ride.planAheadRealityCheckModifier !== undefined
+      ? ` · plan-ahead reality check: ${ride.planAheadRealityCheckModifier}`
+      : "";
 
-  return `${label}: ${name} · ${wait}${land}${distance}${waitStatus}${reason}${planAheadReason}`;
+  return `${label}: ${name} · ${wait}${land}${distance}${waitStatus}${heightWarning}${familyFit}${realityCheck}${reason}${planAheadReason}`;
 }
 
 function buildWeatherContext(weather, weatherMode) {
@@ -205,6 +225,127 @@ function buildWeatherContext(weather, weatherMode) {
     `Weather: ${temp} · ${feelsLike} · ${humidity} · ${summary} · ${rainRisk} · ${stormMode}`,
     `Weather mode: ${label} (${mode})`,
     message ? `Weather advice: ${message}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+
+function formatList(values = [], fallback = "none") {
+  if (!Array.isArray(values) || !values.length) return fallback;
+  return values.slice(0, 12).join(", ");
+}
+
+function buildFamilyProfileContext(familyProfile) {
+  if (!familyProfile) {
+    return "Family profile: unavailable";
+  }
+
+  const priorities = formatList(familyProfile.priorities);
+  const selectedParks = formatList(familyProfile.tripContext?.selectedParks);
+  const children = Array.isArray(familyProfile.children)
+    ? familyProfile.children
+        .slice(0, 10)
+        .map((child, index) => {
+          const age = child.age === "" || child.age == null ? "unknown age" : `${child.age}`;
+          const height =
+            child.heightInches === "" || child.heightInches == null
+              ? "unknown height"
+              : `${child.heightInches} in`;
+          return `child ${index + 1}: age ${age}, ${height}`;
+        })
+        .join("; ")
+    : "none";
+
+  const ageSummary = familyProfile.ageSummary || {};
+  const resortContext = familyProfile.resortContext || {};
+  const planning = familyProfile.planningPreferences || {};
+  const trip = familyProfile.tripContext || {};
+
+  return [
+    "Family profile:",
+    `- Setup complete: ${familyProfile.isSetupComplete === true ? "yes" : "no"}`,
+    `- Party: ${familyProfile.adultCount ?? "unknown"} adults, ${familyProfile.childCount ?? "unknown"} children, ${familyProfile.partySize ?? "unknown"} total`,
+    `- Age summary: ${ageSummary.under3Count ?? 0} under 3, ${ageSummary.childCount ?? 0} Disney children, ${ageSummary.disneyAdultCount ?? 0} Disney adults`,
+    `- Children: ${children}`,
+    `- Shortest child/rider height: ${
+      familyProfile.shortestHeightInches != null
+        ? `${familyProfile.shortestHeightInches} in`
+        : "not set"
+    }`,
+    `- Whole-group ride rule: ${familyProfile.wholeGroupRidesTogether || "unknown"}`,
+    `- Thrill tolerance: ${familyProfile.thrillTolerance || "unknown"}`,
+    `- Walking tolerance: ${familyProfile.walkingTolerance || "unknown"}`,
+    `- Heat sensitivity: ${familyProfile.heatSensitivity || "unknown"}`,
+    `- Water ride preference: ${familyProfile.waterRidePreference || "unknown"}`,
+    `- Family pace: ${familyProfile.pace || "unknown"}`,
+    `- Priorities: ${priorities}`,
+    `- Trip dates: ${trip.tripStartDate || "not set"} to ${trip.tripEndDate || "not set"}`,
+    `- Trip length / park days: ${trip.tripLengthDays || "unknown"} days / ${trip.parkDays || "unknown"} park days`,
+    `- Selected parks: ${selectedParks}`,
+    `- First park: ${trip.firstPark || "unknown"}`,
+    `- Priority park: ${trip.priorityPark || "unknown"}`,
+    `- Park hopper: ${trip.parkHopper || "unknown"}`,
+    `- Planning mode: ${planning.planningMode || "unknown"}`,
+    `- Day-before help: ${planning.dayBeforeHelp || "unknown"}`,
+    `- Day-of help: ${planning.dayOfHelp || "unknown"}`,
+    `- Rope drop style: ${planning.ropeDropStyle || "unknown"}`,
+    `- Midday break style: ${planning.middayBreakStyle || "unknown"}`,
+    `- Dining style: ${planning.diningStyle || "unknown"}`,
+    `- Resort/on-property: ${resortContext.stayingOnProperty || "unknown"}`,
+    `- Resort name: ${resortContext.resortName || resortContext.offPropertyHotelName || "not set"}`,
+    `- Main transportation today: ${resortContext.transportationMode || "unknown"}`,
+    `- Lightning Lane / Single Pass preference: ${familyProfile.lightningLanePreference || "unknown"}`,
+  ].join("\n");
+}
+
+function buildResortProfileContext(familyProfile, activePark) {
+  const profile = familyProfile?.resortProfile;
+
+  if (!profile) {
+    return "Resort profile: unavailable or off-property/unknown";
+  }
+
+  const transport = formatList(profile.transportation);
+  const nearestParks = formatList(profile.nearestParks);
+  const directAccess = profile.directAccess?.[activePark] || [];
+  const currentBreakStrategy =
+    profile.breakStrategy?.[activePark] ||
+    "No specific break strategy available for the current park.";
+
+  return [
+    "Selected Disney resort profile:",
+    `- Resort: ${profile.name || "unknown"}`,
+    `- Area: ${profile.areaLabel || profile.area || "unknown"}`,
+    `- Nearest parks: ${nearestParks}`,
+    `- Transportation modes: ${transport}`,
+    `- Direct access from current park (${activePark || "unknown"}): ${formatList(directAccess)}`,
+    `- Current park break strategy: ${currentBreakStrategy}`,
+  ].join("\n");
+}
+
+function buildTimeContext(timeContext) {
+  if (!timeContext) {
+    return "Time context: unavailable";
+  }
+
+  const tripStatus = timeContext.tripStatus || {};
+  const aiAccess = timeContext.aiAccess || {};
+
+  return [
+    "Time context:",
+    `- Orlando now: ${timeContext.orlandoDateLabel || timeContext.orlandoDate || "unknown"} · ${timeContext.orlandoTimeLabel || "unknown time"} · ${timeContext.orlandoWeekday || "unknown weekday"}`,
+    `- Day phase: ${timeContext.dayPhaseLabel || timeContext.dayPhase || "unknown"}`,
+    `- Planning mode for now: ${timeContext.planningMode || "unknown"}`,
+    `- Trip status: ${tripStatus.status || "unknown"} · ${tripStatus.message || "no message"}`,
+    `- Trip day number: ${tripStatus.dayNumber || "not active"}`,
+    `- AI access phase: ${aiAccess.phase || "unknown"} · allowed: ${
+      aiAccess.shouldAllowAi === false ? "no" : "yes"
+    } · ${aiAccess.reason || "no reason"}`,
+    `- Think like day-before planner: ${timeContext.shouldThinkLikeDayBeforePlanner ? "yes" : "no"}`,
+    `- Think like in-park guide: ${timeContext.shouldThinkLikeInParkGuide ? "yes" : "no"}`,
+    `- Protect family energy: ${timeContext.shouldProtectFamilyEnergy ? "yes" : "no"}`,
+    timeContext.summary ? `- Summary: ${timeContext.summary}` : null,
   ]
     .filter(Boolean)
     .join("\n");
@@ -331,6 +472,8 @@ function buildDynamicContext(sessionData = {}) {
     currentLand,
     currentActivity,
     currentActivityContext,
+    familyProfile,
+    timeContext,
     locationContext,
     parkPlanBehaviorHints,
     weather,
@@ -343,6 +486,9 @@ function buildDynamicContext(sessionData = {}) {
 
   return [
     `Active park: ${activePark || "unknown"}`,
+    buildTimeContext(timeContext),
+    buildFamilyProfileContext(familyProfile),
+    buildResortProfileContext(familyProfile, activePark),
     buildLocationContext(locationContext, currentLand),
     buildTransportationContext(activePark),
     buildCurrentActivityContext(currentActivityContext || currentActivity),
@@ -389,6 +535,14 @@ async function getAIResponse(message, sessionData = {}) {
         sessionData.currentActivityContext?.elapsedMinutesInLine ??
         sessionData.currentActivity?.elapsedMinutesInLine,
       weatherMode: sessionData.weatherMode?.mode,
+      timePlanningMode: sessionData.timeContext?.planningMode,
+      timeDayPhase: sessionData.timeContext?.dayPhase,
+      tripStatus: sessionData.timeContext?.tripStatus?.status,
+      familyProfileComplete: sessionData.familyProfile?.isSetupComplete,
+      familyPlanningMode: sessionData.familyProfile?.planningPreferences?.planningMode,
+      resortName:
+        sessionData.familyProfile?.resortProfile?.name ||
+        sessionData.familyProfile?.resortContext?.resortName,
       model: ANTHROPIC_MODEL,
     },
     "AI chat request"
