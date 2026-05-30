@@ -90,6 +90,9 @@ const EXACT_HIDE_NAMES_BY_PARK = {
       "The Boneyard",
       "Fossil Fun Games",
       "Finding Nemo: The Big Blue... and Beyond! Single Rider",
+
+      // Scheduled shows that should not look like line-based wait entries
+      "Feathered Friends in Flight!",
     ].map(normalizeName)
   ),
 };
@@ -144,6 +147,7 @@ const GENERIC_HIDE_PATTERNS_BY_PARK = {
     /animal care/i,
     /conservation station/i,
     /affection section/i,
+    /feathered friends/i,
 
     // Closed / transition / legacy DinoLand items
     /dinoland/i,
