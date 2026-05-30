@@ -1874,6 +1874,492 @@ export const RIDE_METADATA = {
     },
   },
 
+
+  // ============================================================
+  // Animal Kingdom (queue-times park ID: 8)
+  // V1 lands: oasis, discovery_island, pandora, africa, asia,
+  // rafikis_planet_watch, tropical_americas_construction
+  //
+  // DinoLand U.S.A. / DINOSAUR are intentionally excluded as active
+  // recommendations because that area has closed for the Tropical Americas /
+  // Pueblo Esperanza transformation.
+  // ============================================================
+  animal_kingdom: {
+    "Avatar Flight of Passage": {
+      displayName: "Avatar Flight of Passage",
+      land: "pandora",
+      minHeightInches: 44,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 5,
+      popularity: 99,
+      waitProfile: {
+        averageWait: 95,
+        goodDealUnder: 65,
+        normalRange: [80, 115],
+        badValueOver: 130,
+        usuallyHighAllDay: true,
+        strategyNote:
+          "Animal Kingdom's biggest headliner. Rope drop only works if you are truly near the front. Otherwise use Single Pass, watch for late-day dips, or ride near park close.",
+      },
+      planningProfile: {
+        category: "plan_ahead_single_pass",
+        paidAccess: "LLSP",
+        appStatus: "plan_ahead",
+        strategy:
+          "Buy Single Pass if this is a must-do, be at the front for Early Entry, or save for the final hour. Do not burn the family's energy chasing an average mid-day wait.",
+      },
+      tags: [
+        "headliner",
+        "simulator",
+        "thrill",
+        "pandora",
+        "single-pass",
+        "plan-ahead",
+        "indoor",
+        "ac",
+        "motion-sickness",
+      ],
+    },
+
+    "Na'vi River Journey": {
+      displayName: "Na'vi River Journey",
+      land: "pandora",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 76,
+      waitProfile: {
+        averageWait: 55,
+        goodDealUnder: 35,
+        normalRange: [45, 65],
+        badValueOver: 80,
+        usuallyHighAllDay: true,
+        strategyNote:
+          "Beautiful but short, with lower capacity. Worth doing if the wait dips or if Pandora is a major priority for the family.",
+      },
+      planningProfile: {
+        category: "wait_for_drop",
+        paidAccess: "LLMP",
+        appStatus: "wait_for_drop",
+        strategy:
+          "Ride when nearby and under about 35–40 minutes. If it is high, protect the family's energy and check back later.",
+      },
+      tags: ["boat", "family", "pandora", "indoor", "ac", "wait-for-drop"],
+    },
+
+    "Kilimanjaro Safaris": {
+      displayName: "Kilimanjaro Safaris",
+      land: "africa",
+      minHeightInches: 0,
+      environment: "outdoor",
+      hasAC: false,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 2,
+      popularity: 92,
+      waitProfile: {
+        averageWait: 55,
+        goodDealUnder: 35,
+        normalRange: [45, 65],
+        badValueOver: 80,
+        usuallyHighAllDay: true,
+        strategyNote:
+          "Best earlier in the morning or later in the day when animals are more active and heat is less brutal. Midday waits can feel worse because the payoff may be weaker.",
+      },
+      planningProfile: {
+        category: "plan_ahead_multi_pass",
+        paidAccess: "LLMP",
+        appStatus: "plan_ahead",
+        strategy:
+          "Make this an early anchor for families who care about animals. If it is hot and late morning, weigh the wait against family energy.",
+      },
+      tags: ["animals", "safari", "family", "outdoor", "plan-ahead"],
+    },
+
+    "Expedition Everest - Legend of the Forbidden Mountain": {
+      displayName: "Expedition Everest - Legend of the Forbidden Mountain",
+      land: "asia",
+      minHeightInches: 44,
+      environment: "mixed",
+      hasAC: false,
+      getsWet: false,
+      closesInRain: true,
+      intensity: 5,
+      popularity: 86,
+      waitProfile: {
+        averageWait: 40,
+        goodDealUnder: 25,
+        normalRange: [35, 55],
+        badValueOver: 70,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "High-priority thrill ride that can drop later in the day. Single Rider can help thrill-seekers, but do not push it as the default family strategy.",
+      },
+      planningProfile: {
+        category: "wait_for_drop",
+        paidAccess: "LLMP",
+        appStatus: "wait_for_drop",
+        strategy:
+          "Great when under 30 minutes, especially if you are already in Asia. Avoid dragging tired non-thrill riders across the park.",
+      },
+      tags: ["coaster", "thrill", "asia", "weather-sensitive", "wait-for-drop"],
+    },
+
+    "Kali River Rapids": {
+      displayName: "Kali River Rapids",
+      land: "asia",
+      minHeightInches: 38,
+      environment: "outdoor",
+      hasAC: false,
+      getsWet: true,
+      closesInRain: true,
+      intensity: 3,
+      popularity: 72,
+      waitProfile: {
+        averageWait: 40,
+        goodDealUnder: 25,
+        normalRange: [35, 55],
+        badValueOver: 70,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Demand spikes hard in heat because it is the main water ride. Great hot-day reset if your family is okay getting soaked.",
+      },
+      planningProfile: {
+        category: "weather_dependent",
+        paidAccess: "LLMP",
+        appStatus: "go_now_if_low",
+        strategy:
+          "Strong heat-day option if nearby and under 30 minutes. Avoid if the family hates getting wet, has dinner plans soon, or storms are active.",
+      },
+      tags: ["water", "family", "asia", "outdoor", "gets-wet", "weather-sensitive"],
+    },
+
+    "Festival of the Lion King": {
+      displayName: "Festival of the Lion King",
+      land: "africa",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 78,
+      waitProfile: {
+        averageWait: 25,
+        goodDealUnder: 15,
+        normalRange: [20, 35],
+        badValueOver: 45,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Major indoor show and one of the best family energy resets in Animal Kingdom. Plan around showtimes rather than treating it like a normal standby line.",
+      },
+      planningProfile: {
+        category: "plan_ahead_show",
+        paidAccess: "LLMP",
+        appStatus: "plan_ahead",
+        strategy:
+          "Use as a scheduled anchor when the family needs AC, seats, and a high-quality emotional reset.",
+      },
+      tags: ["show", "family", "indoor", "ac", "recovery", "must-do-show"],
+    },
+
+    "Finding Nemo: The Big Blue... and Beyond!": {
+      displayName: "Finding Nemo: The Big Blue... and Beyond!",
+      land: "discovery_island",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 48,
+      waitProfile: {
+        averageWait: 20,
+        goodDealUnder: 10,
+        normalRange: [15, 30],
+        badValueOver: 40,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Indoor theater show. Useful as a sit-down AC reset when showtime lines up, especially during heat.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "LLMP_not_needed",
+        appStatus: "recovery",
+        strategy:
+          "Use when nearby or when the group needs seats and AC. Do not cross the park just for it unless the family specifically wants Nemo.",
+      },
+      tags: ["show", "family", "indoor", "ac", "recovery"],
+    },
+
+    "It's Tough to be a Bug!": {
+      displayName: "It's Tough to be a Bug!",
+      land: "discovery_island",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 3,
+      popularity: 42,
+      waitProfile: {
+        averageWait: 15,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 30,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Indoor Tree of Life theater show. It can be intense for little kids, so do not treat it as a universal calm break.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "filler",
+        strategy:
+          "Use as nearby indoor filler if the group is okay with a slightly startling show. Avoid for easily scared young kids.",
+      },
+      tags: ["show", "indoor", "ac", "may-scare-kids", "filler"],
+    },
+
+    "Gorilla Falls Exploration Trail": {
+      displayName: "Gorilla Falls Exploration Trail",
+      land: "africa",
+      minHeightInches: 0,
+      environment: "outdoor",
+      hasAC: false,
+      getsWet: false,
+      closesInRain: true,
+      intensity: 1,
+      popularity: 38,
+      waitProfile: {
+        averageWait: 10,
+        goodDealUnder: 10,
+        normalRange: [5, 15],
+        badValueOver: 25,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Self-paced animal trail near Safaris. Best earlier or when family energy is calm enough to slow down.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "filler",
+        strategy:
+          "Use as a low-pressure animal experience near Safaris. Avoid in peak heat if the group needs true AC.",
+      },
+      tags: ["animals", "trail", "walkthrough", "outdoor", "family", "filler"],
+    },
+
+    "Maharajah Jungle Trek": {
+      displayName: "Maharajah Jungle Trek",
+      land: "asia",
+      minHeightInches: 0,
+      environment: "outdoor",
+      hasAC: false,
+      getsWet: false,
+      closesInRain: true,
+      intensity: 1,
+      popularity: 35,
+      waitProfile: {
+        averageWait: 10,
+        goodDealUnder: 10,
+        normalRange: [5, 15],
+        badValueOver: 25,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Self-paced trail in Asia. Better when nearby and the family still has walking energy.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "filler",
+        strategy:
+          "Use while already in Asia, especially before or after Everest/Kali if the family wants animals and shade.",
+      },
+      tags: ["animals", "trail", "walkthrough", "outdoor", "family", "filler"],
+    },
+
+    "Wildlife Express Train": {
+      displayName: "Wildlife Express Train",
+      land: "rafikis_planet_watch",
+      minHeightInches: 0,
+      environment: "outdoor",
+      hasAC: false,
+      getsWet: false,
+      closesInRain: true,
+      intensity: 1,
+      popularity: 32,
+      waitProfile: {
+        averageWait: 15,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 30,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "This is a time commitment because it takes you out to Rafiki's Planet Watch and back. Great for animal-loving families, not a quick filler.",
+      },
+      planningProfile: {
+        category: "plan_ahead_standby_only",
+        paidAccess: "none",
+        appStatus: "plan_ahead",
+        strategy:
+          "Only recommend when the family intentionally wants Rafiki's Planet Watch or a slower animal-focused block.",
+      },
+      tags: ["train", "animals", "rafikis", "outdoor", "plan-ahead"],
+    },
+
+    "Conservation Station": {
+      displayName: "Conservation Station",
+      land: "rafikis_planet_watch",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 30,
+      waitProfile: {
+        averageWait: 10,
+        goodDealUnder: 10,
+        normalRange: [5, 15],
+        badValueOver: 25,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Indoor animal-care and conservation area at Rafiki's Planet Watch. Useful only if the family has committed to the train trip.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "recovery",
+        strategy:
+          "Good AC once at Rafiki's, but do not suggest it as a quick recovery option from the main park path.",
+      },
+      tags: ["animals", "education", "indoor", "ac", "rafikis", "recovery"],
+    },
+
+    "The Animation Experience at Conservation Station": {
+      displayName: "The Animation Experience at Conservation Station",
+      land: "rafikis_planet_watch",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 34,
+      waitProfile: {
+        averageWait: 15,
+        goodDealUnder: 10,
+        normalRange: [10, 25],
+        badValueOver: 35,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Scheduled drawing class at Rafiki's Planet Watch. Great for creative families, but it requires train/time commitment.",
+      },
+      planningProfile: {
+        category: "plan_ahead_show",
+        paidAccess: "none",
+        appStatus: "plan_ahead",
+        strategy:
+          "Recommend only when the family wants a slower creative break and has time for the Rafiki's Planet Watch loop.",
+      },
+      tags: ["drawing", "creative", "indoor", "ac", "rafikis", "plan-ahead"],
+    },
+
+    "Feathered Friends in Flight!": {
+      displayName: "Feathered Friends in Flight!",
+      land: "asia",
+      minHeightInches: 0,
+      environment: "covered",
+      hasAC: false,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 36,
+      waitProfile: {
+        averageWait: 15,
+        goodDealUnder: 10,
+        normalRange: [10, 20],
+        badValueOver: 30,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Covered bird show in Asia. Good lower-stress option if showtime is convenient, but not true AC.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "filler",
+        strategy:
+          "Use if already nearby and showtime lines up, especially for animal-loving families.",
+      },
+      tags: ["show", "animals", "birds", "covered", "family", "filler"],
+    },
+
+    "Tree of Life": {
+      displayName: "Tree of Life",
+      land: "discovery_island",
+      minHeightInches: 0,
+      environment: "outdoor",
+      hasAC: false,
+      getsWet: false,
+      closesInRain: true,
+      intensity: 1,
+      popularity: 50,
+      waitProfile: {
+        averageWait: 5,
+        goodDealUnder: 5,
+        normalRange: [5, 10],
+        badValueOver: 15,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Central landmark and slow-down moment. Use as orientation, photos, and low-pressure exploring rather than a normal ride target.",
+      },
+      planningProfile: {
+        category: "filler_or_recovery",
+        paidAccess: "none",
+        appStatus: "filler",
+        strategy:
+          "Use as a calm reset/photo/orientation point near Discovery Island, not as a cross-park recommendation.",
+      },
+      tags: ["landmark", "trail", "photos", "outdoor", "filler"],
+    },
+
+    "Adventurers Outpost": {
+      displayName: "Adventurers Outpost",
+      land: "discovery_island",
+      minHeightInches: 0,
+      environment: "indoor",
+      hasAC: true,
+      getsWet: false,
+      closesInRain: false,
+      intensity: 1,
+      popularity: 55,
+      waitProfile: {
+        averageWait: 30,
+        goodDealUnder: 20,
+        normalRange: [25, 45],
+        badValueOver: 55,
+        usuallyHighAllDay: false,
+        strategyNote:
+          "Indoor Mickey and Minnie meet-and-greet. This matters more for character-focused families than thrill-focused families.",
+      },
+      planningProfile: {
+        category: "character_priority",
+        paidAccess: "LLMP",
+        appStatus: "plan_ahead",
+        strategy:
+          "Prioritize if characters are a family goal. Otherwise treat as optional indoor filler only when nearby and reasonable.",
+      },
+      tags: ["characters", "mickey", "minnie", "indoor", "ac", "family"],
+    },
+  },
+
   // Future parks: animal_kingdom,
   // universal_studios, islands_of_adventure, epic_universe
 };
