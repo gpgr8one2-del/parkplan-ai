@@ -18,6 +18,12 @@ const recommendationSchema = z
     planningProfile: z.any().optional(),
     planAheadReason: z.string().optional(),
     strategyNote: z.string().optional(),
+    heightWarning: z.any().optional(),
+    familyProfileModifier: z.number().optional(),
+    rawFamilyProfileModifier: z.number().optional(),
+    planAheadRealityCheckModifier: z.number().optional(),
+    scheduledShowModifier: z.number().optional(),
+    wetRideModifier: z.number().optional(),
 
     // Added from rideRecommendations.js so AI can understand why a ride was promoted.
     nearbyHeadlinerOpportunityModifier: z.number().optional(),
@@ -132,12 +138,186 @@ const parkPlanBehaviorHintsSchema = z
   .passthrough()
   .optional();
 
+const resortProfileSchema = z
+  .object({
+    id: z.string().max(100).optional(),
+    name: z.string().max(250).optional(),
+    area: z.string().max(150).optional(),
+    areaLabel: z.string().max(250).optional(),
+    coordinates: z
+      .object({
+        lat: z.number().optional(),
+        lng: z.number().optional(),
+      })
+      .passthrough()
+      .optional(),
+    nearestParks: z.array(z.string().max(100)).max(10).optional(),
+    transportation: z.array(z.string().max(100)).max(20).optional(),
+    directAccess: z.record(z.any()).optional(),
+    breakStrategy: z.record(z.string().max(1200)).optional(),
+  })
+  .passthrough()
+  .nullable()
+  .optional();
+
+const familyProfileSchema = z
+  .object({
+    isSetupComplete: z.boolean().optional(),
+    adultCount: z.number().nullable().optional(),
+    childCount: z.number().nullable().optional(),
+    partySize: z.number().nullable().optional(),
+
+    children: z
+      .array(
+        z
+          .object({
+            id: z.string().max(100).optional(),
+            label: z.string().max(100).optional(),
+            age: z.union([z.string(), z.number()]).optional(),
+            heightInches: z.union([z.string(), z.number()]).optional(),
+          })
+          .passthrough()
+      )
+      .max(20)
+      .optional(),
+
+    guests: z
+      .array(
+        z
+          .object({
+            id: z.string().max(100).optional(),
+            label: z.string().max(100).optional(),
+            age: z.union([z.string(), z.number()]).optional(),
+            heightInches: z.union([z.string(), z.number()]).optional(),
+            isAdultPlaceholder: z.boolean().optional(),
+          })
+          .passthrough()
+      )
+      .max(30)
+      .optional(),
+
+    ageSummary: z
+      .object({
+        under3Count: z.number().optional(),
+        childCount: z.number().optional(),
+        disneyAdultCount: z.number().optional(),
+      })
+      .passthrough()
+      .optional(),
+
+    shortestHeightInches: z.number().nullable().optional(),
+    hasUnder3: z.boolean().optional(),
+    hasSmallChildren: z.boolean().optional(),
+    hasHeightLimitedRiders: z.boolean().optional(),
+
+    wholeGroupRidesTogether: z.string().max(50).optional(),
+    thrillTolerance: z.string().max(50).optional(),
+    walkingTolerance: z.string().max(50).optional(),
+    heatSensitivity: z.string().max(50).optional(),
+    waterRidePreference: z.string().max(50).optional(),
+    pace: z.string().max(50).optional(),
+    priorities: z.array(z.string().max(100)).max(30).optional(),
+
+    tripContext: z
+      .object({
+        tripStartDate: z.string().max(50).optional(),
+        tripEndDate: z.string().max(50).optional(),
+        tripLengthDays: z.number().optional(),
+        parkDays: z.number().optional(),
+        selectedParks: z.array(z.string().max(100)).max(20).optional(),
+        firstPark: z.string().max(100).optional(),
+        priorityPark: z.string().max(100).optional(),
+        parkHopper: z.string().max(50).optional(),
+      })
+      .passthrough()
+      .optional(),
+
+    planningPreferences: z
+      .object({
+        planningMode: z.string().max(100).optional(),
+        dayBeforeHelp: z.string().max(100).optional(),
+        dayOfHelp: z.string().max(100).optional(),
+        ropeDropStyle: z.string().max(100).optional(),
+        arrivalStyle: z.string().max(100).optional(),
+        middayBreakStyle: z.string().max(100).optional(),
+        napOrPoolBreak: z.string().max(100).optional(),
+        diningStyle: z.string().max(100).optional(),
+        mustDoMode: z.string().max(100).optional(),
+        aiTone: z.string().max(100).optional(),
+      })
+      .passthrough()
+      .optional(),
+
+    resortContext: z
+      .object({
+        stayingOnProperty: z.string().max(50).optional(),
+        resortId: z.string().max(100).optional(),
+        resortName: z.string().max(250).optional(),
+        offPropertyHotelName: z.string().max(250).optional(),
+        transportationMode: z.string().max(100).optional(),
+      })
+      .passthrough()
+      .optional(),
+
+    resortProfile: resortProfileSchema,
+    tripAccessStatus: z.any().optional(),
+    lightningLanePreference: z.string().max(100).optional(),
+  })
+  .passthrough()
+  .nullable()
+  .optional();
+
+const timeContextSchema = z
+  .object({
+    nowIso: z.string().max(100).optional(),
+    timeZone: z.string().max(100).optional(),
+
+    orlandoDate: z.string().max(50).optional(),
+    orlandoDateLabel: z.string().max(150).optional(),
+    orlandoTimeLabel: z.string().max(100).optional(),
+    orlandoWeekday: z.string().max(50).optional(),
+    orlandoHour: z.number().optional(),
+    orlandoMinute: z.number().optional(),
+    orlandoTotalMinutes: z.number().optional(),
+
+    activePark: z.string().max(100).nullable().optional(),
+    dayPhase: z.string().max(100).optional(),
+    dayPhaseLabel: z.string().max(150).optional(),
+
+    tripStatus: z.any().optional(),
+    planningMode: z.string().max(100).optional(),
+    aiAccess: z
+      .object({
+        phase: z.string().max(100).optional(),
+        shouldAllowAi: z.boolean().optional(),
+        reason: z.string().max(500).optional(),
+      })
+      .passthrough()
+      .optional(),
+
+    isPreTrip: z.boolean().optional(),
+    isDayBeforeTrip: z.boolean().optional(),
+    isDuringTrip: z.boolean().optional(),
+    isAfterTrip: z.boolean().optional(),
+
+    shouldThinkLikeDayBeforePlanner: z.boolean().optional(),
+    shouldThinkLikeInParkGuide: z.boolean().optional(),
+    shouldProtectFamilyEnergy: z.boolean().optional(),
+
+    summary: z.string().max(500).optional(),
+  })
+  .passthrough()
+  .nullable()
+  .optional();
+
 const chatSchema = z.object({
   message: z.string().trim().min(1).max(500),
   sessionData: z
     .object({
       activePark: z.string().max(100).optional(),
       currentLand: z.string().max(100).optional(),
+      familyProfile: familyProfileSchema,
+      timeContext: timeContextSchema,
       locationContext: locationContextSchema,
 
       currentActivity: currentActivitySchema,
@@ -206,6 +386,21 @@ router.post("/ai-chat", async (req, res) => {
         activePark: parsed.data?.sessionData?.activePark,
         currentLand: parsed.data?.sessionData?.currentLand,
         locationContext: parsed.data?.sessionData?.locationContext,
+        timeContext: parsed.data?.sessionData?.timeContext,
+        familyProfileSummary: parsed.data?.sessionData?.familyProfile
+          ? {
+              isSetupComplete: parsed.data.sessionData.familyProfile.isSetupComplete,
+              partySize: parsed.data.sessionData.familyProfile.partySize,
+              shortestHeightInches:
+                parsed.data.sessionData.familyProfile.shortestHeightInches,
+              planningMode:
+                parsed.data.sessionData.familyProfile.planningPreferences?.planningMode,
+              selectedParks:
+                parsed.data.sessionData.familyProfile.tripContext?.selectedParks,
+              resortName:
+                parsed.data.sessionData.familyProfile.resortContext?.resortName,
+            }
+          : null,
         currentActivity:
           parsed.data?.sessionData?.currentActivityContext ||
           parsed.data?.sessionData?.currentActivity,
