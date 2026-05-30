@@ -2348,6 +2348,7 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 36,
+      isScheduledShow: true,
       waitProfile: {
         averageWait: 15,
         goodDealUnder: 10,
@@ -2355,16 +2356,30 @@ export const RIDE_METADATA = {
         badValueOver: 30,
         usuallyHighAllDay: false,
         strategyNote:
-          "Outdoor shaded bird show in Asia. Arrive about 15 minutes before showtime. Good lower-stress option if showtime is convenient, but not true AC and it may end earlier in the day.",
+          "Outdoor shaded bird show in Asia. Do not treat a 0-minute wait as a walk-on ride. This should be handled as a showtime-based seated break, not a normal line-based attraction.",
+      },
+      showProfile: {
+        type: "scheduled_show",
+        showtimes: [],
+        recommendedShowtimes: [],
+        arrivalBufferMinutes: 15,
+        middayArrivalBufferMinutes: 15,
+        queueExposure: "outdoor_shaded",
+        theaterType: "outdoor_covered_show",
+        hasAC: false,
+        bestUse: "animal_show_nearby_filler",
+        verifyDailySchedule: true,
+        strategy:
+          "Use only when already nearby in Asia and showtime lines up. It is a pleasant seated animal show, but not true AC and not worth crossing the park for unless the family specifically wants it.",
       },
       planningProfile: {
-        category: "filler_or_recovery",
+        category: "scheduled_show",
         paidAccess: "LLMP",
-        appStatus: "filler",
+        appStatus: "showtime_based",
         strategy:
-          "Use if already nearby and showtime lines up, especially for animal-loving families.",
+          "Recommend around the next showtime, not because the wait feed says 0. Keep it as a nearby Asia show option, not Best Move over true ride opportunities.",
       },
-      tags: ["show", "animals", "birds", "covered", "family", "filler"],
+      tags: ["show", "scheduled-show", "animals", "birds", "covered", "family", "filler"],
     },
 
     "Tree of Life": {
