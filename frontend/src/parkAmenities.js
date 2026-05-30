@@ -426,6 +426,139 @@ export const PARK_AMENITIES = {
       },
     },
   },
+
+  animal_kingdom: {
+    waterByLand: {
+      oasis: {
+        quickService: [],
+        bottleRefill: [
+          {
+            name: "Front entrance restrooms",
+            note: "Dedicated bottle-filler station outside the main front entrance restrooms before you scan into the park. Great spot to fill bottles before the day starts.",
+          },
+        ],
+      },
+
+      discovery_island: {
+        quickService: [
+          {
+            name: "Creature Comforts",
+            note: "Starbucks location on the main path toward Africa. Ask for free ice water at the registers or beverage pickup. Usually one of the best places for larger free water cups.",
+          },
+          {
+            name: "Flame Tree Barbecue",
+            note: "Closest major food spot to the former DinoLand / Tropical Americas side. Walk up to any open food pickup window and ask for ice water.",
+          },
+          {
+            name: "Pizzafari",
+            note: "Large fully air-conditioned indoor escape on the path toward Pandora. Ask for free ice water at the registers or mobile order pickup counter.",
+          },
+          {
+            name: "The Smiling Crocodile",
+            note: "Permanent snack kiosk on the Discovery Island hub loop. Since it serves fountain drinks, you can ask for a free cup of ice water.",
+          },
+          {
+            name: "Eight Spoon Café",
+            note: "Permanent snack kiosk on the Discovery Island hub loop. Good quick stop for a cup of ice water when nearby.",
+          },
+        ],
+        bottleRefill: [],
+      },
+
+      pandora: {
+        quickService: [
+          {
+            name: "Satu'li Canteen",
+            note: "Best hydration stop in Animal Kingdom. Indoor AC, self-serve beverage fountain station, and easy bottle filling if you can access the dining area.",
+          },
+          {
+            name: "Pongu Pongu",
+            note: "Outdoor beverage kiosk directly outside Satu'li. Useful if Satu'li is busy or the family needs a quick cup without going inside.",
+          },
+        ],
+        bottleRefill: [
+          {
+            name: "Avatar Flight of Passage queue",
+            note: "Bottle refill stations and fountains are built into the indoor cave/lab portions of the queue.",
+          },
+          {
+            name: "Na'vi River Journey queue",
+            note: "Modern bottle refill station available inside the queue.",
+          },
+        ],
+      },
+
+      africa: {
+        quickService: [
+          {
+            name: "Harambe Market",
+            note: "Large open-air multi-window food court. Ask for free ice water at any open food or beverage service window.",
+          },
+          {
+            name: "Tamu Tamu Refreshments",
+            note: "Walk-up window in Harambe village. Good quick cup stop when moving through Africa.",
+          },
+          {
+            name: "Kusafiri Coffee Shop & Bakery",
+            note: "Small walk-up window near the entrance to Kilimanjaro Safaris. Useful before or after Safaris.",
+          },
+          {
+            name: "Dawa Bar",
+            note: "Outdoor bar in Harambe. You do not need to order alcohol; ask the bartenders for a cup of ice water.",
+          },
+        ],
+        bottleRefill: [
+          {
+            name: "Mombasa Marketplace restroom area",
+            note: "Modern water bottle refill station on the wall near the restrooms outside Mombasa Marketplace.",
+          },
+        ],
+      },
+
+      asia: {
+        quickService: [
+          {
+            name: "Yak & Yeti Local Food Cafes",
+            note: "Outdoor walk-up quick-service window attached to Yak & Yeti. Ask for free ice water at the pickup windows.",
+          },
+          {
+            name: "Anandapur Ice Cream Truck",
+            note: "Permanent painted ice cream truck. Can provide water cups, but the line can move slower because of ice cream orders.",
+          },
+          {
+            name: "Drinkwallah",
+            note: "Small permanent snack and beverage kiosk near the bridge between Asia and Africa. Good quick water stop while moving between lands.",
+          },
+        ],
+        bottleRefill: [
+          {
+            name: "Expedition Everest queue",
+            note: "Integrated water fountains and bottle refill stations are built into the outdoor queue before the indoor temple section.",
+          },
+        ],
+      },
+
+      rafikis_planet_watch: {
+        quickService: [],
+        bottleRefill: [],
+      },
+
+      tropical_americas_construction: {
+        quickService: [
+          {
+            name: "Flame Tree Barbecue",
+            note: "Closest reliable food-window water stop near the former DinoLand / Tropical Americas side while construction walls affect paths.",
+          },
+        ],
+        bottleRefill: [
+          {
+            name: "Theater in the Wild restroom area",
+            note: "Finding Nemo theater area is still open. Standard water fountains are outside the restrooms near the theater entrance.",
+          },
+        ],
+      },
+    },
+  },
 };
 
 export function getWaterOptionsForLand(parkId, land) {
@@ -474,6 +607,21 @@ export function getWaterOptionsForLand(parkId, land) {
         bottleRefill: [
           PARK_AMENITIES.hollywood.waterByLand.star_wars_galaxys_edge.bottleRefill[0],
           PARK_AMENITIES.hollywood.waterByLand.toy_story_land.bottleRefill[0],
+        ],
+      };
+    }
+
+    if (parkId === "animal_kingdom") {
+      return {
+        quickService: [
+          PARK_AMENITIES.animal_kingdom.waterByLand.pandora.quickService[0],
+          PARK_AMENITIES.animal_kingdom.waterByLand.discovery_island.quickService[0],
+          PARK_AMENITIES.animal_kingdom.waterByLand.africa.quickService[0],
+        ],
+        bottleRefill: [
+          PARK_AMENITIES.animal_kingdom.waterByLand.pandora.bottleRefill[0],
+          PARK_AMENITIES.animal_kingdom.waterByLand.africa.bottleRefill[0],
+          PARK_AMENITIES.animal_kingdom.waterByLand.oasis.bottleRefill[0],
         ],
       };
     }
