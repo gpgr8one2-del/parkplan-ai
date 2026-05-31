@@ -1,4 +1,5 @@
 const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
+const MAX_ANALYTICS_KEEPALIVE_BYTES = 60000;
 
 const activeRequests = new Map();
 
@@ -164,7 +165,7 @@ function sanitizeTimeContext(timeContext = {}) {
   });
 }
 
-function sanitizeFamilyProfileSnapshot(familyProfile = {}) {
+function getCoreProfileContext(familyProfile = {}) {
   if (!familyProfile) return null;
 
   return removeEmptyFields({
@@ -172,16 +173,38 @@ function sanitizeFamilyProfileSnapshot(familyProfile = {}) {
     childCount: familyProfile.childCount ?? null,
     partySize: familyProfile.partySize ?? null,
     shortestHeightInches: familyProfile.shortestHeightInches ?? null,
-    hasSmallChildren: familyProfile.hasSmallChildren,
+    hasSmallChildren: Boolean(familyProfile.hasSmallChildren),
+    hasHeightLimitedRiders: Boolean(familyProfile.hasHeightLimitedRiders),
+    tripStatus: familyProfile.tripAccessStatus?.status,
+    resortArea:
+      familyProfile.resortProfile?.areaLabel ||
+      familyProfile.resortProfile?.area ||
+      familyProfile.resortProfile?.resortArea ||
+      familyProfile.resortProfile?.category ||
+      null,
+  });
+}
 
+function getFullProfileSnapshot(familyProfile = {}) {
+  if (!familyProfile) return null;
+
+  return removeEmptyFields({
+    ...getCoreProfileContext(familyProfile),
+
+    // Keep setup-level categories for profile completion analysis, but never
+    // include child arrays, names, raw location, chat text, or full resort data.
     thrillTolerance: familyProfile.thrillTolerance,
     walkingTolerance: familyProfile.walkingTolerance,
     heatSensitivity: familyProfile.heatSensitivity,
     waterRidePreference: familyProfile.waterRidePreference,
     pace: familyProfile.pace,
-    priorities: familyProfile.priorities || [],
+    priorities: Array.isArray(familyProfile.priorities)
+      ? familyProfile.priorities.slice(0, 12)
+      : [],
 
-    selectedParks: familyProfile.tripContext?.selectedParks || [],
+    selectedParks: Array.isArray(familyProfile.tripContext?.selectedParks)
+      ? familyProfile.tripContext.selectedParks.slice(0, 8)
+      : [],
     firstPark: familyProfile.tripContext?.firstPark,
     priorityPark: familyProfile.tripContext?.priorityPark,
     parkHopper: familyProfile.tripContext?.parkHopper,
@@ -210,7 +233,7 @@ function sanitizeRecommendation(recommendation = {}, slot = "") {
     familyProfileModifier: recommendation.familyProfileModifier,
     planAheadRealityCheckModifier: recommendation.planAheadRealityCheckModifier,
     crossParkRealityModifier: recommendation.crossParkRealityModifier,
-    positiveStackCapModifier: recommendation.positiveStackCapModifier,
+    crossParkSumCapAdjustment: recommendation.crossParkSumCapAdjustment,
     proximityDistance: recommendation.proximityDistance,
     heightWarning: Boolean(recommendation.heightWarning),
   });
@@ -315,13 +338,23 @@ function removeEmptyFields(object = {}) {
   return cleaned;
 }
 
-function shouldIncludeFamilyProfile(eventType) {
+function shouldIncludeFullProfileSnapshot(eventType) {
   return (
     eventType === "profile_completed" ||
     eventType === "profile_completion_blocked" ||
-    eventType === "profile_screen_viewed" ||
+    eventType === "profile_updated" ||
+    eventType === "app_opened"
+  );
+}
+
+function shouldIncludeCoreProfileContext(eventType) {
+  return (
     eventType.startsWith("recommendation_") ||
-    eventType === "ride_issue_reported"
+    eventType === "ride_issue_reported" ||
+    eventType === "ai_chat_sent" ||
+    eventType === "location_detected" ||
+    eventType === "location_failed" ||
+    eventType.startsWith("mini_game_")
   );
 }
 
@@ -369,7 +402,7 @@ function buildAnalyticsEvent(eventType, payload = {}) {
 
     profileComplete: payload.profileComplete,
     devPreviewFullApp: payload.devPreviewFullApp,
-    action: payload.action,
+    action: sanitizeMetadata(payload.action),
     metadata: sanitizeMetadata(payload.metadata),
   };
 
@@ -377,8 +410,11 @@ function buildAnalyticsEvent(eventType, payload = {}) {
     baseEvent.timeContext = sanitizeTimeContext(payload.timeContext);
   }
 
-  if (shouldIncludeFamilyProfile(eventType)) {
-    baseEvent.familyProfileSnapshot = sanitizeFamilyProfileSnapshot(payload.familyProfile);
+  if (shouldIncludeFullProfileSnapshot(eventType)) {
+    baseEvent.familyProfileSnapshot = getFullProfileSnapshot(payload.familyProfile);
+    baseEvent.coreProfileContext = getCoreProfileContext(payload.familyProfile);
+  } else if (shouldIncludeCoreProfileContext(eventType)) {
+    baseEvent.coreProfileContext = getCoreProfileContext(payload.familyProfile);
   }
 
   if (shouldIncludeRecommendation(eventType, payload)) {
@@ -407,17 +443,43 @@ function buildAnalyticsEvent(eventType, payload = {}) {
 export function trackEvent(eventType, payload = {}) {
   const event = buildAnalyticsEvent(eventType, payload);
 
+  let body = JSON.stringify(event);
+
+  // Browser keepalive requests have practical payload limits. If a future event
+  // accidentally grows too large, strip optional fields rather than risking UX.
+  if (body.length > MAX_ANALYTICS_KEEPALIVE_BYTES) {
+    const compactEvent = removeEmptyFields({
+      eventType: event.eventType,
+      sessionId: event.sessionId,
+      anonymousUserId: event.anonymousUserId,
+      timestamp: event.timestamp,
+      activePark: event.activePark,
+      currentLand: event.currentLand,
+      source: event.source,
+      screen: event.screen,
+      profileComplete: event.profileComplete,
+      devPreviewFullApp: event.devPreviewFullApp,
+      metadata: {
+        accessPlan: event.metadata?.accessPlan,
+        compacted: true,
+        originalBytes: body.length,
+      },
+    });
+
+    body = JSON.stringify(compactEvent);
+  }
+
   // Do not use apiFetch here. Events should not retry aggressively or block UX.
   fetch(`${BASE_URL}/api/events`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(event),
+    body,
     keepalive: true,
   }).catch((err) => {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("ParkPlan analytics event failed", err);
+      console.warn("TOHI analytics event failed", err);
     }
   });
 }
