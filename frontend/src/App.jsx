@@ -11,12 +11,12 @@ import { getRideExperienceContent } from "./rideExperienceContent";
 import { getRideMeta } from "./rideMetadata";
 import { shouldShowRideInWaitList } from "./attractionDisplayFilters";
 import { getResortOptions, getResortProfile } from "./resortProfiles";
-import { getMiniGameForContext } from "./data/miniGames/magicKingdomMiniGames";
 import { detectNearestLocationZone, getCurrentPosition } from "./utils/locationDetection";
 import { OnboardingFlow } from "./components/OnboardingFlow";
 import { RecommendationCard } from "./components/RecommendationCard";
 import { WaitTimesList } from "./components/WaitTimesList";
 import { WhileYouWaitCard } from "./components/WhileYouWaitCard";
+import { useMiniGames } from "./hooks/useMiniGames";
 
 const PARKS = [
   { id: "magic_kingdom", name: "Magic Kingdom" },
@@ -905,13 +905,6 @@ function App() {
   const [skippedRideIds, setSkippedRideIds] = useState([]);
   const [reportedRideIssueIds, setReportedRideIssueIds] = useState([]);
   const [currentActivity, setCurrentActivity] = useState(null);
-  const [activeMiniGameType, setActiveMiniGameType] = useState("trivia");
-  const [miniGameSeed, setMiniGameSeed] = useState(0);
-  const [revealedTriviaAnswer, setRevealedTriviaAnswer] = useState(false);
-  const [selectedTriviaChoice, setSelectedTriviaChoice] = useState("");
-  const [selectedFamilyVoteOption, setSelectedFamilyVoteOption] = useState("");
-  const [lookAroundFound, setLookAroundFound] = useState(false);
-  const [celebrationPieces, setCelebrationPieces] = useState([]);
 
   const isRestoringParkState = useRef(false);
 
@@ -922,16 +915,6 @@ function App() {
   useEffect(() => {
     writeDevPreviewFullApp(devPreviewFullApp);
   }, [devPreviewFullApp]);
-
-  useEffect(() => {
-    if (!celebrationPieces.length) return undefined;
-
-    const timeoutId = setTimeout(() => {
-      setCelebrationPieces([]);
-    }, 1400);
-
-    return () => clearTimeout(timeoutId);
-  }, [celebrationPieces]);
 
   const familyProfileSummary = useMemo(() => {
     return buildFamilyProfileSummary(familyProfile);
@@ -1285,29 +1268,6 @@ function App() {
     return getRideExperienceContent(activePark, currentActivity.rideName);
   }, [activePark, currentActivity]);
 
-  const activeMiniGame = useMemo(() => {
-    if (currentActivity?.type !== "in_line") return null;
-
-    return getMiniGameForContext({
-      parkId: activePark,
-      land: currentActivity.land || currentLand,
-      rideName: currentActivity.rideName,
-      gameType: activeMiniGameType,
-      seed: miniGameSeed,
-    });
-  }, [
-    activePark,
-    activeMiniGameType,
-    currentActivity,
-    currentLand,
-    miniGameSeed,
-  ]);
-
-  useEffect(() => {
-    resetMiniGameInteractionState();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeMiniGame?.title, activeMiniGameType, currentActivity?.rideId]);
-
   const currentActivityContext = useMemo(() => {
     return buildCurrentActivityContext(currentActivity);
   }, [currentActivity]);
@@ -1342,6 +1302,27 @@ function App() {
       access.plan,
     ]
   );
+
+  const {
+    activeMiniGame,
+    activeMiniGameType,
+    revealedTriviaAnswer,
+    selectedTriviaChoice,
+    selectedFamilyVoteOption,
+    lookAroundFound,
+    celebrationPieces,
+    handleMiniGameTypeChange,
+    handleTriviaChoice,
+    handleLookAroundFound,
+    handleFamilyVote,
+    handleNextMiniGame,
+    showTriviaAnswer,
+  } = useMiniGames({
+    activePark,
+    currentLand,
+    currentActivity,
+    trackAppEvent,
+  });
 
   useEffect(() => {
     trackAppEvent(activeScreen === "family_profile" ? "profile_screen_viewed" : "main_screen_viewed", {
@@ -1603,100 +1584,6 @@ function App() {
     });
 
     setCurrentActivity(null);
-  }
-
-  function resetMiniGameInteractionState() {
-    setRevealedTriviaAnswer(false);
-    setSelectedTriviaChoice("");
-    setSelectedFamilyVoteOption("");
-    setLookAroundFound(false);
-  }
-
-  function triggerMiniCelebration() {
-    const shapes = ["🎈", "✨", "🎉", "⭐"];
-    const pieces = Array.from({ length: 18 }, (_, index) => ({
-      id: `${Date.now()}_${index}`,
-      left: 12 + Math.random() * 76,
-      drift: -90 + Math.random() * 180,
-      delay: Math.random() * 160,
-      size: 16 + Math.random() * 13,
-      shape: shapes[index % shapes.length],
-      rotate: -35 + Math.random() * 70,
-    }));
-
-    setCelebrationPieces(pieces);
-  }
-
-  function handleTriviaChoice(choice) {
-    if (!activeMiniGame || revealedTriviaAnswer) return;
-
-    const isCorrect = choice === activeMiniGame.answer;
-
-    setSelectedTriviaChoice(choice);
-    setRevealedTriviaAnswer(true);
-
-    trackAppEvent("mini_game_trivia_answered", {
-      source: "while_you_wait",
-      action: {
-        type: isCorrect ? "correct_answer" : "wrong_answer",
-        label: choice,
-      },
-      metadata: {
-        rideName: currentActivity?.rideName,
-        gameTitle: activeMiniGame.title,
-        selectedChoice: choice,
-        correctAnswer: activeMiniGame.answer,
-        isCorrect,
-      },
-    });
-
-    if (isCorrect) {
-      triggerMiniCelebration();
-    }
-  }
-
-  function handleFamilyVote(option) {
-    setSelectedFamilyVoteOption(option);
-
-    trackAppEvent("mini_game_family_vote_selected", {
-      source: "while_you_wait",
-      action: {
-        type: "family_vote",
-        label: option,
-      },
-      metadata: {
-        rideName: currentActivity?.rideName,
-        gameTitle: activeMiniGame?.title,
-      },
-    });
-  }
-
-  function handleLookAroundFound() {
-    setLookAroundFound(true);
-    triggerMiniCelebration();
-
-    trackAppEvent("mini_game_lookaround_found", {
-      source: "while_you_wait",
-      action: {
-        type: "found_it",
-        label: "Found it",
-      },
-      metadata: {
-        rideName: currentActivity?.rideName,
-        gameTitle: activeMiniGame?.title,
-      },
-    });
-  }
-
-  function handleMiniGameTypeChange(type) {
-    setActiveMiniGameType(type);
-    setMiniGameSeed(0);
-    resetMiniGameInteractionState();
-  }
-
-  function handleNextMiniGame() {
-    setMiniGameSeed((prev) => prev + 1);
-    resetMiniGameInteractionState();
   }
 
   async function handleUseMyLocation() {
@@ -2403,10 +2290,7 @@ function App() {
           handleLookAroundFound={handleLookAroundFound}
           handleFamilyVote={handleFamilyVote}
           handleNextMiniGame={handleNextMiniGame}
-          showTriviaAnswer={() => {
-            setRevealedTriviaAnswer(true);
-            setSelectedTriviaChoice("");
-          }}
+          showTriviaAnswer={showTriviaAnswer}
           card={card}
           button={button}
           actionButton={actionButton}
