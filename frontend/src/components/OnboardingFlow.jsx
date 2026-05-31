@@ -1,4 +1,5 @@
 import React from "react";
+import { getResortProfile } from "../resortProfiles";
 
 export function OnboardingFlow({
   familyProfileSummary,
