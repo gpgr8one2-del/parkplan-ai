@@ -2,6 +2,7 @@ import React from "react";
 
 export function OnboardingFlow({
   familyProfileSummary,
+  activePark,
     familyProfileStep,
     familyProfile,
     isProfileIncomplete,
