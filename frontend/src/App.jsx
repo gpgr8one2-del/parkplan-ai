@@ -247,24 +247,102 @@ function buildLocalChatFallback({
   activePark,
   weatherMode,
   currentActivityContext,
+  familyProfile,
+  recommendations = {},
 }) {
+  const bestMove = recommendations.bestMove;
+  const backup = recommendations.backup;
+  const planAhead = recommendations.planAhead;
+
+  const resortName =
+    familyProfile?.resortProfile?.name ||
+    familyProfile?.resortContext?.resortName ||
+    familyProfile?.resortContext?.offPropertyHotelName ||
+    "";
+
+  const breakStrategy =
+    familyProfile?.resortProfile?.breakStrategy?.[activePark] || "";
+
+  const directAccess =
+    familyProfile?.resortProfile?.directAccess?.[activePark] || [];
+
+  const lines = [
+    "TOHI Offline Help",
+    "",
+    "I’m having trouble reaching AI chat right now, so I do not want to pretend I fully understood the question.",
+    "",
+    "Here is the safest read from the live app engine right now:",
+  ];
+
   if (currentActivityContext?.type === "in_line") {
     const elapsed = currentActivityContext.elapsedMinutesInLine;
     const posted = currentActivityContext.postedWaitAtStart;
-    const rideName = currentActivityContext.rideName || "this ride";
-    const elapsedText =
-      elapsed != null ? `you’ve already waited about ${elapsed} minutes` : "you’re already in line";
-    const postedText =
-      posted != null ? `the posted wait was ${posted} minutes when you joined` : "I do not have the original posted wait";
 
-    return `I’m having trouble reaching AI chat right now, but here’s the safe TOHI call: since ${elapsedText} for ${rideName} and ${postedText}, don’t automatically bail unless the line has stopped, someone feels overheated, or the kids are close to a true meltdown. If the line is moving and this ride matters to your family, try to finish it, then make food, water, and AC the immediate next move.`;
+    lines.push(
+      "",
+      `Current status: You are marked in line for ${currentActivityContext.rideName || "a ride"}${
+        posted != null ? `, with a ${posted}-minute posted wait when you joined` : ""
+      }${elapsed != null ? `, and about ${elapsed} minutes elapsed` : ""}.`
+    );
+  }
+
+  if (bestMove?.name) {
+    lines.push(
+      "",
+      `Best Move showing now: ${bestMove.name}${
+        bestMove.waitTime != null ? ` (${bestMove.waitTime} min)` : ""
+      }.`
+    );
+  } else if (backup?.name) {
+    lines.push(
+      "",
+      `Smart Backup showing now: ${backup.name}${
+        backup.waitTime != null ? ` (${backup.waitTime} min)` : ""
+      }.`
+    );
+  } else {
+    lines.push(
+      "",
+      "No strong ride move is showing right now. That usually means this is a good moment to reset instead of forcing the next attraction."
+    );
+  }
+
+  if (planAhead?.name) {
+    lines.push(
+      `Plan Ahead note: keep ${planAhead.name} on your radar${
+        planAhead.waitTime != null ? `; current posted wait is ${planAhead.waitTime} min` : ""
+      }.`
+    );
+  }
+
+  if (breakStrategy) {
+    lines.push("", `Resort break guidance for ${resortName || "your resort"}: ${breakStrategy}`);
+  } else if (resortName) {
+    lines.push(
+      "",
+      `Resort break guidance: ${resortName} is your selected resort. If the family is fading, only leave the park if transportation is realistic and you can protect enough return time.`
+    );
+  } else {
+    lines.push(
+      "",
+      "Pacing guidance: if the family is tired, choose shade, AC, water, food, or a quiet seated reset before chasing another far ride."
+    );
+  }
+
+  if (directAccess.length) {
+    lines.push(`Known direct access from this park: ${directAccess.join(", ")}.`);
   }
 
   if (weatherMode?.mode && weatherMode.mode !== "normal") {
-    return `I’m having trouble reaching AI chat right now, but based on current weather mode, keep the plan simple: favor nearby indoor options, water, shade, food, or a seated reset before chasing a farther ride.`;
+    lines.push(
+      "",
+      `Weather mode is active: ${weatherMode.label || weatherMode.mode}. Favor indoor, shaded, or low-walking choices until conditions improve.`
+    );
   }
 
-  return "I’m having trouble reaching AI chat right now. Try again in a minute. If the family is tired or hot, use this as a good moment for water, AC, food, or a nearby low-stress ride before making a big walk.";
+  lines.push("", "Try sending your message again in a minute once the signal improves.");
+
+  return lines.join("\n");
 }
 
 function buildWeatherDisplay(weather) {
@@ -1266,12 +1344,6 @@ function App() {
         locationContext: locationContextForDecisions,
         currentActivity: currentActivityContext,
         currentActivityContext,
-        parkPlanBehaviorHints: {
-          inLineDecisionRule:
-            "If the user is already in line and asks whether to leave, do not give a hard leave-the-line recommendation unless safety, overheating, true meltdown risk, ride closure, or a stalled line clearly outweighs the ride value. If elapsed line time, line movement, or must-do status is missing, ask one quick clarifying question or give stay-vs-leave thresholds.",
-          familyEnergyRule:
-            "When kids are tired, hungry, hot, or cranky, balance ride value against family energy. Recommend food, water, AC, and resort breaks when appropriate, but respect high-value waits and sunk wait time.",
-        },
       });
 
       setChat([...nextChat, { role: "assistant", content: res.reply }]);
@@ -1284,6 +1356,8 @@ function App() {
             activePark,
             weatherMode,
             currentActivityContext,
+            familyProfile: familyProfileSummary,
+            recommendations,
           }),
         },
       ]);
