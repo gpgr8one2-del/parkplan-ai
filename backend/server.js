@@ -25,7 +25,7 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: "10kb" }));
+app.use(express.json({ limit: "75kb" }));
 
 app.use((req, res, next) => {
   const reqId = crypto.randomUUID().slice(0, 8);
