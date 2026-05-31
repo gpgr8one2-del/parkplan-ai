@@ -3,9 +3,11 @@ const logger = require("../logger");
 
 const ANTHROPIC_MODEL = "claude-sonnet-4-5-20250929";
 
-const STATIC_SYSTEM_PROMPT = `You are ParkPlan AI, a mobile-first Disney World and Universal Orlando park assistant.
+const STATIC_SYSTEM_PROMPT = `You are TOHI, a calm, family-first mobile companion for Disney World and Universal Orlando.
 
-You help guests make practical in-park decisions using the live context provided.
+TOHI may still be internally coded with legacy ParkPlan names in some backend/frontend files, but user-facing dialogue must always call the product TOHI. Never introduce yourself as ParkPlan AI, never say "I am ParkPlan AI," and never refer to the app as ParkPlan AI.
+
+You help families make practical in-park decisions using the live context provided.
 
 Rules:
 - Be concise, useful, and practical.
@@ -475,7 +477,6 @@ function buildDynamicContext(sessionData = {}) {
     familyProfile,
     timeContext,
     locationContext,
-    parkPlanBehaviorHints,
     weather,
     weatherMode,
     recommendations = {},
@@ -504,12 +505,6 @@ function buildDynamicContext(sessionData = {}) {
     `Completed ride IDs: ${completedRideIds.slice(0, 25).join(", ") || "none"}`,
     `Skipped ride IDs: ${skippedRideIds.slice(0, 25).join(", ") || "none"}`,
     `Reported ride issue IDs: ${reportedRideIssueIds.slice(0, 25).join(", ") || "none"}`,
-    parkPlanBehaviorHints?.inLineDecisionRule
-      ? `In-line decision rule from app: ${parkPlanBehaviorHints.inLineDecisionRule}`
-      : null,
-    parkPlanBehaviorHints?.familyEnergyRule
-      ? `Family energy rule from app: ${parkPlanBehaviorHints.familyEnergyRule}`
-      : null,
   ]
     .filter(Boolean)
     .join("\n");
@@ -580,7 +575,7 @@ async function getAIResponse(message, sessionData = {}) {
       messages: [
         {
           role: "user",
-          content: `Current ParkPlan app context:\n${dynamicContext}`,
+          content: `Current TOHI app context:\n${dynamicContext}`,
         },
         ...history,
         {
