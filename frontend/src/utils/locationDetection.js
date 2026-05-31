@@ -209,7 +209,7 @@ export function detectNearestLocationZone({ parkId, lat, lng }) {
     message:
       confidence === "low"
         ? `Closest match is around ${winningCluster.landLabel}, near ${bestLandAnchor.anchorName}, but GPS confidence is low. Pick the closest area manually if this looks wrong.`
-        : isBorderArea
+        : isBorderArea && confidence !== "high"
         ? `Looks like you’re near ${winningCluster.landLabel}, close to ${bestLandAnchor.anchorName}. This is near a land border, so double-check if that looks off.`
         : `Looks like you’re near ${winningCluster.landLabel}. Closest anchor: ${bestLandAnchor.anchorName}.`,
   };
