@@ -14,6 +14,7 @@ import { getResortOptions, getResortProfile } from "./resortProfiles";
 import { getMiniGameForContext, MINI_GAME_TYPES } from "./data/miniGames/magicKingdomMiniGames";
 import { detectNearestLocationZone, getCurrentPosition } from "./utils/locationDetection";
 import { OnboardingFlow } from "./components/OnboardingFlow";
+import { RecommendationCard } from "./components/RecommendationCard";
 
 const PARKS = [
   { id: "magic_kingdom", name: "Magic Kingdom" },
@@ -1795,7 +1796,7 @@ function App() {
           onClick={() => handleDone(ride.id)}
           style={{ ...actionButton, color: "#166534" }}
         >
-          â Done
+          ✓ Done
         </button>
 
         <button
@@ -1973,9 +1974,9 @@ function App() {
                       }}
                     >
                       {choice}
-                      {revealedTriviaAnswer && isCorrect ? "  â" : ""}
+                      {revealedTriviaAnswer && isCorrect ? "  ✓" : ""}
                       {revealedTriviaAnswer && selectedTriviaChoice === choice && !isCorrect
-                        ? "  â"
+                        ? "  ✕"
                         : ""}
                     </button>
                   );
@@ -2038,7 +2039,7 @@ function App() {
                   borderColor: lookAroundFound ? "#86efac" : "#e2e8f0",
                 }}
               >
-                {lookAroundFound ? "Nice find! â" : "Found it!"}
+                {lookAroundFound ? "Nice find! ✓" : "Found it!"}
               </button>
             </>
           )}
@@ -2067,7 +2068,7 @@ function App() {
                       }}
                     >
                       {option}
-                      {selected ? "  â" : ""}
+                      {selected ? "  ✓" : ""}
                     </button>
                   );
                 })}
@@ -2644,7 +2645,7 @@ function App() {
                 onClick={() => handleDone(currentActivity.rideId)}
                 style={{ ...button, color: "#166534", borderColor: "#bbf7d0" }}
               >
-                â Mark Done
+                ✓ Mark Done
               </button>
 
               <button
@@ -2873,133 +2874,74 @@ function App() {
             </div>
           ) : hasAnyRecommendation ? (
             <div style={{ display: "grid", gap: 10 }}>
-              <div
-                style={{
-                  padding: 14,
-                  borderRadius: 18,
-                  border: "1px solid #bbf7d0",
-                  background: "#f0fdf4",
-                }}
-              >
-                <div style={{ fontSize: 12, color: "#166534", fontWeight: 900 }}>
-                  BEST MOVE
-                </div>
-                <h4 style={{ margin: "4px 0", fontSize: 20 }}>
-                  {primaryRecommendation.name}
-                </h4>
-                <p style={{ margin: 0, color: "#166534", fontWeight: 800 }}>
-                  {primaryRecommendation.waitTime} min wait
-                </p>
-                <p style={{ margin: "8px 0 0", color: "#334155" }}>
-                  Why: {primaryRecommendation.reason || "best available option based on current conditions"}.
-                </p>
-                {renderShowtimeInfo(primaryRecommendation)}
-                {renderRideActions(primaryRecommendation)}
-              </div>
+              <RecommendationCard
+                title="BEST MOVE"
+                ride={primaryRecommendation}
+                reason={`Why: ${
+                  primaryRecommendation.reason ||
+                  "best available option based on current conditions"
+                }.`}
+                color="#166534"
+                borderColor="#bbf7d0"
+                background="#f0fdf4"
+                titleSize={20}
+                renderShowtimeInfo={renderShowtimeInfo}
+                renderRideActions={renderRideActions}
+              />
 
               {recommendations.backup && recommendations.backup.id !== primaryRecommendation?.id && (
-                <div
-                  style={{
-                    padding: 14,
-                    borderRadius: 18,
-                    border: "1px solid #bfdbfe",
-                    background: "#eff6ff",
-                  }}
-                >
-                  <div style={{ fontSize: 12, color: "#1d4ed8", fontWeight: 900 }}>
-                    SMART BACKUP
-                  </div>
-                  <h4 style={{ margin: "4px 0", fontSize: 18 }}>
-                    {recommendations.backup.name}
-                  </h4>
-                  <p style={{ margin: 0, color: "#1d4ed8", fontWeight: 800 }}>
-                    {recommendations.backup.waitTime} min wait
-                  </p>
-                  <p style={{ margin: "8px 0 0", color: "#334155" }}>
-                    Why: {recommendations.backup.reason}.
-                  </p>
-                  {renderShowtimeInfo(recommendations.backup)}
-                  {renderRideActions(recommendations.backup)}
-                </div>
+                <RecommendationCard
+                  title="SMART BACKUP"
+                  ride={recommendations.backup}
+                  reason={`Why: ${recommendations.backup.reason}.`}
+                  color="#1d4ed8"
+                  borderColor="#bfdbfe"
+                  background="#eff6ff"
+                  renderShowtimeInfo={renderShowtimeInfo}
+                  renderRideActions={renderRideActions}
+                />
               )}
 
               {recommendations.worthTheWalk && recommendations.worthTheWalk.id !== primaryRecommendation?.id && (
-                <div
-                  style={{
-                    padding: 14,
-                    borderRadius: 18,
-                    border: "1px solid #ddd6fe",
-                    background: "#f5f3ff",
-                  }}
-                >
-                  <div style={{ fontSize: 12, color: "#6d28d9", fontWeight: 900 }}>
-                    WORTH THE WALK
-                  </div>
-                  <h4 style={{ margin: "4px 0", fontSize: 18 }}>
-                    {recommendations.worthTheWalk.name}
-                  </h4>
-                  <p style={{ margin: 0, color: "#6d28d9", fontWeight: 800 }}>
-                    {recommendations.worthTheWalk.waitTime} min wait
-                  </p>
-                  <p style={{ margin: "8px 0 0", color: "#334155" }}>
-                    Not nearby, but the current wait is strong enough that it may be worth crossing over for.
-                  </p>
-                  {renderShowtimeInfo(recommendations.worthTheWalk)}
-                  {renderRideActions(recommendations.worthTheWalk)}
-                </div>
+                <RecommendationCard
+                  title="WORTH THE WALK"
+                  ride={recommendations.worthTheWalk}
+                  reason="Not nearby, but the current wait is strong enough that it may be worth crossing over for."
+                  color="#6d28d9"
+                  borderColor="#ddd6fe"
+                  background="#f5f3ff"
+                  renderShowtimeInfo={renderShowtimeInfo}
+                  renderRideActions={renderRideActions}
+                />
               )}
 
               {recommendations.planAhead && recommendations.planAhead.id !== primaryRecommendation?.id && (
-                <div
-                  style={{
-                    padding: 14,
-                    borderRadius: 18,
-                    border: "1px solid #fecaca",
-                    background: "#fef2f2",
-                  }}
-                >
-                  <div style={{ fontSize: 12, color: "#991b1b", fontWeight: 900 }}>
-                    PLAN AHEAD
-                  </div>
-                  <h4 style={{ margin: "4px 0", fontSize: 18 }}>
-                    {recommendations.planAhead.name}
-                  </h4>
-                  <p style={{ margin: 0, color: "#991b1b", fontWeight: 800 }}>
-                    {recommendations.planAhead.waitTime} min wait
-                  </p>
-                  <p style={{ margin: "8px 0 0", color: "#334155" }}>
-                    {recommendations.planAhead.planAheadReason ||
-                      "This ride usually needs a strategy. Consider Lightning Lane, rope drop, late night, or watching for a rare dip."}
-                  </p>
-                  {renderShowtimeInfo(recommendations.planAhead)}
-                  {renderRideActions(recommendations.planAhead)}
-                </div>
+                <RecommendationCard
+                  title="PLAN AHEAD"
+                  ride={recommendations.planAhead}
+                  reason={
+                    recommendations.planAhead.planAheadReason ||
+                    "This ride usually needs a strategy. Consider Lightning Lane, rope drop, late night, or watching for a rare dip."
+                  }
+                  color="#991b1b"
+                  borderColor="#fecaca"
+                  background="#fef2f2"
+                  renderShowtimeInfo={renderShowtimeInfo}
+                  renderRideActions={renderRideActions}
+                />
               )}
 
               {recommendations.waitOnThis && recommendations.waitOnThis.id !== primaryRecommendation?.id && (
-                <div
-                  style={{
-                    padding: 14,
-                    borderRadius: 18,
-                    border: "1px solid #fed7aa",
-                    background: "#fff7ed",
-                  }}
-                >
-                  <div style={{ fontSize: 12, color: "#9a3412", fontWeight: 900 }}>
-                    WAIT ON THIS
-                  </div>
-                  <h4 style={{ margin: "4px 0", fontSize: 18 }}>
-                    {recommendations.waitOnThis.name}
-                  </h4>
-                  <p style={{ margin: 0, color: "#9a3412", fontWeight: 800 }}>
-                    {recommendations.waitOnThis.waitTime} min wait
-                  </p>
-                  <p style={{ margin: "8px 0 0", color: "#334155" }}>
-                    This wait is higher than this ride is usually worth. Check again later when crowds shift.
-                  </p>
-                  {renderShowtimeInfo(recommendations.waitOnThis)}
-                  {renderRideActions(recommendations.waitOnThis)}
-                </div>
+                <RecommendationCard
+                  title="WAIT ON THIS"
+                  ride={recommendations.waitOnThis}
+                  reason="This wait is higher than this ride is usually worth. Check again later when crowds shift."
+                  color="#9a3412"
+                  borderColor="#fed7aa"
+                  background="#fff7ed"
+                  renderShowtimeInfo={renderShowtimeInfo}
+                  renderRideActions={renderRideActions}
+                />
               )}
             </div>
           ) : (
