@@ -1716,12 +1716,10 @@ function App() {
 
     setCompletedRideIds([]);
     setSkippedRideIds([]);
-    se}
-          </section>
-        </div>
-      </main>
-    );
+    setReportedRideIssueIds([]);
+    setCurrentActivity(null);
   }
+
 
   function renderLockedFeatureCard({ title, body, actionLabel = "Finish trip setup" }) {
     return (
