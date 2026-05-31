@@ -6,6 +6,7 @@ import { DataStatusBanner } from "./components/DataStatusBanner";
 import { getNextBestRides } from "./rideRecommendations";
 import { getWeatherMode, getRecoverySuggestions } from "./utils/weatherAdvice";
 import { getCurrentTimeContext } from "./utils/timeContext";
+import { buildAccessState } from "./utils/accessControl";
 import { formatCloseTimeLabel } from "./parkHours";
 import { getRideExperienceContent } from "./rideExperienceContent";
 import { getRideMeta } from "./rideMetadata";
@@ -839,42 +840,6 @@ function getRecommendationForRide(recommendations = {}, rideId) {
   );
 }
 
-function buildAccessState({ profileCompletion, devPreviewFullApp, timeContext }) {
-  const profileComplete = Boolean(profileCompletion?.isComplete);
-  const isDevPreviewing = Boolean(
-    DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && devPreviewFullApp
-  );
-  const hasPersonalizedAccess = profileComplete || isDevPreviewing;
-  const aiAllowedByTime = Boolean(timeContext?.aiAccess?.shouldAllowAi);
-
-  const setupReason = profileComplete
-    ? "Trip setup is complete."
-    : "Finish trip setup to unlock personalized guidance.";
-
-  const aiLockedReason = !hasPersonalizedAccess
-    ? "Finish trip setup before using AI guidance."
-    : !aiAllowedByTime && !isDevPreviewing
-    ? timeContext?.aiAccess?.reason ||
-      "AI guidance is not available for this trip timing yet."
-    : "AI guidance is available.";
-
-  return {
-    plan: isDevPreviewing ? "dev_preview" : profileComplete ? "personalized" : "basic",
-    isDevPreviewing,
-    profileComplete,
-
-    canViewWaitTimes: true,
-    canUseRecommendations: hasPersonalizedAccess,
-    canUseAiChat: isDevPreviewing || (hasPersonalizedAccess && aiAllowedByTime),
-    canUseMiniGames: true,
-    canUseDayOfGuidance: hasPersonalizedAccess,
-
-    setupReason,
-    recommendationLockedReason: setupReason,
-    aiLockedReason,
-  };
-}
-
 function App() {
   const [activePark, setActivePark] = useState("magic_kingdom");
   const [parkData, setParkData] = useState(null);
@@ -939,6 +904,7 @@ function App() {
         profileCompletion,
         devPreviewFullApp,
         timeContext,
+        devAllowFullAppWithoutProfile: DEV_ALLOW_FULL_APP_WITHOUT_PROFILE,
       }),
     [profileCompletion, devPreviewFullApp, timeContext]
   );
