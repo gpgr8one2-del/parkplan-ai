@@ -183,6 +183,30 @@ const AUTO_REFRESH_MS = 3 * 60 * 1000;
 const DEV_ALLOW_FULL_APP_WITHOUT_PROFILE = process.env.NODE_ENV !== "production";
 const DEV_PREVIEW_STORAGE_KEY = "parkplan.devPreviewFullApp";
 
+function readDevPreviewFullApp() {
+  if (!DEV_ALLOW_FULL_APP_WITHOUT_PROFILE) return false;
+
+  try {
+    return localStorage.getItem(DEV_PREVIEW_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function writeDevPreviewFullApp(enabled) {
+  try {
+    if (!DEV_ALLOW_FULL_APP_WITHOUT_PROFILE) {
+      localStorage.removeItem(DEV_PREVIEW_STORAGE_KEY);
+      return;
+    }
+
+    localStorage.setItem(DEV_PREVIEW_STORAGE_KEY, enabled ? "true" : "false");
+  } catch (err) {
+    console.warn("TOHI: could not save dev preview flag", err);
+  }
+}
+
+
 const page = {
   minHeight: "100vh",
   background: "linear-gradient(180deg, #fff7ed 0%, #f8fafc 100%)",
