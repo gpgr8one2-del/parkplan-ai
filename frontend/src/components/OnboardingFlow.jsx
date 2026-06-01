@@ -1,5 +1,6 @@
 import React from "react";
 import { getResortProfile } from "../resortProfiles";
+import { colors } from "../theme";
 
 export function OnboardingFlow({
   familyProfileSummary,
@@ -43,6 +44,72 @@ export function OnboardingFlow({
           ? "child height not set yet"
           : "no child height needed";
 
+      const setupPage = {
+        ...page,
+        background:
+          "radial-gradient(circle at 18% 0%, rgba(124, 58, 237, 0.12) 0%, rgba(124, 58, 237, 0.03) 28%, transparent 48%), radial-gradient(circle at 88% 8%, rgba(245, 158, 11, 0.22) 0%, rgba(245, 158, 11, 0.05) 30%, transparent 52%), linear-gradient(180deg, #FFF4E6 0%, #FFF9F1 52%, #F3E8FF 100%)",
+      };
+
+      const setupHero = {
+        ...premiumHeroCard,
+        position: "relative",
+        overflow: "hidden",
+        background:
+          "radial-gradient(circle at 92% 2%, rgba(124, 58, 237, 0.26) 0%, rgba(124, 58, 237, 0.07) 34%, transparent 58%), radial-gradient(circle at 8% 0%, rgba(245, 158, 11, 0.26) 0%, rgba(245, 158, 11, 0.08) 36%, transparent 62%), linear-gradient(150deg, #FFFFFF 0%, #FFF7ED 48%, #F3E8FF 100%)",
+        border: "1px solid rgba(124, 58, 237, 0.18)",
+        borderRadius: 32,
+        boxShadow: "0 22px 58px rgba(91, 33, 182, 0.15)",
+      };
+
+      const setupCard = {
+        ...card,
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, #FFF9F1 100%)",
+        border: `1px solid ${colors.cardBorder}`,
+        borderRadius: 28,
+        boxShadow: "0 18px 44px rgba(28, 25, 23, 0.09)",
+      };
+
+      const inputStyle = {
+        border: `1px solid ${colors.cardBorder}`,
+        borderRadius: 15,
+        padding: "10px 12px",
+        fontWeight: 800,
+        background: "rgba(255,255,255,0.92)",
+        color: colors.text,
+        boxShadow: "0 6px 14px rgba(28, 25, 23, 0.04)",
+      };
+
+      const fieldLabelStyle = {
+        display: "grid",
+        gap: 6,
+        fontSize: 13,
+        fontWeight: 900,
+        color: colors.text,
+      };
+
+      const smallMutedStyle = {
+        color: colors.muted,
+        fontSize: 13,
+        lineHeight: 1.45,
+      };
+
+      const sectionPanel = {
+        padding: 14,
+        borderRadius: 20,
+        border: `1px solid ${colors.cardBorder}`,
+        background: "rgba(255,255,255,0.78)",
+        boxShadow: "0 8px 20px rgba(28, 25, 23, 0.05)",
+      };
+
+      const primaryButtonStyle = {
+        ...button,
+        background: "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
+        color: "white",
+        borderColor: "rgba(124, 58, 237, 0.28)",
+        boxShadow: "0 12px 24px rgba(124, 58, 237, 0.18)",
+      };
+
       const stepTitle =
         familyProfileStep === 1
           ? "Quick trip setup"
@@ -58,7 +125,7 @@ export function OnboardingFlow({
           : "Resort context helps ParkPlan avoid bad transportation and break advice.";
 
       return (
-        <main style={page}>
+        <main style={setupPage}>
           <div style={shell}>
             <header style={{ padding: "18px 0" }}>
               <button
@@ -67,18 +134,54 @@ export function OnboardingFlow({
                 style={{
                   ...button,
                   marginBottom: 12,
-                  color: "#64748b",
+                  color: colors.muted,
+                  background: "rgba(255,255,255,0.76)",
+                  borderColor: colors.cardBorder,
                 }}
               >
                 ← View basic waits
               </button>
 
-              <div style={premiumHeroCard}>
-                <span style={premiumBadge}>TOHI Trip Setup</span>
+              <div style={setupHero}>
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    width: 132,
+                    height: 132,
+                    borderRadius: "999px",
+                    right: -48,
+                    bottom: -52,
+                    background: "rgba(56, 189, 248, 0.14)",
+                  }}
+                />
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    width: 96,
+                    height: 96,
+                    borderRadius: "999px",
+                    left: -42,
+                    top: -38,
+                    background: "rgba(251, 113, 133, 0.12)",
+                  }}
+                />
+                <div style={{ position: "relative" }}>
+                <span
+                  style={{
+                    ...premiumBadge,
+                    background: "rgba(124, 58, 237, 0.12)",
+                    border: "1px solid rgba(124, 58, 237, 0.18)",
+                    color: colors.purpleDeep,
+                  }}
+                >
+                  ✨ TOHI Trip Setup
+                </span>
                 <h1 style={{ fontSize: 34, margin: "10px 0 0", letterSpacing: -1 }}>
                   Build your family’s park plan
                 </h1>
-                <p style={{ color: "#475569", marginTop: 8, lineHeight: 1.5 }}>
+                <p style={{ color: colors.muted, marginTop: 8, lineHeight: 1.5 }}>
                   Every family does the parks differently. Tell TOHI who’s going,
                   where you’re staying, and what kind of day you want — then we’ll
                   help you make smarter, calmer choices in the park.
@@ -87,24 +190,26 @@ export function OnboardingFlow({
                 {isProfileIncomplete && (
                   <div
                     style={{
-                      marginTop: 12,
-                      padding: 12,
-                      borderRadius: 16,
-                      background: "#fff7ed",
-                      border: "1px solid #fed7aa",
-                      color: "#9a3412",
+                      marginTop: 14,
+                      padding: 13,
+                      borderRadius: 18,
+                      background: colors.amberSoft,
+                      border: "1px solid rgba(245, 158, 11, 0.28)",
+                      color: "#92400E",
                       fontSize: 13,
-                      fontWeight: 800,
+                      fontWeight: 850,
+                      lineHeight: 1.45,
                     }}
                   >
                     Finish setup to unlock personalized recommendations, AI guidance,
                     height-aware filtering, and day-of family flow.
                   </div>
                 )}
+                </div>
               </div>
             </header>
 
-            <section style={card}>
+            <section style={setupCard}>
               <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
                 {[
                   { step: 1, label: "Trip" },
@@ -127,9 +232,20 @@ export function OnboardingFlow({
                     style={{
                       ...button,
                       flex: 1,
-                      background: familyProfileStep === item.step ? "#0f172a" : "white",
-                      color: familyProfileStep === item.step ? "white" : "#0f172a",
-                      borderRadius: 14,
+                      background:
+                        familyProfileStep === item.step
+                          ? "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)"
+                          : "rgba(255,255,255,0.82)",
+                      color: familyProfileStep === item.step ? "white" : colors.text,
+                      borderColor:
+                        familyProfileStep === item.step
+                          ? "rgba(124, 58, 237, 0.28)"
+                          : colors.cardBorder,
+                      borderRadius: 16,
+                      boxShadow:
+                        familyProfileStep === item.step
+                          ? "0 10px 20px rgba(124, 58, 237, 0.16)"
+                          : "none",
                     }}
                   >
                     {item.step}. {item.label}
@@ -139,27 +255,29 @@ export function OnboardingFlow({
 
               <div
                 style={{
-                  padding: 12,
-                  borderRadius: 16,
-                  border: "1px solid #bfdbfe",
-                  background: "#eff6ff",
+                  padding: 14,
+                  borderRadius: 20,
+                  border: "1px solid rgba(56, 189, 248, 0.26)",
+                  background:
+                    "linear-gradient(145deg, rgba(255,255,255,0.88) 0%, #E0F2FE 100%)",
                   marginBottom: 14,
+                  boxShadow: "0 10px 24px rgba(2, 132, 199, 0.08)",
                 }}
               >
                 <strong>{stepTitle}</strong>
-                <p style={{ margin: "6px 0 0", color: "#334155", fontSize: 13 }}>
+                <p style={{ margin: "6px 0 0", color: colors.text, fontSize: 13 }}>
                   {stepDescription}
                 </p>
-                <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 12 }}>
+                <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12 }}>
                   {summary.partySize} guests · {summary.ageSummary.under3Count} under 3 ·{" "}
                   {summary.ageSummary.childCount} Disney child ·{" "}
                   {summary.ageSummary.disneyAdultCount} Disney adult · {shortestHeightText}
                 </p>
-                <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 12 }}>
+                <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12 }}>
                   First park: {getParkLabel(summary.tripContext.firstPark)} · Priority park:{" "}
                   {getParkLabel(summary.tripContext.priorityPark)} · {summary.tripAccessStatus.message}
                 </p>
-                <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 12 }}>
+                <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12 }}>
                   Ride comfort: {summary.thrillTolerance || "not set"} ·
                   Walking: {summary.walkingTolerance || "not set"} ·
                   Heat: {summary.heatSensitivity || "not set"}
@@ -170,7 +288,7 @@ export function OnboardingFlow({
                 <div style={{ display: "grid", gap: 14 }}>
                   <div>
                     <strong>Who’s in your group?</strong>
-                    <p style={{ margin: "5px 0 10px", color: "#64748b", fontSize: 13 }}>
+                    <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
                       Adults do not need height entry. We only need children’s ages and
                       heights so TOHI can avoid rides they cannot ride.
                     </p>
@@ -191,13 +309,7 @@ export function OnboardingFlow({
                           id="adult-count"
                           value={familyProfile.adultCount}
                           onChange={(e) => handleAdultCountChange(e.target.value)}
-                          style={{
-                            border: "1px solid #cbd5e1",
-                            borderRadius: 14,
-                            padding: "10px 12px",
-                            fontWeight: 800,
-                            background: "white",
-                          }}
+                          style={inputStyle}
                         >
                           {Array.from({ length: 12 }, (_, index) => index + 1).map((size) => (
                             <option key={size} value={size}>
@@ -216,13 +328,7 @@ export function OnboardingFlow({
                           id="child-count"
                           value={familyProfile.childCount}
                           onChange={(e) => handleChildCountChange(e.target.value)}
-                          style={{
-                            border: "1px solid #cbd5e1",
-                            borderRadius: 14,
-                            padding: "10px 12px",
-                            fontWeight: 800,
-                            background: "white",
-                          }}
+                          style={inputStyle}
                         >
                           {Array.from({ length: 13 }, (_, index) => index).map((size) => (
                             <option key={size} value={size}>
@@ -242,10 +348,11 @@ export function OnboardingFlow({
                             <div
                               key={child.id}
                               style={{
-                                padding: 12,
-                                borderRadius: 16,
-                                border: "1px solid #e2e8f0",
-                                background: "white",
+                                padding: 13,
+                                borderRadius: 18,
+                                border: `1px solid ${colors.cardBorder}`,
+                                background: "rgba(255,255,255,0.84)",
+                                boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
                               }}
                             >
                               <strong style={{ display: "block", marginBottom: 8 }}>
@@ -268,11 +375,7 @@ export function OnboardingFlow({
                                     value={child.age}
                                     onChange={(e) => handleChildChange(index, "age", e.target.value)}
                                     placeholder="ex: 7"
-                                    style={{
-                                      border: "1px solid #cbd5e1",
-                                      borderRadius: 12,
-                                      padding: "9px 10px",
-                                    }}
+                          style={inputStyle}
                                   />
                                 </label>
 
@@ -287,16 +390,12 @@ export function OnboardingFlow({
                                       handleChildChange(index, "heightInches", e.target.value)
                                     }
                                     placeholder="ex: 42"
-                                    style={{
-                                      border: "1px solid #cbd5e1",
-                                      borderRadius: 12,
-                                      padding: "9px 10px",
-                                    }}
+                          style={inputStyle}
                                   />
                                 </label>
                               </div>
 
-                              <p style={{ margin: "8px 0 0", color: "#64748b", fontSize: 12 }}>
+                              <p style={{ margin: "8px 0 0", color: colors.muted, fontSize: 12 }}>
                                 {getDisneyAgeLabel(ageClass)}
                               </p>
                             </div>
@@ -309,12 +408,12 @@ export function OnboardingFlow({
                           marginTop: 12,
                           padding: 12,
                           borderRadius: 16,
-                          border: "1px solid #bbf7d0",
-                          background: "#f0fdf4",
+                          border: `1px solid ${colors.successSoft}`,
+                          background: colors.successSoft,
                         }}
                       >
                         <strong>Adults-only group</strong>
-                        <p style={{ margin: "6px 0 0", color: "#334155", fontSize: 13 }}>
+                        <p style={{ margin: "6px 0 0", color: colors.text, fontSize: 13 }}>
                           No child heights needed. TOHI will not apply child-height
                           restrictions unless you add children later.
                         </p>
@@ -324,7 +423,7 @@ export function OnboardingFlow({
 
                   <div>
                     <strong>Trip length and parks</strong>
-                    <p style={{ margin: "5px 0 10px", color: "#64748b", fontSize: 13 }}>
+                    <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
                       Dates help control when AI chat should be available later and let
                       TOHI understand whether this is pre-trip planning or an active park day.
                     </p>
@@ -355,13 +454,7 @@ export function OnboardingFlow({
                                 },
                               })
                             }
-                            style={{
-                              border: "1px solid #cbd5e1",
-                              borderRadius: 14,
-                              padding: "10px 12px",
-                              fontWeight: 800,
-                              background: "white",
-                            }}
+                          style={inputStyle}
                           />
                         </label>
 
@@ -379,13 +472,7 @@ export function OnboardingFlow({
                                 },
                               })
                             }
-                            style={{
-                              border: "1px solid #cbd5e1",
-                              borderRadius: 14,
-                              padding: "10px 12px",
-                              fontWeight: 800,
-                              background: "white",
-                            }}
+                          style={inputStyle}
                           />
                         </label>
                       </div>
@@ -402,13 +489,7 @@ export function OnboardingFlow({
                               },
                             })
                           }
-                          style={{
-                            border: "1px solid #cbd5e1",
-                            borderRadius: 14,
-                            padding: "10px 12px",
-                            fontWeight: 800,
-                            background: "white",
-                          }}
+                          style={inputStyle}
                         >
                           {Array.from({ length: 14 }, (_, index) => index + 1).map((days) => (
                             <option key={days} value={days}>
@@ -430,13 +511,7 @@ export function OnboardingFlow({
                               },
                             })
                           }
-                          style={{
-                            border: "1px solid #cbd5e1",
-                            borderRadius: 14,
-                            padding: "10px 12px",
-                            fontWeight: 800,
-                            background: "white",
-                          }}
+                          style={inputStyle}
                         >
                           {Array.from({ length: 14 }, (_, index) => index + 1).map((days) => (
                             <option key={days} value={days}>
@@ -458,13 +533,7 @@ export function OnboardingFlow({
                               },
                             })
                           }
-                          style={{
-                            border: "1px solid #cbd5e1",
-                            borderRadius: 14,
-                            padding: "10px 12px",
-                            fontWeight: 800,
-                            background: "white",
-                          }}
+                          style={inputStyle}
                         >
                           <option value="unknown">Not sure yet</option>
                           <option value="no">No — one park per day</option>
@@ -473,7 +542,7 @@ export function OnboardingFlow({
                       </label>
                     </div>
 
-                    <p style={{ margin: "12px 0 8px", color: "#475569", fontSize: 13, fontWeight: 900 }}>
+                    <p style={{ margin: "12px 0 8px", color: colors.muted, fontSize: 13, fontWeight: 900 }}>
                       Which parks are part of this trip?
                     </p>
 
@@ -513,13 +582,7 @@ export function OnboardingFlow({
                                 },
                               })
                             }
-                            style={{
-                              border: "1px solid #cbd5e1",
-                              borderRadius: 14,
-                              padding: "10px 12px",
-                              fontWeight: 800,
-                              background: "white",
-                            }}
+                          style={inputStyle}
                           >
                             <option value="">Not sure yet</option>
                             {DISNEY_PARK_OPTIONS.filter((park) =>
@@ -544,13 +607,7 @@ export function OnboardingFlow({
                                 },
                               })
                             }
-                            style={{
-                              border: "1px solid #cbd5e1",
-                              borderRadius: 14,
-                              padding: "10px 12px",
-                              fontWeight: 800,
-                              background: "white",
-                            }}
+                          style={inputStyle}
                           >
                             <option value="">Not sure yet</option>
                             {DISNEY_PARK_OPTIONS.filter((park) =>
@@ -580,7 +637,7 @@ export function OnboardingFlow({
                     }}
                     style={{
                       ...button,
-                      background: "#0f172a",
+                      background: "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
                       color: "white",
                       justifySelf: "start",
                     }}
@@ -594,7 +651,7 @@ export function OnboardingFlow({
                 <div style={{ display: "grid", gap: 14 }}>
                   <div>
                     <strong>What should TOHI protect?</strong>
-                    <p style={{ margin: "5px 0 10px", color: "#64748b", fontSize: 13 }}>
+                    <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
                       Keep this quick. We only need the choices that change real park-day
                       recommendations right away.
                     </p>
@@ -609,13 +666,7 @@ export function OnboardingFlow({
                               thrillTolerance: e.target.value,
                             })
                           }
-                          style={{
-                            border: "1px solid #cbd5e1",
-                            borderRadius: 14,
-                            padding: "10px 12px",
-                            fontWeight: 800,
-                            background: "white",
-                          }}
+                          style={inputStyle}
                         >
                           <option value="">Choose one</option>
                           <option value="low">Mostly gentle rides</option>
@@ -633,13 +684,7 @@ export function OnboardingFlow({
                               walkingTolerance: e.target.value,
                             })
                           }
-                          style={{
-                            border: "1px solid #cbd5e1",
-                            borderRadius: 14,
-                            padding: "10px 12px",
-                            fontWeight: 800,
-                            background: "white",
-                          }}
+                          style={inputStyle}
                         >
                           <option value="">Choose one</option>
                           <option value="low">Keep walking low when possible</option>
@@ -657,13 +702,7 @@ export function OnboardingFlow({
                               heatSensitivity: e.target.value,
                             })
                           }
-                          style={{
-                            border: "1px solid #cbd5e1",
-                            borderRadius: 14,
-                            padding: "10px 12px",
-                            fontWeight: 800,
-                            background: "white",
-                          }}
+                          style={inputStyle}
                         >
                           <option value="">Choose one</option>
                           <option value="high">We need breaks before things fall apart</option>
@@ -676,7 +715,7 @@ export function OnboardingFlow({
 
                   <div>
                     <strong>What matters most this trip?</strong>
-                    <p style={{ margin: "5px 0 10px", color: "#64748b", fontSize: 13 }}>
+                    <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
                       Pick the moments TOHI should protect. You can choose more than one.
                     </p>
 
@@ -703,7 +742,7 @@ export function OnboardingFlow({
                     </div>
 
                     {!familyProfile.priorities.length && (
-                      <p style={{ margin: "8px 0 0", color: "#9a3412", fontSize: 12, fontWeight: 800 }}>
+                      <p style={{ margin: "8px 0 0", color: "#92400E", fontSize: 12, fontWeight: 800 }}>
                         Pick at least one priority so recommendations do not feel generic.
                       </p>
                     )}
@@ -713,9 +752,9 @@ export function OnboardingFlow({
                     style={{
                       padding: 12,
                       borderRadius: 16,
-                      border: "1px solid #e2e8f0",
-                      background: "#f8fafc",
-                      color: "#475569",
+                      border: `1px solid ${colors.cardBorder}`,
+                      background: colors.backgroundSoft,
+                      color: colors.muted,
                       fontSize: 13,
                       lineHeight: 1.45,
                     }}
@@ -729,7 +768,7 @@ export function OnboardingFlow({
                     <button
                       type="button"
                       onClick={() => setFamilyProfileStep(1)}
-                      style={{ ...button, color: "#64748b" }}
+                      style={{ ...button, color: colors.muted }}
                     >
                       Back
                     </button>
@@ -746,11 +785,7 @@ export function OnboardingFlow({
                         });
                         setFamilyProfileStep(3);
                       }}
-                      style={{
-                        ...button,
-                        background: "#0f172a",
-                        color: "white",
-                      }}
+                      style={primaryButtonStyle}
                     >
                       Next: Where You’re Staying
                     </button>
@@ -762,7 +797,7 @@ export function OnboardingFlow({
                 <div style={{ display: "grid", gap: 14 }}>
                   <div>
                     <strong>Trip context</strong>
-                    <p style={{ margin: "5px 0 10px", color: "#64748b", fontSize: 13 }}>
+                    <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
                       Resort context helps TOHI give realistic break, rope-drop, and
                       transportation advice.
                     </p>
@@ -790,13 +825,7 @@ export function OnboardingFlow({
                               },
                             });
                           }}
-                          style={{
-                            border: "1px solid #cbd5e1",
-                            borderRadius: 14,
-                            padding: "10px 12px",
-                            fontWeight: 800,
-                            background: "white",
-                          }}
+                          style={inputStyle}
                         >
                           <option value="unknown">Not sure / skip for now</option>
                           <option value="yes">Yes, Disney resort</option>
@@ -824,7 +853,7 @@ export function OnboardingFlow({
                                 });
                               }}
                               style={{
-                                border: "1px solid #cbd5e1",
+                                border: `1px solid ${colors.cardBorder}`,
                                 borderRadius: 14,
                                 padding: "10px 12px",
                                 fontWeight: 800,
@@ -845,18 +874,18 @@ export function OnboardingFlow({
                               style={{
                                 padding: 12,
                                 borderRadius: 16,
-                                border: "1px solid #bbf7d0",
-                                background: "#f0fdf4",
+                                border: `1px solid ${colors.successSoft}`,
+                                background: colors.successSoft,
                               }}
                             >
                               <strong>{familyProfileSummary.resortProfile.name}</strong>
-                              <p style={{ margin: "6px 0 0", color: "#334155", fontSize: 13 }}>
+                              <p style={{ margin: "6px 0 0", color: colors.text, fontSize: 13 }}>
                                 {familyProfileSummary.resortProfile.areaLabel} · Transportation:{" "}
                                 {familyProfileSummary.resortProfile.transportation.join(", ")}
                               </p>
 
                               {familyProfileSummary.resortProfile.breakStrategy?.[activePark] && (
-                                <p style={{ margin: "6px 0 0", color: "#166534", fontSize: 13 }}>
+                                <p style={{ margin: "6px 0 0", color: colors.success, fontSize: 13 }}>
                                   Current park break note:{" "}
                                   {familyProfileSummary.resortProfile.breakStrategy[activePark]}
                                 </p>
@@ -880,11 +909,7 @@ export function OnboardingFlow({
                               })
                             }
                             placeholder="ex: hotel name or area"
-                            style={{
-                              border: "1px solid #cbd5e1",
-                              borderRadius: 14,
-                              padding: "10px 12px",
-                            }}
+                          style={inputStyle}
                           />
                         </label>
                       )}
@@ -901,13 +926,7 @@ export function OnboardingFlow({
                               },
                             })
                           }
-                          style={{
-                            border: "1px solid #cbd5e1",
-                            borderRadius: 14,
-                            padding: "10px 12px",
-                            fontWeight: 800,
-                            background: "white",
-                          }}
+                          style={inputStyle}
                         >
                           <option value="unknown">Not sure / depends</option>
                           <option value="bus">Bus</option>
@@ -926,13 +945,7 @@ export function OnboardingFlow({
                           onChange={(e) =>
                             updateFamilyProfile({ lightningLanePreference: e.target.value })
                           }
-                          style={{
-                            border: "1px solid #cbd5e1",
-                            borderRadius: 14,
-                            padding: "10px 12px",
-                            fontWeight: 800,
-                            background: "white",
-                          }}
+                          style={inputStyle}
                         >
                           <option value="undecided">Undecided</option>
                           <option value="avoid_paid">Avoid paid options if possible</option>
@@ -947,12 +960,12 @@ export function OnboardingFlow({
                     style={{
                       padding: 12,
                       borderRadius: 16,
-                      border: "1px solid #bfdbfe",
-                      background: "#eff6ff",
+                      border: `1px solid ${colors.skySoft}`,
+                      background: colors.skySoft,
                     }}
                   >
                     <strong>Disney classification reminder</strong>
-                    <p style={{ margin: "6px 0 0", color: "#334155", fontSize: 13 }}>
+                    <p style={{ margin: "6px 0 0", color: colors.text, fontSize: 13 }}>
                       Ages 0–2 are under 3 / no ticket. Ages 3–9 are Disney child.
                       Ages 10+ count as Disney adults for tickets and dining.
                     </p>
@@ -963,9 +976,9 @@ export function OnboardingFlow({
                       style={{
                         padding: 12,
                         borderRadius: 16,
-                        border: "1px solid #fed7aa",
-                        background: "#fff7ed",
-                        color: "#9a3412",
+                        border: `1px solid ${colors.amberSoft}`,
+                        background: colors.cardWarm,
+                        color: "#92400E",
                         fontSize: 13,
                         fontWeight: 800,
                       }}
@@ -978,7 +991,7 @@ export function OnboardingFlow({
                     <button
                       type="button"
                       onClick={() => setFamilyProfileStep(2)}
-                      style={{ ...button, color: "#64748b" }}
+                      style={{ ...button, color: colors.muted }}
                     >
                       Back
                     </button>
@@ -1011,8 +1024,8 @@ export function OnboardingFlow({
                         }}
                         style={{
                           ...button,
-                          color: "#7c3aed",
-                          borderColor: "#ddd6fe",
+                          color: colors.purple,
+                          borderColor: colors.purpleSoft,
                         }}
                       >
                         Dev Preview Full App
