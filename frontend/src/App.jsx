@@ -37,6 +37,7 @@ import { RecommendationCard } from "./components/RecommendationCard";
 import { WaitTimesList } from "./components/WaitTimesList";
 import { WhileYouWaitCard } from "./components/WhileYouWaitCard";
 import BottomTabs from "./components/BottomTabs";
+import { colors } from "./theme";
 import { useMiniGames } from "./hooks/useMiniGames";
 
 const STORAGE_KEY = "parkplan.state";
@@ -73,25 +74,26 @@ function writeDevPreviewFullApp(enabled) {
 
 const page = {
   minHeight: "100vh",
-  background: "linear-gradient(180deg, #fff7ed 0%, #f8fafc 100%)",
+  background: colors.background,
   fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
-  color: "#0f172a",
+  color: colors.text,
 };
 
 const shell = { maxWidth: 900, margin: "0 auto", padding: 18 };
 
 const card = {
-  background: "rgba(255,255,255,.92)",
-  border: "1px solid #e2e8f0",
+  background: colors.card,
+  border: `1px solid ${colors.cardBorder}`,
   borderRadius: 22,
   padding: 16,
-  boxShadow: "0 10px 30px rgba(15,23,42,.08)",
+  boxShadow: "0 10px 30px rgba(28, 25, 23, 0.07)",
   marginBottom: 14,
 };
 
 const button = {
-  border: "1px solid #e2e8f0",
-  background: "white",
+  border: `1px solid ${colors.cardBorder}`,
+  background: colors.card,
+  color: colors.text,
   borderRadius: 999,
   padding: "9px 12px",
   fontWeight: 800,
@@ -99,8 +101,9 @@ const button = {
 };
 
 const actionButton = {
-  background: "rgba(255,255,255,.72)",
-  border: "1px solid #dbeafe",
+  background: colors.card,
+  border: `1px solid ${colors.cardBorder}`,
+  color: colors.text,
   borderRadius: 999,
   padding: "7px 10px",
   fontSize: 12,
@@ -111,18 +114,18 @@ const actionButton = {
 const premiumHeroCard = {
   ...card,
   background:
-    "radial-gradient(circle at top left, #ffedd5 0%, #ffffff 42%, #eef2ff 100%)",
-  border: "1px solid #fed7aa",
-  boxShadow: "0 18px 45px rgba(124, 58, 237, .14)",
+    `radial-gradient(circle at top left, ${colors.purpleSoft} 0%, ${colors.card} 45%, ${colors.background} 100%)`,
+  border: `1px solid ${colors.cardBorder}`,
+  boxShadow: "0 18px 45px rgba(124, 58, 237, 0.12)",
 };
 
 const premiumBadge = {
   display: "inline-flex",
   alignItems: "center",
   gap: 6,
-  border: "1px solid #fed7aa",
-  background: "#fff7ed",
-  color: "#9a3412",
+  border: `1px solid ${colors.cardBorder}`,
+  background: colors.purpleSoft,
+  color: colors.purple,
   borderRadius: 999,
   padding: "6px 10px",
   fontSize: 12,
@@ -131,8 +134,8 @@ const premiumBadge = {
 
 const lockedCardStyle = {
   ...card,
-  border: "1px dashed #cbd5e1",
-  background: "rgba(248,250,252,.92)",
+  border: `1px dashed ${colors.cardBorder}`,
+  background: colors.purpleSoft,
   boxShadow: "none",
 };
 
