@@ -36,6 +36,7 @@ import { OnboardingFlow } from "./components/OnboardingFlow";
 import { RecommendationCard } from "./components/RecommendationCard";
 import { WaitTimesList } from "./components/WaitTimesList";
 import { WhileYouWaitCard } from "./components/WhileYouWaitCard";
+import BottomTabs from "./components/BottomTabs";
 import { useMiniGames } from "./hooks/useMiniGames";
 
 const STORAGE_KEY = "parkplan.state";
@@ -434,6 +435,7 @@ function App() {
   const [activeScreen, setActiveScreen] = useState(() =>
     readStoredFamilyProfile().isSetupComplete ? "main" : "family_profile"
   );
+  const [activeTab, setActiveTab] = useState("home");
   const [devPreviewFullApp, setDevPreviewFullApp] = useState(() =>
     readDevPreviewFullApp()
   );
@@ -1449,7 +1451,8 @@ function App() {
   }
 
   return (
-    <main style={page}>
+    <>
+      <main style={page}>
       <style>
         {`
           @keyframes tohiFloatCelebrate {
@@ -1488,7 +1491,7 @@ function App() {
         </div>
       )}
 
-      <div style={shell}>
+        <div style={{ ...shell, paddingBottom: 80 }}>
         <header style={{ padding: "18px 0" }}>
           <div
             style={{
@@ -2213,7 +2216,10 @@ function App() {
           })
         )}
       </div>
-    </main>
+      </main>
+
+      <BottomTabs activeTab={activeTab} onTabChange={setActiveTab} />
+    </>
   );
 }
 
