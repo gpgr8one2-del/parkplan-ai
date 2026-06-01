@@ -525,6 +525,10 @@ export async function sendChatMessage(message, sessionData) {
       method: "POST",
       body: JSON.stringify({ message, sessionData }),
     },
-    { retries: 1, timeoutMs: 12000, dedupe: false }
+    // AI chat should not retry after a client-side abort. Retrying creates
+    // duplicate backend Claude calls and makes the app feel flaky in the park.
+    // Keep the frontend timeout longer than the backend AI timeout so the
+    // backend can return a clean failure instead of the frontend falling back early.
+    { retries: 0, timeoutMs: 18000, dedupe: false }
   );
 }
