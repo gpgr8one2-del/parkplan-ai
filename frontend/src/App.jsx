@@ -37,6 +37,7 @@ import { RecommendationCard } from "./components/RecommendationCard";
 import { WaitTimesList } from "./components/WaitTimesList";
 import { WhileYouWaitCard } from "./components/WhileYouWaitCard";
 import BottomTabs from "./components/BottomTabs";
+import { colors } from "./theme";
 import { useMiniGames } from "./hooks/useMiniGames";
 
 const STORAGE_KEY = "parkplan.state";
@@ -75,14 +76,14 @@ const page = {
   minHeight: "100vh",
   background: "linear-gradient(180deg, #fff7ed 0%, #f8fafc 100%)",
   fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
-  color: "#0f172a",
+  color: colors.text,
 };
 
 const shell = { maxWidth: 900, margin: "0 auto", padding: 18 };
 
 const card = {
   background: "rgba(255,255,255,.92)",
-  border: "1px solid #e2e8f0",
+  border: `1px solid ${colors.cardBorder}`,
   borderRadius: 22,
   padding: 16,
   boxShadow: "0 10px 30px rgba(15,23,42,.08)",
@@ -90,7 +91,7 @@ const card = {
 };
 
 const button = {
-  border: "1px solid #e2e8f0",
+  border: `1px solid ${colors.cardBorder}`,
   background: "white",
   borderRadius: 999,
   padding: "9px 12px",
@@ -112,7 +113,7 @@ const premiumHeroCard = {
   ...card,
   background:
     "radial-gradient(circle at top left, #ffedd5 0%, #ffffff 42%, #eef2ff 100%)",
-  border: "1px solid #fed7aa",
+  border: `1px solid ${colors.amberSoft}`,
   boxShadow: "0 18px 45px rgba(124, 58, 237, .14)",
 };
 
@@ -120,8 +121,8 @@ const premiumBadge = {
   display: "inline-flex",
   alignItems: "center",
   gap: 6,
-  border: "1px solid #fed7aa",
-  background: "#fff7ed",
+  border: `1px solid ${colors.amberSoft}`,
+  background: colors.cardWarm,
   color: "#9a3412",
   borderRadius: 999,
   padding: "6px 10px",
@@ -1206,7 +1207,7 @@ function App() {
           PERSONALIZED FEATURE
         </div>
         <h3 style={{ margin: "6px 0 6px" }}>{title}</h3>
-        <p style={{ margin: 0, color: "#475569", fontSize: 14, lineHeight: 1.45 }}>
+        <p style={{ margin: 0, color: colors.muted, fontSize: 14, lineHeight: 1.45 }}>
           {body}
         </p>
 
@@ -1216,7 +1217,7 @@ function App() {
             onClick={() => setActiveScreen("family_profile")}
             style={{
               ...button,
-              background: "#0f172a",
+              background: colors.purpleDeep,
               color: "white",
             }}
           >
@@ -1230,7 +1231,7 @@ function App() {
               style={{
                 ...button,
                 color: "#7c3aed",
-                borderColor: "#ddd6fe",
+                borderColor: colors.purpleSoft,
               }}
             >
               Dev Preview
@@ -1271,14 +1272,14 @@ function App() {
 
         <button
           onClick={() => handleDone(ride.id)}
-          style={{ ...actionButton, color: "#166534" }}
+          style={{ ...actionButton, color: colors.success }}
         >
           ✓ Done
         </button>
 
         <button
           onClick={() => handleSkip(ride.id)}
-          style={{ ...actionButton, color: "#64748b" }}
+          style={{ ...actionButton, color: colors.muted }}
         >
           Skip
         </button>
@@ -1313,14 +1314,14 @@ function App() {
           background: "rgba(250,245,255,.75)",
         }}
       >
-        <div style={{ fontSize: 12, color: "#6d28d9", fontWeight: 900 }}>
+        <div style={{ fontSize: 12, color: colors.purple, fontWeight: 900 }}>
           SHOWTIMES
         </div>
 
         <p
           style={{
             margin: "5px 0 0",
-            color: "#334155",
+            color: colors.text,
             fontSize: 13,
             fontWeight: 700,
           }}
@@ -1329,13 +1330,13 @@ function App() {
         </p>
 
         {showProfile.recommendedShowtimes?.length > 0 && (
-          <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 12 }}>
+          <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12 }}>
             Best target: {showProfile.recommendedShowtimes.join(" or ")}
           </p>
         )}
 
         {(showProfile.arrivalBufferMinutes || showProfile.middayArrivalBufferMinutes) && (
-          <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 12 }}>
+          <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12 }}>
             Arrival buffer:{" "}
             {showProfile.middayArrivalBufferMinutes
               ? `${showProfile.arrivalBufferMinutes || 15}–${showProfile.middayArrivalBufferMinutes} min depending on heat/crowds`
@@ -1542,12 +1543,13 @@ function App() {
             <>
         <section
           style={{
-            background: "linear-gradient(165deg, #FFFCF5 0%, #FFF4E0 100%)",
-            border: "1px solid #EFE7DA",
-            borderRadius: 28,
+            background:
+              "radial-gradient(circle at top right, rgba(124, 58, 237, 0.16) 0%, rgba(124, 58, 237, 0.04) 26%, transparent 48%), linear-gradient(155deg, #FFF9F1 0%, #FFF0D6 58%, #F3E8FF 100%)",
+            border: "1px solid #EADCC8",
+            borderRadius: 30,
             padding: "26px 22px 20px",
             marginBottom: 14,
-            boxShadow: "0 14px 40px rgba(124, 58, 237, 0.06)",
+            boxShadow: "0 18px 46px rgba(91, 33, 182, 0.11)",
           }}
         >
           <img
@@ -1566,7 +1568,7 @@ function App() {
             style={{
               margin: 0,
               fontSize: 26,
-              color: "#1C1917",
+              color: colors.text,
               letterSpacing: -0.4,
               lineHeight: 1.25,
               fontWeight: 800,
@@ -1578,7 +1580,7 @@ function App() {
           <p
             style={{
               margin: "8px 0 18px",
-              color: "#78716C",
+              color: colors.muted,
               fontSize: 14,
               lineHeight: 1.5,
             }}
@@ -1589,7 +1591,7 @@ function App() {
           <div
             style={{
               height: 1,
-              background: "#EFE7DA",
+              background: colors.cardBorder,
               margin: "0 -22px 14px",
             }}
           />
@@ -1611,19 +1613,19 @@ function App() {
                 flexWrap: "wrap",
               }}
             >
-              <MapPin size={16} style={{ color: "#7C3AED" }} />
-              <span style={{ fontSize: 14, fontWeight: 800, color: "#1C1917" }}>
+              <MapPin size={16} style={{ color: colors.purple }} />
+              <span style={{ fontSize: 14, fontWeight: 800, color: colors.text }}>
                 {parkData?.parkName || "Choose a park"}
               </span>
 
               {weather?.tempF != null && (
-                <span style={{ fontSize: 13, color: "#78716C" }}>
+                <span style={{ fontSize: 13, color: colors.muted }}>
                   · {weather.tempF}°F
                 </span>
               )}
 
               {closeTimeLabel && (
-                <span style={{ fontSize: 13, color: "#78716C" }}>
+                <span style={{ fontSize: 13, color: colors.muted }}>
                   · closes {closeTimeLabel}
                 </span>
               )}
@@ -1640,7 +1642,7 @@ function App() {
                 ...button,
                 padding: "6px 12px",
                 fontSize: 12,
-                background: "#FFFFFF",
+                background: colors.card,
               }}
               onClick={() => loadData(true)}
               disabled={loading}
@@ -1656,7 +1658,7 @@ function App() {
               {error && (
                 <p
                   style={{
-                    color: "#DC2626",
+                    color: colors.error,
                     fontWeight: 700,
                     margin: "6px 0 0",
                     fontSize: 13,
@@ -1688,8 +1690,9 @@ function App() {
                 }}
                 style={{
                   ...button,
-                  background: activePark === park.id ? "#0f172a" : "white",
-                  color: activePark === park.id ? "white" : "#0f172a",
+                  background: activePark === park.id ? colors.purple : colors.card,
+                  color: activePark === park.id ? "white" : colors.text,
+                  borderColor: activePark === park.id ? colors.purple : colors.cardBorder,
                   whiteSpace: "nowrap",
                 }}
               >
@@ -1720,7 +1723,7 @@ function App() {
             />
           </div>
 
-          <p style={{ margin: "10px 0 0", color: "#334155" }}>
+          <p style={{ margin: "10px 0 0", color: colors.text }}>
             {buildWeatherDisplay(weather)}
           </p>
 
@@ -1732,7 +1735,7 @@ function App() {
             <strong>Planning Status</strong>
           </div>
 
-          <p style={{ margin: "10px 0 0", color: "#334155" }}>
+          <p style={{ margin: "10px 0 0", color: colors.text }}>
             {timeContext.summary}
           </p>
 
@@ -1741,7 +1744,7 @@ function App() {
         {weatherMode.mode !== "normal" && (
           <section style={card}>
             <h3 style={{ marginTop: 0 }}>{weatherMode.label}</h3>
-            <p style={{ color: "#334155", marginTop: 0 }}>
+            <p style={{ color: colors.text, marginTop: 0 }}>
               {weatherMode.message}
             </p>
 
@@ -1753,12 +1756,12 @@ function App() {
                     style={{
                       padding: 12,
                       borderRadius: 16,
-                      border: "1px solid #fde68a",
-                      background: "#fffbeb",
+                      border: `1px solid ${colors.amberSoft}`,
+                      background: colors.amberSoft,
                     }}
                   >
                     <strong>{item.title}</strong>
-                    <p style={{ margin: "6px 0 0", color: "#475569" }}>
+                    <p style={{ margin: "6px 0 0", color: colors.muted }}>
                       {item.text}
                     </p>
                   </div>
@@ -1773,10 +1776,10 @@ function App() {
             style={{
               ...card,
               border: "1px solid #c4b5fd",
-              background: "#f5f3ff",
+              background: colors.purpleSoft,
             }}
           >
-            <div style={{ fontSize: 12, color: "#6d28d9", fontWeight: 900 }}>
+            <div style={{ fontSize: 12, color: colors.purple, fontWeight: 900 }}>
               CURRENTLY IN LINE
             </div>
 
@@ -1784,7 +1787,7 @@ function App() {
               {currentActivity.rideName}
             </h3>
 
-            <p style={{ margin: "0 0 8px", color: "#475569" }}>
+            <p style={{ margin: "0 0 8px", color: colors.muted }}>
               {currentActivity.postedWaitAtStart != null
                 ? `Posted wait when you joined: ${currentActivity.postedWaitAtStart} min`
                 : "You marked this as your current line."}
@@ -1796,7 +1799,7 @@ function App() {
                 : ""}
             </p>
 
-            <p style={{ margin: "0 0 12px", color: "#334155" }}>
+            <p style={{ margin: "0 0 12px", color: colors.text }}>
               I’ll stop recommending this against itself while you’re waiting. Mark it
               done when you finish, or cancel if you leave the line.
             </p>
@@ -1804,14 +1807,14 @@ function App() {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button
                 onClick={() => handleDone(currentActivity.rideId)}
-                style={{ ...button, color: "#166534", borderColor: "#bbf7d0" }}
+                style={{ ...button, color: colors.success, borderColor: colors.successSoft }}
               >
                 ✓ Mark Done
               </button>
 
               <button
                 onClick={handleCancelCurrentActivity}
-                style={{ ...button, color: "#64748b" }}
+                style={{ ...button, color: colors.muted }}
               >
                 Cancel
               </button>
@@ -1851,7 +1854,7 @@ function App() {
                 display: "block",
                 fontSize: 13,
                 fontWeight: 800,
-                color: "#475569",
+                color: colors.muted,
                 marginBottom: 6,
               }}
             >
@@ -1887,7 +1890,7 @@ function App() {
                 padding: "10px 12px",
                 fontWeight: 700,
                 background: "white",
-                color: "#0f172a",
+                color: colors.text,
               }}
             >
               <option value="">Pick where you are now</option>
@@ -1921,7 +1924,7 @@ function App() {
                 {locationLoading ? "Finding you..." : "Use My Location"}
               </button>
 
-              <span style={{ color: "#64748b", fontSize: 12 }}>
+              <span style={{ color: colors.muted, fontSize: 12 }}>
                 Optional. Used only to estimate your nearby park area.
               </span>
             </div>
@@ -1930,7 +1933,7 @@ function App() {
               <p
                 style={{
                   margin: "7px 0 0",
-                  color: "#64748b",
+                  color: colors.muted,
                   fontSize: 12,
                   lineHeight: 1.4,
                 }}
@@ -1949,7 +1952,7 @@ function App() {
               <p
                 style={{
                   margin: "7px 0 0",
-                  color: "#166534",
+                  color: colors.success,
                   fontSize: 12,
                   lineHeight: 1.4,
                   fontWeight: 700,
@@ -1963,7 +1966,7 @@ function App() {
               <p
                 style={{
                   margin: "7px 0 0",
-                  color: "#b91c1c",
+                  color: colors.error,
                   fontSize: 12,
                   lineHeight: 1.4,
                   fontWeight: 700,
@@ -1976,7 +1979,7 @@ function App() {
             <p
               style={{
                 margin: "7px 0 0",
-                color: "#64748b",
+                color: colors.muted,
                 fontSize: 12,
                 lineHeight: 1.4,
               }}
@@ -1991,13 +1994,13 @@ function App() {
               style={{
                 padding: 12,
                 borderRadius: 16,
-                border: "1px solid #fed7aa",
-                background: "#fff7ed",
+                border: `1px solid ${colors.amberSoft}`,
+                background: colors.cardWarm,
                 marginBottom: 12,
               }}
             >
               <strong>Ride issue reported</strong>
-              <p style={{ margin: "6px 0 0", color: "#64748b" }}>
+              <p style={{ margin: "6px 0 0", color: colors.muted }}>
                 I’ll avoid recommending reported rides for now. Use reset to bring
                 them back once things look normal.
               </p>
@@ -2010,7 +2013,7 @@ function App() {
               style={{
                 background: "none",
                 border: "none",
-                color: "#64748b",
+                color: colors.muted,
                 fontSize: 12,
                 textDecoration: "underline",
                 cursor: "pointer",
@@ -2032,7 +2035,7 @@ function App() {
               }}
             >
               <strong>Pick where you are first.</strong>
-              <p style={{ margin: "6px 0 0", color: "#334155" }}>
+              <p style={{ margin: "6px 0 0", color: colors.text }}>
                 TOHI can show wait times without your location, but personalized next
                 moves need your current park area so we do not send your family on a
                 bad cross-park walk.
@@ -2044,7 +2047,7 @@ function App() {
                   disabled={locationLoading}
                   style={{
                     ...button,
-                    background: "#0f172a",
+                    background: colors.purpleDeep,
                     color: "white",
                   }}
                 >
@@ -2129,12 +2132,12 @@ function App() {
               style={{
                 padding: 14,
                 borderRadius: 18,
-                border: "1px solid #e2e8f0",
-                background: "#f8fafc",
+                border: `1px solid ${colors.cardBorder}`,
+                background: colors.backgroundSoft,
               }}
             >
               <strong>No strong recommendation right now.</strong>
-              <p style={{ margin: "6px 0 0", color: "#64748b" }}>
+              <p style={{ margin: "6px 0 0", color: colors.muted }}>
                 Refresh wait data, reset hidden rides, or use this as a good
                 moment for a nearby indoor break, snack, restroom stop, or
                 quick regroup.
@@ -2181,7 +2184,7 @@ function App() {
                     <p
                       style={{
                         margin: 0,
-                        color: "#78716C",
+                        color: colors.muted,
                         fontSize: 13,
                         lineHeight: 1.45,
                       }}
@@ -2199,7 +2202,7 @@ function App() {
                 <p
                   style={{
                     margin: "10px 0 0",
-                    color: "#78716C",
+                    color: colors.muted,
                     fontSize: 12,
                     lineHeight: 1.4,
                   }}
@@ -2226,7 +2229,7 @@ function App() {
               <section
                 style={{
                   ...card,
-                  background: "#FFFFFF",
+                  background: colors.card,
                   border: "1px solid #EFE7DA",
                   boxShadow: "0 12px 30px rgba(28, 25, 23, 0.07)",
                 }}
@@ -2281,7 +2284,7 @@ function App() {
               <section
                 style={{
                   ...card,
-                  background: "#FFFFFF",
+                  background: colors.card,
                   border: "1px solid #EFE7DA",
                   boxShadow: "none",
                 }}
@@ -2293,7 +2296,7 @@ function App() {
                   style={{
                     margin: "10px 0 0",
                     paddingLeft: 18,
-                    color: "#78716C",
+                    color: colors.muted,
                     fontSize: 14,
                     lineHeight: 1.55,
                   }}
@@ -2331,7 +2334,7 @@ function App() {
                 <p
                   style={{
                     margin: "10px 0 0",
-                    color: "#78716C",
+                    color: colors.muted,
                     fontSize: 14,
                     lineHeight: 1.5,
                   }}
@@ -2348,7 +2351,7 @@ function App() {
                         borderRadius: 16,
                         border: "1px solid #EFE7DA",
                         background: "#FFF8F0",
-                        color: "#78716C",
+                        color: colors.muted,
                         fontSize: 13,
                         lineHeight: 1.45,
                       }}
@@ -2368,7 +2371,7 @@ function App() {
                           msg.role === "user"
                             ? "1px solid rgba(124, 58, 237, 0.14)"
                             : "1px solid #EFE7DA",
-                        color: "#1C1917",
+                        color: colors.text,
                       }}
                     >
                       <strong>{msg.role === "user" ? "You" : "TOHI"}: </strong>
@@ -2390,8 +2393,8 @@ function App() {
                       border: "1px solid #EFE7DA",
                       borderRadius: 999,
                       padding: "10px 12px",
-                      color: "#1C1917",
-                      background: "#FFFFFF",
+                      color: colors.text,
+                      background: colors.card,
                     }}
                   />
                   <button
@@ -2421,7 +2424,7 @@ function App() {
               <section
                 style={{
                   ...card,
-                  background: "#FFFFFF",
+                  background: colors.card,
                   border: "1px solid #EFE7DA",
                   boxShadow: "0 12px 30px rgba(28, 25, 23, 0.07)",
                 }}
@@ -2469,7 +2472,7 @@ function App() {
                     display: "grid",
                     gap: 8,
                     marginTop: 10,
-                    color: "#1C1917",
+                    color: colors.text,
                     fontSize: 14,
                   }}
                 >
@@ -2521,11 +2524,11 @@ function App() {
                   style={{
                     ...card,
                     border: "1px solid #ddd6fe",
-                    background: "#f5f3ff",
+                    background: colors.purpleSoft,
                   }}
                 >
-                  <strong style={{ color: "#6d28d9" }}>Developer Preview Active</strong>
-                  <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 13 }}>
+                  <strong style={{ color: colors.purple }}>Developer Preview Active</strong>
+                  <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 13 }}>
                     You are seeing the full app even though the guest profile is incomplete.
                     Normal guests would only see basic wait times until setup is finished.
                   </p>
@@ -2537,7 +2540,7 @@ function App() {
                       });
                       setDevPreviewFullApp(false);
                     }}
-                    style={{ ...button, marginTop: 10, color: "#6d28d9" }}
+                    style={{ ...button, marginTop: 10, color: colors.purple }}
                   >
                     Turn Off Preview Gate Bypass
                   </button>
