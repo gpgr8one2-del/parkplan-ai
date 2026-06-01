@@ -2194,65 +2194,6 @@ function App() {
           })
         )}
 
-        {access.canUseAiChat ? (
-          <section style={card}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <MessageCircle size={18} />
-            <h3 style={{ margin: 0 }}>TOHI Assistant</h3>
-          </div>
-
-          <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-            {chat.length === 0 && (
-              <p style={{ color: "#64748b" }}>
-                Ask what to ride next, how to handle heat or weather, or how to keep your
-                family’s day moving without overdoing it.
-              </p>
-            )}
-
-            {chat.map((msg, idx) => (
-              <div
-                key={idx}
-                style={{
-                  padding: 10,
-                  borderRadius: 14,
-                  background: msg.role === "user" ? "#e0f2fe" : "#f1f5f9",
-                }}
-              >
-                <strong>{msg.role === "user" ? "You" : "TOHI"}: </strong>
-                {msg.content}
-              </div>
-            ))}
-          </div>
-
-          <form
-            onSubmit={handleChatSubmit}
-            style={{ display: "flex", gap: 8, marginTop: 12 }}
-          >
-            <input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Ask TOHI..."
-              style={{
-                flex: 1,
-                border: "1px solid #cbd5e1",
-                borderRadius: 999,
-                padding: "10px 12px",
-              }}
-            />
-            <button style={button} disabled={chatLoading}>
-              <Send size={14} /> {chatLoading ? "..." : "Send"}
-            </button>
-          </form>
-        </section>
-        ) : (
-          renderLockedFeatureCard({
-            title: access.profileComplete
-              ? "AI guidance is not available for this trip timing yet"
-              : "AI guidance needs your trip setup",
-            body: access.aiLockedReason,
-            actionLabel: access.profileComplete ? "Review Trip Setup" : "Set up AI guidance",
-          })
-        )}
             </>
           )}
 
@@ -2334,19 +2275,113 @@ function App() {
             })}
 
           {activeTab === "tohi" &&
-            (access.canUseAiChat
-              ? renderTabPlaceholderCard({
-                  eyebrow: "TOHI",
-                  title: "TOHI chat is moving here next",
-                  body:
-                    "This tab will become the dedicated calm assistant space. For now, chat still lives safely on Home until the next commit moves it cleanly.",
-                })
-              : renderLockedFeatureCard({
-                  title: "TOHI guidance needs your trip setup",
-                  body:
-                    "TOHI needs your trip setup so it can answer with your family, resort, height, and park context.",
-                  actionLabel: "Finish trip setup",
-                }))}
+            (access.canUseAiChat ? (
+              <section style={card}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <MessageCircle size={18} />
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 900,
+                        color: "#7C3AED",
+                      }}
+                    >
+                      TOHI
+                    </div>
+                    <h2 style={{ margin: "3px 0 0", color: "#1C1917" }}>
+                      Ask TOHI
+                    </h2>
+                  </div>
+                </div>
+
+                <p
+                  style={{
+                    margin: "10px 0 0",
+                    color: "#78716C",
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Ask what to do next, how to handle heat or storms, whether a resort
+                  break is realistic, or how to keep the day calm without overdoing it.
+                </p>
+
+                <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+                  {chat.length === 0 && (
+                    <div
+                      style={{
+                        padding: 12,
+                        borderRadius: 16,
+                        border: "1px solid #EFE7DA",
+                        background: "#FFF8F0",
+                        color: "#78716C",
+                        fontSize: 13,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      Try: “What should we do next without wearing everyone out?”
+                    </div>
+                  )}
+
+                  {chat.map((msg, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: 10,
+                        borderRadius: 14,
+                        background: msg.role === "user" ? "#F5F3FF" : "#FFF8F0",
+                        border:
+                          msg.role === "user"
+                            ? "1px solid rgba(124, 58, 237, 0.14)"
+                            : "1px solid #EFE7DA",
+                        color: "#1C1917",
+                      }}
+                    >
+                      <strong>{msg.role === "user" ? "You" : "TOHI"}: </strong>
+                      {msg.content}
+                    </div>
+                  ))}
+                </div>
+
+                <form
+                  onSubmit={handleChatSubmit}
+                  style={{ display: "flex", gap: 8, marginTop: 12 }}
+                >
+                  <input
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Ask TOHI..."
+                    style={{
+                      flex: 1,
+                      border: "1px solid #EFE7DA",
+                      borderRadius: 999,
+                      padding: "10px 12px",
+                      color: "#1C1917",
+                      background: "#FFFFFF",
+                    }}
+                  />
+                  <button
+                    style={{
+                      ...button,
+                      background: "#7C3AED",
+                      color: "white",
+                      borderColor: "#7C3AED",
+                    }}
+                    disabled={chatLoading}
+                  >
+                    <Send size={14} /> {chatLoading ? "..." : "Send"}
+                  </button>
+                </form>
+              </section>
+            ) : (
+              renderLockedFeatureCard({
+                title: "TOHI guidance needs your trip setup",
+                body:
+                  "TOHI needs your trip setup so it can answer with your family, resort, height, and park context.",
+                actionLabel: "Finish trip setup",
+              })
+            ))}
 
           {activeTab === "profile" &&
             renderTabPlaceholderCard({
