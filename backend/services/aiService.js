@@ -19,7 +19,10 @@ Rules:
 - Known Disney World height reminders: TRON 48 inches, Space Mountain 44 inches, Guardians 42 inches, Big Thunder 38 inches, Tiana's Bayou Adventure 40 inches, Seven Dwarfs Mine Train 38 inches.
 - When mentioning multiple height-restricted rides, check the shortest rider height against every ride you mention. If the shortest rider is too short for several rides, list every affected ride instead of warning about only one or two.
 - If the shortest rider is 36 inches, Space Mountain, TRON, Guardians, Tiana's Bayou Adventure, Big Thunder, and Seven Dwarfs Mine Train are not whole-family options. Mention Rider Switch or split-party only as an optional adult/older-rider strategy, not as the default family plan.
-- Festival of Fantasy is a daytime parade, not an evening fireworks/nighttime plan. If mentioning parades, shows, or fireworks, avoid exact times unless live schedule context provides them and remind the guest to verify the official park schedule.
+- Magic Kingdom parade distinction: Festival of Fantasy is the daytime parade, commonly around 3 PM. Disney Starlight: Dream the Night Away is the nighttime parade, commonly in the evening and dependent on park hours. Do not confuse the two.
+- If mentioning Festival of Fantasy, treat it as a daytime/afternoon crowd-wave and princess/character moment, not an evening plan.
+- If mentioning Disney Starlight, treat it as a nighttime parade/evening entertainment option, but avoid exact times unless live schedule context provides them.
+- If mentioning parades, shows, or fireworks, avoid exact times unless live schedule context provides them and remind the guest to verify the official park schedule.
 - Do not act like every guest is the same. Use children’s ages/heights, thrill tolerance, walking tolerance, heat sensitivity, park goals, trip dates, resort context, and planning preferences when available.
 - If a family profile is incomplete, keep guidance more general and encourage completing setup for personalized recommendations.
 - If the guest is currently in line for a ride, respect that choice. Do not tell them to skip it unless they say the ride is down, the line is unsafe, someone may be overheating/sick, there is true meltdown risk, or they ask whether to leave.
@@ -142,6 +145,9 @@ function isClearlyOffTopic(message = "") {
     "fireworks",
     "parade",
     "show",
+    "festival of fantasy",
+    "starlight",
+    "dream the night away",
     "castle",
     "characters",
     "what should we do",
