@@ -37,7 +37,6 @@ import { RecommendationCard } from "./components/RecommendationCard";
 import { WaitTimesList } from "./components/WaitTimesList";
 import { WhileYouWaitCard } from "./components/WhileYouWaitCard";
 import BottomTabs from "./components/BottomTabs";
-import { colors } from "./theme";
 import { useMiniGames } from "./hooks/useMiniGames";
 
 const STORAGE_KEY = "parkplan.state";
@@ -74,26 +73,25 @@ function writeDevPreviewFullApp(enabled) {
 
 const page = {
   minHeight: "100vh",
-  background: colors.background,
+  background: "linear-gradient(180deg, #fff7ed 0%, #f8fafc 100%)",
   fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
-  color: colors.text,
+  color: "#0f172a",
 };
 
 const shell = { maxWidth: 900, margin: "0 auto", padding: 18 };
 
 const card = {
-  background: colors.card,
-  border: `1px solid ${colors.cardBorder}`,
+  background: "rgba(255,255,255,.92)",
+  border: "1px solid #e2e8f0",
   borderRadius: 22,
   padding: 16,
-  boxShadow: "0 10px 30px rgba(28, 25, 23, 0.07)",
+  boxShadow: "0 10px 30px rgba(15,23,42,.08)",
   marginBottom: 14,
 };
 
 const button = {
-  border: `1px solid ${colors.cardBorder}`,
-  background: colors.card,
-  color: colors.text,
+  border: "1px solid #e2e8f0",
+  background: "white",
   borderRadius: 999,
   padding: "9px 12px",
   fontWeight: 800,
@@ -101,9 +99,8 @@ const button = {
 };
 
 const actionButton = {
-  background: colors.card,
-  border: `1px solid ${colors.cardBorder}`,
-  color: colors.text,
+  background: "rgba(255,255,255,.72)",
+  border: "1px solid #dbeafe",
   borderRadius: 999,
   padding: "7px 10px",
   fontSize: 12,
@@ -114,18 +111,18 @@ const actionButton = {
 const premiumHeroCard = {
   ...card,
   background:
-    `radial-gradient(circle at top left, ${colors.purpleSoft} 0%, ${colors.card} 45%, ${colors.background} 100%)`,
-  border: `1px solid ${colors.cardBorder}`,
-  boxShadow: "0 18px 45px rgba(124, 58, 237, 0.12)",
+    "radial-gradient(circle at top left, #ffedd5 0%, #ffffff 42%, #eef2ff 100%)",
+  border: "1px solid #fed7aa",
+  boxShadow: "0 18px 45px rgba(124, 58, 237, .14)",
 };
 
 const premiumBadge = {
   display: "inline-flex",
   alignItems: "center",
   gap: 6,
-  border: `1px solid ${colors.cardBorder}`,
-  background: colors.purpleSoft,
-  color: colors.purple,
+  border: "1px solid #fed7aa",
+  background: "#fff7ed",
+  color: "#9a3412",
   borderRadius: 999,
   padding: "6px 10px",
   fontSize: 12,
@@ -134,8 +131,8 @@ const premiumBadge = {
 
 const lockedCardStyle = {
   ...card,
-  border: `1px dashed ${colors.cardBorder}`,
-  background: colors.purpleSoft,
+  border: "1px dashed #cbd5e1",
+  background: "rgba(248,250,252,.92)",
   boxShadow: "none",
 };
 
@@ -1543,67 +1540,132 @@ function App() {
         <div style={{ ...shell, paddingBottom: 80 }}>
           {activeTab === "home" && (
             <>
-        <header style={{ padding: "18px 0" }}>
+        <section
+          style={{
+            background: "linear-gradient(165deg, #FFFCF5 0%, #FFF4E0 100%)",
+            border: "1px solid #EFE7DA",
+            borderRadius: 28,
+            padding: "26px 22px 20px",
+            marginBottom: 14,
+            boxShadow: "0 14px 40px rgba(124, 58, 237, 0.06)",
+          }}
+        >
           <img
             src="/tohi-logo.png"
             alt="TOHI"
             style={{
               display: "block",
-              width: 156,
-              maxWidth: "52vw",
+              width: 140,
+              maxWidth: "50vw",
               height: "auto",
-              marginBottom: 6,
+              marginBottom: 18,
             }}
           />
-          <p style={{ color: "#64748b", marginTop: 6 }}>
-            A calm family park companion for Disney World and Universal Orlando.
-          </p>
-        </header>
 
-        <section style={card}>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 26,
+              color: "#1C1917",
+              letterSpacing: -0.4,
+              lineHeight: 1.25,
+              fontWeight: 800,
+            }}
+          >
+            Here&apos;s what matters right now.
+          </h1>
+
+          <p
+            style={{
+              margin: "8px 0 18px",
+              color: "#78716C",
+              fontSize: 14,
+              lineHeight: 1.5,
+            }}
+          >
+            Your calm family companion for the day.
+          </p>
+
+          <div
+            style={{
+              height: 1,
+              background: "#EFE7DA",
+              margin: "0 -22px 14px",
+            }}
+          />
+
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
               gap: 12,
+              flexWrap: "wrap",
             }}
           >
-            <div>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                }}
-              >
-                <MapPin size={18} />
-                <h2 style={{ margin: 0, fontSize: 18 }}>
-                  {parkData?.parkName || "Choose a park"}
-                </h2>
-                <FreshnessBadge
-                  source={parkData?.source}
-                  ageMs={parkData?.ageMs}
-                  fetchedAt={parkData?.fetchedAt}
-                />
-              </div>
-              {closeTimeLabel && (
-                <p style={{ margin: "7px 0 0", color: "#64748b", fontSize: 13 }}>
-                  Closes {closeTimeLabel}
-                </p>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              <MapPin size={16} style={{ color: "#7C3AED" }} />
+              <span style={{ fontSize: 14, fontWeight: 800, color: "#1C1917" }}>
+                {parkData?.parkName || "Choose a park"}
+              </span>
+
+              {weather?.tempF != null && (
+                <span style={{ fontSize: 13, color: "#78716C" }}>
+                  · {weather.tempF}°F
+                </span>
               )}
+
+              {closeTimeLabel && (
+                <span style={{ fontSize: 13, color: "#78716C" }}>
+                  · closes {closeTimeLabel}
+                </span>
+              )}
+
+              <FreshnessBadge
+                source={parkData?.source}
+                ageMs={parkData?.ageMs}
+                fetchedAt={parkData?.fetchedAt}
+              />
             </div>
 
-            <button style={button} onClick={() => loadData(true)} disabled={loading}>
-              <RefreshCw size={14} /> {loading ? "Loading" : "Refresh"}
+            <button
+              style={{
+                ...button,
+                padding: "6px 12px",
+                fontSize: 12,
+                background: "#FFFFFF",
+              }}
+              onClick={() => loadData(true)}
+              disabled={loading}
+            >
+              <RefreshCw size={12} /> {loading ? "Loading" : "Refresh"}
             </button>
           </div>
 
-          <DataStatusBanner source={parkData?.source} />
+          {(parkData?.source || error) && (
+            <div style={{ marginTop: 10 }}>
+              <DataStatusBanner source={parkData?.source} />
 
-          {error && (
-            <p style={{ color: "#b91c1c", fontWeight: 700 }}>{error}</p>
+              {error && (
+                <p
+                  style={{
+                    color: "#DC2626",
+                    fontWeight: 700,
+                    margin: "6px 0 0",
+                    fontSize: 13,
+                  }}
+                >
+                  {error}
+                </p>
+              )}
+            </div>
           )}
         </section>
 
