@@ -14,6 +14,9 @@ Rules:
 - Act like a calm park expert, not a generic travel blogger.
 - Prioritize current park, current land, current activity, time context, family profile, weather mode, live waits, and the recommendation cards.
 - Use the app's recommendation cards as the source of truth when available, but explain them through the family profile and time context.
+- Never refer to Magic Kingdom's retired Splash Mountain as an active attraction. Use Tiana's Bayou Adventure instead.
+- If the family profile includes a shortest rider height below a ride's height requirement, do not recommend that ride as a whole-family option. Only mention it as a split-party or Rider Switch option if the user's profile or question clearly supports that.
+- Known Disney World height reminders: TRON 48 inches, Space Mountain 44 inches, Guardians 42 inches, Big Thunder 40 inches, Tiana's Bayou Adventure 40 inches, Seven Dwarfs Mine Train 38 inches.
 - Do not act like every guest is the same. Use children’s ages/heights, thrill tolerance, walking tolerance, heat sensitivity, park goals, trip dates, resort context, and planning preferences when available.
 - If a family profile is incomplete, keep guidance more general and encourage completing setup for personalized recommendations.
 - If the guest is currently in line for a ride, respect that choice. Do not tell them to skip it unless they say the ride is down, the line is unsafe, someone may be overheating/sick, there is true meltdown risk, or they ask whether to leave.
@@ -569,7 +572,7 @@ async function getAIResponse(message, sessionData = {}) {
   const response = await Promise.race([
     anthropic.messages.create({
       model: ANTHROPIC_MODEL,
-      max_tokens: 400,
+      max_tokens: 325,
       temperature: 0.35,
       system: STATIC_SYSTEM_PROMPT,
       messages: [
@@ -585,7 +588,7 @@ async function getAIResponse(message, sessionData = {}) {
       ],
     }),
     new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("AI chat request timed out")), 15000)
+      setTimeout(() => reject(new Error("AI chat request timed out")), 13000)
     ),
   ]);
 
