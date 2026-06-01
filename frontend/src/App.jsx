@@ -1910,307 +1910,409 @@ function App() {
         )}
 
         {hasPersonalizedAccess ? (
-          <section style={card}>
-          <h3 style={{ marginTop: 0 }}>Best Move Right Now</h3>
-
-          <div style={{ marginBottom: 12 }}>
-            <label
-              htmlFor="current-land"
-              style={{
-                display: "block",
-                fontSize: 13,
-                fontWeight: 800,
-                color: colors.muted,
-                marginBottom: 6,
-              }}
-            >
-              What are you closest to?
-            </label>
-            <select
-              id="current-land"
-              value={currentLand || ""}
-              onChange={(e) => {
-                const nextLand = e.target.value || null;
-
-                setCurrentLand(nextLand);
-                setDetectedLocationContext(null);
-                setLocationAutoEnabled(false);
-                setLocationMessage(
-                  nextLand
-                    ? "Using your selected park area. You can update it anytime."
-                    : ""
-                );
-
-                trackAppEvent("manual_location_selected", {
-                  source: "current_land_dropdown",
-                  currentLand: nextLand,
-                  metadata: {
-                    nextLand,
-                  },
-                });
-              }}
-              style={{
-                width: "100%",
-                border: `1px solid ${colors.cardBorder}`,
-                borderRadius: 14,
-                padding: "10px 12px",
-                fontWeight: 700,
-                background: colors.card,
-                color: colors.text,
-              }}
-            >
-              <option value="">Pick where you are now</option>
-              {landOptions.map((land) => (
-                <option key={land.value} value={land.value}>
-                  {land.label}
-                </option>
-              ))}
-            </select>
-
+          <section
+            style={{
+              ...card,
+              position: "relative",
+              overflow: "hidden",
+              background:
+                "radial-gradient(circle at 92% 0%, rgba(5, 150, 105, 0.14) 0%, rgba(5, 150, 105, 0.04) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #FFF9F1 100%)",
+              border: `1px solid ${colors.cardBorder}`,
+              borderRadius: 28,
+              boxShadow: "0 18px 44px rgba(28, 25, 23, 0.09)",
+            }}
+          >
             <div
+              aria-hidden="true"
               style={{
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-                alignItems: "center",
-                marginTop: 8,
+                position: "absolute",
+                width: 116,
+                height: 116,
+                borderRadius: "999px",
+                right: -44,
+                top: -50,
+                background: "rgba(124, 58, 237, 0.10)",
               }}
-            >
-              <button
-                type="button"
-                onClick={handleUseMyLocation}
-                disabled={locationLoading}
-                style={{
-                  ...actionButton,
-                  color: "#0369A1",
-                  borderColor: colors.skySoft,
-                }}
-              >
-                <MapPin size={13} />{" "}
-                {locationLoading ? "Finding you..." : "Use My Location"}
-              </button>
+            />
 
-              <span style={{ color: colors.muted, fontSize: 12 }}>
-                Optional. Used only to estimate your nearby park area.
-              </span>
-            </div>
-
-            {(locationAutoEnabled || lastAutoUpdateAt || lastLocationUpdateAt) && (
-              <p
+            <div style={{ position: "relative" }}>
+              <div
                 style={{
-                  margin: "7px 0 0",
-                  color: colors.muted,
-                  fontSize: 12,
-                  lineHeight: 1.4,
-                }}
-              >
-                Auto-updates while the app is open
-                {lastAutoUpdateAt
-                  ? ` · waits/weather ${formatAutoUpdateTime(lastAutoUpdateAt)}`
-                  : ""}
-                {lastLocationUpdateAt
-                  ? ` · location ${formatAutoUpdateTime(lastLocationUpdateAt)}`
-                  : ""}
-              </p>
-            )}
-
-            {locationMessage && (
-              <p
-                style={{
-                  margin: "7px 0 0",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "5px 9px",
+                  borderRadius: 999,
+                  background: colors.successSoft,
                   color: colors.success,
-                  fontSize: 12,
-                  lineHeight: 1.4,
-                  fontWeight: 700,
+                  fontSize: 11,
+                  fontWeight: 950,
+                  letterSpacing: 0.7,
+                  marginBottom: 9,
                 }}
               >
-                {locationMessage}
-              </p>
-            )}
+                BEST NEXT MOVE
+              </div>
 
-            {locationError && (
+              <h3
+                style={{
+                  margin: 0,
+                  color: colors.text,
+                  fontSize: 25,
+                  letterSpacing: -0.5,
+                  lineHeight: 1.15,
+                }}
+              >
+                What should we do next?
+              </h3>
+
               <p
                 style={{
-                  margin: "7px 0 0",
-                  color: colors.error,
-                  fontSize: 12,
-                  lineHeight: 1.4,
-                  fontWeight: 700,
+                  margin: "7px 0 14px",
+                  color: colors.muted,
+                  fontSize: 13,
+                  lineHeight: 1.45,
                 }}
               >
-                {locationError}
+                TOHI uses your park area, waits, weather, and family setup to avoid
+                sending everyone on a bad walk.
               </p>
-            )}
 
-            <p
-              style={{
-                margin: "7px 0 0",
-                color: colors.muted,
-                fontSize: 12,
-                lineHeight: 1.4,
-              }}
-            >
-              Pick the closest area. It does not need to be perfect, but it helps
-              avoid bad cross-park recommendations.
-            </p>
-          </div>
-
-          {reportedRideIssueIds.length > 0 && (
-            <div
-              style={{
-                padding: 12,
-                borderRadius: 16,
-                border: `1px solid ${colors.amberSoft}`,
-                background: colors.cardWarm,
-                marginBottom: 12,
-              }}
-            >
-              <strong>Ride issue reported</strong>
-              <p style={{ margin: "6px 0 0", color: colors.muted }}>
-                I’ll avoid recommending reported rides for now. Use reset to bring
-                them back once things look normal.
-              </p>
-            </div>
-          )}
-
-          {hiddenRideCount > 0 && (
-            <button
-              onClick={handleResetRecs}
-              style={{
-                background: "none",
-                border: "none",
-                color: colors.muted,
-                fontSize: 12,
-                textDecoration: "underline",
-                cursor: "pointer",
-                marginBottom: 12,
-                padding: 0,
-              }}
-            >
-              Reset recommendations ({hiddenRideCount} hidden)
-            </button>
-          )}
-
-          {recommendations.needsLocation || !currentLand ? (
-            <div
-              style={{
-                padding: 14,
-                borderRadius: 18,
-                border: "1px solid #bfdbfe",
-                background: "#eff6ff",
-              }}
-            >
-              <strong>Pick where you are first.</strong>
-              <p style={{ margin: "6px 0 0", color: colors.text }}>
-                TOHI can show wait times without your location, but personalized next
-                moves need your current park area so we do not send your family on a
-                bad cross-park walk.
-              </p>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-                <button
-                  type="button"
-                  onClick={handleUseMyLocation}
-                  disabled={locationLoading}
+              <div
+                style={{
+                  marginBottom: 14,
+                  padding: 13,
+                  borderRadius: 22,
+                  border: "1px solid rgba(124, 58, 237, 0.16)",
+                  background:
+                    "linear-gradient(145deg, rgba(255,255,255,0.88) 0%, #F3E8FF 100%)",
+                  boxShadow: "0 10px 24px rgba(124, 58, 237, 0.08)",
+                }}
+              >
+                <label
+                  htmlFor="current-land"
                   style={{
-                    ...button,
-                    background: colors.purpleDeep,
-                    color: "white",
+                    display: "block",
+                    fontSize: 12,
+                    fontWeight: 950,
+                    color: colors.purpleDeep,
+                    marginBottom: 7,
+                    letterSpacing: 0.4,
+                    textTransform: "uppercase",
                   }}
                 >
-                  {locationLoading ? "Finding you..." : "Use My Location"}
-                </button>
+                  Current park area
+                </label>
+
+                <select
+                  id="current-land"
+                  value={currentLand || ""}
+                  onChange={(e) => {
+                    const nextLand = e.target.value || null;
+
+                    setCurrentLand(nextLand);
+                    setDetectedLocationContext(null);
+                    setLocationAutoEnabled(false);
+                    setLocationMessage(
+                      nextLand
+                        ? "Using your selected park area. You can update it anytime."
+                        : ""
+                    );
+
+                    trackAppEvent("manual_location_selected", {
+                      source: "current_land_dropdown",
+                      currentLand: nextLand,
+                      metadata: {
+                        nextLand,
+                      },
+                    });
+                  }}
+                  style={{
+                    width: "100%",
+                    border: `1px solid ${colors.cardBorder}`,
+                    borderRadius: 16,
+                    padding: "11px 12px",
+                    fontWeight: 850,
+                    background: colors.card,
+                    color: colors.text,
+                    boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
+                  }}
+                >
+                  <option value="">Pick where you are now</option>
+                  {landOptions.map((land) => (
+                    <option key={land.value} value={land.value}>
+                      {land.label}
+                    </option>
+                  ))}
+                </select>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    marginTop: 10,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={handleUseMyLocation}
+                    disabled={locationLoading}
+                    style={{
+                      ...actionButton,
+                      color: "#0369A1",
+                      borderColor: "rgba(56, 189, 248, 0.28)",
+                      background: "rgba(255,255,255,0.82)",
+                    }}
+                  >
+                    <MapPin size={13} />{" "}
+                    {locationLoading ? "Finding you..." : "Use My Location"}
+                  </button>
+
+                  <span style={{ color: colors.muted, fontSize: 12 }}>
+                    Optional — helps avoid unnecessary walking.
+                  </span>
+                </div>
+
+                {(locationAutoEnabled || lastAutoUpdateAt || lastLocationUpdateAt) && (
+                  <p
+                    style={{
+                      margin: "8px 0 0",
+                      color: colors.muted,
+                      fontSize: 12,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    Auto-updates while the app is open
+                    {lastAutoUpdateAt
+                      ? ` · waits/weather ${formatAutoUpdateTime(lastAutoUpdateAt)}`
+                      : ""}
+                    {lastLocationUpdateAt
+                      ? ` · location ${formatAutoUpdateTime(lastLocationUpdateAt)}`
+                      : ""}
+                  </p>
+                )}
+
+                {locationMessage && (
+                  <p
+                    style={{
+                      margin: "8px 0 0",
+                      color: colors.success,
+                      fontSize: 12,
+                      lineHeight: 1.4,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {locationMessage}
+                  </p>
+                )}
+
+                {locationError && (
+                  <p
+                    style={{
+                      margin: "8px 0 0",
+                      color: colors.error,
+                      fontSize: 12,
+                      lineHeight: 1.4,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {locationError}
+                  </p>
+                )}
+
+                <p
+                  style={{
+                    margin: "8px 0 0",
+                    color: colors.muted,
+                    fontSize: 12,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  Pick the closest area. It does not need to be perfect — it just
+                  helps TOHI avoid bad cross-park recommendations.
+                </p>
               </div>
+
+              {(reportedRideIssueIds.length > 0 || hiddenRideCount > 0) && (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    marginBottom: 12,
+                  }}
+                >
+                  {reportedRideIssueIds.length > 0 && (
+                    <div
+                      style={{
+                        padding: "8px 10px",
+                        borderRadius: 999,
+                        border: "1px solid rgba(245, 158, 11, 0.28)",
+                        background: colors.amberSoft,
+                        color: "#92400E",
+                        fontSize: 12,
+                        fontWeight: 900,
+                      }}
+                    >
+                      Avoiding {reportedRideIssueIds.length} reported ride
+                      {reportedRideIssueIds.length === 1 ? "" : "s"}
+                    </div>
+                  )}
+
+                  {hiddenRideCount > 0 && (
+                    <button
+                      onClick={handleResetRecs}
+                      style={{
+                        ...actionButton,
+                        color: colors.muted,
+                        background: "rgba(255,255,255,0.74)",
+                      }}
+                    >
+                      Reset hidden rides ({hiddenRideCount})
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {recommendations.needsLocation || !currentLand ? (
+                <div
+                  style={{
+                    padding: 15,
+                    borderRadius: 22,
+                    border: "1px solid rgba(56, 189, 248, 0.28)",
+                    background:
+                      "linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%)",
+                    boxShadow: "0 12px 28px rgba(2, 132, 199, 0.08)",
+                  }}
+                >
+                  <strong style={{ color: colors.text }}>
+                    Pick where you are first.
+                  </strong>
+                  <p
+                    style={{
+                      margin: "7px 0 0",
+                      color: colors.muted,
+                      fontSize: 13,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    TOHI can show wait times without your location, but personalized
+                    next moves need your current park area so we do not send your
+                    family on a bad walk.
+                  </p>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                    <button
+                      type="button"
+                      onClick={handleUseMyLocation}
+                      disabled={locationLoading}
+                      style={{
+                        ...button,
+                        background:
+                          "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
+                        color: "white",
+                        borderColor: "rgba(124, 58, 237, 0.28)",
+                        boxShadow: "0 12px 24px rgba(124, 58, 237, 0.18)",
+                      }}
+                    >
+                      {locationLoading ? "Finding you..." : "Use My Location"}
+                    </button>
+                  </div>
+                </div>
+              ) : hasAnyRecommendation ? (
+                <div style={{ display: "grid", gap: 10 }}>
+                  <RecommendationCard
+                    title="BEST MOVE"
+                    ride={primaryRecommendation}
+                    reason={`Why: ${
+                      primaryRecommendation.reason ||
+                      "best available option based on current conditions"
+                    }.`}
+                    color="#166534"
+                    borderColor="#bbf7d0"
+                    background="#f0fdf4"
+                    titleSize={20}
+                    renderShowtimeInfo={renderShowtimeInfo}
+                    renderRideActions={renderRideActions}
+                  />
+
+                  {recommendations.backup && recommendations.backup.id !== primaryRecommendation?.id && (
+                    <RecommendationCard
+                      title="SMART BACKUP"
+                      ride={recommendations.backup}
+                      reason={`Why: ${recommendations.backup.reason}.`}
+                      color="#1d4ed8"
+                      borderColor="#bfdbfe"
+                      background="#eff6ff"
+                      renderShowtimeInfo={renderShowtimeInfo}
+                      renderRideActions={renderRideActions}
+                    />
+                  )}
+
+                  {recommendations.worthTheWalk && recommendations.worthTheWalk.id !== primaryRecommendation?.id && (
+                    <RecommendationCard
+                      title="WORTH THE WALK"
+                      ride={recommendations.worthTheWalk}
+                      reason="Not nearby, but the current wait is strong enough that it may be worth crossing over for."
+                      color="#6d28d9"
+                      borderColor="#ddd6fe"
+                      background="#f5f3ff"
+                      renderShowtimeInfo={renderShowtimeInfo}
+                      renderRideActions={renderRideActions}
+                    />
+                  )}
+
+                  {recommendations.planAhead && recommendations.planAhead.id !== primaryRecommendation?.id && (
+                    <RecommendationCard
+                      title="PLAN AHEAD"
+                      ride={recommendations.planAhead}
+                      reason={
+                        recommendations.planAhead.planAheadReason ||
+                        "This ride usually needs a strategy. Consider Lightning Lane, rope drop, late night, or watching for a rare dip."
+                      }
+                      color="#991b1b"
+                      borderColor="#fecaca"
+                      background="#fef2f2"
+                      renderShowtimeInfo={renderShowtimeInfo}
+                      renderRideActions={renderRideActions}
+                    />
+                  )}
+
+                  {recommendations.waitOnThis && recommendations.waitOnThis.id !== primaryRecommendation?.id && (
+                    <RecommendationCard
+                      title="WAIT ON THIS"
+                      ride={recommendations.waitOnThis}
+                      reason="This wait is higher than this ride is usually worth. Check again later when crowds shift."
+                      color="#9a3412"
+                      borderColor="#fed7aa"
+                      background="#fff7ed"
+                      renderShowtimeInfo={renderShowtimeInfo}
+                      renderRideActions={renderRideActions}
+                    />
+                  )}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    padding: 15,
+                    borderRadius: 22,
+                    border: `1px solid ${colors.cardBorder}`,
+                    background:
+                      "linear-gradient(145deg, #FFFFFF 0%, #FFF9F1 100%)",
+                  }}
+                >
+                  <strong>No strong recommendation right now.</strong>
+                  <p style={{ margin: "7px 0 0", color: colors.muted, lineHeight: 1.45 }}>
+                    Refresh wait data, reset hidden rides, or use this as a good
+                    moment for a nearby indoor break, snack, restroom stop, or
+                    quick regroup.
+                  </p>
+                </div>
+              )}
             </div>
-          ) : hasAnyRecommendation ? (
-            <div style={{ display: "grid", gap: 10 }}>
-              <RecommendationCard
-                title="BEST MOVE"
-                ride={primaryRecommendation}
-                reason={`Why: ${
-                  primaryRecommendation.reason ||
-                  "best available option based on current conditions"
-                }.`}
-                color="#166534"
-                borderColor="#bbf7d0"
-                background="#f0fdf4"
-                titleSize={20}
-                renderShowtimeInfo={renderShowtimeInfo}
-                renderRideActions={renderRideActions}
-              />
-
-              {recommendations.backup && recommendations.backup.id !== primaryRecommendation?.id && (
-                <RecommendationCard
-                  title="SMART BACKUP"
-                  ride={recommendations.backup}
-                  reason={`Why: ${recommendations.backup.reason}.`}
-                  color="#1d4ed8"
-                  borderColor="#bfdbfe"
-                  background="#eff6ff"
-                  renderShowtimeInfo={renderShowtimeInfo}
-                  renderRideActions={renderRideActions}
-                />
-              )}
-
-              {recommendations.worthTheWalk && recommendations.worthTheWalk.id !== primaryRecommendation?.id && (
-                <RecommendationCard
-                  title="WORTH THE WALK"
-                  ride={recommendations.worthTheWalk}
-                  reason="Not nearby, but the current wait is strong enough that it may be worth crossing over for."
-                  color="#6d28d9"
-                  borderColor="#ddd6fe"
-                  background="#f5f3ff"
-                  renderShowtimeInfo={renderShowtimeInfo}
-                  renderRideActions={renderRideActions}
-                />
-              )}
-
-              {recommendations.planAhead && recommendations.planAhead.id !== primaryRecommendation?.id && (
-                <RecommendationCard
-                  title="PLAN AHEAD"
-                  ride={recommendations.planAhead}
-                  reason={
-                    recommendations.planAhead.planAheadReason ||
-                    "This ride usually needs a strategy. Consider Lightning Lane, rope drop, late night, or watching for a rare dip."
-                  }
-                  color="#991b1b"
-                  borderColor="#fecaca"
-                  background="#fef2f2"
-                  renderShowtimeInfo={renderShowtimeInfo}
-                  renderRideActions={renderRideActions}
-                />
-              )}
-
-              {recommendations.waitOnThis && recommendations.waitOnThis.id !== primaryRecommendation?.id && (
-                <RecommendationCard
-                  title="WAIT ON THIS"
-                  ride={recommendations.waitOnThis}
-                  reason="This wait is higher than this ride is usually worth. Check again later when crowds shift."
-                  color="#9a3412"
-                  borderColor="#fed7aa"
-                  background="#fff7ed"
-                  renderShowtimeInfo={renderShowtimeInfo}
-                  renderRideActions={renderRideActions}
-                />
-              )}
-            </div>
-          ) : (
-            <div
-              style={{
-                padding: 14,
-                borderRadius: 18,
-                border: `1px solid ${colors.cardBorder}`,
-                background: colors.backgroundSoft,
-              }}
-            >
-              <strong>No strong recommendation right now.</strong>
-              <p style={{ margin: "6px 0 0", color: colors.muted }}>
-                Refresh wait data, reset hidden rides, or use this as a good
-                moment for a nearby indoor break, snack, restroom stop, or
-                quick regroup.
-              </p>
-            </div>
-          )}
-        </section>
+          </section>
 
         ) : (
           renderLockedFeatureCard({
