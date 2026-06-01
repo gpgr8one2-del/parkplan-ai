@@ -1768,65 +1768,356 @@ function App() {
           </div>
         </section>
 
-        <section style={card}>
+        <section
+          style={{
+            ...card,
+            position: "relative",
+            overflow: "hidden",
+            background:
+              "radial-gradient(circle at 92% 0%, rgba(56, 189, 248, 0.18) 0%, rgba(56, 189, 248, 0.05) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%)",
+            border: "1px solid rgba(56, 189, 248, 0.24)",
+            borderRadius: 28,
+            boxShadow: "0 16px 38px rgba(2, 132, 199, 0.09)",
+          }}
+        >
           <div
+            aria-hidden="true"
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
+              position: "absolute",
+              width: 104,
+              height: 104,
+              borderRadius: "999px",
+              right: -42,
+              bottom: -48,
+              background: "rgba(124, 58, 237, 0.10)",
             }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <CloudSun size={18} />
-              <strong>Orlando Weather</strong>
+          />
+
+          <div style={{ position: "relative" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: 12,
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "5px 9px",
+                    borderRadius: 999,
+                    background: "rgba(56, 189, 248, 0.16)",
+                    color: "#0369A1",
+                    fontSize: 11,
+                    fontWeight: 950,
+                    letterSpacing: 0.7,
+                    marginBottom: 8,
+                  }}
+                >
+                  <CloudSun size={13} /> PARK CONDITIONS
+                </div>
+
+                <h3
+                  style={{
+                    margin: 0,
+                    color: colors.text,
+                    fontSize: 23,
+                    letterSpacing: -0.4,
+                    lineHeight: 1.15,
+                  }}
+                >
+                  Weather + comfort
+                </h3>
+              </div>
+
+              <FreshnessBadge
+                source={weather?.source}
+                ageMs={weather?.ageMs}
+                fetchedAt={weather?.fetchedAt}
+              />
             </div>
 
-            <FreshnessBadge
-              source={weather?.source}
-              ageMs={weather?.ageMs}
-              fetchedAt={weather?.fetchedAt}
-            />
+            <div
+              style={{
+                marginTop: 12,
+                padding: 13,
+                borderRadius: 20,
+                background: "rgba(255, 255, 255, 0.82)",
+                border: `1px solid ${colors.cardBorder}`,
+                boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                  alignItems: "baseline",
+                }}
+              >
+                {weather?.tempF != null && (
+                  <strong
+                    style={{
+                      color: "#0369A1",
+                      fontSize: 28,
+                      lineHeight: 1,
+                      letterSpacing: -0.8,
+                    }}
+                  >
+                    {weather.tempF}°F
+                  </strong>
+                )}
+
+                {weather?.feelsLikeF != null && (
+                  <span
+                    style={{
+                      color: colors.text,
+                      fontSize: 14,
+                      fontWeight: 900,
+                    }}
+                  >
+                    feels like {weather.feelsLikeF}°F
+                  </span>
+                )}
+
+                {weather?.humidity != null && (
+                  <span
+                    style={{
+                      padding: "5px 8px",
+                      borderRadius: 999,
+                      background: "rgba(56, 189, 248, 0.12)",
+                      color: "#0369A1",
+                      fontSize: 12,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {weather.humidity}% humidity
+                  </span>
+                )}
+
+                {weather?.stormMode && (
+                  <span
+                    style={{
+                      padding: "5px 8px",
+                      borderRadius: 999,
+                      background: colors.amberSoft,
+                      color: "#92400E",
+                      fontSize: 12,
+                      fontWeight: 950,
+                    }}
+                  >
+                    Storm watch
+                  </span>
+                )}
+              </div>
+
+              <p
+                style={{
+                  margin: "8px 0 0",
+                  color: colors.muted,
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                }}
+              >
+                {weather?.summary
+                  ? weather.summary
+                  : buildWeatherDisplay(weather)}
+              </p>
+            </div>
+
+            <p
+              style={{
+                margin: "10px 0 0",
+                color: colors.muted,
+                fontSize: 13,
+                lineHeight: 1.45,
+              }}
+            >
+              TOHI will favor lower-walking, indoor, shaded, or reset-friendly moves
+              when heat or storms start working against the family.
+            </p>
+
+            <DataStatusBanner source={weather?.source} />
           </div>
-
-          <p style={{ margin: "10px 0 0", color: colors.text }}>
-            {buildWeatherDisplay(weather)}
-          </p>
-
-          <DataStatusBanner source={weather?.source} />
         </section>
 
-        <section style={card}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <strong>Planning Status</strong>
+        <section
+          style={{
+            ...card,
+            position: "relative",
+            overflow: "hidden",
+            background:
+              "radial-gradient(circle at 92% 0%, rgba(245, 158, 11, 0.20) 0%, rgba(245, 158, 11, 0.06) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #FFF7ED 100%)",
+            border: "1px solid rgba(245, 158, 11, 0.22)",
+            borderRadius: 28,
+            boxShadow: "0 16px 38px rgba(245, 158, 11, 0.10)",
+          }}
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              width: 96,
+              height: 96,
+              borderRadius: "999px",
+              right: -38,
+              top: -44,
+              background: "rgba(124, 58, 237, 0.10)",
+            }}
+          />
+
+          <div style={{ position: "relative" }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "5px 9px",
+                borderRadius: 999,
+                background: colors.amberSoft,
+                color: "#92400E",
+                fontSize: 11,
+                fontWeight: 950,
+                letterSpacing: 0.7,
+                marginBottom: 8,
+              }}
+            >
+              TRIP TIMING
+            </div>
+
+            <h3
+              style={{
+                margin: 0,
+                color: colors.text,
+                fontSize: 23,
+                letterSpacing: -0.4,
+                lineHeight: 1.15,
+              }}
+            >
+              Day mode
+            </h3>
+
+            <p
+              style={{
+                margin: "9px 0 0",
+                color: colors.text,
+                fontSize: 15,
+                fontWeight: 850,
+                lineHeight: 1.45,
+              }}
+            >
+              {timeContext.summary}
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                marginTop: 12,
+              }}
+            >
+              <span
+                style={{
+                  padding: "6px 9px",
+                  borderRadius: 999,
+                  background: colors.purpleSoft,
+                  color: colors.purpleDeep,
+                  fontSize: 12,
+                  fontWeight: 900,
+                }}
+              >
+                Mode: {timeContext.planningMode.replace(/_/g, " ")}
+              </span>
+
+              <span
+                style={{
+                  padding: "6px 9px",
+                  borderRadius: 999,
+                  background: hasPersonalizedAccess
+                    ? colors.successSoft
+                    : colors.coralSoft,
+                  color: hasPersonalizedAccess ? colors.success : "#E11D48",
+                  fontSize: 12,
+                  fontWeight: 900,
+                }}
+              >
+                Personalization: {hasPersonalizedAccess ? "active" : "setup needed"}
+              </span>
+            </div>
           </div>
-
-          <p style={{ margin: "10px 0 0", color: colors.text }}>
-            {timeContext.summary}
-          </p>
-
         </section>
 
         {weatherMode.mode !== "normal" && (
-          <section style={card}>
-            <h3 style={{ marginTop: 0 }}>{weatherMode.label}</h3>
-            <p style={{ color: colors.text, marginTop: 0 }}>
+          <section
+            style={{
+              ...card,
+              position: "relative",
+              overflow: "hidden",
+              background:
+                "linear-gradient(145deg, #FFFFFF 0%, #FEF3C7 100%)",
+              border: "1px solid rgba(245, 158, 11, 0.28)",
+              borderRadius: 28,
+              boxShadow: "0 16px 38px rgba(245, 158, 11, 0.12)",
+            }}
+          >
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "5px 9px",
+                borderRadius: 999,
+                background: colors.amberSoft,
+                color: "#92400E",
+                fontSize: 11,
+                fontWeight: 950,
+                letterSpacing: 0.7,
+                marginBottom: 8,
+              }}
+            >
+              WEATHER STRATEGY
+            </div>
+
+            <h3
+              style={{
+                margin: 0,
+                color: colors.text,
+                fontSize: 22,
+                letterSpacing: -0.3,
+              }}
+            >
+              {weatherMode.label}
+            </h3>
+
+            <p
+              style={{
+                color: colors.muted,
+                margin: "8px 0 0",
+                lineHeight: 1.45,
+              }}
+            >
               {weatherMode.message}
             </p>
 
             {recoverySuggestions.length > 0 && (
-              <div style={{ display: "grid", gap: 10 }}>
+              <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
                 {recoverySuggestions.map((item, idx) => (
                   <div
                     key={idx}
                     style={{
                       padding: 12,
-                      borderRadius: 16,
-                      border: `1px solid ${colors.amberSoft}`,
-                      background: colors.amberSoft,
+                      borderRadius: 18,
+                      border: `1px solid ${colors.cardBorder}`,
+                      background: "rgba(255,255,255,0.78)",
+                      boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
                     }}
                   >
-                    <strong>{item.title}</strong>
+                    <strong style={{ color: colors.text }}>{item.title}</strong>
                     <p style={{ margin: "6px 0 0", color: colors.muted }}>
                       {item.text}
                     </p>
