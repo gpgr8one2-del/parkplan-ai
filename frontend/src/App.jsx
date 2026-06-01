@@ -1543,61 +1543,113 @@ function App() {
             <>
         <section
           style={{
+            position: "relative",
+            overflow: "hidden",
             background:
-              "radial-gradient(circle at top right, rgba(124, 58, 237, 0.16) 0%, rgba(124, 58, 237, 0.04) 26%, transparent 48%), linear-gradient(155deg, #FFF9F1 0%, #FFF0D6 58%, #F3E8FF 100%)",
-            border: "1px solid #EADCC8",
-            borderRadius: 30,
+              "radial-gradient(circle at 88% 8%, rgba(124, 58, 237, 0.34) 0%, rgba(124, 58, 237, 0.12) 24%, transparent 46%), radial-gradient(circle at 8% 0%, rgba(245, 158, 11, 0.30) 0%, rgba(245, 158, 11, 0.10) 32%, transparent 58%), linear-gradient(150deg, #FFFFFF 0%, #FFF4D8 45%, #F3E8FF 100%)",
+            border: "1px solid rgba(124, 58, 237, 0.16)",
+            borderRadius: 32,
             padding: "26px 22px 20px",
             marginBottom: 14,
-            boxShadow: "0 18px 46px rgba(91, 33, 182, 0.11)",
+            boxShadow: "0 22px 58px rgba(91, 33, 182, 0.16)",
           }}
         >
-          <img
-            src="/tohi-logo.png"
-            alt="TOHI"
+          <div
+            aria-hidden="true"
             style={{
-              display: "block",
-              width: 140,
-              maxWidth: "50vw",
-              height: "auto",
-              marginBottom: 18,
+              position: "absolute",
+              width: 130,
+              height: 130,
+              borderRadius: "999px",
+              background: "rgba(251, 113, 133, 0.18)",
+              right: -42,
+              bottom: -54,
+              filter: "blur(2px)",
+            }}
+          />
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              width: 86,
+              height: 86,
+              borderRadius: "999px",
+              background: "rgba(56, 189, 248, 0.16)",
+              right: 38,
+              top: 38,
+              filter: "blur(1px)",
             }}
           />
 
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 26,
-              color: colors.text,
-              letterSpacing: -0.4,
-              lineHeight: 1.25,
-              fontWeight: 800,
-            }}
-          >
-            Here&apos;s what matters right now.
-          </h1>
+          <div style={{ position: "relative" }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 10px",
+                borderRadius: 999,
+                background: "rgba(124, 58, 237, 0.10)",
+                color: colors.purpleDeep,
+                fontSize: 11,
+                fontWeight: 900,
+                letterSpacing: 0.8,
+                marginBottom: 14,
+              }}
+            >
+              ✨ TODAY&apos;S GAME PLAN
+            </div>
 
-          <p
-            style={{
-              margin: "8px 0 18px",
-              color: colors.muted,
-              fontSize: 14,
-              lineHeight: 1.5,
-            }}
-          >
-            Your calm family companion for the day.
-          </p>
+            <img
+              src="/tohi-logo.png"
+              alt="TOHI"
+              style={{
+                display: "block",
+                width: 146,
+                maxWidth: "50vw",
+                height: "auto",
+                marginBottom: 16,
+              }}
+            />
+
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 28,
+                color: colors.text,
+                letterSpacing: -0.6,
+                lineHeight: 1.18,
+                fontWeight: 900,
+              }}
+            >
+              Here&apos;s what matters right now.
+            </h1>
+
+            <p
+              style={{
+                margin: "9px 0 18px",
+                color: colors.muted,
+                fontSize: 15,
+                lineHeight: 1.5,
+                maxWidth: 520,
+              }}
+            >
+              TOHI is watching the heat, waits, and walking so your family can keep the day feeling good.
+            </p>
+          </div>
 
           <div
             style={{
+              position: "relative",
               height: 1,
-              background: colors.cardBorder,
+              background: "rgba(124, 58, 237, 0.14)",
               margin: "0 -22px 14px",
             }}
           />
 
           <div
             style={{
+              position: "relative",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -1640,9 +1692,10 @@ function App() {
             <button
               style={{
                 ...button,
-                padding: "6px 12px",
+                padding: "7px 13px",
                 fontSize: 12,
-                background: colors.card,
+                background: "rgba(255, 255, 255, 0.88)",
+                boxShadow: "0 8px 18px rgba(91, 33, 182, 0.10)",
               }}
               onClick={() => loadData(true)}
               disabled={loading}
