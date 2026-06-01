@@ -2264,15 +2264,91 @@ function App() {
             </>
           )}
 
-          {activeTab === "plan" &&
-            renderTabPlaceholderCard({
-              eyebrow: "PLAN",
-              title: "Your trip plan will live here",
-              body:
-                "This will become the home for day-before planning, day-of priorities, resort context, and future planning tools without cluttering the live park dashboard.",
-              primaryActionLabel: "Review Trip Setup",
-              onPrimaryAction: () => setActiveScreen("family_profile"),
-            })}
+          {activeTab === "plan" && (
+            <>
+              <section
+                style={{
+                  ...card,
+                  background: "#FFFFFF",
+                  border: "1px solid #EFE7DA",
+                  boxShadow: "0 12px 30px rgba(28, 25, 23, 0.07)",
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 900, color: "#7C3AED" }}>
+                  PLAN
+                </div>
+                <h2 style={{ margin: "8px 0 6px", color: "#1C1917", fontSize: 24 }}>
+                  Your calm trip plan
+                </h2>
+                <p style={{ margin: 0, color: "#78716C", fontSize: 14, lineHeight: 1.5 }}>
+                  This tab will become the home for day-before planning, day-of priorities,
+                  resort breaks, must-do moments, and realistic pacing. For now, it gives
+                  you a clean place to review the trip setup that powers TOHI.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveScreen("family_profile")}
+                  style={{
+                    ...button,
+                    marginTop: 14,
+                    background: "#7C3AED",
+                    color: "white",
+                    borderColor: "#7C3AED",
+                  }}
+                >
+                  {profileCompletion.isComplete ? "Review Trip Setup" : "Finish Trip Setup"}
+                </button>
+              </section>
+
+              <section
+                style={{
+                  ...card,
+                  background: "#FFF8F0",
+                  border: "1px solid #EFE7DA",
+                  boxShadow: "none",
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 900, color: "#F59E0B" }}>
+                  PLANNING STATUS
+                </div>
+                <p style={{ margin: "8px 0 0", color: "#1C1917", fontWeight: 800 }}>
+                  {timeContext.summary}
+                </p>
+                <p style={{ margin: "8px 0 0", color: "#78716C", fontSize: 13, lineHeight: 1.45 }}>
+                  Mode: {timeContext.planningMode.replace(/_/g, " ")} · AI:{" "}
+                  {access.canUseAiChat ? "available" : "not available"}
+                </p>
+              </section>
+
+              <section
+                style={{
+                  ...card,
+                  background: "#FFFFFF",
+                  border: "1px solid #EFE7DA",
+                  boxShadow: "none",
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 900, color: "#7C3AED" }}>
+                  NEXT PHASE
+                </div>
+                <ul
+                  style={{
+                    margin: "10px 0 0",
+                    paddingLeft: 18,
+                    color: "#78716C",
+                    fontSize: 14,
+                    lineHeight: 1.55,
+                  }}
+                >
+                  <li>Day-before plan preview</li>
+                  <li>Morning priority plan</li>
+                  <li>Resort-break timing</li>
+                  <li>Must-do moments and family pacing</li>
+                </ul>
+              </section>
+            </>
+          )}
 
           {activeTab === "tohi" &&
             (access.canUseAiChat ? (
@@ -2383,15 +2459,107 @@ function App() {
               })
             ))}
 
-          {activeTab === "profile" &&
-            renderTabPlaceholderCard({
-              eyebrow: "PROFILE",
-              title: "Family setup and trip details",
-              body:
-                "Your family profile, resort, child heights, park days, and preferences will live here as TOHI grows into a more complete trip companion.",
-              primaryActionLabel: profileCompletion.isComplete ? "Review Trip Setup" : "Finish Trip Setup",
-              onPrimaryAction: () => setActiveScreen("family_profile"),
-            })}
+          {activeTab === "profile" && (
+            <>
+              <section
+                style={{
+                  ...card,
+                  background: "#FFFFFF",
+                  border: "1px solid #EFE7DA",
+                  boxShadow: "0 12px 30px rgba(28, 25, 23, 0.07)",
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 900, color: "#7C3AED" }}>
+                  PROFILE
+                </div>
+                <h2 style={{ margin: "8px 0 6px", color: "#1C1917", fontSize: 24 }}>
+                  Family setup
+                </h2>
+                <p style={{ margin: 0, color: "#78716C", fontSize: 14, lineHeight: 1.5 }}>
+                  TOHI uses your family profile to protect height limits, thrill comfort,
+                  walking tolerance, heat sensitivity, resort-break realism, and the kind
+                  of day you are trying to have.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveScreen("family_profile")}
+                  style={{
+                    ...button,
+                    marginTop: 14,
+                    background: "#7C3AED",
+                    color: "white",
+                    borderColor: "#7C3AED",
+                  }}
+                >
+                  {profileCompletion.isComplete ? "Review Family Setup" : "Finish Family Setup"}
+                </button>
+              </section>
+
+              <section
+                style={{
+                  ...card,
+                  background: "#FFF8F0",
+                  border: "1px solid #EFE7DA",
+                  boxShadow: "none",
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 900, color: "#F59E0B" }}>
+                  CURRENT PROFILE
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 8,
+                    marginTop: 10,
+                    color: "#1C1917",
+                    fontSize: 14,
+                  }}
+                >
+                  <div>
+                    <strong>Party:</strong>{" "}
+                    {familyProfileSummary.adultCount ?? "?"} adults,{" "}
+                    {familyProfileSummary.childCount ?? "?"} children
+                  </div>
+                  <div>
+                    <strong>Shortest rider:</strong>{" "}
+                    {familyProfileSummary.shortestHeightInches != null
+                      ? `${familyProfileSummary.shortestHeightInches} in`
+                      : "not set"}
+                  </div>
+                  <div>
+                    <strong>Resort:</strong>{" "}
+                    {familyProfileSummary.resortProfile?.name ||
+                      familyProfileSummary.resortContext?.resortName ||
+                      familyProfileSummary.resortContext?.offPropertyHotelName ||
+                      "not set"}
+                  </div>
+                  <div>
+                    <strong>Setup:</strong>{" "}
+                    {profileCompletion.isComplete ? "complete" : "needs a few details"}
+                  </div>
+                </div>
+              </section>
+
+              {!profileCompletion.isComplete && (
+                <section
+                  style={{
+                    ...card,
+                    background: "#F5F3FF",
+                    border: "1px solid rgba(124, 58, 237, 0.18)",
+                    boxShadow: "none",
+                  }}
+                >
+                  <strong style={{ color: "#7C3AED" }}>Why setup matters</strong>
+                  <p style={{ margin: "8px 0 0", color: "#78716C", fontSize: 14, lineHeight: 1.5 }}>
+                    TOHI can show basic waits without setup, but it needs your family,
+                    resort, height, and park context before it can make safe personalized
+                    recommendations.
+                  </p>
+                </section>
+              )}
+            </>
+          )}
       </div>
       </main>
 
