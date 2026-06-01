@@ -1549,34 +1549,6 @@ function App() {
           </p>
         </header>
 
-        {isProfileIncomplete && access.isDevPreviewing && DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && (
-          <section
-            style={{
-              ...card,
-              border: "1px solid #ddd6fe",
-              background: "#f5f3ff",
-            }}
-          >
-            <strong style={{ color: "#6d28d9" }}>Developer Preview Active</strong>
-            <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 13 }}>
-              You are seeing the full app even though the guest profile is incomplete.
-              Normal guests would only see basic wait times until setup is finished.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                trackAppEvent("dev_preview_disabled", {
-                  source: "developer_preview_banner",
-                });
-                setDevPreviewFullApp(false);
-              }}
-              style={{ ...button, marginTop: 10, color: "#6d28d9" }}
-            >
-              Turn Off Preview Gate Bypass
-            </button>
-          </section>
-        )}
-
         <section style={card}>
           <div
             style={{
@@ -2468,6 +2440,34 @@ function App() {
                     resort, height, and park context before it can make safe personalized
                     recommendations.
                   </p>
+                </section>
+              )}
+
+              {isProfileIncomplete && access.isDevPreviewing && DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && (
+                <section
+                  style={{
+                    ...card,
+                    border: "1px solid #ddd6fe",
+                    background: "#f5f3ff",
+                  }}
+                >
+                  <strong style={{ color: "#6d28d9" }}>Developer Preview Active</strong>
+                  <p style={{ margin: "6px 0 0", color: "#475569", fontSize: 13 }}>
+                    You are seeing the full app even though the guest profile is incomplete.
+                    Normal guests would only see basic wait times until setup is finished.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      trackAppEvent("dev_preview_disabled", {
+                        source: "developer_preview_banner",
+                      });
+                      setDevPreviewFullApp(false);
+                    }}
+                    style={{ ...button, marginTop: 10, color: "#6d28d9" }}
+                  >
+                    Turn Off Preview Gate Bypass
+                  </button>
                 </section>
               )}
             </>
