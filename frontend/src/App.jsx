@@ -2904,7 +2904,7 @@ function App() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))",
                     gap: 10,
                   }}
                 >
@@ -2914,6 +2914,14 @@ function App() {
                       `${familyProfileSummary.partySize || 0} guests · ${
                         familyProfileSummary.adultCount || 0
                       } adults · ${familyProfileSummary.childCount || 0} kids`,
+                    ],
+                    [
+                      "Youngest groups",
+                      `${familyProfileSummary.ageSummary?.under3Count || 0} under 3 · ${
+                        familyProfileSummary.ageSummary?.childCount || 0
+                      } Disney child · ${
+                        familyProfileSummary.ageSummary?.disneyAdultCount || 0
+                      } Disney adult`,
                     ],
                     [
                       "Shortest rider",
@@ -2929,12 +2937,6 @@ function App() {
                         familyProfileSummary.resortContext?.resortName ||
                         familyProfileSummary.resortContext?.offPropertyHotelName ||
                         "Not set",
-                    ],
-                    [
-                      "Priorities",
-                      familyProfileSummary.priorities?.length
-                        ? familyProfileSummary.priorities.length
-                        : "Not set",
                     ],
                   ].map(([label, value]) => (
                     <div
@@ -2974,6 +2976,264 @@ function App() {
                 </div>
               </section>
 
+              {familyProfile.childCount > 0 && (
+                <section
+                  style={{
+                    ...card,
+                    background:
+                      "linear-gradient(145deg, #FFFFFF 0%, #F3E8FF 100%)",
+                    border: "1px solid rgba(124, 58, 237, 0.18)",
+                    boxShadow: "0 12px 30px rgba(124, 58, 237, 0.08)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "5px 9px",
+                      borderRadius: 999,
+                      background: "rgba(124, 58, 237, 0.10)",
+                      color: colors.purpleDeep,
+                      fontSize: 11,
+                      fontWeight: 950,
+                      letterSpacing: 0.7,
+                      marginBottom: 10,
+                    }}
+                  >
+                    CHILD RIDER DETAILS
+                  </div>
+
+                  <div style={{ display: "grid", gap: 9 }}>
+                    {familyProfile.children.map((child, index) => {
+                      const ageClass = getDisneyAgeClass(child.age);
+                      const heightValue =
+                        child.heightInches !== "" && child.heightInches != null
+                          ? `${child.heightInches}" tall`
+                          : "height not set";
+
+                      return (
+                        <div
+                          key={child.id || index}
+                          style={{
+                            padding: 12,
+                            borderRadius: 18,
+                            background: "rgba(255,255,255,0.82)",
+                            border: `1px solid ${colors.cardBorder}`,
+                          }}
+                        >
+                          <strong style={{ color: colors.text }}>
+                            Child {index + 1}: age {child.age || "not set"} · {heightValue}
+                          </strong>
+                          <p
+                            style={{
+                              margin: "5px 0 0",
+                              color: colors.muted,
+                              fontSize: 13,
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            {getDisneyAgeLabel(ageClass)}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {familyProfileSummary.shortestHeightInches != null && (
+                    <p
+                      style={{
+                        margin: "10px 0 0",
+                        color:
+                          familyProfileSummary.shortestHeightInches < 38
+                            ? colors.error
+                            : familyProfileSummary.shortestHeightInches < 44
+                            ? "#92400E"
+                            : colors.success,
+                        fontSize: 13,
+                        fontWeight: 850,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {familyProfileSummary.shortestHeightInches < 38
+                        ? "Height note: some family thrill rides will not be whole-family options yet."
+                        : familyProfileSummary.shortestHeightInches < 44
+                        ? "Height note: several mid-tier thrill rides may work, but bigger headliners still need filtering."
+                        : "Height note: most major height-gated rides should be available, but TOHI will still check each ride."}
+                    </p>
+                  )}
+                </section>
+              )}
+
+              <section
+                style={{
+                  ...card,
+                  background:
+                    "linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%)",
+                  border: "1px solid rgba(56, 189, 248, 0.26)",
+                  boxShadow: "0 12px 30px rgba(2, 132, 199, 0.08)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "5px 9px",
+                    borderRadius: 999,
+                    background: "rgba(56, 189, 248, 0.16)",
+                    color: "#0369A1",
+                    fontSize: 11,
+                    fontWeight: 950,
+                    letterSpacing: 0.7,
+                    marginBottom: 10,
+                  }}
+                >
+                  TRIP CONTEXT
+                </div>
+
+                <div style={{ display: "grid", gap: 9 }}>
+                  {[
+                    [
+                      "Selected parks",
+                      familyProfileSummary.tripContext?.selectedParks?.length
+                        ? familyProfileSummary.tripContext.selectedParks
+                            .map((park) => getParkLabel(park))
+                            .join(" · ")
+                        : "Not set",
+                    ],
+                    [
+                      "First park",
+                      getParkLabel(familyProfileSummary.tripContext?.firstPark),
+                    ],
+                    [
+                      "Priority park",
+                      getParkLabel(familyProfileSummary.tripContext?.priorityPark),
+                    ],
+                    [
+                      "Transportation",
+                      familyProfileSummary.resortContext?.transportationMode &&
+                      familyProfileSummary.resortContext.transportationMode !== "unknown"
+                        ? familyProfileSummary.resortContext.transportationMode
+                        : "Not set",
+                    ],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      style={{
+                        padding: 12,
+                        borderRadius: 18,
+                        background: "rgba(255,255,255,0.82)",
+                        border: `1px solid ${colors.cardBorder}`,
+                      }}
+                    >
+                      <div
+                        style={{
+                          color: colors.muted,
+                          fontSize: 11,
+                          fontWeight: 950,
+                          letterSpacing: 0.5,
+                          marginBottom: 5,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {label}
+                      </div>
+                      <strong
+                        style={{
+                          display: "block",
+                          color: colors.text,
+                          fontSize: 14,
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {value || "Not set"}
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+
+                {familyProfileSummary.resortProfile?.transportation?.length > 0 && (
+                  <p
+                    style={{
+                      margin: "10px 0 0",
+                      color: colors.muted,
+                      fontSize: 13,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    Resort transportation:{" "}
+                    {familyProfileSummary.resortProfile.transportation.join(", ")}
+                  </p>
+                )}
+              </section>
+
+              <section
+                style={{
+                  ...card,
+                  background:
+                    "linear-gradient(145deg, #FFFFFF 0%, #FFF7ED 100%)",
+                  border: `1px solid ${colors.cardBorder}`,
+                  boxShadow: "0 12px 30px rgba(28, 25, 23, 0.07)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "5px 9px",
+                    borderRadius: 999,
+                    background: colors.amberSoft,
+                    color: "#92400E",
+                    fontSize: 11,
+                    fontWeight: 950,
+                    letterSpacing: 0.7,
+                    marginBottom: 10,
+                  }}
+                >
+                  FAMILY PRIORITIES
+                </div>
+
+                {familyProfileSummary.priorities?.length ? (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {familyProfileSummary.priorities.map((priority) => {
+                      const label =
+                        FAMILY_PRIORITY_OPTIONS.find((item) => item.value === priority)
+                          ?.label || priority;
+
+                      return (
+                        <span
+                          key={priority}
+                          style={{
+                            padding: "7px 10px",
+                            borderRadius: 999,
+                            background: "rgba(124, 58, 237, 0.10)",
+                            color: colors.purpleDeep,
+                            border: "1px solid rgba(124, 58, 237, 0.16)",
+                            fontSize: 12,
+                            fontWeight: 900,
+                          }}
+                        >
+                          {label}
+                        </span>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p
+                    style={{
+                      margin: 0,
+                      color: colors.muted,
+                      fontSize: 14,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    No priorities selected yet. Add at least one so TOHI does not feel generic.
+                  </p>
+                )}
+              </section>
+
               {!profileCompletion.isComplete && (
                 <section
                   style={{
@@ -2984,7 +3244,7 @@ function App() {
                     boxShadow: "0 12px 30px rgba(245, 158, 11, 0.10)",
                   }}
                 >
-                  <strong style={{ color: "#92400E" }}>Why setup matters</strong>
+                  <strong style={{ color: "#92400E" }}>Still needed</strong>
                   <p
                     style={{
                       margin: "8px 0 0",
@@ -2993,9 +3253,9 @@ function App() {
                       lineHeight: 1.5,
                     }}
                   >
-                    TOHI can show basic waits without setup, but it needs your family,
-                    resort, height, and park context before it can make safe personalized
-                    recommendations.
+                    {profileCompletion.missing?.length
+                      ? profileCompletion.missing.join(", ")
+                      : "Finish setup so TOHI can unlock personalized recommendations."}
                   </p>
                 </section>
               )}
@@ -3008,7 +3268,7 @@ function App() {
                     background: "#f5f3ff",
                   }}
                 >
-                  <strong style={{ color: colors.purple }}>Developer Preview Active</strong>
+                  <strong style={{ color: "#6d28d9" }}>Developer Preview Active</strong>
                   <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 13 }}>
                     You are seeing the full app even though the guest profile is incomplete.
                     Normal guests would only see basic wait times until setup is finished.
