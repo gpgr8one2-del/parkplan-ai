@@ -2282,83 +2282,223 @@ function App() {
               <section
                 style={{
                   ...card,
-                  background: colors.card,
-                  border: "1px solid #EFE7DA",
+                  position: "relative",
+                  overflow: "hidden",
+                  background:
+                    "radial-gradient(circle at 92% 0%, rgba(245, 158, 11, 0.22) 0%, rgba(245, 158, 11, 0.06) 34%, transparent 58%), linear-gradient(150deg, #FFFFFF 0%, #FFF7ED 48%, #FEF3C7 100%)",
+                  border: "1px solid rgba(245, 158, 11, 0.24)",
+                  borderRadius: 28,
+                  boxShadow: "0 18px 44px rgba(245, 158, 11, 0.12)",
+                }}
+              >
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    width: 112,
+                    height: 112,
+                    borderRadius: "999px",
+                    right: -44,
+                    bottom: -48,
+                    background: "rgba(124, 58, 237, 0.10)",
+                  }}
+                />
+
+                <div style={{ position: "relative" }}>
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "5px 9px",
+                      borderRadius: 999,
+                      background: "rgba(245, 158, 11, 0.14)",
+                      color: "#92400E",
+                      fontSize: 11,
+                      fontWeight: 950,
+                      letterSpacing: 0.7,
+                      marginBottom: 10,
+                    }}
+                  >
+                    ✨ TRIP RHYTHM
+                  </div>
+
+                  <h2
+                    style={{
+                      margin: 0,
+                      color: colors.text,
+                      fontSize: 27,
+                      letterSpacing: -0.6,
+                      lineHeight: 1.15,
+                    }}
+                  >
+                    Your calm trip plan
+                  </h2>
+
+                  <p
+                    style={{
+                      margin: "9px 0 0",
+                      color: colors.muted,
+                      fontSize: 14,
+                      lineHeight: 1.5,
+                      maxWidth: 620,
+                    }}
+                  >
+                    Keep the day simple, realistic, and flexible. This is where TOHI
+                    will help shape the trip before the park and protect family energy
+                    once you are there.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveScreen("family_profile")}
+                    style={{
+                      ...button,
+                      marginTop: 15,
+                      background:
+                        "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
+                      color: "white",
+                      borderColor: "rgba(124, 58, 237, 0.28)",
+                      boxShadow: "0 12px 24px rgba(124, 58, 237, 0.18)",
+                    }}
+                  >
+                    {profileCompletion.isComplete ? "Review Trip Setup" : "Finish Trip Setup"}
+                  </button>
+                </div>
+              </section>
+
+              <section
+                style={{
+                  ...card,
+                  background:
+                    "linear-gradient(145deg, #FFFFFF 0%, #FFF9F1 100%)",
+                  border: `1px solid ${colors.cardBorder}`,
                   boxShadow: "0 12px 30px rgba(28, 25, 23, 0.07)",
                 }}
               >
-                <div style={{ fontSize: 12, fontWeight: 900, color: "#7C3AED" }}>
-                  PLAN
-                </div>
-                <h2 style={{ margin: "8px 0 6px", color: "#1C1917", fontSize: 24 }}>
-                  Your calm trip plan
-                </h2>
-                <p style={{ margin: 0, color: "#78716C", fontSize: 14, lineHeight: 1.5 }}>
-                  This tab will become the home for day-before planning, day-of priorities,
-                  resort breaks, must-do moments, and realistic pacing. For now, it gives
-                  you a clean place to review the trip setup that powers TOHI.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveScreen("family_profile")}
+                <div
                   style={{
-                    ...button,
-                    marginTop: 14,
-                    background: "#7C3AED",
-                    color: "white",
-                    borderColor: "#7C3AED",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "5px 9px",
+                    borderRadius: 999,
+                    background: colors.amberSoft,
+                    color: "#92400E",
+                    fontSize: 11,
+                    fontWeight: 950,
+                    letterSpacing: 0.7,
+                    marginBottom: 8,
                   }}
                 >
-                  {profileCompletion.isComplete ? "Review Trip Setup" : "Finish Trip Setup"}
-                </button>
-              </section>
-
-              <section
-                style={{
-                  ...card,
-                  background: "#FFF8F0",
-                  border: "1px solid #EFE7DA",
-                  boxShadow: "none",
-                }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 900, color: "#F59E0B" }}>
                   PLANNING STATUS
                 </div>
-                <p style={{ margin: "8px 0 0", color: "#1C1917", fontWeight: 800 }}>
+
+                <p
+                  style={{
+                    margin: 0,
+                    color: colors.text,
+                    fontWeight: 900,
+                    fontSize: 16,
+                    lineHeight: 1.4,
+                  }}
+                >
                   {timeContext.summary}
                 </p>
-                <p style={{ margin: "8px 0 0", color: "#78716C", fontSize: 13, lineHeight: 1.45 }}>
-                  Mode: {timeContext.planningMode.replace(/_/g, " ")} · AI:{" "}
-                  {access.canUseAiChat ? "available" : "not available"}
-                </p>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    marginTop: 12,
+                  }}
+                >
+                  <span
+                    style={{
+                      padding: "6px 9px",
+                      borderRadius: 999,
+                      background: colors.purpleSoft,
+                      color: colors.purpleDeep,
+                      fontSize: 12,
+                      fontWeight: 900,
+                    }}
+                  >
+                    Mode: {timeContext.planningMode.replace(/_/g, " ")}
+                  </span>
+
+                  <span
+                    style={{
+                      padding: "6px 9px",
+                      borderRadius: 999,
+                      background: access.canUseAiChat ? colors.successSoft : colors.coralSoft,
+                      color: access.canUseAiChat ? colors.success : "#E11D48",
+                      fontSize: 12,
+                      fontWeight: 900,
+                    }}
+                  >
+                    AI: {access.canUseAiChat ? "available" : "locked"}
+                  </span>
+                </div>
               </section>
 
               <section
                 style={{
                   ...card,
-                  background: colors.card,
-                  border: "1px solid #EFE7DA",
-                  boxShadow: "none",
+                  background:
+                    "linear-gradient(145deg, #FFFFFF 0%, #F3E8FF 100%)",
+                  border: "1px solid rgba(124, 58, 237, 0.18)",
+                  boxShadow: "0 12px 30px rgba(124, 58, 237, 0.08)",
                 }}
               >
-                <div style={{ fontSize: 12, fontWeight: 900, color: "#7C3AED" }}>
-                  NEXT PHASE
-                </div>
-                <ul
+                <div
                   style={{
-                    margin: "10px 0 0",
-                    paddingLeft: 18,
-                    color: colors.muted,
-                    fontSize: 14,
-                    lineHeight: 1.55,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "5px 9px",
+                    borderRadius: 999,
+                    background: "rgba(124, 58, 237, 0.10)",
+                    color: colors.purpleDeep,
+                    fontSize: 11,
+                    fontWeight: 950,
+                    letterSpacing: 0.7,
+                    marginBottom: 10,
                   }}
                 >
-                  <li>Day-before plan preview</li>
-                  <li>Morning priority plan</li>
-                  <li>Resort-break timing</li>
-                  <li>Must-do moments and family pacing</li>
-                </ul>
+                  COMING NEXT
+                </div>
+
+                <div style={{ display: "grid", gap: 9 }}>
+                  {[
+                    ["Day-before plan preview", "Know the big priorities before you enter the park."],
+                    ["Morning priority plan", "Start strong without turning the day into a race."],
+                    ["Resort-break timing", "Protect rest when the family starts fading."],
+                    ["Must-do moments", "Keep the emotional wins from getting lost in the chaos."],
+                  ].map(([title, text]) => (
+                    <div
+                      key={title}
+                      style={{
+                        padding: 12,
+                        borderRadius: 18,
+                        background: "rgba(255, 255, 255, 0.78)",
+                        border: `1px solid ${colors.cardBorder}`,
+                      }}
+                    >
+                      <strong style={{ color: colors.text }}>{title}</strong>
+                      <p
+                        style={{
+                          margin: "5px 0 0",
+                          color: colors.muted,
+                          fontSize: 13,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {text}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </section>
             </>
           )}
@@ -2634,80 +2774,178 @@ function App() {
               <section
                 style={{
                   ...card,
-                  background: colors.card,
-                  border: "1px solid #EFE7DA",
-                  boxShadow: "0 12px 30px rgba(28, 25, 23, 0.07)",
+                  position: "relative",
+                  overflow: "hidden",
+                  background:
+                    "radial-gradient(circle at 92% 2%, rgba(124, 58, 237, 0.22) 0%, rgba(124, 58, 237, 0.06) 34%, transparent 58%), linear-gradient(150deg, #FFFFFF 0%, #F3E8FF 52%, #FFF7ED 100%)",
+                  border: "1px solid rgba(124, 58, 237, 0.20)",
+                  borderRadius: 28,
+                  boxShadow: "0 18px 44px rgba(124, 58, 237, 0.12)",
                 }}
               >
-                <div style={{ fontSize: 12, fontWeight: 900, color: "#7C3AED" }}>
-                  PROFILE
-                </div>
-                <h2 style={{ margin: "8px 0 6px", color: "#1C1917", fontSize: 24 }}>
-                  Family setup
-                </h2>
-                <p style={{ margin: 0, color: "#78716C", fontSize: 14, lineHeight: 1.5 }}>
-                  TOHI uses your family profile to protect height limits, thrill comfort,
-                  walking tolerance, heat sensitivity, resort-break realism, and the kind
-                  of day you are trying to have.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveScreen("family_profile")}
+                <div
+                  aria-hidden="true"
                   style={{
-                    ...button,
-                    marginTop: 14,
-                    background: "#7C3AED",
-                    color: "white",
-                    borderColor: "#7C3AED",
+                    position: "absolute",
+                    width: 116,
+                    height: 116,
+                    borderRadius: "999px",
+                    right: -46,
+                    bottom: -52,
+                    background: "rgba(56, 189, 248, 0.13)",
                   }}
-                >
-                  {profileCompletion.isComplete ? "Review Family Setup" : "Finish Family Setup"}
-                </button>
+                />
+
+                <div style={{ position: "relative" }}>
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "5px 9px",
+                      borderRadius: 999,
+                      background: "rgba(124, 58, 237, 0.12)",
+                      color: colors.purpleDeep,
+                      fontSize: 11,
+                      fontWeight: 950,
+                      letterSpacing: 0.7,
+                      marginBottom: 10,
+                    }}
+                  >
+                    FAMILY CONTEXT
+                  </div>
+
+                  <h2
+                    style={{
+                      margin: 0,
+                      color: colors.text,
+                      fontSize: 27,
+                      letterSpacing: -0.6,
+                      lineHeight: 1.15,
+                    }}
+                  >
+                    Family setup
+                  </h2>
+
+                  <p
+                    style={{
+                      margin: "9px 0 0",
+                      color: colors.muted,
+                      fontSize: 14,
+                      lineHeight: 1.5,
+                      maxWidth: 620,
+                    }}
+                  >
+                    TOHI uses your family profile to protect height limits, thrill
+                    comfort, walking tolerance, heat sensitivity, resort-break realism,
+                    and the kind of day you are trying to have.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveScreen("family_profile")}
+                    style={{
+                      ...button,
+                      marginTop: 15,
+                      background:
+                        "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
+                      color: "white",
+                      borderColor: "rgba(124, 58, 237, 0.28)",
+                      boxShadow: "0 12px 24px rgba(124, 58, 237, 0.18)",
+                    }}
+                  >
+                    {profileCompletion.isComplete ? "Review Setup" : "Finish Setup"}
+                  </button>
+                </div>
               </section>
 
               <section
                 style={{
                   ...card,
-                  background: "#FFF8F0",
-                  border: "1px solid #EFE7DA",
-                  boxShadow: "none",
+                  background:
+                    "linear-gradient(145deg, #FFFFFF 0%, #FFF9F1 100%)",
+                  border: `1px solid ${colors.cardBorder}`,
+                  boxShadow: "0 12px 30px rgba(28, 25, 23, 0.07)",
                 }}
               >
-                <div style={{ fontSize: 12, fontWeight: 900, color: "#F59E0B" }}>
-                  CURRENT PROFILE
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "5px 9px",
+                    borderRadius: 999,
+                    background: profileCompletion.isComplete
+                      ? colors.successSoft
+                      : colors.amberSoft,
+                    color: profileCompletion.isComplete ? colors.success : "#92400E",
+                    fontSize: 11,
+                    fontWeight: 950,
+                    letterSpacing: 0.7,
+                    marginBottom: 12,
+                  }}
+                >
+                  {profileCompletion.isComplete ? "SETUP COMPLETE" : "SETUP NEEDED"}
                 </div>
+
                 <div
                   style={{
                     display: "grid",
-                    gap: 8,
-                    marginTop: 10,
-                    color: colors.text,
-                    fontSize: 14,
+                    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                    gap: 10,
                   }}
                 >
-                  <div>
-                    <strong>Party:</strong>{" "}
-                    {familyProfileSummary.adultCount ?? "?"} adults,{" "}
-                    {familyProfileSummary.childCount ?? "?"} children
-                  </div>
-                  <div>
-                    <strong>Shortest rider:</strong>{" "}
-                    {familyProfileSummary.shortestHeightInches != null
-                      ? `${familyProfileSummary.shortestHeightInches} in`
-                      : "not set"}
-                  </div>
-                  <div>
-                    <strong>Resort:</strong>{" "}
-                    {familyProfileSummary.resortProfile?.name ||
-                      familyProfileSummary.resortContext?.resortName ||
-                      familyProfileSummary.resortContext?.offPropertyHotelName ||
-                      "not set"}
-                  </div>
-                  <div>
-                    <strong>Setup:</strong>{" "}
-                    {profileCompletion.isComplete ? "complete" : "needs a few details"}
-                  </div>
+                  {[
+                    ["Party", familyProfileSummary.partyLabel || "Not set"],
+                    ["Shortest rider", familyProfileSummary.shortestRiderLabel || "Not set"],
+                    [
+                      "Resort",
+                      familyProfileSummary.resortProfile?.name ||
+                        familyProfileSummary.resortContext?.resortName ||
+                        familyProfileSummary.resortContext?.offPropertyHotelName ||
+                        "Not set",
+                    ],
+                    [
+                      "Priorities",
+                      familyProfileSummary.priorities?.length
+                        ? familyProfileSummary.priorities.length
+                        : "Not set",
+                    ],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      style={{
+                        padding: 12,
+                        borderRadius: 18,
+                        background: "rgba(255, 255, 255, 0.82)",
+                        border: `1px solid ${colors.cardBorder}`,
+                        boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          color: colors.muted,
+                          fontSize: 11,
+                          fontWeight: 950,
+                          letterSpacing: 0.5,
+                          marginBottom: 5,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {label}
+                      </div>
+                      <strong
+                        style={{
+                          display: "block",
+                          color: colors.text,
+                          fontSize: 14,
+                          lineHeight: 1.25,
+                        }}
+                      >
+                        {value}
+                      </strong>
+                    </div>
+                  ))}
                 </div>
               </section>
 
@@ -2715,13 +2953,21 @@ function App() {
                 <section
                   style={{
                     ...card,
-                    background: "#F5F3FF",
-                    border: "1px solid rgba(124, 58, 237, 0.18)",
-                    boxShadow: "none",
+                    background:
+                      "linear-gradient(145deg, #FFFFFF 0%, #FEF3C7 100%)",
+                    border: "1px solid rgba(245, 158, 11, 0.28)",
+                    boxShadow: "0 12px 30px rgba(245, 158, 11, 0.10)",
                   }}
                 >
-                  <strong style={{ color: "#7C3AED" }}>Why setup matters</strong>
-                  <p style={{ margin: "8px 0 0", color: "#78716C", fontSize: 14, lineHeight: 1.5 }}>
+                  <strong style={{ color: "#92400E" }}>Why setup matters</strong>
+                  <p
+                    style={{
+                      margin: "8px 0 0",
+                      color: colors.muted,
+                      fontSize: 14,
+                      lineHeight: 1.5,
+                    }}
+                  >
                     TOHI can show basic waits without setup, but it needs your family,
                     resort, height, and park context before it can make safe personalized
                     recommendations.
@@ -2734,10 +2980,10 @@ function App() {
                   style={{
                     ...card,
                     border: "1px solid #ddd6fe",
-                    background: colors.purpleSoft,
+                    background: "#f5f3ff",
                   }}
                 >
-                  <strong style={{ color: colors.purple }}>Developer Preview Active</strong>
+                  <strong style={{ color: "#6d28d9" }}>Developer Preview Active</strong>
                   <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 13 }}>
                     You are seeing the full app even though the guest profile is incomplete.
                     Normal guests would only see basic wait times until setup is finished.
@@ -2758,6 +3004,7 @@ function App() {
               )}
             </>
           )}
+
       </div>
       </main>
 
