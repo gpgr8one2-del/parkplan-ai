@@ -1541,87 +1541,13 @@ function App() {
           {activeTab === "home" && (
             <>
         <header style={{ padding: "18px 0" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: "flex-start",
-            }}
-          >
-            <div>
-              <h1 style={{ fontSize: 36, margin: 0, letterSpacing: -1 }}>
-                TOHI
-              </h1>
-              <p style={{ color: "#64748b", marginTop: 6 }}>
-                A calm family park companion for Disney World and Universal Orlando.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setActiveScreen("family_profile")}
-              style={{
-                ...button,
-                color: profileCompletion.isComplete ? "#166534" : "#9a3412",
-                borderColor: profileCompletion.isComplete ? "#bbf7d0" : "#fed7aa",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {profileCompletion.isComplete ? "Trip Setup" : "Finish Setup"}
-            </button>
-          </div>
+          <h1 style={{ fontSize: 36, margin: 0, letterSpacing: -1 }}>
+            TOHI
+          </h1>
+          <p style={{ color: "#64748b", marginTop: 6 }}>
+            A calm family park companion for Disney World and Universal Orlando.
+          </p>
         </header>
-
-        {isProfileIncomplete && !hasPersonalizedAccess && (
-          <section style={premiumHeroCard}>
-            <span style={premiumBadge}>Basic Wait Times Mode</span>
-            <h2 style={{ margin: "10px 0 6px", fontSize: 24 }}>
-              Finish setup to unlock the real TOHI experience
-            </h2>
-            <p style={{ margin: 0, color: "#475569", lineHeight: 1.5 }}>
-              You can still browse live waits and weather, but personalized Best Move,
-              TOHI guidance, height filtering, resort-break logic, and day-of support need
-              your family trip setup first.
-            </p>
-
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-              <button
-                type="button"
-                onClick={() => setActiveScreen("family_profile")}
-                style={{
-                  ...button,
-                  background: "#0f172a",
-                  color: "white",
-                }}
-              >
-                Finish Trip Setup
-              </button>
-
-              {DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    trackAppEvent("dev_preview_enabled", {
-                      source: "locked_feature",
-                      metadata: {
-                        missing: profileCompletion.missing,
-                      },
-                    });
-                    setDevPreviewFullApp(true);
-                  }}
-                  style={{
-                    ...button,
-                    color: "#7c3aed",
-                    borderColor: "#ddd6fe",
-                  }}
-                >
-                  Dev Preview Full App
-                </button>
-              )}
-            </div>
-          </section>
-        )}
 
         {isProfileIncomplete && access.isDevPreviewing && DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && (
           <section
@@ -1679,10 +1605,11 @@ function App() {
                   fetchedAt={parkData?.fetchedAt}
                 />
               </div>
-              <p style={{ margin: "7px 0 0", color: "#64748b", fontSize: 13 }}>
-                {sortedRides.length} rides loaded
-                {closeTimeLabel ? ` · closes ${closeTimeLabel}` : ""}
-              </p>
+              {closeTimeLabel && (
+                <p style={{ margin: "7px 0 0", color: "#64748b", fontSize: 13 }}>
+                  Closes {closeTimeLabel}
+                </p>
+              )}
             </div>
 
             <button style={button} onClick={() => loadData(true)} disabled={loading}>
@@ -1691,19 +1618,6 @@ function App() {
           </div>
 
           <DataStatusBanner source={parkData?.source} />
-
-          <p
-            style={{
-              margin: "8px 0 0",
-              color: "#64748b",
-              fontSize: 12,
-              lineHeight: 1.4,
-            }}
-          >
-            Live wait data can occasionally lag the official park app during ride
-            reopenings or weather delays. Refresh before walking across the park
-            for a headliner.
-          </p>
 
           {error && (
             <p style={{ color: "#b91c1c", fontWeight: 700 }}>{error}</p>
@@ -1777,10 +1691,6 @@ function App() {
             {timeContext.summary}
           </p>
 
-          <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 13 }}>
-            Mode: {timeContext.planningMode.replace(/_/g, " ")} · AI:{" "}
-            {access.canUseAiChat ? "available" : "not available"} · {access.aiLockedReason}
-          </p>
         </section>
 
         {weatherMode.mode !== "normal" && (
@@ -1864,24 +1774,26 @@ function App() {
           </section>
         )}
 
-        <WhileYouWaitCard
-          whileYouWaitContent={whileYouWaitContent}
-          activeMiniGame={activeMiniGame}
-          activeMiniGameType={activeMiniGameType}
-          revealedTriviaAnswer={revealedTriviaAnswer}
-          selectedTriviaChoice={selectedTriviaChoice}
-          selectedFamilyVoteOption={selectedFamilyVoteOption}
-          lookAroundFound={lookAroundFound}
-          handleMiniGameTypeChange={handleMiniGameTypeChange}
-          handleTriviaChoice={handleTriviaChoice}
-          handleLookAroundFound={handleLookAroundFound}
-          handleFamilyVote={handleFamilyVote}
-          handleNextMiniGame={handleNextMiniGame}
-          showTriviaAnswer={showTriviaAnswer}
-          card={card}
-          button={button}
-          actionButton={actionButton}
-        />
+        {currentActivity?.type === "in_line" && (
+          <WhileYouWaitCard
+            whileYouWaitContent={whileYouWaitContent}
+            activeMiniGame={activeMiniGame}
+            activeMiniGameType={activeMiniGameType}
+            revealedTriviaAnswer={revealedTriviaAnswer}
+            selectedTriviaChoice={selectedTriviaChoice}
+            selectedFamilyVoteOption={selectedFamilyVoteOption}
+            lookAroundFound={lookAroundFound}
+            handleMiniGameTypeChange={handleMiniGameTypeChange}
+            handleTriviaChoice={handleTriviaChoice}
+            handleLookAroundFound={handleLookAroundFound}
+            handleFamilyVote={handleFamilyVote}
+            handleNextMiniGame={handleNextMiniGame}
+            showTriviaAnswer={showTriviaAnswer}
+            card={card}
+            button={button}
+            actionButton={actionButton}
+          />
+        )}
 
         {hasPersonalizedAccess ? (
           <section style={card}>
