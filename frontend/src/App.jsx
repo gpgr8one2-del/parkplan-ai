@@ -2896,8 +2896,20 @@ function App() {
                   }}
                 >
                   {[
-                    ["Party", familyProfileSummary.partyLabel || "Not set"],
-                    ["Shortest rider", familyProfileSummary.shortestRiderLabel || "Not set"],
+                    [
+                      "Party",
+                      `${familyProfileSummary.partySize || 0} guests · ${
+                        familyProfileSummary.adultCount || 0
+                      } adults · ${familyProfileSummary.childCount || 0} kids`,
+                    ],
+                    [
+                      "Shortest rider",
+                      familyProfileSummary.shortestHeightInches != null
+                        ? `${familyProfileSummary.shortestHeightInches}" tall`
+                        : familyProfileSummary.childCount > 0
+                        ? "Child height not set"
+                        : "Adults only",
+                    ],
                     [
                       "Resort",
                       familyProfileSummary.resortProfile?.name ||
