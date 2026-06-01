@@ -74,7 +74,8 @@ function writeDevPreviewFullApp(enabled) {
 
 const page = {
   minHeight: "100vh",
-  background: "linear-gradient(180deg, #fff7ed 0%, #f8fafc 100%)",
+  background:
+    "radial-gradient(circle at 18% 0%, rgba(124, 58, 237, 0.11) 0%, rgba(124, 58, 237, 0.03) 28%, transparent 48%), radial-gradient(circle at 88% 8%, rgba(245, 158, 11, 0.20) 0%, rgba(245, 158, 11, 0.05) 30%, transparent 52%), linear-gradient(180deg, #FFF4E6 0%, #FFF9F1 52%, #F3E8FF 100%)",
   fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
   color: colors.text,
 };
@@ -82,17 +83,22 @@ const page = {
 const shell = { maxWidth: 900, margin: "0 auto", padding: 18 };
 
 const card = {
-  background: "rgba(255,255,255,.92)",
+  background: "rgba(255,255,255,0.94)",
   border: `1px solid ${colors.cardBorder}`,
-  borderRadius: 22,
+  borderRadius: 24,
   padding: 16,
-  boxShadow: "0 10px 30px rgba(15,23,42,.08)",
+  boxShadow: "0 14px 34px rgba(28, 25, 23, 0.08)",
   marginBottom: 14,
 };
 
 const button = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 6,
   border: `1px solid ${colors.cardBorder}`,
-  background: "white",
+  background: colors.card,
+  color: colors.text,
   borderRadius: 999,
   padding: "9px 12px",
   fontWeight: 800,
@@ -100,8 +106,13 @@ const button = {
 };
 
 const actionButton = {
-  background: "rgba(255,255,255,.72)",
-  border: "1px solid #dbeafe",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 5,
+  background: "rgba(255,255,255,0.78)",
+  border: `1px solid ${colors.cardBorder}`,
+  color: colors.text,
   borderRadius: 999,
   padding: "7px 10px",
   fontSize: 12,
@@ -112,18 +123,19 @@ const actionButton = {
 const premiumHeroCard = {
   ...card,
   background:
-    "radial-gradient(circle at top left, #ffedd5 0%, #ffffff 42%, #eef2ff 100%)",
-  border: `1px solid ${colors.amberSoft}`,
-  boxShadow: "0 18px 45px rgba(124, 58, 237, .14)",
+    "radial-gradient(circle at 92% 2%, rgba(124, 58, 237, 0.22) 0%, rgba(124, 58, 237, 0.06) 34%, transparent 58%), radial-gradient(circle at 8% 0%, rgba(245, 158, 11, 0.22) 0%, rgba(245, 158, 11, 0.07) 36%, transparent 62%), linear-gradient(150deg, #FFFFFF 0%, #FFF7ED 48%, #F3E8FF 100%)",
+  border: "1px solid rgba(124, 58, 237, 0.18)",
+  borderRadius: 30,
+  boxShadow: "0 20px 52px rgba(91, 33, 182, 0.13)",
 };
 
 const premiumBadge = {
   display: "inline-flex",
   alignItems: "center",
   gap: 6,
-  border: `1px solid ${colors.amberSoft}`,
-  background: colors.cardWarm,
-  color: "#9a3412",
+  border: "1px solid rgba(124, 58, 237, 0.18)",
+  background: "rgba(124, 58, 237, 0.10)",
+  color: colors.purpleDeep,
   borderRadius: 999,
   padding: "6px 10px",
   fontSize: 12,
@@ -132,9 +144,10 @@ const premiumBadge = {
 
 const lockedCardStyle = {
   ...card,
-  border: "1px dashed #cbd5e1",
-  background: "rgba(248,250,252,.92)",
-  boxShadow: "none",
+  border: `1px dashed ${colors.cardBorder}`,
+  background:
+    "linear-gradient(145deg, rgba(255,255,255,0.94) 0%, #FFF9F1 100%)",
+  boxShadow: "0 10px 24px rgba(28, 25, 23, 0.05)",
 };
 
 const celebrationOverlayStyle = {
@@ -1203,7 +1216,7 @@ function App() {
   function renderLockedFeatureCard({ title, body, actionLabel = "Finish trip setup" }) {
     return (
       <section style={lockedCardStyle}>
-        <div style={{ fontSize: 12, fontWeight: 900, color: "#7c3aed" }}>
+        <div style={{ fontSize: 12, fontWeight: 900, color: colors.purple }}>
           PERSONALIZED FEATURE
         </div>
         <h3 style={{ margin: "6px 0 6px" }}>{title}</h3>
@@ -1230,7 +1243,7 @@ function App() {
               onClick={() => setDevPreviewFullApp(true)}
               style={{
                 ...button,
-                color: "#7c3aed",
+                color: colors.purple,
                 borderColor: colors.purpleSoft,
               }}
             >
@@ -1288,8 +1301,8 @@ function App() {
           onClick={() => handleReportRideIssue(ride)}
           style={{
             ...actionButton,
-            color: "#9a3412",
-            borderColor: "#fed7aa",
+            color: "#92400E",
+            borderColor: colors.amberSoft,
           }}
         >
           Report Issue
@@ -1345,7 +1358,7 @@ function App() {
         )}
 
         {showProfile.verifyDailySchedule && (
-          <p style={{ margin: "6px 0 0", color: "#9a3412", fontSize: 12 }}>
+          <p style={{ margin: "6px 0 0", color: "#92400E", fontSize: 12 }}>
             Verify in My Disney Experience. Showtimes can change by day.
           </p>
         )}
@@ -1938,11 +1951,11 @@ function App() {
               }}
               style={{
                 width: "100%",
-                border: "1px solid #cbd5e1",
+                border: `1px solid ${colors.cardBorder}`,
                 borderRadius: 14,
                 padding: "10px 12px",
                 fontWeight: 700,
-                background: "white",
+                background: colors.card,
                 color: colors.text,
               }}
             >
@@ -1969,8 +1982,8 @@ function App() {
                 disabled={locationLoading}
                 style={{
                   ...actionButton,
-                  color: "#1d4ed8",
-                  borderColor: "#bfdbfe",
+                  color: "#0369A1",
+                  borderColor: colors.skySoft,
                 }}
               >
                 <MapPin size={13} />{" "}
@@ -2995,7 +3008,7 @@ function App() {
                     background: "#f5f3ff",
                   }}
                 >
-                  <strong style={{ color: "#6d28d9" }}>Developer Preview Active</strong>
+                  <strong style={{ color: colors.purple }}>Developer Preview Active</strong>
                   <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 13 }}>
                     You are seeing the full app even though the guest profile is incomplete.
                     Normal guests would only see basic wait times until setup is finished.
