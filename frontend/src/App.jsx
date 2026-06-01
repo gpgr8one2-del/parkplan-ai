@@ -1153,6 +1153,52 @@ function App() {
   }
 
 
+  function renderTabPlaceholderCard({ eyebrow, title, body, primaryActionLabel, onPrimaryAction }) {
+    return (
+      <section
+        style={{
+          ...card,
+          background: "#FFFFFF",
+          border: "1px solid #EFE7DA",
+          boxShadow: "0 12px 30px rgba(28, 25, 23, 0.07)",
+        }}
+      >
+        <div style={{ fontSize: 12, fontWeight: 900, color: "#7C3AED" }}>
+          {eyebrow}
+        </div>
+        <h2
+          style={{
+            margin: "8px 0 6px",
+            color: "#1C1917",
+            fontSize: 24,
+            letterSpacing: -0.4,
+          }}
+        >
+          {title}
+        </h2>
+        <p style={{ margin: 0, color: "#78716C", fontSize: 14, lineHeight: 1.5 }}>
+          {body}
+        </p>
+
+        {primaryActionLabel && onPrimaryAction && (
+          <button
+            type="button"
+            onClick={onPrimaryAction}
+            style={{
+              ...button,
+              marginTop: 14,
+              background: "#7C3AED",
+              color: "white",
+              borderColor: "#7C3AED",
+            }}
+          >
+            {primaryActionLabel}
+          </button>
+        )}
+      </section>
+    );
+  }
+
   function renderLockedFeatureCard({ title, body, actionLabel = "Finish trip setup" }) {
     return (
       <section style={lockedCardStyle}>
@@ -1491,7 +1537,9 @@ function App() {
         </div>
       )}
 
-        <div style={{ ...shell, paddingBottom: 80 }}>
+        <div style={ ...shell, paddingBottom: 80 }>
+          {activeTab === "home" && (
+            <>
         <header style={{ padding: "18px 0" }}>
           <div
             style={{
@@ -2215,6 +2263,51 @@ function App() {
             actionLabel: access.profileComplete ? "Review Trip Setup" : "Set up AI guidance",
           })
         )}
+            </>
+          )}
+
+          {activeTab === "waits" &&
+            renderTabPlaceholderCard({
+              eyebrow: "WAITS",
+              title: "Wait times are moving here next",
+              body:
+                "This tab will become the clean utility view for live waits, refresh, data confidence, and ride actions. For this checkpoint, the main app content is still safely parked on Home.",
+            })}
+
+          {activeTab === "plan" &&
+            renderTabPlaceholderCard({
+              eyebrow: "PLAN",
+              title: "Your trip plan will live here",
+              body:
+                "This will become the home for day-before planning, day-of priorities, resort context, and future planning tools without cluttering the live park dashboard.",
+              primaryActionLabel: "Review Trip Setup",
+              onPrimaryAction: () => setActiveScreen("family_profile"),
+            })}
+
+          {activeTab === "tohi" &&
+            (access.canUseAiChat
+              ? renderTabPlaceholderCard({
+                  eyebrow: "TOHI",
+                  title: "TOHI chat is moving here next",
+                  body:
+                    "This tab will become the dedicated calm assistant space. For now, chat still lives safely on Home until the next commit moves it cleanly.",
+                })
+              : renderLockedFeatureCard({
+                  title: "TOHI guidance needs your trip setup",
+                  body:
+                    "TOHI needs your trip setup so it can answer with your family, resort, height, and park context.",
+                  actionLabel: "Finish trip setup",
+                }))}
+
+          {activeTab === "profile" &&
+            renderTabPlaceholderCard({
+              eyebrow: "PROFILE",
+              title: "Family setup and trip details",
+              body:
+                "Your family profile, resort, child heights, park days, and preferences will live here as TOHI grows into a more complete trip companion.",
+              primaryActionLabel: profileCompletion.isComplete ? "Review Trip Setup" : "Finish Trip Setup",
+              onPrimaryAction: () => setActiveScreen("family_profile"),
+            })}
       </div>
       </main>
 
