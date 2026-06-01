@@ -1541,9 +1541,17 @@ function App() {
           {activeTab === "home" && (
             <>
         <header style={{ padding: "18px 0" }}>
-          <h1 style={{ fontSize: 36, margin: 0, letterSpacing: -1 }}>
-            TOHI
-          </h1>
+          <img
+            src="/tohi-logo.png"
+            alt="TOHI"
+            style={{
+              display: "block",
+              width: 156,
+              maxWidth: "52vw",
+              height: "auto",
+              marginBottom: 6,
+            }}
+          />
           <p style={{ color: "#64748b", marginTop: 6 }}>
             A calm family park companion for Disney World and Universal Orlando.
           </p>
