@@ -69,6 +69,12 @@ import { getParkCloseTime } from "./parkHours";
 const DEFAULT_POPULARITY = 40;
 const WALK_BUFFER_MINUTES = 15;
 const ORLANDO_TIME_ZONE = "America/New_York";
+const ORLANDO_TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: ORLANDO_TIME_ZONE,
+  hour: "numeric",
+  minute: "numeric",
+  hour12: false,
+});
 
 // V1.1 caps and gates. Tuning these is the easiest way to adjust the new
 // behavior without touching individual modifier functions.
@@ -85,12 +91,7 @@ const STRONG_CLOSEST_ANCHOR_THRESHOLD = 30;
 /* -------------------------------------------------------------------------- */
 
 function getOrlandoTimeParts(date = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: ORLANDO_TIME_ZONE,
-    hour: "numeric",
-    minute: "numeric",
-    hour12: false,
-  }).formatToParts(date);
+  const parts = ORLANDO_TIME_FORMATTER.formatToParts(date);
 
   const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
   const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
@@ -252,16 +253,22 @@ function getHeightEligibilityFailure(meta, familyProfile) {
 
   const preference = familyProfile.wholeGroupRidesTogether || "warn";
 
-  if (preference === "yes") {
-    return {
-      reason: "heightRestricted",
-      requiredHeight,
-      shortestHeight,
-      mode: "exclude",
-    };
+  // TOHI beta trust rule:
+  // If the shortest rider cannot ride, do not surface this attraction in
+  // normal family recommendation slots. The default setup value is "warn",
+  // but "warn" is not safe enough for Best Move / Smart Backup /
+  // Worth the Walk / Plan Ahead. Only explicit future rider-switch mode can
+  // allow a height-restricted attraction through with a visible warning.
+  if (preference === "rider_switch") {
+    return null;
   }
 
-  return null;
+  return {
+    reason: "heightRestricted",
+    requiredHeight,
+    shortestHeight,
+    mode: "exclude",
+  };
 }
 
 function getHeightWarning(meta, familyProfile) {
