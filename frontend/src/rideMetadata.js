@@ -454,7 +454,7 @@ export const RIDE_METADATA = {
     "130": {
       displayName: "Big Thunder Mountain Railroad",
       land: "frontierland",
-      minHeightInches: 40,
+      minHeightInches: 38,
       environment: "outdoor",
       hasAC: false,
       getsWet: false,
