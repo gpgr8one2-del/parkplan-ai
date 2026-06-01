@@ -1537,7 +1537,7 @@ function App() {
         </div>
       )}
 
-        <div style={ ...shell, paddingBottom: 80 }>
+        <div style={{ ...shell, paddingBottom: 80 }}>
           {activeTab === "home" && (
             <>
         <header style={{ padding: "18px 0" }}>
