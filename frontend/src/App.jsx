@@ -11,6 +11,7 @@ import {
   readStoredTripPlan,
   writeStoredTripPlan,
   updateTripPlanPreferences,
+  toggleTripPlanMustDoExperience,
 } from "./utils/tripPlan";
 import { getCurrentTimeContext } from "./utils/timeContext";
 import { buildAccessState } from "./utils/accessControl";
@@ -35,7 +36,7 @@ import {
 } from "./utils/familyProfile";
 import { formatCloseTimeLabel } from "./parkHours";
 import { getRideExperienceContent } from "./rideExperienceContent";
-import { getRideMeta } from "./rideMetadata";
+import { getRideMeta, getParkRides } from "./rideMetadata";
 import { shouldShowRideInWaitList } from "./attractionDisplayFilters";
 import { getResortOptions } from "./resortProfiles";
 import { detectNearestLocationZone, getCurrentPosition } from "./utils/locationDetection";
@@ -436,6 +437,67 @@ function getRecommendationForRide(recommendations = {}, rideId) {
     ].find((ride) => ride?.id != null && String(ride.id) === targetId) || null
   );
 }
+
+
+function getExperienceTypeForPlan(ride = {}) {
+  const name = String(ride?.name || "").toLowerCase();
+
+  if (ride?.showProfile || name.includes("festival") || name.includes("parade") || name.includes("fireworks")) {
+    return "show";
+  }
+
+  if (name.includes("meet") || name.includes("character") || name.includes("princess")) {
+    return "character";
+  }
+
+  return "ride";
+}
+
+function buildMustDoExperienceOptions({ activePark, rides = [] }) {
+  const liveRideById = new Map();
+  const liveRideByName = new Map();
+
+  (rides || []).forEach((ride) => {
+    if (!ride) return;
+
+    if (ride.id != null) {
+      liveRideById.set(String(ride.id), ride);
+    }
+
+    if (ride.name) {
+      liveRideByName.set(String(ride.name).toLowerCase(), ride);
+    }
+  });
+
+  return getParkRides(activePark)
+    .map(([id, meta]) => {
+      const name = meta?.displayName || String(id);
+      const liveRide = liveRideById.get(String(id)) || liveRideByName.get(String(name).toLowerCase()) || null;
+
+      return {
+        id: String(id),
+        name,
+        parkId: activePark,
+        type: getExperienceTypeForPlan({ ...liveRide, ...meta, name }),
+        land: meta?.land || liveRide?.land || "",
+        source: "ride_metadata",
+        waitTime: liveRide?.waitTime ?? null,
+        isOpen: liveRide?.isOpen ?? null,
+        tags: Array.isArray(meta?.tags) ? meta.tags : [],
+        planningCategory: meta?.planningProfile?.category || "",
+        paidAccess: meta?.planningProfile?.paidAccess || "none",
+      };
+    })
+    .filter((experience) => experience.name && experience.planningCategory !== "context_only")
+    .sort((a, b) => {
+      const aHeadliner = a.tags.includes("headliner") ? 0 : 1;
+      const bHeadliner = b.tags.includes("headliner") ? 0 : 1;
+
+      if (aHeadliner !== bHeadliner) return aHeadliner - bHeadliner;
+      return a.name.localeCompare(b.name);
+    });
+}
+
 
 function App() {
   const [activePark, setActivePark] = useState("magic_kingdom");
@@ -856,6 +918,13 @@ function App() {
     packingChecklist,
   ]);
 
+  const mustDoExperienceOptions = useMemo(() => {
+    return buildMustDoExperienceOptions({
+      activePark,
+      rides: parkData?.rides || [],
+    });
+  }, [activePark, parkData]);
+
   const recoverySuggestions = useMemo(() => {
     return getRecoverySuggestions({
       parkId: activePark,
@@ -1244,6 +1313,20 @@ function App() {
       source: "plan_tune",
       metadata: {
         fields: Object.keys(preferencePatch),
+      },
+    });
+  }
+
+  function handleTripMustDoToggle(experience) {
+    setTripPlanState((prev) => toggleTripPlanMustDoExperience(prev, experience));
+
+    trackAppEvent("trip_plan_must_do_toggled", {
+      source: "must_do_moments",
+      metadata: {
+        experienceId: experience?.id,
+        experienceName: experience?.name,
+        parkId: experience?.parkId,
+        type: experience?.type,
       },
     });
   }
@@ -2778,7 +2861,10 @@ function App() {
               packingChecklist={packingChecklist}
               dayGamePlan={dayGamePlan}
               tripPlan={tripPlanState}
+              activePark={activePark}
+              mustDoExperienceOptions={mustDoExperienceOptions}
               onUpdateTripPreferences={handleTripPreferenceChange}
+              onToggleMustDoExperience={handleTripMustDoToggle}
               setActiveScreen={setActiveScreen}
             />
           )}
