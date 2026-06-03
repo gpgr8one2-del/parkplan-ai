@@ -1,6 +1,118 @@
 import React from "react";
 import { colors } from "../theme";
 
+
+const START_STRATEGY_OPTIONS = [
+  { value: "rope_drop", label: "Rope drop", helper: "Arrive early and protect the first big move." },
+  { value: "moderate_morning", label: "Moderate morning", helper: "Start steady without forcing a pre-dawn sprint." },
+  { value: "late_start", label: "Late start", helper: "Accept a slower start and protect energy." },
+  { value: "evening_only", label: "Evening only", helper: "Build around a shorter, cooler park window." },
+];
+
+const BREAK_PREFERENCE_OPTIONS = [
+  { value: "no_break", label: "No formal break", helper: "Stay in the park and use smaller resets." },
+  { value: "resort_return", label: "Resort return", helper: "Plan a real mid-day escape when realistic." },
+  { value: "in_park_rest", label: "In-park rest", helper: "Use AC, shade, food, and seated shows." },
+  { value: "kids_nap_window", label: "Kids nap window", helper: "Protect a real rest window for younger kids." },
+];
+
+const DINING_STYLE_OPTIONS = [
+  { value: "quick_service", label: "Quick service", helper: "Keep meals flexible and low friction." },
+  { value: "table_service_planned", label: "Table service planned", helper: "Anchor the day around a planned meal." },
+  { value: "mixed", label: "Mixed", helper: "Use one planned meal and flexible snacks." },
+  { value: "snack_through_day", label: "Snack through the day", helper: "Avoid heavy meal stops when possible." },
+];
+
+const SHOWS_IMPORTANCE_OPTIONS = [
+  { value: "low", label: "Low", helper: "Rides and flow matter more than shows." },
+  { value: "medium", label: "Medium", helper: "Use shows when they help the day." },
+  { value: "high", label: "High", helper: "Protect parades, shows, and character moments." },
+];
+
+const NIGHTTIME_IMPORTANCE_OPTIONS = [
+  { value: "must_see_fireworks", label: "Must see nighttime show", helper: "Plan energy and exit strategy around it." },
+  { value: "if_we_re_still_here", label: "If we’re still here", helper: "Keep it optional based on family energy." },
+  { value: "kids_will_be_done", label: "Kids will be done", helper: "Do not build the day around a late finish." },
+];
+
+const PAID_QUEUE_OPTIONS = [
+  { value: "undecided", label: "Undecided", helper: "Keep options open for now." },
+  { value: "avoid_paid", label: "Avoid paid access", helper: "Only suggest free strategies unless the day is at risk." },
+  { value: "open_to_paid", label: "Open if it protects the day", helper: "Use paid access when it prevents stress." },
+  { value: "use_paid", label: "Plan around paid access", helper: "Treat Lightning Lane / Express Pass as part of the strategy." },
+];
+
+function getSelectedHelper(options, value) {
+  return options.find((option) => option.value === value)?.helper || "";
+}
+
+function PlanPreferenceSelect({
+  id,
+  label,
+  value,
+  options,
+  onChange,
+}) {
+  const preferences = tripPlan?.preferences || {};
+
+  return (
+    <label
+      htmlFor={id}
+      style={{
+        display: "grid",
+        gap: 7,
+        padding: 12,
+        borderRadius: 18,
+        background: "rgba(255,255,255,0.82)",
+        border: `1px solid ${colors.cardBorder}`,
+        boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
+      }}
+    >
+      <span
+        style={{
+          color: colors.text,
+          fontSize: 13,
+          fontWeight: 950,
+        }}
+      >
+        {label}
+      </span>
+
+      <select
+        id={id}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        style={{
+          width: "100%",
+          border: `1px solid ${colors.cardBorder}`,
+          borderRadius: 14,
+          padding: "10px 11px",
+          fontWeight: 850,
+          background: "white",
+          color: colors.text,
+        }}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+
+      <span
+        style={{
+          color: colors.muted,
+          fontSize: 12,
+          lineHeight: 1.35,
+        }}
+      >
+        {getSelectedHelper(options, value)}
+      </span>
+    </label>
+  );
+}
+
+
 export function PlanTab({
   card,
   button,
@@ -8,8 +120,12 @@ export function PlanTab({
   profileCompletion,
   timeContext,
   packingChecklist,
+  tripPlan,
+  onUpdateTripPreferences,
   setActiveScreen,
 }) {
+  const preferences = tripPlan?.preferences || {};
+
   return (
     <>
               <section
@@ -172,6 +288,133 @@ export function PlanTab({
                   >
                     AI: {hasPersonalizedAccess ? "available" : "locked"}
                   </span>
+                </div>
+              </section>
+
+              <section
+                style={{
+                  ...card,
+                  position: "relative",
+                  overflow: "hidden",
+                  background:
+                    "radial-gradient(circle at 92% 0%, rgba(124, 58, 237, 0.18) 0%, rgba(124, 58, 237, 0.05) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #F3E8FF 100%)",
+                  border: "1px solid rgba(124, 58, 237, 0.18)",
+                  boxShadow: "0 14px 34px rgba(124, 58, 237, 0.08)",
+                }}
+              >
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    width: 112,
+                    height: 112,
+                    borderRadius: "999px",
+                    right: -44,
+                    top: -46,
+                    background: "rgba(245, 158, 11, 0.12)",
+                  }}
+                />
+
+                <div style={{ position: "relative" }}>
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "5px 9px",
+                      borderRadius: 999,
+                      background: "rgba(124, 58, 237, 0.10)",
+                      color: colors.purpleDeep,
+                      fontSize: 11,
+                      fontWeight: 950,
+                      letterSpacing: 0.7,
+                      marginBottom: 9,
+                    }}
+                  >
+                    PLAN TUNE
+                  </div>
+
+                  <h3
+                    style={{
+                      margin: 0,
+                      color: colors.text,
+                      fontSize: 24,
+                      letterSpacing: -0.4,
+                      lineHeight: 1.15,
+                    }}
+                  >
+                    Tell TOHI how this day should feel.
+                  </h3>
+
+                  <p
+                    style={{
+                      margin: "8px 0 0",
+                      color: colors.muted,
+                      fontSize: 13,
+                      lineHeight: 1.45,
+                      maxWidth: 640,
+                    }}
+                  >
+                    These choices stay separate from family setup. They shape the trip
+                    plan without forcing every future visit to work the same way.
+                  </p>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                      gap: 10,
+                      marginTop: 14,
+                    }}
+                  >
+                    <PlanPreferenceSelect
+                      id="start-strategy"
+                      label="Start strategy"
+                      value={preferences.startStrategy}
+                      options={START_STRATEGY_OPTIONS}
+                      onChange={(value) => onUpdateTripPreferences({ startStrategy: value })}
+                    />
+
+                    <PlanPreferenceSelect
+                      id="break-preference"
+                      label="Break style"
+                      value={preferences.breakPreference}
+                      options={BREAK_PREFERENCE_OPTIONS}
+                      onChange={(value) => onUpdateTripPreferences({ breakPreference: value })}
+                    />
+
+                    <PlanPreferenceSelect
+                      id="dining-style"
+                      label="Food rhythm"
+                      value={preferences.diningStyle}
+                      options={DINING_STYLE_OPTIONS}
+                      onChange={(value) => onUpdateTripPreferences({ diningStyle: value })}
+                    />
+
+                    <PlanPreferenceSelect
+                      id="shows-importance"
+                      label="Shows / parades"
+                      value={preferences.showsImportance}
+                      options={SHOWS_IMPORTANCE_OPTIONS}
+                      onChange={(value) => onUpdateTripPreferences({ showsImportance: value })}
+                    />
+
+                    <PlanPreferenceSelect
+                      id="nighttime-importance"
+                      label="Nighttime plan"
+                      value={preferences.nighttimeImportance}
+                      options={NIGHTTIME_IMPORTANCE_OPTIONS}
+                      onChange={(value) => onUpdateTripPreferences({ nighttimeImportance: value })}
+                    />
+
+                    <PlanPreferenceSelect
+                      id="paid-queue-strategy"
+                      label="Paid queue strategy"
+                      value={preferences.paidQueueStrategy}
+                      options={PAID_QUEUE_OPTIONS}
+                      onChange={(value) => onUpdateTripPreferences({ paidQueueStrategy: value })}
+                    />
+                  </div>
                 </div>
               </section>
 
