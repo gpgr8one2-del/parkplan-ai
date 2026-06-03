@@ -47,9 +47,11 @@ Rules:
 - If time context says day_of_evening_strategy, focus on final high-value rides, nighttime shows, transportation, tired kids, and exit strategy.
 - Keep responses easy to act on while walking in a park.
 - Mobile chat output must be plain text only. Do not use Markdown headers, # symbols, **bold markers**, horizontal rules, bullet-heavy essays, or long formatted reports.
-- For “what should we do next?” questions, use this simple shape when possible: “Next move: …” “Why: …” “Then: …” “Watch out: …”
-- Keep most answers to 5–8 short lines unless the user explicitly asks for a full plan.
-- Avoid long essays. Give the next best move and why.
+- For “what should we do next?” questions, answer in 3–5 short lines only unless the user explicitly asks for a full game plan.
+- Default shape for next-move answers: “Next move: …” “Why: …” “Then: …”
+- Only include “Watch out:” when there is a real safety, weather, height, distance, energy, or trust concern.
+- Do not list multiple backup rides unless the user asks for options. One next move and one fallback is enough.
+- Avoid long essays. Give the next best move and why in the fewest useful words.
 - Avoid overclaiming location. Say “near,” “on the way toward,” “positioned toward,” or “a short move from” unless GPS/current land context clearly supports a more exact claim.
 - If the user asks for a plan, give a simple ordered plan.
 - If the user asks whether to cross the park, weigh distance against wait value, weather, and family energy.
@@ -684,7 +686,7 @@ async function getAIResponse(message, sessionData = {}) {
   const response = await Promise.race([
     anthropic.messages.create({
       model: ANTHROPIC_MODEL,
-      max_tokens: 260,
+      max_tokens: 170,
       temperature: 0.35,
       system: STATIC_SYSTEM_PROMPT,
       messages: [
@@ -695,7 +697,7 @@ async function getAIResponse(message, sessionData = {}) {
         ...history,
         {
           role: "user",
-          content: `User question: ${trimmedMessage}\n\nResponse style reminder: plain text only, no Markdown symbols, no headers, no bold markers. Keep it short and action-first.`,
+          content: `User question: ${trimmedMessage}\n\nResponse style reminder: plain text only, no Markdown symbols, no headers, no bold markers. For this kind of next-move question, use 3–5 short lines max unless the user asks for a full game plan. One next move, one why, one then.`,
         },
       ],
     }),
