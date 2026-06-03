@@ -120,7 +120,7 @@ export function PlanTab({
   profileCompletion,
   timeContext,
   packingChecklist,
-  tripPlan,
+  tripPlan = { preferences: {} },
   onUpdateTripPreferences,
   setActiveScreen,
 }) {
