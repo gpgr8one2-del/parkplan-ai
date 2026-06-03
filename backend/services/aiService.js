@@ -3,18 +3,24 @@ const logger = require("../logger");
 
 const ANTHROPIC_MODEL = "claude-sonnet-4-5-20250929";
 
-const STATIC_SYSTEM_PROMPT = `You are TOHI, a calm, family-first mobile companion for Disney World and Universal Orlando.
+const STATIC_SYSTEM_PROMPT = `RESPONSE RULES — READ FIRST:
+You are a real-time park companion. Families are standing in the heat reading on a phone. Be extremely brief.
+
+For any question about what to do next, what ride to do, or what the plan says:
+- Maximum 3 sentences. No exceptions.
+- Give ONE recommendation. Not options. Not alternatives. The single best move.
+- State the move, one reason why, and stop.
+- Do not explain everything you know. Do not list "Option 1, Option 2, Option 3."
+- If the family wants more detail they will ask a follow-up question.
+
+Wrong: "Next Move: TRON. Why now: 65 minute wait is below normal. You're near Tomorrowland. Option 1: stay in Tomorrowland. Option 2: head to Fantasyland. Option 3: if energy is fading..."
+Right: "Head to TRON now — 65 minutes is well below its normal wait and you're already nearby. After, grab food in Tomorrowland and rest before the next move."
+
+You are TOHI, a calm, family-first mobile companion for Disney World and Universal Orlando.
 
 TOHI may still be internally coded with legacy ParkPlan names in some backend/frontend files, but user-facing dialogue must always call the product TOHI. Never introduce yourself as ParkPlan AI, never say "I am ParkPlan AI," and never refer to the app as ParkPlan AI.
 
 You help families make practical in-park decisions using the live context provided.
-
-RESPONSE FORMAT RULES:
-- Never use markdown formatting. No headers, no bold, no bullet points, no horizontal rules. Plain conversational sentences only.
-- For simple questions like "what should we do next" or "is now a good time for X," keep the response to 3–4 sentences maximum.
-- Lead with the recommendation first. Give one brief reason why. Stop there unless the family asks for more.
-- You are a calm, experienced park friend giving a quick answer in the moment — not a travel agent writing a report.
-- Do not list everything you know. Say the most important thing clearly and trust the family to follow up if they want more.
 
 Rules:
 - Be concise, useful, and practical.
@@ -644,25 +650,103 @@ function isShortMomentQuestion(message = "") {
   );
 }
 
-function limitShortMomentReply(reply = "", message = "") {
-  const cleaned = stripMarkdown(reply);
+function enforceBriefNextMoveReply(reply = "", message = "") {
+  const cleaned = typeof stripMarkdown === "function" ? stripMarkdown(reply) : String(reply || "").trim();
 
-  if (!isShortMomentQuestion(message)) {
+  const isNextMove =
+    typeof isShortMomentQuestion === "function"
+      ? isShortMomentQuestion(message)
+      : /what should we do next|what do we do next|what next|next move|based on our plan|where should we go|is now a good time|should we do/i.test(
+          String(message || "")
+        );
+
+  if (!isNextMove) {
     return cleaned;
   }
 
-  const collapsed = cleaned.replace(/\s+/g, " ").trim();
-  const sentences = collapsed
+  const compacted = cleaned
+    .replace(/#{1,6}\s*/g, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/^---+$/gm, "")
+    .replace(/\bOption\s+\d+\s*:/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!compacted) return "";
+
+  const sentences = compacted
     .split(/(?<=[.!?])\s+/)
     .map((sentence) => sentence.trim())
     .filter(Boolean);
 
-  return sentences.slice(0, 4).join(" ");
+  if (sentences.length) {
+    return sentences
+      .slice(0, 2)
+      .map((sentence) => (sentence.length > 210 ? `${sentence.slice(0, 207).trim()}...` : sentence))
+      .join(" ");
+  }
+
+  return compacted.length > 300 ? `${compacted.slice(0, 297).trim()}...` : compacted;
+}
+
+
+function isPlanningModeQuestion(message = "") {
+  const text = String(message || "").toLowerCase();
+
+  return (
+    text.includes("full game plan") ||
+    text.includes("gameplan") ||
+    text.includes("game plan") ||
+    text.includes("plan the rest of") ||
+    text.includes("rest of our day") ||
+    text.includes("full plan") ||
+    text.includes("build a plan") ||
+    text.includes("build me a plan") ||
+    text.includes("compare") ||
+    text.includes("tradeoff") ||
+    text.includes("trade off") ||
+    text.includes("explain why") ||
+    text.includes("why is") ||
+    text.includes("walk me through") ||
+    text.includes("strategy for the day") ||
+    text.includes("morning strategy") ||
+    text.includes("evening strategy")
+  );
+}
+
+function getAnswerMode(message = "") {
+  return isPlanningModeQuestion(message) ? "planning" : "live";
+}
+
+function getFirstSentences(text = "", maxSentences = 2) {
+  const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return "";
+
+  const sentences = cleaned.match(/[^.!?]+[.!?]+/g);
+
+  if (sentences?.length) {
+    return sentences.slice(0, maxSentences).join(" ").replace(/\s+/g, " ").trim();
+  }
+
+  return cleaned;
+}
+
+function finalizeAIReply(reply = "", message = "") {
+  const cleaned = typeof stripMarkdown === "function" ? stripMarkdown(reply) : String(reply || "").trim();
+
+  if (getAnswerMode(message) === "live") {
+    return getFirstSentences(cleaned, 2);
+  }
+
+  return cleaned;
 }
 
 
 async function getAIResponse(message, sessionData = {}) {
   const trimmedMessage = String(message || "").trim().slice(0, 500);
+  const answerMode = getAnswerMode(trimmedMessage);
+  const maxTokens = answerMode === "live" ? 200 : 650;
 
   logger.info(
     {
@@ -698,6 +782,7 @@ async function getAIResponse(message, sessionData = {}) {
       resortName:
         sessionData.familyProfile?.resortProfile?.name ||
         sessionData.familyProfile?.resortContext?.resortName,
+      answerMode,
       model: ANTHROPIC_MODEL,
     },
     "AI chat request"
@@ -728,8 +813,9 @@ async function getAIResponse(message, sessionData = {}) {
 
   const response = await Promise.race([
     anthropic.messages.create({
+      answerMode,
       model: ANTHROPIC_MODEL,
-      max_tokens: 300,
+      max_tokens: maxTokens,
       temperature: 0.35,
       system: STATIC_SYSTEM_PROMPT,
       messages: [
@@ -740,7 +826,9 @@ async function getAIResponse(message, sessionData = {}) {
         ...history,
         {
           role: "user",
-          content: `User question: ${trimmedMessage}\n\nAnswer style: plain conversational text only. No markdown. If this is a simple next-move question, answer in 3–4 sentences max.`,
+          content: `User question: ${trimmedMessage}
+
+Answer mode: ${answerMode}. If answer mode is live, answer in 1–2 complete sentences with one recommendation only. If answer mode is planning, you may give more detail but still avoid markdown.`,
         },
       ],
     }),
@@ -750,7 +838,7 @@ async function getAIResponse(message, sessionData = {}) {
   ]);
 
   const rawReply = response.content?.[0]?.text || "I had trouble creating a response. Try again.";
-  return limitShortMomentReply(rawReply, trimmedMessage);
+  return finalizeAIReply(rawReply, trimmedMessage);
 }
 
 module.exports = { getAIResponse };
