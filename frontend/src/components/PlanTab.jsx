@@ -118,6 +118,7 @@ export function PlanTab({
   profileCompletion,
   timeContext,
   packingChecklist,
+  dayGamePlan = [],
   tripPlan = { preferences: {} },
   onUpdateTripPreferences,
   setActiveScreen,
@@ -422,6 +423,195 @@ export function PlanTab({
                   position: "relative",
                   overflow: "hidden",
                   background:
+                    "radial-gradient(circle at 92% 0%, rgba(14, 165, 233, 0.18) 0%, rgba(14, 165, 233, 0.05) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%)",
+                  border: "1px solid rgba(14, 165, 233, 0.20)",
+                  boxShadow: "0 14px 34px rgba(14, 165, 233, 0.08)",
+                }}
+              >
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    width: 112,
+                    height: 112,
+                    borderRadius: "999px",
+                    right: -44,
+                    top: -46,
+                    background: "rgba(124, 58, 237, 0.09)",
+                  }}
+                />
+
+                <div style={{ position: "relative" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      alignItems: "flex-start",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "5px 9px",
+                          borderRadius: 999,
+                          background: colors.skySoft,
+                          color: "#0369A1",
+                          fontSize: 11,
+                          fontWeight: 950,
+                          letterSpacing: 0.7,
+                          marginBottom: 9,
+                        }}
+                      >
+                        DAY GAME PLAN
+                      </div>
+
+                      <h3
+                        style={{
+                          margin: 0,
+                          color: colors.text,
+                          fontSize: 24,
+                          letterSpacing: -0.4,
+                          lineHeight: 1.15,
+                        }}
+                      >
+                        A flexible rhythm for the day.
+                      </h3>
+
+                      <p
+                        style={{
+                          margin: "8px 0 0",
+                          color: colors.muted,
+                          fontSize: 13,
+                          lineHeight: 1.45,
+                          maxWidth: 650,
+                        }}
+                      >
+                        This is not a rigid itinerary. TOHI turns your family setup,
+                        Plan Tune choices, weather, and park context into anchor moments
+                        that protect the day from getting chaotic.
+                      </p>
+                    </div>
+
+                    <span
+                      style={{
+                        padding: "7px 10px",
+                        borderRadius: 999,
+                        background: "rgba(255,255,255,0.78)",
+                        border: `1px solid ${colors.cardBorder}`,
+                        color: colors.text,
+                        fontSize: 12,
+                        fontWeight: 900,
+                      }}
+                    >
+                      {dayGamePlan.length} anchors
+                    </span>
+                  </div>
+
+                  <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
+                    {dayGamePlan.map((item) => {
+                      const priorityStyles = {
+                        must: { bg: colors.coralSoft, color: "#E11D48" },
+                        should: { bg: colors.amberSoft, color: "#92400E" },
+                        optional: { bg: colors.skySoft, color: "#0369A1" },
+                      };
+
+                      const styleForPriority =
+                        priorityStyles[item.priority] || priorityStyles.optional;
+
+                      return (
+                        <div
+                          key={item.id}
+                          style={{
+                            padding: 13,
+                            borderRadius: 18,
+                            background: "rgba(255,255,255,0.84)",
+                            border: `1px solid ${colors.cardBorder}`,
+                            boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              gap: 10,
+                              alignItems: "flex-start",
+                            }}
+                          >
+                            <div>
+                              <div
+                                style={{
+                                  color: colors.purpleDeep,
+                                  fontSize: 11,
+                                  fontWeight: 950,
+                                  letterSpacing: 0.6,
+                                  marginBottom: 5,
+                                }}
+                              >
+                                {item.order}. {item.eyebrow}
+                              </div>
+
+                              <strong style={{ color: colors.text, fontSize: 15 }}>
+                                {item.title}
+                              </strong>
+
+                              <p
+                                style={{
+                                  margin: "6px 0 0",
+                                  color: colors.muted,
+                                  fontSize: 13,
+                                  lineHeight: 1.42,
+                                }}
+                              >
+                                {item.body}
+                              </p>
+
+                              {item.detail && (
+                                <p
+                                  style={{
+                                    margin: "6px 0 0",
+                                    color: colors.text,
+                                    fontSize: 12,
+                                    lineHeight: 1.38,
+                                    fontWeight: 750,
+                                  }}
+                                >
+                                  {item.detail}
+                                </p>
+                              )}
+                            </div>
+
+                            <span
+                              style={{
+                                flexShrink: 0,
+                                padding: "5px 8px",
+                                borderRadius: 999,
+                                background: styleForPriority.bg,
+                                color: styleForPriority.color,
+                                fontSize: 11,
+                                fontWeight: 950,
+                              }}
+                            >
+                              {item.priorityLabel}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+
+              <section
+                style={{
+                  ...card,
+                  position: "relative",
+                  overflow: "hidden",
+                  background:
                     "radial-gradient(circle at 92% 0%, rgba(5, 150, 105, 0.16) 0%, rgba(5, 150, 105, 0.04) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #ECFDF5 100%)",
                   border: "1px solid rgba(5, 150, 105, 0.20)",
                   boxShadow: "0 14px 34px rgba(5, 150, 105, 0.08)",
@@ -605,10 +795,10 @@ export function PlanTab({
 
                 <div style={{ display: "grid", gap: 9 }}>
                   {[
-                    ["Day-before plan preview", "Know the big priorities before you enter the park."],
-                    ["Morning priority plan", "Start strong without turning the day into a race."],
-                    ["Resort-break timing", "Protect rest when the family starts fading."],
-                    ["Must-do moments", "Keep the emotional wins from getting lost in the chaos."],
+                    ["Save / regenerate plan", "Let families refresh the deterministic plan as park context changes."],
+                    ["AI explanation layer", "Let TOHI explain the plan without inventing unsupported details."],
+                    ["Official schedule awareness", "Tie shows, parades, and nighttime entertainment to live schedule checks."],
+                    ["Must-do moment tracking", "Protect emotional wins from getting lost in the chaos."],
                   ].map(([title, text]) => (
                     <div
                       key={title}
