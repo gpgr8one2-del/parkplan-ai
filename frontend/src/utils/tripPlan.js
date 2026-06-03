@@ -15,6 +15,7 @@ export const DEFAULT_TRIP_PLAN = {
   parkDays: [],
   derivedPlan: null,
   lastGeneratedAt: null,
+  freshnessContext: null,
   schemaLockedAt: "2026-06-03",
   updatedAt: null,
 };
@@ -104,6 +105,10 @@ export function normalizeTripPlan(tripPlan = {}) {
     parkDays: Array.isArray(safePlan.parkDays) ? safePlan.parkDays : [],
     derivedPlan: safePlan.derivedPlan || null,
     lastGeneratedAt: safePlan.lastGeneratedAt || null,
+    freshnessContext:
+      safePlan.freshnessContext && typeof safePlan.freshnessContext === "object"
+        ? safePlan.freshnessContext
+        : null,
     schemaLockedAt: safePlan.schemaLockedAt || DEFAULT_TRIP_PLAN.schemaLockedAt,
     updatedAt: safePlan.updatedAt || null,
   };
@@ -169,3 +174,154 @@ export function toggleTripPlanMustDoExperience(tripPlan, experience) {
       : [...existing, safeExperience]
   );
 }
+
+
+function normalizeContextString(value) {
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function getComparableContextValue(context = {}, field) {
+  const value = context?.[field];
+
+  if (value == null) return "";
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return normalizeContextString(value);
+}
+
+function getPlanAgeMinutes(lastGeneratedAt) {
+  if (!lastGeneratedAt) return null;
+
+  const generatedMs = new Date(lastGeneratedAt).getTime();
+
+  if (!Number.isFinite(generatedMs)) {
+    return null;
+  }
+
+  return Math.max(0, Math.round((Date.now() - generatedMs) / 60000));
+}
+
+function getMustDoCount(tripPlan = {}) {
+  return Array.isArray(tripPlan.mustDoExperiences) ? tripPlan.mustDoExperiences.length : 0;
+}
+
+export function createTripPlanFreshnessContext({
+  activePark = "",
+  timeContext = {},
+  weatherMode = {},
+  familyProfile = {},
+  tripPlan = {},
+} = {}) {
+  return {
+    activePark: normalizeContextString(activePark),
+    dayPhase: normalizeContextString(timeContext?.dayPhase),
+    planningMode: normalizeContextString(timeContext?.planningMode),
+    tripStatus: normalizeContextString(timeContext?.tripStatus?.status || timeContext?.tripStatus),
+    weatherMode: normalizeContextString(weatherMode?.mode || "normal"),
+    heatSensitivity: normalizeContextString(familyProfile?.heatSensitivity),
+    walkingTolerance: normalizeContextString(familyProfile?.walkingTolerance),
+    pace: normalizeContextString(familyProfile?.pace),
+    shortestHeightInches:
+      familyProfile?.shortestHeightInches != null
+        ? Number(familyProfile.shortestHeightInches)
+        : null,
+    mustDoCount: getMustDoCount(tripPlan),
+  };
+}
+
+export function updateTripPlanFreshnessContext(tripPlan, freshnessContext = {}) {
+  const now = new Date().toISOString();
+
+  return normalizeTripPlan({
+    ...tripPlan,
+    freshnessContext,
+    lastGeneratedAt: now,
+    updatedAt: now,
+  });
+}
+
+export function getTripPlanFreshnessStatus({
+  tripPlan = {},
+  currentContext = {},
+  staleAfterMinutes = 90,
+} = {}) {
+  const safePlan = normalizeTripPlan(tripPlan);
+  const reasons = [];
+  const generatedContext = safePlan.freshnessContext || null;
+  const ageMinutes = getPlanAgeMinutes(safePlan.lastGeneratedAt);
+
+  if (!safePlan.lastGeneratedAt || !generatedContext) {
+    return {
+      status: "needs_refresh",
+      isStale: true,
+      severity: "attention",
+      title: "Plan may need a quick refresh",
+      message: "This plan has not been refreshed against your current park, timing, and weather yet.",
+      reasons: ["Refresh once so TOHI can lock this plan to the current day context."],
+      ageMinutes,
+      lastGeneratedAt: safePlan.lastGeneratedAt || null,
+    };
+  }
+
+  const updatedMs = safePlan.updatedAt ? new Date(safePlan.updatedAt).getTime() : null;
+  const generatedMs = safePlan.lastGeneratedAt ? new Date(safePlan.lastGeneratedAt).getTime() : null;
+
+  if (
+    Number.isFinite(updatedMs) &&
+    Number.isFinite(generatedMs) &&
+    updatedMs > generatedMs + 1000
+  ) {
+    reasons.push("Trip tune or must-dos changed since the plan was refreshed.");
+  }
+
+  const comparisons = [
+    ["activePark", "Active park changed."],
+    ["dayPhase", "The day has moved into a new timing window."],
+    ["planningMode", "Trip timing mode changed."],
+    ["weatherMode", "Weather conditions changed."],
+    ["heatSensitivity", "Family heat sensitivity changed."],
+    ["walkingTolerance", "Walking tolerance changed."],
+    ["pace", "Family pace changed."],
+    ["shortestHeightInches", "Shortest rider height changed."],
+    ["mustDoCount", "Must-do selections changed."],
+  ];
+
+  comparisons.forEach(([field, reason]) => {
+    const previous = getComparableContextValue(generatedContext, field);
+    const current = getComparableContextValue(currentContext, field);
+
+    if (previous !== current) {
+      reasons.push(reason);
+    }
+  });
+
+  if (ageMinutes != null && ageMinutes >= staleAfterMinutes) {
+    reasons.push(`Plan was last refreshed about ${ageMinutes} minutes ago.`);
+  }
+
+  const uniqueReasons = [...new Set(reasons)];
+
+  if (!uniqueReasons.length) {
+    return {
+      status: "fresh",
+      isStale: false,
+      severity: "ok",
+      title: "Plan is current",
+      message: "This plan is matched to the current park, timing, weather, and setup.",
+      reasons: [],
+      ageMinutes,
+      lastGeneratedAt: safePlan.lastGeneratedAt,
+    };
+  }
+
+  return {
+    status: "needs_refresh",
+    isStale: true,
+    severity: uniqueReasons.length >= 2 ? "attention" : "watch",
+    title: "Plan may need a quick refresh",
+    message: "Something important changed since this plan was last refreshed.",
+    reasons: uniqueReasons.slice(0, 4),
+    ageMinutes,
+    lastGeneratedAt: safePlan.lastGeneratedAt,
+  };
+}
+
