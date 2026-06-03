@@ -310,6 +310,59 @@ const timeContextSchema = z
   .nullable()
   .optional();
 
+
+const tripPlanPreferenceSchema = z
+  .object({
+    startStrategy: z.string().max(100).optional(),
+    breakPreference: z.string().max(100).optional(),
+    diningStyle: z.string().max(100).optional(),
+    showsImportance: z.string().max(100).optional(),
+    nighttimeImportance: z.string().max(100).optional(),
+    paidQueueStrategy: z.string().max(100).optional(),
+  })
+  .passthrough()
+  .optional();
+
+const mustDoExperienceSchema = z
+  .object({
+    id: z.union([z.string(), z.number()]).optional(),
+    name: z.string().max(200).optional(),
+    parkId: z.string().max(100).optional(),
+    type: z.string().max(80).optional(),
+    priority: z.string().max(80).optional(),
+    land: z.string().max(120).optional(),
+    source: z.string().max(100).optional(),
+  })
+  .passthrough();
+
+const tripPlanSchema = z
+  .object({
+    version: z.number().optional(),
+    system: z.string().max(100).optional(),
+    preferences: tripPlanPreferenceSchema,
+    mustDoExperiences: z.array(mustDoExperienceSchema).max(30).optional(),
+    updatedAt: z.string().max(100).nullable().optional(),
+  })
+  .passthrough()
+  .nullable()
+  .optional();
+
+const dayGamePlanItemSchema = z
+  .object({
+    id: z.string().max(100).optional(),
+    order: z.number().optional(),
+    eyebrow: z.string().max(100).optional(),
+    title: z.string().max(220).optional(),
+    body: z.string().max(900).optional(),
+    detail: z.string().max(700).nullable().optional(),
+    priority: z.string().max(80).optional(),
+    priorityLabel: z.string().max(100).optional(),
+    generatedFrom: tripPlanPreferenceSchema,
+  })
+  .passthrough();
+
+const dayGamePlanSchema = z.array(dayGamePlanItemSchema).max(10).optional();
+
 const chatSchema = z.object({
   message: z.string().trim().min(1).max(500),
   sessionData: z
@@ -317,6 +370,9 @@ const chatSchema = z.object({
       activePark: z.string().max(100).optional(),
       currentLand: z.string().max(100).nullable().optional(),
       familyProfile: familyProfileSchema,
+      tripPlan: tripPlanSchema,
+      mustDoExperiences: z.array(mustDoExperienceSchema).max(30).optional(),
+      dayGamePlan: dayGamePlanSchema,
       timeContext: timeContextSchema,
       locationContext: locationContextSchema,
 
@@ -404,6 +460,20 @@ router.post("/ai-chat", async (req, res) => {
         currentActivity:
           parsed.data?.sessionData?.currentActivityContext ||
           parsed.data?.sessionData?.currentActivity,
+        tripPlanSummary: parsed.data?.sessionData?.tripPlan
+          ? {
+              startStrategy:
+                parsed.data.sessionData.tripPlan.preferences?.startStrategy,
+              breakPreference:
+                parsed.data.sessionData.tripPlan.preferences?.breakPreference,
+              mustDoCount:
+                parsed.data.sessionData.mustDoExperiences?.length ||
+                parsed.data.sessionData.tripPlan.mustDoExperiences?.length ||
+                0,
+              dayGamePlanCount:
+                parsed.data.sessionData.dayGamePlan?.length || 0,
+            }
+          : null,
       },
       "AI chat failed"
     );
