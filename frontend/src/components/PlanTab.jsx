@@ -688,6 +688,105 @@ function PlanTuneSection({ card, preferences = {}, onUpdateTripPreferences }) {
   );
 }
 
+
+function formatPlanFreshnessAge(ageMinutes) {
+  if (ageMinutes == null) return "";
+
+  if (ageMinutes < 60) {
+    return `${ageMinutes} min ago`;
+  }
+
+  const hours = Math.floor(ageMinutes / 60);
+  const minutes = ageMinutes % 60;
+
+  return minutes ? `${hours}h ${minutes}m ago` : `${hours}h ago`;
+}
+
+function PlanFreshnessNotice({ card, button, planFreshness, onRefreshTripPlanContext }) {
+  if (!planFreshness?.isStale) return null;
+
+  const ageLabel = formatPlanFreshnessAge(planFreshness.ageMinutes);
+
+  return (
+    <section
+      style={{
+        ...card,
+        padding: 13,
+        background:
+          planFreshness.severity === "attention"
+            ? "linear-gradient(145deg, #FFFFFF 0%, #FFF7ED 100%)"
+            : "linear-gradient(145deg, #FFFFFF 0%, #F0F9FF 100%)",
+        border:
+          planFreshness.severity === "attention"
+            ? "1px solid rgba(245, 158, 11, 0.28)"
+            : "1px solid rgba(14, 165, 233, 0.22)",
+        boxShadow: "0 10px 24px rgba(28, 25, 23, 0.05)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ minWidth: 220, flex: "1 1 260px" }}>
+          <SectionBadge
+            background={planFreshness.severity === "attention" ? colors.amberSoft : colors.skySoft}
+            color={planFreshness.severity === "attention" ? "#92400E" : "#0369A1"}
+          >
+            PLAN CHECK
+          </SectionBadge>
+
+          <h3 style={{ margin: 0, color: colors.text, fontSize: 18, letterSpacing: -0.25 }}>
+            {planFreshness.title || "Plan may need a quick refresh"}
+          </h3>
+
+          <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
+            {planFreshness.message || "Your timing, weather, or setup changed since this plan was refreshed."}
+            {ageLabel ? ` Last refreshed ${ageLabel}.` : ""}
+          </p>
+
+          {Array.isArray(planFreshness.reasons) && planFreshness.reasons.length > 0 && (
+            <div style={{ display: "grid", gap: 5, marginTop: 9 }}>
+              {planFreshness.reasons.slice(0, 3).map((reason) => (
+                <div
+                  key={reason}
+                  style={{
+                    color: colors.text,
+                    fontSize: 12,
+                    lineHeight: 1.35,
+                    fontWeight: 750,
+                  }}
+                >
+                  • {reason}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={onRefreshTripPlanContext}
+          style={{
+            ...button,
+            background: colors.purpleDeep,
+            color: "white",
+            borderColor: colors.purpleDeep,
+            flexShrink: 0,
+          }}
+        >
+          Refresh plan
+        </button>
+      </div>
+    </section>
+  );
+}
+
+
 function PackingPreviewSection({ card, packingChecklist = [] }) {
   return (
     <section
@@ -797,6 +896,8 @@ export function PlanTab({
   timeContext,
   packingChecklist,
   dayGamePlan = [],
+  tripPlanFreshness,
+  onRefreshTripPlanContext,
   tripPlan = { preferences: {}, mustDoExperiences: [] },
   activePark,
   mustDoExperienceOptions = [],
@@ -860,6 +961,13 @@ export function PlanTab({
         hasPersonalizedAccess={hasPersonalizedAccess}
         profileCompletion={profileCompletion}
         setActiveScreen={setActiveScreen}
+      />
+
+      <PlanFreshnessNotice
+        card={card}
+        button={button}
+        planFreshness={tripPlanFreshness}
+        onRefreshTripPlanContext={onRefreshTripPlanContext}
       />
 
       <DayGamePlanSection card={card} dayGamePlan={dayGamePlan} />
