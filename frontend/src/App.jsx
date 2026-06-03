@@ -2868,13 +2868,13 @@ function App() {
                     style={{
                       padding: "6px 9px",
                       borderRadius: 999,
-                      background: access.canUseAiChat ? colors.successSoft : colors.coralSoft,
-                      color: access.canUseAiChat ? colors.success : "#E11D48",
+                      background: hasPersonalizedAccess ? colors.successSoft : colors.coralSoft,
+                      color: hasPersonalizedAccess ? colors.success : "#E11D48",
                       fontSize: 12,
                       fontWeight: 900,
                     }}
                   >
-                    AI: {access.canUseAiChat ? "available" : "locked"}
+                    AI: {hasPersonalizedAccess ? "available" : "locked"}
                   </span>
                 </div>
               </section>
@@ -2941,7 +2941,7 @@ function App() {
           )}
 
           {activeTab === "tohi" &&
-            (access.canUseAiChat ? (
+            (hasPersonalizedAccess ? (
               <section
                 style={{
                   ...card,
