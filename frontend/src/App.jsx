@@ -1640,6 +1640,22 @@ function App() {
     setCurrentActivity(null);
   }
 
+  function handleRefreshTripPlanContext() {
+    setTripPlanState((current) =>
+      updateTripPlanFreshnessContext(current, tripPlanFreshnessContext)
+    );
+
+    trackAppEvent("trip_plan_refreshed", {
+      source: "plan_check",
+      metadata: {
+        activePark,
+        dayPhase: tripPlanFreshnessContext?.dayPhase,
+        planningMode: tripPlanFreshnessContext?.planningMode,
+        weatherMode: tripPlanFreshnessContext?.weatherMode,
+      },
+    });
+  }
+
   function handleTripPreferenceChange(preferencePatch) {
     setTripPlanState((prev) => updateTripPlanPreferences(prev, preferencePatch));
 
