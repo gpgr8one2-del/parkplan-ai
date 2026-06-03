@@ -5,6 +5,7 @@ import { FreshnessBadge } from "./components/FreshnessBadge";
 import { DataStatusBanner } from "./components/DataStatusBanner";
 import { getNextBestRides } from "./rideRecommendations";
 import { getWeatherMode, getRecoverySuggestions } from "./utils/weatherAdvice";
+import { generatePackingChecklist } from "./utils/packingChecklist";
 import { getCurrentTimeContext } from "./utils/timeContext";
 import { buildAccessState } from "./utils/accessControl";
 import {
@@ -812,6 +813,16 @@ function App() {
   const weatherMode = useMemo(() => {
     return getWeatherMode(weather);
   }, [weather]);
+
+  const packingChecklist = useMemo(() => {
+    return generatePackingChecklist({
+      familyProfile: familyProfileSummary,
+      weather,
+      weatherMode,
+      activePark,
+      timeContext,
+    });
+  }, [familyProfileSummary, weather, weatherMode, activePark, timeContext]);
 
   const recoverySuggestions = useMemo(() => {
     return getRecoverySuggestions({
@@ -2876,6 +2887,166 @@ function App() {
                   >
                     AI: {hasPersonalizedAccess ? "available" : "locked"}
                   </span>
+                </div>
+              </section>
+
+              <section
+                style={{
+                  ...card,
+                  position: "relative",
+                  overflow: "hidden",
+                  background:
+                    "radial-gradient(circle at 92% 0%, rgba(5, 150, 105, 0.16) 0%, rgba(5, 150, 105, 0.04) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #ECFDF5 100%)",
+                  border: "1px solid rgba(5, 150, 105, 0.20)",
+                  boxShadow: "0 14px 34px rgba(5, 150, 105, 0.08)",
+                }}
+              >
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    width: 112,
+                    height: 112,
+                    borderRadius: "999px",
+                    right: -42,
+                    top: -48,
+                    background: "rgba(124, 58, 237, 0.09)",
+                  }}
+                />
+
+                <div style={{ position: "relative" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      alignItems: "flex-start",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "5px 9px",
+                          borderRadius: 999,
+                          background: colors.successSoft,
+                          color: colors.success,
+                          fontSize: 11,
+                          fontWeight: 950,
+                          letterSpacing: 0.7,
+                          marginBottom: 9,
+                        }}
+                      >
+                        PACKING CHECKLIST
+                      </div>
+
+                      <h3
+                        style={{
+                          margin: 0,
+                          color: colors.text,
+                          fontSize: 24,
+                          letterSpacing: -0.4,
+                          lineHeight: 1.15,
+                        }}
+                      >
+                        Bring the stuff that protects the day.
+                      </h3>
+
+                      <p
+                        style={{
+                          margin: "8px 0 0",
+                          color: colors.muted,
+                          fontSize: 13,
+                          lineHeight: 1.45,
+                          maxWidth: 620,
+                        }}
+                      >
+                        This first Plan Ahead tool is deterministic: TOHI looks at your
+                        family setup, comfort settings, weather, and park context without
+                        making up a plan.
+                      </p>
+                    </div>
+
+                    <span
+                      style={{
+                        padding: "7px 10px",
+                        borderRadius: 999,
+                        background: "rgba(255,255,255,0.78)",
+                        border: `1px solid ${colors.cardBorder}`,
+                        color: colors.text,
+                        fontSize: 12,
+                        fontWeight: 900,
+                      }}
+                    >
+                      {packingChecklist.length} items
+                    </span>
+                  </div>
+
+                  <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
+                    {packingChecklist.map((item) => {
+                      const priorityStyles = {
+                        must: { label: "Must pack", bg: colors.coralSoft, color: "#E11D48" },
+                        should: { label: "Should pack", bg: colors.amberSoft, color: "#92400E" },
+                        nice_to_have: { label: "Nice to have", bg: colors.skySoft, color: "#0369A1" },
+                      };
+
+                      const styleForPriority =
+                        priorityStyles[item.priority] || priorityStyles.nice_to_have;
+
+                      return (
+                        <div
+                          key={item.id}
+                          style={{
+                            padding: 13,
+                            borderRadius: 18,
+                            background: "rgba(255,255,255,0.82)",
+                            border: `1px solid ${colors.cardBorder}`,
+                            boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "flex-start",
+                              gap: 10,
+                            }}
+                          >
+                            <div>
+                              <strong style={{ color: colors.text }}>{item.label}</strong>
+                              <p
+                                style={{
+                                  margin: "5px 0 0",
+                                  color: colors.muted,
+                                  fontSize: 13,
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                {item.reason}
+                              </p>
+                            </div>
+
+                            <span
+                              style={{
+                                flexShrink: 0,
+                                padding: "5px 8px",
+                                borderRadius: 999,
+                                background: styleForPriority.bg,
+                                color: styleForPriority.color,
+                                fontSize: 11,
+                                fontWeight: 950,
+                              }}
+                            >
+                              {styleForPriority.label}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </section>
 
