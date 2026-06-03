@@ -1,12 +1,44 @@
 export const PARKS = [
-  { id: "magic_kingdom", name: "Magic Kingdom" },
-  { id: "epcot", name: "EPCOT" },
-  { id: "hollywood", name: "Hollywood Studios" },
-  { id: "animal_kingdom", name: "Animal Kingdom" },
-  { id: "universal_sf", name: "Universal Studios Florida" },
-  { id: "islands", name: "Islands of Adventure" },
-  { id: "epic_universe", name: "Epic Universe" },
+  { id: "magic_kingdom", name: "Magic Kingdom", selectable: true },
+  { id: "epcot", name: "EPCOT", selectable: true },
+  { id: "hollywood", name: "Hollywood Studios", selectable: true },
+  { id: "animal_kingdom", name: "Animal Kingdom", selectable: true },
+  {
+    id: "universal_sf",
+    name: "Universal Studios Florida",
+    selectable: false,
+    status: "coming_soon",
+    statusLabel: "Coming soon",
+  },
+  {
+    id: "islands",
+    name: "Islands of Adventure",
+    selectable: false,
+    status: "coming_soon",
+    statusLabel: "Coming soon",
+  },
+  {
+    id: "epic_universe",
+    name: "Epic Universe",
+    selectable: false,
+    status: "coming_soon",
+    statusLabel: "Coming soon",
+  },
 ];
+
+export function isParkSelectable(parkId) {
+  const park = PARKS.find((item) => item.id === parkId);
+  return park ? park.selectable !== false : false;
+}
+
+export function getSelectableParks() {
+  return PARKS.filter((park) => isParkSelectable(park.id));
+}
+
+export function getParkStatusLabel(parkId) {
+  const park = PARKS.find((item) => item.id === parkId);
+  return park?.statusLabel || "";
+}
 
 export const LAND_OPTIONS = {
   magic_kingdom: [
