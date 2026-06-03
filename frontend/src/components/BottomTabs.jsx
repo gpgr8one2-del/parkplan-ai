@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import {
   Home,
   Clock,
@@ -35,7 +36,9 @@ const TABS = [
   },
 ];
 
-export function BottomTabs({ activeTab = "home", onTabChange }) {
+const NAV_HEIGHT_PX = 78;
+
+function BottomTabsContent({ activeTab = "home", onTabChange }) {
   return (
     <nav
       aria-label="Primary app navigation"
@@ -45,18 +48,15 @@ export function BottomTabs({ activeTab = "home", onTabChange }) {
         right: 0,
         bottom: 0,
         top: "auto",
-        width: "100%",
+        width: "100vw",
         zIndex: 2147483647,
-        padding: "8px 10px max(8px, env(safe-area-inset-bottom))",
+        padding: "8px 10px calc(8px + env(safe-area-inset-bottom, 0px))",
         background: "rgba(255, 252, 247, 0.98)",
         borderTop: "1px solid #EFE7DA",
         backdropFilter: "blur(18px)",
         WebkitBackdropFilter: "blur(18px)",
         boxShadow: "0 -10px 30px rgba(28, 25, 23, 0.10)",
-        transform: "translate3d(0, 0, 0)",
-        WebkitTransform: "translate3d(0, 0, 0)",
-        willChange: "transform",
-        isolation: "isolate",
+        boxSizing: "border-box",
       }}
     >
       <div
@@ -113,6 +113,42 @@ export function BottomTabs({ activeTab = "home", onTabChange }) {
         })}
       </div>
     </nav>
+  );
+}
+
+export function BottomTabs({ activeTab = "home", onTabChange }) {
+  const content = (
+    <>
+      <div
+        aria-hidden="true"
+        style={{
+          height: `calc(${NAV_HEIGHT_PX}px + env(safe-area-inset-bottom, 0px))`,
+          flex: "0 0 auto",
+        }}
+      />
+
+      <BottomTabsContent activeTab={activeTab} onTabChange={onTabChange} />
+    </>
+  );
+
+  if (typeof document === "undefined" || !document.body) {
+    return content;
+  }
+
+  return (
+    <>
+      <div
+        aria-hidden="true"
+        style={{
+          height: `calc(${NAV_HEIGHT_PX}px + env(safe-area-inset-bottom, 0px))`,
+          flex: "0 0 auto",
+        }}
+      />
+      {createPortal(
+        <BottomTabsContent activeTab={activeTab} onTabChange={onTabChange} />,
+        document.body
+      )}
+    </>
   );
 }
 
