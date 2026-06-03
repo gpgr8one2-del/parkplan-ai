@@ -9,6 +9,13 @@ TOHI may still be internally coded with legacy ParkPlan names in some backend/fr
 
 You help families make practical in-park decisions using the live context provided.
 
+RESPONSE FORMAT RULES:
+- Never use markdown formatting. No headers, no bold, no bullet points, no horizontal rules. Plain conversational sentences only.
+- For simple questions like "what should we do next" or "is now a good time for X," keep the response to 3–4 sentences maximum.
+- Lead with the recommendation first. Give one brief reason why. Stop there unless the family asks for more.
+- You are a calm, experienced park friend giving a quick answer in the moment — not a travel agent writing a report.
+- Do not list everything you know. Say the most important thing clearly and trust the family to follow up if they want more.
+
 Rules:
 - Be concise, useful, and practical.
 - Act like a calm park expert, not a generic travel blogger.
@@ -46,13 +53,7 @@ Rules:
 - If time context says day_of_energy_management, prioritize shade, AC, food, hydration, lower walking, and family reset logic.
 - If time context says day_of_evening_strategy, focus on final high-value rides, nighttime shows, transportation, tired kids, and exit strategy.
 - Keep responses easy to act on while walking in a park.
-- Mobile chat output must be plain text only. Do not use Markdown headers, # symbols, **bold markers**, horizontal rules, bullet-heavy essays, or long formatted reports.
-- For “what should we do next?” questions, answer in 3–5 short lines only unless the user explicitly asks for a full game plan.
-- Default shape for next-move answers: “Next move: …” “Why: …” “Then: …”
-- Only include “Watch out:” when there is a real safety, weather, height, distance, energy, or trust concern.
-- Do not list multiple backup rides unless the user asks for options. One next move and one fallback is enough.
-- Avoid long essays. Give the next best move and why in the fewest useful words.
-- Avoid overclaiming location. Say “near,” “on the way toward,” “positioned toward,” or “a short move from” unless GPS/current land context clearly supports a more exact claim.
+- Avoid long essays. Give the next best move and why.
 - If the user asks for a plan, give a simple ordered plan.
 - If the user asks whether to cross the park, weigh distance against wait value, weather, and family energy.
 - If the user has completed or skipped a ride, do not recommend it again unless they specifically ask about it.
@@ -618,6 +619,48 @@ function buildDynamicContext(sessionData = {}) {
     .join("\n");
 }
 
+function stripMarkdown(text = "") {
+  return String(text || "")
+    .replace(/#{1,6}\s*/g, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/^---+$/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function isShortMomentQuestion(message = "") {
+  const text = String(message || "").toLowerCase();
+
+  return (
+    text.includes("what should we do next") ||
+    text.includes("what do we do next") ||
+    text.includes("what next") ||
+    text.includes("next move") ||
+    text.includes("based on our plan") ||
+    text.includes("is now a good time") ||
+    text.includes("should we do") ||
+    text.includes("where should we go")
+  );
+}
+
+function limitShortMomentReply(reply = "", message = "") {
+  const cleaned = stripMarkdown(reply);
+
+  if (!isShortMomentQuestion(message)) {
+    return cleaned;
+  }
+
+  const collapsed = cleaned.replace(/\s+/g, " ").trim();
+  const sentences = collapsed
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+
+  return sentences.slice(0, 4).join(" ");
+}
+
+
 async function getAIResponse(message, sessionData = {}) {
   const trimmedMessage = String(message || "").trim().slice(0, 500);
 
@@ -686,7 +729,7 @@ async function getAIResponse(message, sessionData = {}) {
   const response = await Promise.race([
     anthropic.messages.create({
       model: ANTHROPIC_MODEL,
-      max_tokens: 170,
+      max_tokens: 300,
       temperature: 0.35,
       system: STATIC_SYSTEM_PROMPT,
       messages: [
@@ -697,7 +740,7 @@ async function getAIResponse(message, sessionData = {}) {
         ...history,
         {
           role: "user",
-          content: `User question: ${trimmedMessage}\n\nResponse style reminder: plain text only, no Markdown symbols, no headers, no bold markers. For this kind of next-move question, use 3–5 short lines max unless the user asks for a full game plan. One next move, one why, one then.`,
+          content: `User question: ${trimmedMessage}\n\nAnswer style: plain conversational text only. No markdown. If this is a simple next-move question, answer in 3–4 sentences max.`,
         },
       ],
     }),
@@ -706,7 +749,8 @@ async function getAIResponse(message, sessionData = {}) {
     ),
   ]);
 
-  return response.content?.[0]?.text || "I had trouble creating a response. Try again.";
+  const rawReply = response.content?.[0]?.text || "I had trouble creating a response. Try again.";
+  return limitShortMomentReply(rawReply, trimmedMessage);
 }
 
 module.exports = { getAIResponse };
