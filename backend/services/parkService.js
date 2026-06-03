@@ -7,9 +7,15 @@ const PARK_CONFIG = {
   epcot: { name: "EPCOT", queueTimesId: 5 },
   hollywood: { name: "Hollywood Studios", queueTimesId: 7 },
   animal_kingdom: { name: "Animal Kingdom", queueTimesId: 8 },
-  epic_universe: { name: "Epic Universe", queueTimesId: null },
-  universal_sf: { name: "Universal Studios Florida", queueTimesId: 64 },
-  islands: { name: "Islands of Adventure", queueTimesId: 65 },
+
+  // Universal parks stay gated in the beta UI for now, but the backend IDs
+  // should still be correct so dev/testing data does not get polluted.
+  universal_sf: { name: "Universal Studios Florida", queueTimesId: 65 },
+  islands: { name: "Islands of Adventure", queueTimesId: 64 },
+
+  // Keep Epic available to the backend data model, but gated from beta selection
+  // until Phase 3 content/recommendation logic is ready.
+  epic_universe: { name: "Epic Universe", queueTimesId: 334 },
 };
 
 function buildMockParkData(parkId) {
