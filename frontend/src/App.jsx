@@ -413,6 +413,63 @@ function stripMarkdown(text) {
 }
 
 
+
+
+
+function isPlanningModeQuestion(text = "") {
+  const value = String(text || "").toLowerCase();
+
+  return (
+    value.includes("full game plan") ||
+    value.includes("gameplan") ||
+    value.includes("game plan") ||
+    value.includes("plan the rest of") ||
+    value.includes("rest of our day") ||
+    value.includes("full plan") ||
+    value.includes("build a plan") ||
+    value.includes("build me a plan") ||
+    value.includes("compare") ||
+    value.includes("tradeoff") ||
+    value.includes("trade off") ||
+    value.includes("explain why") ||
+    value.includes("why is") ||
+    value.includes("walk me through") ||
+    value.includes("strategy for the day") ||
+    value.includes("morning strategy") ||
+    value.includes("evening strategy")
+  );
+}
+
+function isLiveModeQuestion(text = "") {
+  // Safe default: if the family did not clearly ask for a planning-style answer,
+  // keep it brief for real in-park use.
+  return !isPlanningModeQuestion(text);
+}
+
+function getFirstSentences(text = "", maxSentences = 2) {
+  const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return "";
+
+  const sentences = cleaned.match(/[^.!?]+[.!?]+/g);
+
+  if (sentences?.length) {
+    return sentences.slice(0, maxSentences).join(" ").replace(/\s+/g, " ").trim();
+  }
+
+  return cleaned;
+}
+
+function cleanAssistantReply(text = "", userMessage = "") {
+  const cleaned = stripMarkdown(text);
+
+  if (isLiveModeQuestion(userMessage)) {
+    return getFirstSentences(cleaned, 2);
+  }
+
+  return cleaned;
+}
+
+
 function getRideMetaForDisplay(parkId, ride) {
   return getRideMeta(parkId, ride?.id ?? ride?.name) || getRideMeta(parkId, ride?.name);
 }
@@ -1596,20 +1653,21 @@ function App() {
         currentActivityContext,
       });
 
-      setChat([...nextChat, { role: "assistant", content: stripMarkdown(res.reply) }]);
+      setChat([...nextChat, { role: "assistant", content: cleanAssistantReply(res.reply, trimmed) }]);
     } catch {
       setChat([
         ...nextChat,
         {
           role: "assistant",
-          content: stripMarkdown(
+          content: cleanAssistantReply(
             buildLocalChatFallback({
               activePark,
               weatherMode,
               currentActivityContext,
               familyProfile: familyProfileSummary,
               recommendations,
-            })
+            }),
+            trimmed
           ),
         },
       ]);
