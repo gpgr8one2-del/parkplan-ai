@@ -895,8 +895,16 @@ function App() {
       weatherMode,
       activePark,
       timeContext,
+      tripPlan: tripPlanState,
     });
-  }, [familyProfileSummary, weather, weatherMode, activePark, timeContext]);
+  }, [
+    familyProfileSummary,
+    weather,
+    weatherMode,
+    activePark,
+    timeContext,
+    tripPlanState,
+  ]);
 
   const dayGamePlan = useMemo(() => {
     return generateDayGamePlan({
