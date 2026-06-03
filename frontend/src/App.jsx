@@ -574,6 +574,26 @@ function buildMustDoExperienceOptions({ activePark, rides = [] }) {
 function hasSpecificRidePlaceOrActionInMessage(message = "") {
   const text = String(message || "").toLowerCase();
 
+  // "Where should we go to get AC/food/a break?" is not open-ended.
+  // It has a clear goal, so send it to AI instead of re-asking the energy question.
+  if (/where should we go to\s+(get|find|have|take|grab|cool|rest|eat)/.test(text)) {
+    return true;
+  }
+
+  if (
+    text.includes("where should we go") &&
+    (text.includes("ac") ||
+      text.includes("air condition") ||
+      text.includes("cool") ||
+      text.includes("food") ||
+      text.includes("snack") ||
+      text.includes("eat") ||
+      text.includes("rest") ||
+      text.includes("break"))
+  ) {
+    return true;
+  }
+
   const specificTerms = [
     "tron",
     "seven dwarfs",
@@ -631,6 +651,12 @@ function hasSpecificRidePlaceOrActionInMessage(message = "") {
     "adventureland",
     "liberty square",
     "main street",
+    "ac",
+    "air conditioning",
+    "air-conditioned",
+    "cool down",
+    "cool off",
+    "rest",
   ];
 
   return specificTerms.some((term) => text.includes(term));
@@ -722,6 +748,23 @@ function isAwaitingLiveStateAnswer(chatHistory = []) {
   return lastAssistantMessage?.isLiveStateQuestion === true;
 }
 
+function isWithinLiveStateFollowupWindow(chatHistory = [], maxUserMessages = 3) {
+  const history = Array.isArray(chatHistory) ? chatHistory : [];
+  const lastLiveStateIndex = history
+    .map((msg, index) => ({ msg, index }))
+    .reverse()
+    .find(({ msg }) => msg.role === "assistant" && msg.isLiveStateQuestion === true)?.index;
+
+  if (lastLiveStateIndex == null) return false;
+
+  const messagesAfter = history.slice(lastLiveStateIndex + 1);
+  const userMessagesAfter = messagesAfter.filter((msg) => msg.role === "user").length;
+
+  // The first answer plus the next couple of follow-ups are part of the same
+  // live conversation. Do not restart the clarification loop yet.
+  return userMessagesAfter > 0 && userMessagesAfter <= maxUserMessages;
+}
+
 function getLiveStateClarifyingQuestionForContext({
   familyProfile = {},
   timeContext = {},
@@ -756,6 +799,8 @@ function getLiveStateClarifyingQuestionForContext({
 
 function shouldAskFrontendLiveStateQuestion(message = "", chatHistory = []) {
   if (isAwaitingLiveStateAnswer(chatHistory)) return false;
+  if (isWithinLiveStateFollowupWindow(chatHistory)) return false;
+
   return isOpenEndedLiveStrategyQuestion(message);
 }
 
