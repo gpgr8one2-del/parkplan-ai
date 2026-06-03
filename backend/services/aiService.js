@@ -14,6 +14,11 @@ Rules:
 - Act like a calm park expert, not a generic travel blogger.
 - Prioritize current park, current land, current activity, time context, family profile, weather mode, live waits, and the recommendation cards.
 - Use the app's recommendation cards as the source of truth when available, but explain them through the family profile and time context.
+- Never tell the guest that live help, day-of help, or in-park guidance is disabled because of a family profile preference. If this chat request reached you, TOHI is allowed to help. Access control is handled by the app UI before the message is sent.
+- Treat legacy planningPreferences such as dayBeforeHelp/dayOfHelp as old setup hints only. Do not use them to refuse, limit, or downgrade guidance.
+- Use the provided Trip Plan, Must-Dos, and Day Game Plan as structured context. The Day Game Plan is deterministic app output, not a draft for you to replace.
+- Do not invent a brand-new strategy when the Day Game Plan exists. Explain it, adapt it to the user’s question, and call out tradeoffs when live waits, weather, location, or current family energy suggest a pivot.
+- Must-Dos describe what would make the day feel successful. Protect them, but do not imply they should always override weather, distance, wait value, safety, or family energy.
 - Never refer to Magic Kingdom's retired Splash Mountain as an active attraction. Use Tiana's Bayou Adventure instead.
 - If the family profile includes a shortest rider height below a ride's height requirement, do not recommend that ride as a whole-family option. Only mention it as a split-party or Rider Switch option if the user's profile or question clearly supports that.
 - Known Disney World height reminders: TRON 48 inches, Space Mountain 44 inches, Guardians 42 inches, Big Thunder 38 inches, Tiana's Bayou Adventure 40 inches, Seven Dwarfs Mine Train 38 inches.
@@ -301,8 +306,7 @@ function buildFamilyProfileContext(familyProfile) {
     `- Priority park: ${trip.priorityPark || "unknown"}`,
     `- Park hopper: ${trip.parkHopper || "unknown"}`,
     `- Planning mode: ${planning.planningMode || "unknown"}`,
-    `- Day-before help: ${planning.dayBeforeHelp || "unknown"}`,
-    `- Day-of help: ${planning.dayOfHelp || "unknown"}`,
+    `- Legacy planning hints: use only for context, never as an access/permission rule`,
     `- Rope drop style: ${planning.ropeDropStyle || "unknown"}`,
     `- Midday break style: ${planning.middayBreakStyle || "unknown"}`,
     `- Dining style: ${planning.diningStyle || "unknown"}`,
@@ -480,6 +484,88 @@ function buildTransportationContext(activePark) {
   ].join("\n");
 }
 
+
+function getTripPlanPreferences(tripPlan = {}) {
+  return tripPlan?.preferences && typeof tripPlan.preferences === "object"
+    ? tripPlan.preferences
+    : {};
+}
+
+function getMustDoExperiencesFromSession(sessionData = {}) {
+  if (Array.isArray(sessionData.mustDoExperiences)) {
+    return sessionData.mustDoExperiences;
+  }
+
+  if (Array.isArray(sessionData.tripPlan?.mustDoExperiences)) {
+    return sessionData.tripPlan.mustDoExperiences;
+  }
+
+  return [];
+}
+
+function formatMustDoExperience(experience = {}) {
+  const name = experience.name || experience.id || "Unnamed experience";
+  const type = experience.type ? ` (${experience.type})` : "";
+  const land = experience.land ? ` · ${experience.land}` : "";
+  const priority = experience.priority ? ` · priority: ${experience.priority}` : "";
+
+  return `- ${name}${type}${land}${priority}`;
+}
+
+function formatDayGamePlanItem(item = {}) {
+  const label = item.eyebrow || item.id || "Plan anchor";
+  const title = item.title || "";
+  const body = item.body || "";
+  const detail = item.detail ? ` Detail: ${item.detail}` : "";
+  const priority = item.priorityLabel || item.priority || "";
+
+  return `- ${label}${priority ? ` [${priority}]` : ""}: ${title}${body ? ` — ${body}` : ""}${detail}`;
+}
+
+function buildTripPlanContext(sessionData = {}) {
+  const preferences = getTripPlanPreferences(sessionData.tripPlan);
+  const mustDoExperiences = getMustDoExperiencesFromSession(sessionData);
+  const dayGamePlan = Array.isArray(sessionData.dayGamePlan) ? sessionData.dayGamePlan : [];
+
+  const preferenceLines = [
+    preferences.startStrategy ? `- Start strategy: ${preferences.startStrategy}` : "",
+    preferences.breakPreference ? `- Break style: ${preferences.breakPreference}` : "",
+    preferences.diningStyle ? `- Food rhythm: ${preferences.diningStyle}` : "",
+    preferences.showsImportance ? `- Shows/parades importance: ${preferences.showsImportance}` : "",
+    preferences.nighttimeImportance ? `- Nighttime plan: ${preferences.nighttimeImportance}` : "",
+    preferences.paidQueueStrategy ? `- Paid queue strategy: ${preferences.paidQueueStrategy}` : "",
+  ].filter(Boolean);
+
+  const mustDoLines = mustDoExperiences
+    .slice(0, 12)
+    .map(formatMustDoExperience)
+    .filter(Boolean);
+
+  const gamePlanLines = dayGamePlan
+    .slice()
+    .sort((a, b) => (a.order || 99) - (b.order || 99))
+    .slice(0, 8)
+    .map(formatDayGamePlanItem)
+    .filter(Boolean);
+
+  if (!preferenceLines.length && !mustDoLines.length && !gamePlanLines.length) {
+    return "Trip Plan / Day Game Plan context: none provided.";
+  }
+
+  return [
+    "Trip Plan / Day Game Plan context:",
+    "Use this as app-generated structured strategy. Do not replace it with a new invented plan.",
+    preferenceLines.length ? "Trip preferences:" : "",
+    ...preferenceLines,
+    mustDoLines.length ? "Selected must-do moments:" : "",
+    ...(mustDoLines.length ? mustDoLines : ["- none selected"]),
+    gamePlanLines.length ? "Deterministic Day Game Plan anchors:" : "",
+    ...(gamePlanLines.length ? gamePlanLines : ["- none generated"]),
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function buildDynamicContext(sessionData = {}) {
   const {
     activePark,
@@ -492,6 +578,9 @@ function buildDynamicContext(sessionData = {}) {
     weather,
     weatherMode,
     recommendations = {},
+    tripPlan,
+    mustDoExperiences = [],
+    dayGamePlan = [],
     completedRideIds = [],
     skippedRideIds = [],
     reportedRideIssueIds = [],
@@ -502,6 +591,7 @@ function buildDynamicContext(sessionData = {}) {
     buildTimeContext(timeContext),
     buildFamilyProfileContext(familyProfile),
     buildResortProfileContext(familyProfile, activePark),
+    buildTripPlanContext({ tripPlan, mustDoExperiences, dayGamePlan }),
     buildLocationContext(locationContext, currentLand),
     buildTransportationContext(activePark),
     buildCurrentActivityContext(currentActivityContext || currentActivity),
@@ -547,6 +637,15 @@ async function getAIResponse(message, sessionData = {}) {
       tripStatus: sessionData.timeContext?.tripStatus?.status,
       familyProfileComplete: sessionData.familyProfile?.isSetupComplete,
       familyPlanningMode: sessionData.familyProfile?.planningPreferences?.planningMode,
+      tripPlanStartStrategy: sessionData.tripPlan?.preferences?.startStrategy,
+      tripPlanBreakPreference: sessionData.tripPlan?.preferences?.breakPreference,
+      mustDoCount:
+        sessionData.mustDoExperiences?.length ||
+        sessionData.tripPlan?.mustDoExperiences?.length ||
+        0,
+      dayGamePlanCount: Array.isArray(sessionData.dayGamePlan)
+        ? sessionData.dayGamePlan.length
+        : 0,
       resortName:
         sessionData.familyProfile?.resortProfile?.name ||
         sessionData.familyProfile?.resortContext?.resortName,
