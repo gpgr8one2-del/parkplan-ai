@@ -80,6 +80,10 @@ Rules:
 - Do not recommend outdoor or mixed attractions during active storm/lightning conditions unless the context clearly says it is safe.
 - During heat mode, suggest water, shade, AC, indoor rides, quick-service water stops, and resort breaks when appropriate.
 - When recommending a break, food stop, or recovery moment, always name a specific location. Never say "find some AC", "grab a snack", or "take a break" without saying where. Use the family’s active park and current land to pick the closest realistic option.
+- When the family reports low energy, fading, tired, exhausted, hot, hungry, or needing a break, switch into recovery-first thinking.
+- Low energy priority order: first assess whether a resort break is realistic using resort profile and transportation context; if yes, name the resort and how to get there. If not, recommend a specific nearby food/AC/shade/seated reset. If they still want to keep riding, recommend only short waits under 20–25 minutes, ideally indoor or seated.
+- Hungry/food priority: if the family says they are hungry, have not eaten, or need food, recommend a specific nearby food location before recommending rides.
+- Never route a tired or fading family into a long queue. Do not recommend rides with 35+ minute waits when low-energy or hungry signals are active unless the user specifically insists on that ride and you clearly warn about the tradeoff.
 - During midday heat or afternoon crash windows, protect family energy before optimization.
 - If time context says day_before, behave like a night-before trip planner: packing, timing, first moves, rope drop, food, transportation, and realistic expectations.
 - If time context says day_of_rope_drop, focus on arrival, first attraction choice, avoiding wasted walking, and quick pivots.
@@ -606,6 +610,133 @@ function buildTripPlanContext(sessionData = {}) {
     .join("\n");
 }
 
+function getMostRecentUserMessageFromHistory(conversationHistory = [], fallbackMessage = "") {
+  const lastUserMessage = [...(conversationHistory || [])]
+    .reverse()
+    .find((entry) => entry.role === "user");
+
+  return String(lastUserMessage?.content || fallbackMessage || "");
+}
+
+function previousAssistantWasLiveStateQuestion(conversationHistory = []) {
+  const lastAssistantMessage = [...(conversationHistory || [])]
+    .reverse()
+    .find((entry) => entry.role === "assistant");
+
+  if (lastAssistantMessage?.isLiveStateQuestion === true) return true;
+
+  const content = String(lastAssistantMessage?.content || "").toLowerCase();
+
+  return (
+    content.includes("still going") ||
+    content.includes("starting to fade") ||
+    content.includes("ready to hit something big") ||
+    content.includes("starting to wind down") ||
+    content.includes("how's everyone's energy") ||
+    content.includes("how are the little ones")
+  );
+}
+
+function detectLiveFamilyState(message = "", conversationHistory = []) {
+  const sourceText = getMostRecentUserMessageFromHistory(conversationHistory, message);
+  const text = String(sourceText || "").toLowerCase();
+  const cameFromLiveStateQuestion = previousAssistantWasLiveStateQuestion(conversationHistory);
+
+  const lowEnergyPatterns = [
+    "low energy",
+    "energy is low",
+    "getting tired",
+    "tired",
+    "starting to fade",
+    "fading",
+    "exhausted",
+    "wiped",
+    "worn out",
+    "beat",
+    "drained",
+    "hot",
+    "overheated",
+    "done walking",
+    "need a break",
+    "needs a break",
+    "meltdown",
+    "melting down",
+    "cranky",
+    "done",
+  ];
+
+  const hungryPatterns = [
+    "hungry",
+    "starving",
+    "haven't eaten",
+    "havent eaten",
+    "have not eaten",
+    "need food",
+    "needs food",
+    "need to eat",
+    "eat",
+    "food",
+    "lunch",
+    "dinner",
+    "snack",
+  ];
+
+  const keepMovingPatterns = [
+    "keep going",
+    "keep moving",
+    "still want to ride",
+    "want to keep riding",
+    "one more ride",
+    "still good for a ride",
+    "can do one more",
+  ];
+
+  const hasLowEnergy = lowEnergyPatterns.some((pattern) => text.includes(pattern));
+  const hasHunger = hungryPatterns.some((pattern) => text.includes(pattern));
+  const wantsToKeepMoving = keepMovingPatterns.some((pattern) => text.includes(pattern));
+
+  return {
+    sourceText,
+    cameFromLiveStateQuestion,
+    lowEnergy: hasLowEnergy,
+    hungry: hasHunger,
+    wantsToKeepMoving,
+    recoveryMode: hasLowEnergy || hasHunger,
+    strength: cameFromLiveStateQuestion && (hasLowEnergy || hasHunger) ? "strong" : hasLowEnergy || hasHunger ? "normal" : "none",
+  };
+}
+
+function buildLiveFamilyStateContext(liveFamilyState = {}) {
+  const lines = [];
+
+  if (liveFamilyState.lowEnergy) {
+    lines.push(
+      "Live family state: LOW ENERGY / RECOVERY MODE. Prioritize resort break if realistic, food + AC, shade, seated shows, or short indoor attractions under 20–25 minutes. Do not recommend rides with 35+ minute waits."
+    );
+  }
+
+  if (liveFamilyState.hungry) {
+    lines.push(
+      "Live family state: HUNGRY / FOOD PRIORITY. Recommend a specific nearby food location first. Name the place. After food is addressed, then assess what is next. Do not recommend rides before food is resolved."
+    );
+  }
+
+  if (liveFamilyState.wantsToKeepMoving && liveFamilyState.recoveryMode) {
+    lines.push(
+      "Live family state: family may still want to keep moving, but recovery filters still apply. If recommending a ride, choose one nearby, indoor or seated if possible, and under 20–25 minutes."
+    );
+  }
+
+  if (liveFamilyState.cameFromLiveStateQuestion && liveFamilyState.recoveryMode) {
+    lines.push(
+      "Live family state confidence: strong. The user is answering TOHI's live-state check-in, so this should override normal ride-optimization instincts."
+    );
+  }
+
+  return lines.join("\n");
+}
+
+
 function buildDynamicContext(sessionData = {}) {
   const {
     activePark,
@@ -624,10 +755,16 @@ function buildDynamicContext(sessionData = {}) {
     completedRideIds = [],
     skippedRideIds = [],
     reportedRideIssueIds = [],
+    message = "",
+    conversationHistory = [],
   } = sessionData;
+
+  const liveFamilyState = detectLiveFamilyState(message, conversationHistory);
+  const liveFamilyStateContext = buildLiveFamilyStateContext(liveFamilyState);
 
   return [
     `Active park: ${activePark || "unknown"}`,
+    liveFamilyStateContext || null,
     `Live-state clarification pending: ${sessionData.liveStateClarificationPending === true ? "yes - user is answering the prior clarifying question; recommend now" : "no"}`,
     buildTimeContext(timeContext),
     buildFamilyProfileContext(familyProfile),
@@ -1016,7 +1153,7 @@ async function getAIResponse(message, sessionData = {}) {
     apiKey: process.env.ANTHROPIC_API_KEY,
   });
 
-  const dynamicContext = buildDynamicContext(sessionData);
+  const dynamicContext = buildDynamicContext({ ...sessionData, message: trimmedMessage });
   const history = summarizeHistory(sessionData.conversationHistory || []);
 
   const response = await Promise.race([
