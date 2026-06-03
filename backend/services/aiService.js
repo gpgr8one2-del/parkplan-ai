@@ -25,6 +25,23 @@ Right: "Head to TRON now — 65 minutes is well below its normal wait and you're
 Wrong: "You're in the afternoon crash window and your family has low walking tolerance."
 Right: "Use this moment for an AC reset at Carousel of Progress, then choose one nearby ride after everyone cools down."
 
+CLARIFYING QUESTIONS:
+For open-ended strategy questions where no specific ride, place, or action is mentioned, ask ONE short warm question before making a recommendation.
+
+Good clarifying questions:
+- "How's everyone's energy right now — still good for a ride, or starting to fade?"
+- "Is anyone getting hungry or needing a break?"
+- "Looking for one more big ride, or are you starting to wind down?"
+
+Bad clarifying questions:
+- "What is your current energy level? Is anyone hungry? How far have you walked?"
+
+Critical:
+- Ask one question only.
+- Never stack multiple questions.
+- If you just asked a clarifying question and the family answered it, give the recommendation now.
+- If the family names a specific ride, place, restaurant, break, or action, answer directly without asking first.
+
 You are TOHI, a calm, family-first mobile companion for Disney World and Universal Orlando.
 
 TOHI may still be internally coded with legacy ParkPlan names in some backend/frontend files, but user-facing dialogue must always call the product TOHI. Never introduce yourself as ParkPlan AI, never say "I am ParkPlan AI," and never refer to the app as ParkPlan AI.
@@ -610,6 +627,7 @@ function buildDynamicContext(sessionData = {}) {
 
   return [
     `Active park: ${activePark || "unknown"}`,
+    `Live-state clarification pending: ${sessionData.liveStateClarificationPending === true ? "yes - user is answering the prior clarifying question; recommend now" : "no"}`,
     buildTimeContext(timeContext),
     buildFamilyProfileContext(familyProfile),
     buildResortProfileContext(familyProfile, activePark),
@@ -778,6 +796,147 @@ function finalizeAIReply(reply = "", message = "") {
 }
 
 
+function hasSpecificRidePlaceOrAction(message = "") {
+  const text = String(message || "").toLowerCase();
+
+  const specificTerms = [
+    "tron",
+    "seven dwarfs",
+    "mine train",
+    "space mountain",
+    "big thunder",
+    "tiana",
+    "haunted mansion",
+    "peter pan",
+    "jungle cruise",
+    "pirates",
+    "small world",
+    "peoplemover",
+    "carousel of progress",
+    "buzz",
+    "winnie",
+    "pooh",
+    "dumbo",
+    "barnstormer",
+    "guardians",
+    "cosmic rewind",
+    "remy",
+    "ratatouille",
+    "frozen",
+    "soarin",
+    "test track",
+    "rise of the resistance",
+    "slinky",
+    "tower of terror",
+    "rock n roller",
+    "rock 'n'",
+    "flight of passage",
+    "safari",
+    "everest",
+    "festival of fantasy",
+    "fireworks",
+    "parade",
+    "show",
+    "restaurant",
+    "quick service",
+    "snack",
+    "food",
+    "eat",
+    "lunch",
+    "dinner",
+    "resort break",
+    "break",
+    "leave",
+    "stay",
+    "wait",
+    "line",
+    "ride",
+    "tomorrowland",
+    "fantasyland",
+    "frontierland",
+    "adventureland",
+    "liberty square",
+    "main street",
+    "epcot",
+    "hollywood",
+    "animal kingdom",
+    "magic kingdom",
+  ];
+
+  return specificTerms.some((term) => text.includes(term));
+}
+
+function isOpenEndedStrategyQuestion(message = "") {
+  const text = String(message || "").toLowerCase().trim();
+
+  if (!text) return false;
+  if (hasSpecificRidePlaceOrAction(text)) return false;
+
+  return (
+    text.includes("what should we do next") ||
+    text.includes("what do we do next") ||
+    text.includes("what next") ||
+    text.includes("what's the call") ||
+    text.includes("whats the call") ||
+    text.includes("help us decide") ||
+    text.includes("where should we go") ||
+    text.includes("based on our plan") ||
+    text.includes("not sure what to do") ||
+    text === "thoughts?" ||
+    text === "thoughts" ||
+    text === "worth it?" ||
+    text === "worth it"
+  );
+}
+
+function assistantAskedClarifyingQuestion(conversationHistory = []) {
+  const lastAssistant = [...(conversationHistory || [])]
+    .reverse()
+    .find((entry) => entry.role === "assistant");
+
+  const content = String(lastAssistant?.content || "").toLowerCase();
+
+  return (
+    content.includes("energy right now") ||
+    content.includes("still good for a ride") ||
+    content.includes("starting to fade") ||
+    content.includes("hungry") ||
+    content.includes("needing a break") ||
+    content.includes("holding up") ||
+    content.includes("one more big ride") ||
+    content.includes("winding down")
+  );
+}
+
+function shouldAskLiveStateClarifyingQuestion(message = "", sessionData = {}) {
+  if (!isOpenEndedStrategyQuestion(message)) return false;
+
+  if (
+    sessionData.liveStateClarificationPending === true ||
+    assistantAskedClarifyingQuestion(sessionData.conversationHistory)
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function getLiveStateClarifyingQuestion(sessionData = {}) {
+  const familyProfile = sessionData.familyProfile || {};
+  const hasYoungKids =
+    familyProfile.hasSmallChildren ||
+    familyProfile.hasUnder3 ||
+    familyProfile.ageSummary?.under3Count > 0 ||
+    familyProfile.ageSummary?.childCount > 0;
+
+  if (hasYoungKids) {
+    return "How are the little ones holding up — still good for a ride, or starting to fade?";
+  }
+
+  return "How's everyone's energy right now — still good for a ride, or starting to fade?";
+}
+
+
 async function getAIResponse(message, sessionData = {}) {
   const trimmedMessage = String(message || "").trim().slice(0, 500);
   const answerMode = getAnswerMode(trimmedMessage);
@@ -833,6 +992,19 @@ async function getAIResponse(message, sessionData = {}) {
     );
 
     return OFF_TOPIC_REPLY;
+  }
+
+  if (shouldAskLiveStateClarifyingQuestion(trimmedMessage, sessionData)) {
+    logger.info(
+      {
+        messageLength: trimmedMessage.length,
+        reason: "live_state_clarifying_question",
+        activePark: sessionData.activePark,
+      },
+      "AI chat asked live-state clarifying question"
+    );
+
+    return getLiveStateClarifyingQuestion(sessionData);
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
