@@ -12,6 +12,9 @@ import {
   writeStoredTripPlan,
   updateTripPlanPreferences,
   toggleTripPlanMustDoExperience,
+  createTripPlanFreshnessContext,
+  getTripPlanFreshnessStatus,
+  updateTripPlanFreshnessContext,
 } from "./utils/tripPlan";
 import { getCurrentTimeContext } from "./utils/timeContext";
 import { buildAccessState } from "./utils/accessControl";
@@ -1231,6 +1234,23 @@ function App() {
     timeContext,
     packingChecklist,
   ]);
+
+  const tripPlanFreshnessContext = useMemo(() => {
+    return createTripPlanFreshnessContext({
+      activePark,
+      timeContext,
+      weatherMode,
+      familyProfile: familyProfileSummary,
+      tripPlan: tripPlanState,
+    });
+  }, [activePark, timeContext, weatherMode, familyProfileSummary, tripPlanState]);
+
+  const tripPlanFreshness = useMemo(() => {
+    return getTripPlanFreshnessStatus({
+      tripPlan: tripPlanState,
+      currentContext: tripPlanFreshnessContext,
+    });
+  }, [tripPlanState, tripPlanFreshnessContext]);
 
   const mustDoExperienceOptions = useMemo(() => {
     return buildMustDoExperienceOptions({
@@ -3207,6 +3227,8 @@ function App() {
               timeContext={timeContext}
               packingChecklist={packingChecklist}
               dayGamePlan={dayGamePlan}
+              tripPlanFreshness={tripPlanFreshness}
+              onRefreshTripPlanContext={handleRefreshTripPlanContext}
               tripPlan={tripPlanState}
               activePark={activePark}
               mustDoExperienceOptions={mustDoExperienceOptions}
