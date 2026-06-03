@@ -568,6 +568,23 @@ function buildMustDoExperienceOptions({ activePark, rides = [] }) {
 }
 
 
+
+function didAssistantAskLiveStateQuestion(chat = []) {
+  const lastAssistant = [...(chat || [])].reverse().find((entry) => entry.role === "assistant");
+  const content = String(lastAssistant?.content || "").toLowerCase();
+
+  return (
+    content.includes("energy right now") ||
+    content.includes("still good for a ride") ||
+    content.includes("starting to fade") ||
+    content.includes("hungry") ||
+    content.includes("holding up") ||
+    content.includes("one more big ride") ||
+    content.includes("winding down")
+  );
+}
+
+
 function App() {
   const [activePark, setActivePark] = useState("magic_kingdom");
   const [parkData, setParkData] = useState(null);
@@ -1639,6 +1656,7 @@ function App() {
         weatherMode,
         recommendations,
         conversationHistory: nextChat.slice(-6),
+        liveStateClarificationPending: didAssistantAskLiveStateQuestion(chat),
         completedRideIds,
         skippedRideIds,
         reportedRideIssueIds,
