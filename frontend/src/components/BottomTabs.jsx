@@ -44,19 +44,25 @@ export function BottomTabs({ activeTab = "home", onTabChange }) {
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: 50,
-        padding: "8px 10px calc(8px + env(safe-area-inset-bottom))",
+        top: "auto",
+        width: "100%",
+        zIndex: 2147483647,
+        padding: "8px 10px max(8px, env(safe-area-inset-bottom))",
         background: "rgba(255, 252, 247, 0.98)",
         borderTop: "1px solid #EFE7DA",
         backdropFilter: "blur(18px)",
         WebkitBackdropFilter: "blur(18px)",
         boxShadow: "0 -10px 30px rgba(28, 25, 23, 0.10)",
+        transform: "translate3d(0, 0, 0)",
+        WebkitTransform: "translate3d(0, 0, 0)",
+        willChange: "transform",
+        isolation: "isolate",
       }}
     >
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(5, 1fr)",
+          gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
           gap: 4,
           maxWidth: 720,
           margin: "0 auto",
@@ -74,6 +80,7 @@ export function BottomTabs({ activeTab = "home", onTabChange }) {
               aria-current={isActive ? "page" : undefined}
               style={{
                 appearance: "none",
+                WebkitAppearance: "none",
                 border: "none",
                 background: isActive
                   ? "rgba(124, 58, 237, 0.10)"
@@ -92,6 +99,7 @@ export function BottomTabs({ activeTab = "home", onTabChange }) {
                 letterSpacing: 0.1,
                 cursor: "pointer",
                 WebkitTapHighlightColor: "transparent",
+                touchAction: "manipulation",
               }}
             >
               <Icon
