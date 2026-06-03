@@ -258,6 +258,34 @@ function truncateString(value, maxLength = 500) {
   return value.length > maxLength ? `${value.slice(0, maxLength)}…` : value;
 }
 
+function normalizeOptionalString(value) {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed || undefined;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  return undefined;
+}
+
+function sanitizeChatSessionData(sessionData = {}) {
+  if (!sessionData || typeof sessionData !== "object" || Array.isArray(sessionData)) {
+    return {};
+  }
+
+  return removeEmptyFields({
+    ...sessionData,
+
+    // These are optional strings in the backend route. The app legitimately
+    // starts with no selected land, but sending null fails Zod validation.
+    activePark: normalizeOptionalString(sessionData.activePark),
+    currentLand: normalizeOptionalString(sessionData.currentLand),
+  });
+}
+
 function sanitizeMetadata(value) {
   if (value == null) return undefined;
 
@@ -395,10 +423,10 @@ function buildAnalyticsEvent(eventType, payload = {}) {
     anonymousUserId: getOrCreateAnonymousUserId(),
     timestamp: new Date().toISOString(),
 
-    activePark: payload.activePark,
-    currentLand: payload.currentLand,
-    source: payload.source,
-    screen: payload.screen,
+    activePark: normalizeOptionalString(payload.activePark),
+    currentLand: normalizeOptionalString(payload.currentLand),
+    source: normalizeOptionalString(payload.source),
+    screen: normalizeOptionalString(payload.screen),
 
     profileComplete: payload.profileComplete,
     devPreviewFullApp: payload.devPreviewFullApp,
@@ -453,10 +481,10 @@ export function trackEvent(eventType, payload = {}) {
       sessionId: event.sessionId,
       anonymousUserId: event.anonymousUserId,
       timestamp: event.timestamp,
-      activePark: event.activePark,
-      currentLand: event.currentLand,
-      source: event.source,
-      screen: event.screen,
+      activePark: normalizeOptionalString(event.activePark),
+      currentLand: normalizeOptionalString(event.currentLand),
+      source: normalizeOptionalString(event.source),
+      screen: normalizeOptionalString(event.screen),
       profileComplete: event.profileComplete,
       devPreviewFullApp: event.devPreviewFullApp,
       metadata: {
@@ -519,11 +547,14 @@ export async function fetchWeather(options = {}) {
 }
 
 export async function sendChatMessage(message, sessionData) {
+  const safeMessage = String(message || "").trim();
+  const safeSessionData = sanitizeChatSessionData(sessionData);
+
   return apiFetch(
     "/api/ai-chat",
     {
       method: "POST",
-      body: JSON.stringify({ message, sessionData }),
+      body: JSON.stringify({ message: safeMessage, sessionData: safeSessionData }),
     },
     // AI chat should not retry after a client-side abort. Retrying creates
     // duplicate backend Claude calls and makes the app feel flaky in the park.
