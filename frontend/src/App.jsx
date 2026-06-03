@@ -569,19 +569,194 @@ function buildMustDoExperienceOptions({ activePark, rides = [] }) {
 
 
 
-function didAssistantAskLiveStateQuestion(chat = []) {
-  const lastAssistant = [...(chat || [])].reverse().find((entry) => entry.role === "assistant");
-  const content = String(lastAssistant?.content || "").toLowerCase();
+
+
+function hasSpecificRidePlaceOrActionInMessage(message = "") {
+  const text = String(message || "").toLowerCase();
+
+  const specificTerms = [
+    "tron",
+    "seven dwarfs",
+    "mine train",
+    "space mountain",
+    "big thunder",
+    "tiana",
+    "haunted mansion",
+    "peter pan",
+    "jungle cruise",
+    "pirates",
+    "small world",
+    "peoplemover",
+    "carousel of progress",
+    "buzz",
+    "winnie",
+    "pooh",
+    "dumbo",
+    "barnstormer",
+    "guardians",
+    "cosmic rewind",
+    "remy",
+    "ratatouille",
+    "frozen",
+    "soarin",
+    "test track",
+    "rise of the resistance",
+    "slinky",
+    "tower of terror",
+    "rock n roller",
+    "rock 'n'",
+    "flight of passage",
+    "safari",
+    "everest",
+    "festival of fantasy",
+    "fireworks",
+    "parade",
+    "show",
+    "restaurant",
+    "quick service",
+    "snack",
+    "food",
+    "eat",
+    "lunch",
+    "dinner",
+    "resort break",
+    "break",
+    "leave",
+    "stay",
+    "wait",
+    "line",
+    "tomorrowland",
+    "fantasyland",
+    "frontierland",
+    "adventureland",
+    "liberty square",
+    "main street",
+  ];
+
+  return specificTerms.some((term) => text.includes(term));
+}
+
+function isPlanningDepthQuestion(message = "") {
+  const text = String(message || "").toLowerCase();
 
   return (
-    content.includes("energy right now") ||
-    content.includes("still good for a ride") ||
-    content.includes("starting to fade") ||
-    content.includes("hungry") ||
-    content.includes("holding up") ||
-    content.includes("one more big ride") ||
-    content.includes("winding down")
+    text.includes("full game plan") ||
+    text.includes("gameplan") ||
+    text.includes("game plan") ||
+    text.includes("plan the rest of") ||
+    text.includes("rest of our day") ||
+    text.includes("full plan") ||
+    text.includes("build a plan") ||
+    text.includes("build me a plan") ||
+    text.includes("compare") ||
+    text.includes("tradeoff") ||
+    text.includes("trade off") ||
+    text.includes("explain why") ||
+    text.includes("walk me through")
   );
+}
+
+function isOpenEndedLiveStrategyQuestion(message = "") {
+  const text = String(message || "")
+    .toLowerCase()
+    .replace(/[’']/g, "'")
+    .replace(/[?.!]+$/g, "")
+    .trim();
+
+  if (!text) return false;
+  if (isPlanningDepthQuestion(text)) return false;
+  if (hasSpecificRidePlaceOrActionInMessage(text)) return false;
+
+  const exactOpenEndedQuestions = new Set([
+    "what should we do next",
+    "what should we do next based on our plan",
+    "what do we do next",
+    "what do we do next based on our plan",
+    "what next",
+    "what's next",
+    "whats next",
+    "what now",
+    "what's the call",
+    "whats the call",
+    "help",
+    "help us decide",
+    "where should we go",
+    "where should we go next",
+    "not sure what to do",
+    "we're lost",
+    "were lost",
+    "what's good right now",
+    "whats good right now",
+    "thoughts",
+    "worth it",
+  ]);
+
+  if (exactOpenEndedQuestions.has(text)) {
+    return true;
+  }
+
+  // Safe default for vague, in-park language: ask one human question first.
+  const vagueLivePhrases = [
+    "what should",
+    "what do",
+    "what next",
+    "what now",
+    "where should",
+    "help",
+    "lost",
+    "not sure",
+    "thoughts",
+    "what's good",
+    "whats good",
+    "based on our plan",
+  ];
+
+  return vagueLivePhrases.some((phrase) => text.includes(phrase));
+}
+
+function isAwaitingLiveStateAnswer(chatHistory = []) {
+  const lastAssistantMessage = [...(chatHistory || [])]
+    .reverse()
+    .find((msg) => msg.role === "assistant");
+
+  return lastAssistantMessage?.isLiveStateQuestion === true;
+}
+
+function getLiveStateClarifyingQuestionForContext({
+  familyProfile = {},
+  timeContext = {},
+} = {}) {
+  const hasYoungKids =
+    familyProfile.hasSmallChildren ||
+    familyProfile.hasUnder3 ||
+    familyProfile.ageSummary?.under3Count > 0 ||
+    familyProfile.ageSummary?.childCount > 0;
+
+  const dayPhase = String(timeContext?.dayPhase || "").toLowerCase();
+  const planningMode = String(timeContext?.planningMode || "").toLowerCase();
+
+  if (dayPhase.includes("morning") || planningMode.includes("rope")) {
+    return hasYoungKids
+      ? "How are the little ones doing — ready to hit something big, or do we need to ease in?"
+      : "How's everyone feeling — ready to hit something big, or do we need to ease in?";
+  }
+
+  if (
+    dayPhase.includes("evening") ||
+    planningMode.includes("evening") ||
+    planningMode.includes("night")
+  ) {
+    return "How's the crew feeling — ready for one more, or starting to wind down?";
+  }
+
+  return hasYoungKids
+    ? "How are the little ones holding up — still going, or starting to fade?"
+    : "How's everyone's energy right now — still going, or starting to fade?";
+}
+
+function shouldAskFrontendLiveStateQuestion(message = "", chatHistory = []) {
+  if (isAwaitingLiveStateAnswer(chatHistory)) return false;
+  return isOpenEndedLiveStrategyQuestion(message);
 }
 
 
@@ -1647,6 +1822,35 @@ function App() {
     const nextChat = [...chat, { role: "user", content: trimmed }];
     setChat(nextChat);
     setMessage("");
+
+    if (shouldAskFrontendLiveStateQuestion(trimmed, chat)) {
+      const clarifyingQuestion = getLiveStateClarifyingQuestionForContext({
+        familyProfile: familyProfileSummary,
+        timeContext,
+      });
+
+      setChat([
+        ...nextChat,
+        {
+          role: "assistant",
+          content: clarifyingQuestion,
+          isLiveStateQuestion: true,
+        },
+      ]);
+
+      trackAppEvent("tohi_live_state_question_asked", {
+        source: "tohi_chat",
+        metadata: {
+          reason: "open_ended_next_move",
+          interceptedBeforeAi: true,
+          dayPhase: timeContext?.dayPhase,
+          planningMode: timeContext?.planningMode,
+        },
+      });
+
+      return;
+    }
+
     setChatLoading(true);
 
     try {
@@ -1656,7 +1860,7 @@ function App() {
         weatherMode,
         recommendations,
         conversationHistory: nextChat.slice(-6),
-        liveStateClarificationPending: didAssistantAskLiveStateQuestion(chat),
+        liveStateClarificationPending: isAwaitingLiveStateAnswer(chat),
         completedRideIds,
         skippedRideIds,
         reportedRideIssueIds,
