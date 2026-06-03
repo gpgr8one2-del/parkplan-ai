@@ -230,22 +230,33 @@ function normalizeMobilityAccessibility(value = {}) {
 }
 
 function buildTripContextWithCompatibility(tripContext = {}) {
-  const parkSelectionIds = Array.isArray(tripContext.parkSelectionIds)
-    ? tripContext.parkSelectionIds
-    : Array.isArray(tripContext.selectedParks)
+  // 24C compatibility rule:
+  // Current OnboardingFlow.jsx still writes legacy selectedParks / firstPark /
+  // priorityPark. Until 24D updates the UI bindings, those legacy fields must
+  // win when present. Otherwise the new default parkSelectionIds array would
+  // keep snapping the setup back to Magic Kingdom.
+  const legacySelectedParks = Array.isArray(tripContext.selectedParks)
     ? tripContext.selectedParks
-    : DEFAULT_FAMILY_PROFILE.tripContext.parkSelectionIds;
+    : null;
 
+  const nextParkSelectionIds =
+    legacySelectedParks && legacySelectedParks.length
+      ? legacySelectedParks
+      : Array.isArray(tripContext.parkSelectionIds) && tripContext.parkSelectionIds.length
+      ? tripContext.parkSelectionIds
+      : DEFAULT_FAMILY_PROFILE.tripContext.parkSelectionIds;
+
+  const parkSelectionIds = Array.from(new Set(nextParkSelectionIds));
   const fallbackPark = parkSelectionIds[0] || "magic_kingdom";
 
   const firstParkId =
-    tripContext.firstParkId ||
     tripContext.firstPark ||
+    tripContext.firstParkId ||
     fallbackPark;
 
   const mostImportantParkId =
-    tripContext.mostImportantParkId ||
     tripContext.priorityPark ||
+    tripContext.mostImportantParkId ||
     fallbackPark;
 
   const normalizedTripContext = {
@@ -458,7 +469,19 @@ export function normalizeFamilyProfile(profile = {}) {
     pace,
     waterRidePreference: merged.waterRidePreference || DEFAULT_FAMILY_PROFILE.waterRidePreference,
     stormTolerance: merged.stormTolerance || DEFAULT_FAMILY_PROFILE.stormTolerance,
-    priorities: normalizePriorities(merged.priorities),
+    priorities: (() => {
+      const normalizedPriorities = normalizePriorities(merged.priorities);
+
+      // Do not let the 24C priority cleanup accidentally lock out an existing
+      // completed profile if its only old priorities were removed in the rename.
+      // "low_stress" is the safest fallback because it aligns with TOHI's core
+      // family-energy mission and avoids thrill/optimization bias.
+      if (!normalizedPriorities.length && merged.isSetupComplete) {
+        return ["low_stress"];
+      }
+
+      return normalizedPriorities;
+    })(),
     paidQueueStrategy,
 
     // Deprecated aliases retained for one compatibility cycle.
