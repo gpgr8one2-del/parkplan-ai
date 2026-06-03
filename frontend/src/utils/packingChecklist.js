@@ -22,10 +22,70 @@ function getRainChance(weather = {}, weatherMode = {}) {
     getNumeric(weather?.precipProbability);
 
   if (rawRain == null) {
-    return weatherMode?.mode === "rain" || weatherMode?.mode === "storm" ? 0.65 : 0;
+    return isStormOrRainMode(weather, weatherMode) ? 0.65 : 0;
   }
 
   return rawRain > 1 ? rawRain / 100 : rawRain;
+}
+
+function getWeatherSummary(weather = {}, weatherMode = {}) {
+  return normalizeString(
+    [
+      weather?.summary,
+      weather?.description,
+      weather?.conditions,
+      weatherMode?.label,
+      weatherMode?.message,
+      weatherMode?.mode,
+    ]
+      .filter(Boolean)
+      .join(" ")
+  );
+}
+
+function isStormOrRainMode(weather = {}, weatherMode = {}) {
+  const mode = normalizeString(weatherMode?.mode);
+  const summary = getWeatherSummary(weather, weatherMode);
+
+  return Boolean(
+    weather?.stormMode ||
+      mode === "storm" ||
+      mode === "rain" ||
+      summary.includes("storm") ||
+      summary.includes("rain") ||
+      summary.includes("shower")
+  );
+}
+
+function isHotDay({ temperatureF, humidity, heatSensitivity }) {
+  return Boolean(
+    (temperatureF != null && temperatureF >= 88) ||
+      (temperatureF != null && temperatureF >= 84 && humidity != null && humidity >= 70) ||
+      (temperatureF != null && temperatureF >= 80 && heatSensitivity === "high")
+  );
+}
+
+function isWarmEnoughForCooling({ temperatureF, humidity, heatSensitivity }) {
+  return Boolean(
+    isHotDay({ temperatureF, humidity, heatSensitivity }) ||
+      (temperatureF != null && temperatureF >= 82) ||
+      (temperatureF != null && temperatureF >= 78 && heatSensitivity === "high") ||
+      (temperatureF == null && heatSensitivity === "high")
+  );
+}
+
+function isCoolEnoughForLayer({ temperatureF, startStrategy, nighttimeImportance }) {
+  return Boolean(
+    (temperatureF != null && temperatureF <= 68) ||
+      (temperatureF != null &&
+        temperatureF <= 74 &&
+        (startStrategy === "evening_only" || nighttimeImportance === "must_see_fireworks")) ||
+      (temperatureF == null && startStrategy === "evening_only")
+  );
+}
+
+function isDaytimeForwardPlan(startStrategy = "") {
+  return startStrategy !== "evening_only";
 }
 
 function hasYoungKids(familyProfile = {}) {
@@ -39,8 +99,10 @@ function hasYoungKids(familyProfile = {}) {
 }
 
 function hasAnyChildren(familyProfile = {}) {
-  return Number(familyProfile.childCount || 0) > 0 ||
-    (Array.isArray(familyProfile.children) && familyProfile.children.length > 0);
+  return (
+    Number(familyProfile.childCount || 0) > 0 ||
+    (Array.isArray(familyProfile.children) && familyProfile.children.length > 0)
+  );
 }
 
 function usesStroller(familyProfile = {}) {
@@ -48,11 +110,27 @@ function usesStroller(familyProfile = {}) {
 }
 
 function usesMobilitySupport(familyProfile = {}) {
-  return Boolean(familyProfile.mobilityAccessibility?.usesWheelchair);
+  return Boolean(
+    familyProfile.mobilityAccessibility?.usesWheelchair ||
+      familyProfile.mobilityAccessibility?.usesScooter ||
+      familyProfile.mobilityAccessibility?.mobilitySupport
+  );
+}
+
+function hasSensorySupportNeed(familyProfile = {}) {
+  return Boolean(
+    familyProfile.mobilityAccessibility?.sensorySupport ||
+      familyProfile.mobilityAccessibility?.sensorySensitivity ||
+      familyProfile.mobilityAccessibility?.needsQuietBreaks
+  );
 }
 
 function getPriorities(familyProfile = {}) {
   return Array.isArray(familyProfile.priorities) ? familyProfile.priorities : [];
+}
+
+function getTripPreferences(tripPlan = {}) {
+  return tripPlan?.preferences || {};
 }
 
 function addItem(items, item) {
@@ -81,28 +159,42 @@ export function generatePackingChecklist({
   weatherMode = {},
   activePark = "",
   timeContext = {},
+  tripPlan = {},
 } = {}) {
   const items = [];
   const temperatureF = getTemperatureF(weather);
+  const humidity = getNumeric(weather?.humidity);
   const rainChance = getRainChance(weather, weatherMode);
+  const rainOrStormLikely = rainChance >= 0.35 || isStormOrRainMode(weather, weatherMode);
   const heatSensitivity = normalizeString(familyProfile.heatSensitivity);
   const waterRidePreference = normalizeString(familyProfile.waterRidePreference);
   const stormTolerance = normalizeString(familyProfile.stormTolerance);
   const priorities = getPriorities(familyProfile);
+  const preferences = getTripPreferences(tripPlan);
+  const startStrategy = normalizeString(preferences.startStrategy);
+  const breakPreference = normalizeString(preferences.breakPreference);
+  const nighttimeImportance = normalizeString(preferences.nighttimeImportance);
+  const diningStyle = normalizeString(preferences.diningStyle);
   const youngerKids = hasYoungKids(familyProfile);
   const childrenPresent = hasAnyChildren(familyProfile);
   const stroller = usesStroller(familyProfile);
   const mobilitySupport = usesMobilitySupport(familyProfile);
+  const sensorySupport = hasSensorySupportNeed(familyProfile);
   const parkLabel = activePark ? activePark.replace(/_/g, " ") : "the park";
   const planningMode = normalizeString(timeContext?.planningMode);
 
-  addItem(items, {
-    id: "sunscreen",
-    category: "essentials",
-    label: "Sunscreen",
-    reason: "Florida park days punish families who forget this, even when the forecast looks mild.",
-    priority: "must",
-  });
+  const hotDay = isHotDay({ temperatureF, humidity, heatSensitivity });
+  const coolingUseful = isWarmEnoughForCooling({ temperatureF, humidity, heatSensitivity });
+  const daytimeForwardPlan = isDaytimeForwardPlan(startStrategy);
+  const eveningForwardPlan = startStrategy === "evening_only" || nighttimeImportance === "must_see_fireworks";
+  const layerUseful = isCoolEnoughForLayer({ temperatureF, startStrategy, nighttimeImportance });
+  const waterRidesLikely = ["love", "okay_with_warning", "depends"].includes(waterRidePreference);
+  const waterRidesStrong = waterRidePreference === "love";
+  const snackHeavyDay =
+    childrenPresent ||
+    diningStyle === "snack_through_day" ||
+    diningStyle === "quick_service" ||
+    breakPreference === "no_break";
 
   addItem(items, {
     id: "battery_pack",
@@ -116,42 +208,74 @@ export function generatePackingChecklist({
     id: "water_bottles",
     category: "essentials",
     label: "Refillable water bottles",
-    reason: "Hydration is one of the cheapest ways to protect family energy before heat turns into crankiness.",
-    priority: "must",
+    reason: hotDay
+      ? "Today’s comfort read makes hydration part of protecting the family’s mood, not just a nice extra."
+      : "Even on easier weather days, refillable water keeps small delays from turning into avoidable stress.",
+    priority: hotDay ? "must" : "should",
   });
 
-  addItem(items, {
-    id: "small_snacks",
-    category: "essentials",
-    label: "Small backup snacks",
-    reason: "A quick snack can prevent a bad line, delayed meal, or transportation wait from becoming a meltdown moment.",
-    priority: childrenPresent ? "must" : "should",
-  });
+  if (daytimeForwardPlan || temperatureF == null || temperatureF >= 72) {
+    addItem(items, {
+      id: "sunscreen",
+      category: "essentials",
+      label: "Sunscreen",
+      reason:
+        startStrategy === "evening_only" && temperatureF != null
+          ? "This is lower priority for an evening-focused plan, but it still belongs in the bag if you arrive before full dark."
+          : "Today’s plan includes enough daytime park time that sun protection should not be a last-second purchase.",
+      priority: startStrategy === "evening_only" ? "should" : "must",
+    });
+  }
 
-  if (temperatureF == null || temperatureF >= 85 || heatSensitivity === "high" || heatSensitivity === "medium") {
+  if (snackHeavyDay) {
+    addItem(items, {
+      id: "small_snacks",
+      category: "essentials",
+      label: "Small backup snacks",
+      reason: childrenPresent
+        ? "A quick snack can prevent a bad line, delayed meal, or transportation wait from becoming a meltdown moment."
+        : "A small snack gives the day a buffer if mobile ordering, transportation, or a longer-than-expected wait gets in the way.",
+      priority: childrenPresent ? "must" : "should",
+    });
+  }
+
+  if (coolingUseful) {
     addItem(items, {
       id: "cooling_towel",
       category: "weather",
       label: "Cooling towel",
       reason:
         temperatureF != null
-          ? `The current comfort read is around ${temperatureF}°F, so heat management needs to be part of the plan.`
-          : "Your family profile says heat matters, so this is cheap protection against the afternoon crash.",
-      priority: temperatureF != null && temperatureF >= 90 ? "must" : "should",
+          ? `The current comfort read is around ${temperatureF}°F, so cooling support actually fits today’s forecast.`
+          : "Your family profile says heat sensitivity is high, so this is a reasonable backup even without a clean forecast read.",
+      priority: hotDay || heatSensitivity === "high" ? "must" : "should",
     });
   }
 
-  if (temperatureF != null && temperatureF >= 88) {
+  if (temperatureF != null && temperatureF >= 84) {
     addItem(items, {
       id: "portable_fan",
       category: "weather",
       label: "Portable fan",
       reason: `A ${temperatureF}°F park day can turn waits, stroller time, and transportation lines into real family-energy problems.`,
-      priority: heatSensitivity === "high" || stroller ? "must" : "should",
+      priority: hotDay || heatSensitivity === "high" ? "must" : "should",
     });
   }
 
-  if (rainChance >= 0.35 || weather?.stormMode || weatherMode?.mode === "storm" || weatherMode?.mode === "rain") {
+  if (layerUseful) {
+    addItem(items, {
+      id: "light_layer",
+      category: "weather",
+      label: "Light hoodie or layer",
+      reason:
+        temperatureF != null
+          ? `The current comfort read is around ${temperatureF}°F, so a light layer is smarter than packing heat gear that does not fit today.`
+          : "Your plan leans into the evening, so a light layer is the safer one-off to check before leaving.",
+      priority: eveningForwardPlan ? "should" : "nice_to_have",
+    });
+  }
+
+  if (rainOrStormLikely) {
     addItem(items, {
       id: "ponchos",
       category: "weather",
@@ -164,54 +288,63 @@ export function generatePackingChecklist({
     });
   }
 
-  if (stroller) {
+  if (stroller && coolingUseful) {
     addItem(items, {
       id: "stroller_fan",
       category: "kids",
       label: "Stroller fan",
-      reason: "Your setup says you use a stroller. Airflow matters when a child is parked in heat or a slow outdoor queue.",
-      priority: temperatureF != null && temperatureF >= 85 ? "must" : "should",
+      reason: "Your setup says you use a stroller, and today is warm enough that airflow could protect comfort during waits or transportation.",
+      priority: hotDay || heatSensitivity === "high" ? "must" : "should",
     });
+  }
 
+  if (stroller && rainOrStormLikely) {
     addItem(items, {
       id: "stroller_rain_cover",
       category: "kids",
       label: "Stroller rain cover",
       reason: "A wet stroller can wreck naps, comfort, and the rest of the day faster than people expect.",
-      priority: rainChance >= 0.35 || weather?.stormMode ? "should" : "nice_to_have",
+      priority: weather?.stormMode || rainChance >= 0.55 ? "must" : "should",
     });
   }
 
-  if (childrenPresent) {
+  if (childrenPresent && (waterRidesLikely || rainOrStormLikely || hotDay)) {
     addItem(items, {
       id: "change_of_clothes",
       category: "kids",
       label: "Change of clothes for kids",
-      reason:
-        waterRidePreference === "love" || waterRidePreference === "okay_with_warning" || waterRidePreference === "depends"
-          ? "Kids plus water rides, rain, spills, or sweat can turn one small discomfort into a long afternoon problem."
-          : "Even without water rides, a dry backup outfit can save the day after sweat, spills, or rain.",
-      priority: waterRidePreference === "love" || rainChance >= 0.35 ? "should" : "nice_to_have",
+      reason: waterRidesLikely
+        ? "Kids plus water rides can turn one soaked outfit into a long afternoon problem."
+        : rainOrStormLikely
+        ? "Rain risk makes a dry backup outfit more useful than a generic just-in-case item."
+        : "Heat and sweat can make a backup shirt useful for keeping kids comfortable later.",
+      priority: waterRidesStrong || rainChance >= 0.55 ? "should" : "nice_to_have",
     });
   }
 
-  if (waterRidePreference === "love" || waterRidePreference === "okay_with_warning" || waterRidePreference === "depends") {
+  if (waterRidesLikely || rainOrStormLikely) {
     addItem(items, {
       id: "zip_bags",
       category: "attraction_specific",
       label: "Ziploc bags for phones and small items",
-      reason: "Water rides and sudden rain are a lot less stressful when phones, snacks, and small essentials have a dry place to go.",
-      priority: waterRidePreference === "love" ? "should" : "nice_to_have",
+      reason: waterRidesLikely
+        ? "Water rides are part of the plan, so phones, snacks, and small essentials need a dry place to go."
+        : "Rain risk makes dry storage useful without overpacking the whole bag.",
+      priority: waterRidesStrong || rainChance >= 0.55 ? "should" : "nice_to_have",
     });
   }
 
-  if (youngerKids || priorities.includes("shows_parades") || priorities.includes("young_kid_moments")) {
+  if (
+    sensorySupport ||
+    (youngerKids && (priorities.includes("shows_parades") || eveningForwardPlan)) ||
+    (youngerKids && nighttimeImportance === "must_see_fireworks")
+  ) {
     addItem(items, {
       id: "ear_protection",
       category: "comfort",
       label: "Kid ear protection",
-      reason: "Parades, fireworks, indoor show effects, and loud queues can overwhelm younger or sensory-sensitive kids.",
-      priority: youngerKids ? "should" : "nice_to_have",
+      reason: "Your plan includes the kind of loud show, nighttime, or sensory-heavy moments that can overwhelm younger or sensory-sensitive kids.",
+      priority: sensorySupport || nighttimeImportance === "must_see_fireworks" ? "should" : "nice_to_have",
     });
   }
 
@@ -225,12 +358,12 @@ export function generatePackingChecklist({
     });
   }
 
-  if (stormTolerance === "indoor_only") {
+  if (stormTolerance === "indoor_only" && rainOrStormLikely) {
     addItem(items, {
       id: "indoor_wait_plan",
       category: "weather",
       label: "Indoor-storm fallback mindset",
-      reason: "Your storm setting says outdoor waits are not the move. Plan to pivot to indoor shows, food, shops, or resort cover instead of forcing it.",
+      reason: "Your storm setting says outdoor waits are not the move, and today’s forecast gives that setting a reason to matter.",
       priority: "should",
     });
   }
