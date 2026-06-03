@@ -110,6 +110,246 @@ function PlanPreferenceSelect({
   );
 }
 
+function getMustDoTypeLabel(type) {
+  const labels = {
+    ride: "Ride",
+    show: "Show",
+    character: "Character",
+    experience: "Experience",
+  };
+
+  return labels[type] || "Experience";
+}
+
+function getMustDoKey(experience = {}) {
+  return `${experience.parkId || ""}:${experience.id || ""}`;
+}
+
+function MustDoMomentsSection({
+  card,
+  activePark,
+  tripPlan,
+  mustDoExperienceOptions = [],
+  onToggleMustDoExperience,
+}) {
+  const selectedExperiences = Array.isArray(tripPlan?.mustDoExperiences)
+    ? tripPlan.mustDoExperiences
+    : [];
+
+  const selectedKeys = new Set(selectedExperiences.map(getMustDoKey));
+  const selectedForActivePark = selectedExperiences.filter(
+    (experience) => experience.parkId === activePark
+  );
+  const otherParkSelections = selectedExperiences.filter(
+    (experience) => experience.parkId !== activePark
+  );
+
+  return (
+    <section
+      style={{
+        ...card,
+        position: "relative",
+        overflow: "hidden",
+        background:
+          "radial-gradient(circle at 92% 0%, rgba(251, 113, 133, 0.18) 0%, rgba(251, 113, 133, 0.05) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #FFF1F2 100%)",
+        border: "1px solid rgba(251, 113, 133, 0.20)",
+        boxShadow: "0 14px 34px rgba(251, 113, 133, 0.08)",
+      }}
+    >
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          width: 112,
+          height: 112,
+          borderRadius: "999px",
+          right: -44,
+          top: -46,
+          background: "rgba(124, 58, 237, 0.09)",
+        }}
+      />
+
+      <div style={{ position: "relative" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "5px 9px",
+                borderRadius: 999,
+                background: colors.coralSoft,
+                color: "#E11D48",
+                fontSize: 11,
+                fontWeight: 950,
+                letterSpacing: 0.7,
+                marginBottom: 9,
+              }}
+            >
+              MUST-DO MOMENTS
+            </div>
+
+            <h3
+              style={{
+                margin: 0,
+                color: colors.text,
+                fontSize: 24,
+                letterSpacing: -0.4,
+                lineHeight: 1.15,
+              }}
+            >
+              What would your family be disappointed to miss?
+            </h3>
+
+            <p
+              style={{
+                margin: "8px 0 0",
+                color: colors.muted,
+                fontSize: 13,
+                lineHeight: 1.45,
+                maxWidth: 660,
+              }}
+            >
+              Pick the rides, shows, and experiences TOHI should protect. This becomes
+              especially valuable during rope drop, cooler mornings, low-wait windows,
+              and final-chance evening decisions.
+            </p>
+          </div>
+
+          <span
+            style={{
+              padding: "7px 10px",
+              borderRadius: 999,
+              background: "rgba(255,255,255,0.78)",
+              border: `1px solid ${colors.cardBorder}`,
+              color: colors.text,
+              fontSize: 12,
+              fontWeight: 900,
+            }}
+          >
+            {selectedExperiences.length} selected
+          </span>
+        </div>
+
+        {mustDoExperienceOptions.length === 0 ? (
+          <div
+            style={{
+              marginTop: 14,
+              padding: 13,
+              borderRadius: 18,
+              background: "rgba(255,255,255,0.82)",
+              border: `1px solid ${colors.cardBorder}`,
+              color: colors.muted,
+              fontSize: 13,
+              lineHeight: 1.45,
+            }}
+          >
+            Select a park and let wait data load, then TOHI can show available
+            experiences for must-do planning.
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 10,
+              marginTop: 14,
+            }}
+          >
+            {mustDoExperienceOptions.map((experience) => {
+              const key = getMustDoKey(experience);
+              const selected = selectedKeys.has(key);
+
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => onToggleMustDoExperience(experience)}
+                  style={{
+                    display: "grid",
+                    gap: 6,
+                    textAlign: "left",
+                    padding: 12,
+                    borderRadius: 18,
+                    background: selected ? colors.coralSoft : "rgba(255,255,255,0.82)",
+                    border: selected
+                      ? "1px solid rgba(225, 29, 72, 0.28)"
+                      : `1px solid ${colors.cardBorder}`,
+                    boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
+                    color: colors.text,
+                    cursor: "pointer",
+                  }}
+                >
+                  <span style={{ fontWeight: 950, fontSize: 13 }}>
+                    {selected ? "✓ " : ""}
+                    {experience.name}
+                  </span>
+
+                  <span style={{ color: colors.muted, fontSize: 12 }}>
+                    {getMustDoTypeLabel(experience.type)}
+                    {experience.land ? ` · ${experience.land}` : ""}
+                    {experience.waitTime != null ? ` · ${experience.waitTime} min` : ""}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {selectedExperiences.length > 0 && (
+          <div
+            style={{
+              marginTop: 14,
+              padding: 13,
+              borderRadius: 18,
+              background: "rgba(255,255,255,0.82)",
+              border: `1px solid ${colors.cardBorder}`,
+            }}
+          >
+            <strong style={{ color: colors.text }}>Protected moments</strong>
+
+            {selectedForActivePark.length > 0 && (
+              <p
+                style={{
+                  margin: "7px 0 0",
+                  color: colors.muted,
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                }}
+              >
+                Current park: {selectedForActivePark.map((item) => item.name).join(", ")}
+              </p>
+            )}
+
+            {otherParkSelections.length > 0 && (
+              <p
+                style={{
+                  margin: "7px 0 0",
+                  color: colors.muted,
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                }}
+              >
+                Other parks saved: {otherParkSelections.map((item) => item.name).join(", ")}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+
 
 export function PlanTab({
   card,
@@ -119,8 +359,11 @@ export function PlanTab({
   timeContext,
   packingChecklist,
   dayGamePlan = [],
-  tripPlan = { preferences: {} },
+  tripPlan = { preferences: {}, mustDoExperiences: [] },
+  activePark,
+  mustDoExperienceOptions = [],
   onUpdateTripPreferences,
+  onToggleMustDoExperience,
   setActiveScreen,
 }) {
   const preferences = tripPlan?.preferences || {};
@@ -416,6 +659,14 @@ export function PlanTab({
                   </div>
                 </div>
               </section>
+
+              <MustDoMomentsSection
+                card={card}
+                activePark={activePark}
+                tripPlan={tripPlan}
+                mustDoExperienceOptions={mustDoExperienceOptions}
+                onToggleMustDoExperience={onToggleMustDoExperience}
+              />
 
               <section
                 style={{
@@ -798,7 +1049,7 @@ export function PlanTab({
                     ["Save / regenerate plan", "Let families refresh the deterministic plan as park context changes."],
                     ["AI explanation layer", "Let TOHI explain the plan without inventing unsupported details."],
                     ["Official schedule awareness", "Tie shows, parades, and nighttime entertainment to live schedule checks."],
-                    ["Must-do moment tracking", "Protect emotional wins from getting lost in the chaos."],
+                    ["Rope-drop early window logic", "Use cooler, lower-wait mornings to protect the right must-dos."],
                   ].map(([title, text]) => (
                     <div
                       key={title}
