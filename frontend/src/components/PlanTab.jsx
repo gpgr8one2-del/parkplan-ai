@@ -907,7 +907,7 @@ export function PlanTab({
                           marginBottom: 9,
                         }}
                       >
-                        PACKING CHECKLIST
+                        WHAT TO PACK TODAY
                       </div>
 
                       <h3
@@ -919,7 +919,7 @@ export function PlanTab({
                           lineHeight: 1.15,
                         }}
                       >
-                        Bring the stuff that protects the day.
+                        Pack for the day you’re actually walking into.
                       </h3>
 
                       <p
@@ -931,9 +931,9 @@ export function PlanTab({
                           maxWidth: 620,
                         }}
                       >
-                        This first Plan Ahead tool is deterministic: TOHI looks at your
-                        family setup, comfort settings, weather, and park context without
-                        making up a plan.
+                        TOHI filters this list from today’s forecast, your family setup,
+                        and the way you plan to use the park. If something does not fit
+                        the day, it should stay off the list.
                       </p>
                     </div>
 
