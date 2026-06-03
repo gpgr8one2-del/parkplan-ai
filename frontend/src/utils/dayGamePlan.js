@@ -1,0 +1,393 @@
+const PARK_LABELS = {
+  magic_kingdom: "Magic Kingdom",
+  epcot: "EPCOT",
+  hollywood: "Hollywood Studios",
+  animal_kingdom: "Animal Kingdom",
+};
+
+const START_LABELS = {
+  rope_drop: "Rope drop start",
+  moderate_morning: "Moderate morning",
+  late_start: "Late start",
+  evening_only: "Evening-only visit",
+};
+
+const PRIORITY_LABELS = {
+  must: "High priority",
+  should: "Smart move",
+  optional: "Flexible",
+};
+
+function getPreferences(tripPlan = {}) {
+  return tripPlan?.preferences || {};
+}
+
+function hasPriority(familyProfile = {}, priority) {
+  return Array.isArray(familyProfile.priorities) && familyProfile.priorities.includes(priority);
+}
+
+function isHighHeatProfile(familyProfile = {}, weather = {}) {
+  return (
+    familyProfile.heatSensitivity === "high" ||
+    weather?.feelsLikeF >= 90 ||
+    weather?.tempF >= 88 ||
+    weather?.humidity >= 75
+  );
+}
+
+function hasYoungKids(familyProfile = {}) {
+  return Boolean(
+    familyProfile.hasSmallChildren ||
+      familyProfile.hasUnder3 ||
+      familyProfile.ageSummary?.under3Count > 0 ||
+      familyProfile.ageSummary?.childCount > 0
+  );
+}
+
+function getResortName(familyProfile = {}) {
+  return (
+    familyProfile.resortProfile?.name ||
+    familyProfile.resortContext?.resortName ||
+    familyProfile.resortContext?.offPropertyHotelName ||
+    ""
+  );
+}
+
+function buildStartPlan({ preferences, familyProfile, activePark, timeContext }) {
+  const parkLabel = PARK_LABELS[activePark] || "the park";
+  const startStrategy = preferences.startStrategy || "moderate_morning";
+  const firstParkLabel = familyProfile.tripContext?.firstPark
+    ? PARK_LABELS[familyProfile.tripContext.firstPark] || familyProfile.tripContext.firstPark
+    : parkLabel;
+
+  if (startStrategy === "rope_drop") {
+    return {
+      id: "start_plan",
+      eyebrow: "START PLAN",
+      title: "Protect the first big move.",
+      body:
+        `Treat ${firstParkLabel} like the day’s first anchor. Arrive early, do one high-value attraction before the park gets heavy, then slow the pace before the family burns out.`,
+      priority: "must",
+      detail:
+        "This keeps rope drop from turning into an all-day sprint. Win the first hour, then protect energy.",
+    };
+  }
+
+  if (startStrategy === "late_start") {
+    return {
+      id: "start_plan",
+      eyebrow: "START PLAN",
+      title: "Start slower on purpose.",
+      body:
+        `Do not pretend this is a rope-drop day. Build around a smoother arrival, fewer cross-park walks, and one clear first target once everyone is actually inside ${parkLabel}.`,
+      priority: "should",
+      detail:
+        "Late starts can still work, but only if the plan stops chasing everything at once.",
+    };
+  }
+
+  if (startStrategy === "evening_only") {
+    return {
+      id: "start_plan",
+      eyebrow: "START PLAN",
+      title: "Make this a focused evening visit.",
+      body:
+        `Skip the full-day mindset. Use the cooler window for atmosphere, one or two priority moves, snacks, and a clean exit before everyone crashes.`,
+      priority: "should",
+      detail:
+        timeContext?.summary || "Evening visits should feel focused, not overloaded.",
+    };
+  }
+
+  return {
+    id: "start_plan",
+    eyebrow: "START PLAN",
+    title: "Start steady, not frantic.",
+    body:
+      `Use the first park window to get oriented, pick one strong first move, and avoid turning the morning into a race across ${parkLabel}.`,
+    priority: "should",
+    detail:
+      "This is the safest default for families who want a real park day without a stressful launch.",
+  };
+}
+
+function buildMorningPriority({ preferences, familyProfile }) {
+  if (preferences.paidQueueStrategy === "use_paid") {
+    return {
+      id: "morning_priority",
+      eyebrow: "MORNING PRIORITY",
+      title: "Use paid access to remove pressure.",
+      body:
+        "Treat Lightning Lane / paid access as a pressure release, not a trophy. Use it on the ride most likely to cause a long walk, a long wait, or a family-energy crash.",
+      priority: "should",
+      detail:
+        "The goal is not maximizing rides. The goal is protecting the tone of the day.",
+    };
+  }
+
+  if (preferences.paidQueueStrategy === "avoid_paid") {
+    return {
+      id: "morning_priority",
+      eyebrow: "MORNING PRIORITY",
+      title: "Be selective with free standby moves.",
+      body:
+        "Since paid access is not the plan, avoid wasting the best energy of the day on mediocre waits. Pick one high-value target, then use nearby backups.",
+      priority: "should",
+      detail:
+        "Free strategy only works if you stop chasing far-away rides just because they look tempting.",
+    };
+  }
+
+  if (hasPriority(familyProfile, "characters") || hasPriority(familyProfile, "young_kid_moments")) {
+    return {
+      id: "morning_priority",
+      eyebrow: "MORNING PRIORITY",
+      title: "Protect the emotional win early.",
+      body:
+        "Do not let headliners swallow the whole morning. If characters, younger-kid moments, or classic memories matter, protect one of those before everyone is tired.",
+      priority: "must",
+      detail:
+        "This is where TOHI should be different from a hardcore ride optimizer.",
+    };
+  }
+
+  return {
+    id: "morning_priority",
+    eyebrow: "MORNING PRIORITY",
+    title: "Pick one real priority, then stop forcing it.",
+    body:
+      "The morning should have one clear win. After that, use nearby options instead of bouncing around the park.",
+    priority: "should",
+    detail:
+      "One strong move plus calm flow beats three scattered half-wins.",
+  };
+}
+
+function buildMiddayReset({ preferences, familyProfile, activePark, weather }) {
+  const resortName = getResortName(familyProfile);
+  const highHeat = isHighHeatProfile(familyProfile, weather);
+  const youngKids = hasYoungKids(familyProfile);
+
+  if (preferences.breakPreference === "resort_return") {
+    return {
+      id: "midday_reset",
+      eyebrow: "MIDDAY RESET",
+      title: resortName ? `Plan a real reset at ${resortName}.` : "Plan a real resort reset.",
+      body:
+        "Do not wait until the family is already cooked. Leave while people still have enough energy to return, especially if heat or crowds are climbing.",
+      priority: highHeat || youngKids ? "must" : "should",
+      detail:
+        "A resort break only works if transportation is realistic and the return plan is simple.",
+    };
+  }
+
+  if (preferences.breakPreference === "kids_nap_window") {
+    return {
+      id: "midday_reset",
+      eyebrow: "MIDDAY RESET",
+      title: "Protect the nap/rest window.",
+      body:
+        "Build the middle of the day around quiet, food, AC, stroller rest, or leaving the park. A tired kid can wreck the best plan faster than a bad wait time.",
+      priority: "must",
+      detail:
+        "This is family-energy management, not lost time.",
+    };
+  }
+
+  if (preferences.breakPreference === "no_break") {
+    return {
+      id: "midday_reset",
+      eyebrow: "MIDDAY RESET",
+      title: "Use micro-breaks or the day will bite back.",
+      body:
+        "No formal break is okay, but only if you stack water, shade, AC, seated shows, and food before the family is visibly done.",
+      priority: highHeat ? "must" : "should",
+      detail:
+        "No-break days fail when every pause feels optional.",
+    };
+  }
+
+  return {
+    id: "midday_reset",
+    eyebrow: "MIDDAY RESET",
+    title: "Use the park itself as the reset.",
+    body:
+      "Aim for indoor rides, shaded paths, quick-service seating, shows, and snack breaks during the harder middle part of the day.",
+    priority: highHeat || youngKids ? "must" : "should",
+    detail:
+      "This keeps the family inside the park without pretending energy is unlimited.",
+  };
+}
+
+function buildWeatherStrategy({ weather, weatherMode, familyProfile }) {
+  const highHeat = isHighHeatProfile(familyProfile, weather);
+
+  if (weatherMode?.mode && weatherMode.mode !== "normal") {
+    return {
+      id: "weather_strategy",
+      eyebrow: "WEATHER STRATEGY",
+      title: weatherMode.label || "Weather is shaping the plan.",
+      body:
+        weatherMode.message ||
+        "Favor indoor, shaded, lower-walking choices until conditions improve.",
+      priority: "must",
+      detail:
+        "A good plan should bend around weather instead of forcing the original idea.",
+    };
+  }
+
+  if (highHeat) {
+    return {
+      id: "weather_strategy",
+      eyebrow: "WEATHER STRATEGY",
+      title: "Heat is the hidden opponent.",
+      body:
+        "Treat hydration, cooling, shade, and AC as part of the plan, not something to remember after people get cranky.",
+      priority: "must",
+      detail:
+        "The app should protect the emotional tone of the day before the heat steals it.",
+    };
+  }
+
+  return {
+    id: "weather_strategy",
+    eyebrow: "WEATHER STRATEGY",
+    title: "Keep weather checks lightweight.",
+    body:
+      "No major weather adjustment is needed right now. Still keep water, sunscreen, and a quick indoor fallback ready.",
+    priority: "optional",
+    detail:
+      "Normal weather does not mean no planning. It just means do not overreact.",
+  };
+}
+
+function buildEveningPivot({ preferences, familyProfile }) {
+  if (preferences.nighttimeImportance === "must_see_fireworks") {
+    return {
+      id: "evening_pivot",
+      eyebrow: "EVENING PIVOT",
+      title: "Save energy for nighttime.",
+      body:
+        "If the nighttime show is a must, the afternoon has to be calmer. Do not spend every bit of patience before the final emotional anchor.",
+      priority: "must",
+      detail:
+        "Nighttime plans fail in the afternoon, not at showtime.",
+    };
+  }
+
+  if (preferences.nighttimeImportance === "kids_will_be_done") {
+    return {
+      id: "evening_pivot",
+      eyebrow: "EVENING PIVOT",
+      title: "Do not build around a late finish.",
+      body:
+        "Assume the family exits before the late-night push. Use the earlier part of the day for must-do moments instead of saving everything for the end.",
+      priority: "should",
+      detail:
+        "This prevents the classic mistake of saving the best thing for a family that is already finished.",
+    };
+  }
+
+  return {
+    id: "evening_pivot",
+    eyebrow: "EVENING PIVOT",
+    title: "Let the evening be earned.",
+    body:
+      "Keep nighttime flexible. If everyone still feels good, use the evening for atmosphere, one final ride, or entertainment. If not, leave cleanly.",
+    priority: "optional",
+    detail:
+      "Optional nighttime plans keep the day from feeling like a failure if the family is done early.",
+  };
+}
+
+function buildMustDoProtection({ preferences, familyProfile }) {
+  if (preferences.showsImportance === "high" || hasPriority(familyProfile, "shows_parades")) {
+    return {
+      id: "must_do_protection",
+      eyebrow: "MUST-DO PROTECTION",
+      title: "Protect shows and parade-style moments.",
+      body:
+        "Treat shows, parades, and character moments like real anchors, not filler. Check official times and build around one of them before the day gets chaotic.",
+      priority: "must",
+      detail:
+        "For many families, the emotional memory is not the ride count.",
+    };
+  }
+
+  if (hasPriority(familyProfile, "food_snacks")) {
+    return {
+      id: "must_do_protection",
+      eyebrow: "MUST-DO PROTECTION",
+      title: "Use food as a planned reset.",
+      body:
+        "Do not wait until everyone is starving. Use snacks or a quick-service stop as an intentional pause that keeps the day pleasant.",
+      priority: "should",
+      detail:
+        "Food is not just fuel in a theme park. It is pacing.",
+    };
+  }
+
+  if (hasPriority(familyProfile, "low_stress")) {
+    return {
+      id: "must_do_protection",
+      eyebrow: "MUST-DO PROTECTION",
+      title: "Protect the calm, even if it costs a ride.",
+      body:
+        "When a choice is between one more attraction and keeping the family in a good mood, TOHI should bias toward the calmer day.",
+      priority: "must",
+      detail:
+        "This is the core promise: less stress, better memories.",
+    };
+  }
+
+  return {
+    id: "must_do_protection",
+    eyebrow: "MUST-DO PROTECTION",
+    title: "Choose the memory, not the checklist.",
+    body:
+      "Pick one moment that would make the day feel successful, then protect it from being crowded out by random wait-time chasing.",
+    priority: "should",
+    detail:
+      "A good day needs an emotional anchor, not just efficient movement.",
+  };
+}
+
+export function generateDayGamePlan({
+  familyProfile = {},
+  tripPlan = {},
+  activePark = "magic_kingdom",
+  weather = {},
+  weatherMode = {},
+  timeContext = {},
+  packingChecklist = [],
+} = {}) {
+  const preferences = getPreferences(tripPlan);
+
+  const plan = [
+    buildStartPlan({ preferences, familyProfile, activePark, timeContext }),
+    buildMorningPriority({ preferences, familyProfile, activePark }),
+    buildMiddayReset({ preferences, familyProfile, activePark, weather }),
+    buildWeatherStrategy({ weather, weatherMode, familyProfile }),
+    buildEveningPivot({ preferences, familyProfile, activePark }),
+    buildMustDoProtection({ preferences, familyProfile, activePark }),
+  ];
+
+  return plan.map((item, index) => ({
+    ...item,
+    order: index + 1,
+    priorityLabel: PRIORITY_LABELS[item.priority] || PRIORITY_LABELS.optional,
+    packingSupportCount: Array.isArray(packingChecklist)
+      ? packingChecklist.filter((packingItem) => packingItem.priority === "must").length
+      : 0,
+    generatedFrom: {
+      startStrategy: preferences.startStrategy,
+      breakPreference: preferences.breakPreference,
+      diningStyle: preferences.diningStyle,
+      showsImportance: preferences.showsImportance,
+      nighttimeImportance: preferences.nighttimeImportance,
+      paidQueueStrategy: preferences.paidQueueStrategy,
+    },
+  }));
+}
+
+export default generateDayGamePlan;
