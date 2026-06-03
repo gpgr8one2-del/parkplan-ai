@@ -2,8 +2,10 @@ import { getCurrentTimeContext } from "./timeContext";
 import { getResortProfile } from "../resortProfiles";
 
 const FAMILY_PROFILE_STORAGE_KEY = "parkplan.familyProfile";
+const DEFAULT_SYSTEM = "disney_wdw";
 
 export const DEFAULT_FAMILY_PROFILE = {
+  system: DEFAULT_SYSTEM,
   isSetupComplete: false,
   adultCount: 2,
   childCount: 2,
@@ -11,35 +13,45 @@ export const DEFAULT_FAMILY_PROFILE = {
     { id: "child_1", label: "Child 1", age: "", heightInches: "" },
     { id: "child_2", label: "Child 2", age: "", heightInches: "" },
   ],
+
+  // Deprecated, but intentionally kept for one compatibility cycle.
+  // rideRecommendations.js still reads this for height/rider-switch behavior.
   wholeGroupRidesTogether: "warn",
+
   thrillTolerance: "",
-  walkingTolerance: "",
+  pace: "balanced",
   heatSensitivity: "",
   waterRidePreference: "depends",
-  pace: "balanced",
+  stormTolerance: "brief_outdoor_ok",
+  mobilityAccessibility: {
+    usesStroller: false,
+    usesWheelchair: false,
+    mobilityNotes: "",
+  },
   priorities: [],
+
+  // Renamed from lightningLanePreference. This stays in the family profile
+  // for one compatibility cycle, then moves to parkplan.tripPlan in 24E.
+  paidQueueStrategy: "undecided",
+
   tripContext: {
     tripStartDate: "",
     tripEndDate: "",
-    tripLengthDays: 1,
     parkDays: 1,
-    selectedParks: ["magic_kingdom"],
-    firstPark: "magic_kingdom",
-    priorityPark: "magic_kingdom",
+    parkSelectionIds: ["magic_kingdom"],
+    firstParkId: "magic_kingdom",
+    mostImportantParkId: "magic_kingdom",
     parkHopper: "unknown",
   },
+
+  // Plan Tune fields eventually move to parkplan.tripPlan.
+  // Keep only the live future-facing fields here for now.
   planningPreferences: {
-    planningMode: "balanced",
-    dayBeforeHelp: "yes",
-    dayOfHelp: "yes",
     ropeDropStyle: "flexible",
-    arrivalStyle: "not_sure",
     middayBreakStyle: "flexible",
-    napOrPoolBreak: "maybe",
     diningStyle: "quick_service",
-    mustDoMode: "balanced",
-    aiTone: "calm_direct",
   },
+
   resortContext: {
     stayingOnProperty: "unknown",
     resortId: "",
@@ -47,43 +59,74 @@ export const DEFAULT_FAMILY_PROFILE = {
     offPropertyHotelName: "",
     transportationMode: "unknown",
   },
-  lightningLanePreference: "undecided",
 };
 
 export const FAMILY_PRIORITY_OPTIONS = [
   { value: "headliners", label: "Big rides / headliners" },
   { value: "low_stress", label: "Low-stress family flow" },
   { value: "characters", label: "Characters" },
-  { value: "princesses", label: "Princesses" },
   { value: "shows_parades", label: "Shows / parades" },
   { value: "food_snacks", label: "Food / snacks" },
-  { value: "bluey_younger_kids", label: "Bluey / younger-kid moments" },
-  { value: "ac_breaks", label: "AC / recovery breaks" },
+  { value: "young_kid_moments", label: "Younger-kid moments" },
 ];
 
-export const DISNEY_PARK_OPTIONS = [
-  { value: "magic_kingdom", label: "Magic Kingdom" },
-  { value: "epcot", label: "EPCOT" },
-  { value: "hollywood", label: "Hollywood Studios" },
-  { value: "animal_kingdom", label: "Animal Kingdom" },
-];
+export const PARK_OPTIONS_BY_SYSTEM = {
+  disney_wdw: [
+    { value: "magic_kingdom", label: "Magic Kingdom" },
+    { value: "epcot", label: "EPCOT" },
+    { value: "hollywood", label: "Hollywood Studios" },
+    { value: "animal_kingdom", label: "Animal Kingdom" },
+  ],
+  universal_orlando: [],
+  disney_dlr: [],
+};
 
-export function getDisneyAgeClass(age) {
+// Deprecated alias. Keep for one cycle so App.jsx and OnboardingFlow.jsx
+// do not need to change during the schema-only commit.
+export const DISNEY_PARK_OPTIONS = PARK_OPTIONS_BY_SYSTEM.disney_wdw;
+
+export function getAgeRangeId(age, system = DEFAULT_SYSTEM) {
   const numericAge = Number(age);
 
   if (!Number.isFinite(numericAge)) return "unknown";
+
+  if (system === "disney_wdw" || system === "disney_dlr") {
+    if (numericAge <= 2) return "under_3";
+    if (numericAge >= 3 && numericAge <= 9) return "child";
+
+    return "adult";
+  }
+
+  // Universal-specific age/ticket rules can branch here when Universal ships.
   if (numericAge <= 2) return "under_3";
   if (numericAge >= 3 && numericAge <= 9) return "child";
 
   return "adult";
 }
 
-export function getDisneyAgeLabel(ageClass) {
-  if (ageClass === "under_3") return "Under 3 / no ticket";
-  if (ageClass === "child") return "Disney child";
-  if (ageClass === "adult") return "Disney adult";
+export function getAgeRangeLabel(ageClass, system = DEFAULT_SYSTEM) {
+  if (system === "disney_wdw" || system === "disney_dlr") {
+    if (ageClass === "under_3") return "Under 3 / no ticket";
+    if (ageClass === "child") return "Disney child";
+    if (ageClass === "adult") return "Disney adult";
+
+    return "Age not set";
+  }
+
+  if (ageClass === "under_3") return "Under 3";
+  if (ageClass === "child") return "Child";
+  if (ageClass === "adult") return "Adult";
 
   return "Age not set";
+}
+
+// Deprecated aliases. Keep for one cycle.
+export function getDisneyAgeClass(age) {
+  return getAgeRangeId(age, "disney_wdw");
+}
+
+export function getDisneyAgeLabel(ageClass) {
+  return getAgeRangeLabel(ageClass, "disney_wdw");
 }
 
 function getDateAccessStatus(tripContext = {}) {
@@ -95,8 +138,157 @@ function getDateAccessStatus(tripContext = {}) {
   }).tripStatus;
 }
 
-export function getParkLabel(parkId) {
-  return DISNEY_PARK_OPTIONS.find((park) => park.value === parkId)?.label || "Not set";
+function getParkOptionsForSystem(system = DEFAULT_SYSTEM) {
+  return PARK_OPTIONS_BY_SYSTEM[system] || PARK_OPTIONS_BY_SYSTEM.disney_wdw;
+}
+
+export function getParkLabel(parkId, system = DEFAULT_SYSTEM) {
+  return getParkOptionsForSystem(system).find((park) => park.value === parkId)?.label || "Not set";
+}
+
+function toBoolean(value) {
+  return value === true || value === "true" || value === "yes";
+}
+
+function clampNumber(value, min, max, fallback) {
+  const numeric = Number(value);
+
+  if (!Number.isFinite(numeric)) {
+    return fallback;
+  }
+
+  return Math.max(min, Math.min(max, numeric));
+}
+
+function deriveTripLengthDays(tripContext = {}) {
+  const start = tripContext.tripStartDate ? new Date(tripContext.tripStartDate) : null;
+  const end = tripContext.tripEndDate ? new Date(tripContext.tripEndDate) : null;
+
+  if (
+    start &&
+    end &&
+    Number.isFinite(start.getTime()) &&
+    Number.isFinite(end.getTime()) &&
+    end.getTime() >= start.getTime()
+  ) {
+    const diffMs = end.getTime() - start.getTime();
+    return Math.max(1, Math.min(21, Math.round(diffMs / 86400000) + 1));
+  }
+
+  return clampNumber(tripContext.tripLengthDays, 1, 21, 1);
+}
+
+function mapWalkingToleranceToPace(value) {
+  if (value === "low") return "leisurely";
+  if (value === "medium") return "balanced";
+  if (value === "high") return "energetic";
+
+  return "";
+}
+
+function mapPaceToWalkingTolerance(value) {
+  if (value === "leisurely" || value === "relaxed") return "low";
+  if (value === "balanced") return "medium";
+  if (value === "energetic" || value === "maximize") return "high";
+
+  return "";
+}
+
+function normalizePace(profile = {}) {
+  const directPace = profile.pace;
+
+  if (directPace === "leisurely" || directPace === "balanced" || directPace === "energetic") {
+    return directPace;
+  }
+
+  if (directPace === "relaxed") return "leisurely";
+  if (directPace === "maximize") return "energetic";
+
+  const migratedPace = mapWalkingToleranceToPace(profile.walkingTolerance);
+  return migratedPace || DEFAULT_FAMILY_PROFILE.pace;
+}
+
+function normalizePriorities(priorities = []) {
+  if (!Array.isArray(priorities)) return [];
+
+  const normalized = priorities
+    .map((priority) => {
+      if (priority === "bluey_younger_kids") return "young_kid_moments";
+      return priority;
+    })
+    .filter((priority) => priority !== "princesses" && priority !== "ac_breaks");
+
+  return Array.from(new Set(normalized));
+}
+
+function normalizeMobilityAccessibility(value = {}) {
+  return {
+    usesStroller: toBoolean(value.usesStroller),
+    usesWheelchair: toBoolean(value.usesWheelchair),
+    mobilityNotes: String(value.mobilityNotes || "").slice(0, 300),
+  };
+}
+
+function buildTripContextWithCompatibility(tripContext = {}) {
+  const parkSelectionIds = Array.isArray(tripContext.parkSelectionIds)
+    ? tripContext.parkSelectionIds
+    : Array.isArray(tripContext.selectedParks)
+    ? tripContext.selectedParks
+    : DEFAULT_FAMILY_PROFILE.tripContext.parkSelectionIds;
+
+  const fallbackPark = parkSelectionIds[0] || "magic_kingdom";
+
+  const firstParkId =
+    tripContext.firstParkId ||
+    tripContext.firstPark ||
+    fallbackPark;
+
+  const mostImportantParkId =
+    tripContext.mostImportantParkId ||
+    tripContext.priorityPark ||
+    fallbackPark;
+
+  const normalizedTripContext = {
+    tripStartDate: tripContext.tripStartDate || "",
+    tripEndDate: tripContext.tripEndDate || "",
+    parkDays: clampNumber(tripContext.parkDays, 1, 21, 1),
+    parkSelectionIds,
+    firstParkId,
+    mostImportantParkId,
+    parkHopper: tripContext.parkHopper || "unknown",
+  };
+
+  const tripLengthDays = deriveTripLengthDays({
+    ...tripContext,
+    ...normalizedTripContext,
+  });
+
+  return {
+    ...normalizedTripContext,
+
+    // Deprecated aliases. These keep current App.jsx, OnboardingFlow.jsx,
+    // aiService.js, and any existing saved state working until 24D/24E.
+    tripLengthDays,
+    selectedParks: parkSelectionIds,
+    firstPark: firstParkId,
+    priorityPark: mostImportantParkId,
+  };
+}
+
+function buildPlanningPreferencesWithCompatibility(planningPreferences = {}) {
+  return {
+    ropeDropStyle:
+      planningPreferences.startStrategy ||
+      planningPreferences.ropeDropStyle ||
+      DEFAULT_FAMILY_PROFILE.planningPreferences.ropeDropStyle,
+    middayBreakStyle:
+      planningPreferences.breakPreference ||
+      planningPreferences.middayBreakStyle ||
+      DEFAULT_FAMILY_PROFILE.planningPreferences.middayBreakStyle,
+    diningStyle:
+      planningPreferences.diningStyle ||
+      DEFAULT_FAMILY_PROFILE.planningPreferences.diningStyle,
+  };
 }
 
 export function getFamilyProfileCompletion(profile = {}) {
@@ -125,27 +317,35 @@ export function getFamilyProfileCompletion(profile = {}) {
     missing.push("ride comfort");
   }
 
-  if (!safeProfile.walkingTolerance) {
-    missing.push("walking pace");
+  if (!safeProfile.pace) {
+    missing.push("pace");
   }
 
   if (!safeProfile.heatSensitivity) {
     missing.push("heat sensitivity");
   }
 
+  if (!safeProfile.waterRidePreference) {
+    missing.push("water ride preference");
+  }
+
+  if (!safeProfile.stormTolerance) {
+    missing.push("storm comfort");
+  }
+
   if (!safeProfile.priorities?.length) {
     missing.push("trip priorities");
   }
 
-  if (!safeProfile.tripContext.selectedParks?.length) {
+  if (!safeProfile.tripContext.parkSelectionIds?.length) {
     missing.push("parks");
   }
 
-  if (!safeProfile.tripContext.firstPark) {
+  if (!safeProfile.tripContext.firstParkId) {
     missing.push("first park");
   }
 
-  if (!safeProfile.tripContext.priorityPark) {
+  if (!safeProfile.tripContext.mostImportantParkId) {
     missing.push("priority park");
   }
 
@@ -173,6 +373,7 @@ export function normalizeFamilyProfile(profile = {}) {
   const merged = {
     ...DEFAULT_FAMILY_PROFILE,
     ...profile,
+    system: profile.system || DEFAULT_FAMILY_PROFILE.system,
     tripContext: {
       ...DEFAULT_FAMILY_PROFILE.tripContext,
       ...(profile.tripContext || {}),
@@ -185,12 +386,16 @@ export function normalizeFamilyProfile(profile = {}) {
       ...DEFAULT_FAMILY_PROFILE.resortContext,
       ...(profile.resortContext || {}),
     },
+    mobilityAccessibility: {
+      ...DEFAULT_FAMILY_PROFILE.mobilityAccessibility,
+      ...(profile.mobilityAccessibility || {}),
+    },
   };
 
   // Backward compatibility: older saved profiles used partySize + guests.
   const oldGuests = Array.isArray(profile.guests) ? profile.guests : [];
-  const oldAdults = oldGuests.filter((guest) => getDisneyAgeClass(guest.age) === "adult");
-  const oldChildren = oldGuests.filter((guest) => getDisneyAgeClass(guest.age) !== "adult");
+  const oldAdults = oldGuests.filter((guest) => getAgeRangeId(guest.age, merged.system) === "adult");
+  const oldChildren = oldGuests.filter((guest) => getAgeRangeId(guest.age, merged.system) !== "adult");
 
   const adultCount = Math.max(
     1,
@@ -230,29 +435,36 @@ export function normalizeFamilyProfile(profile = {}) {
     };
   });
 
+  const pace = normalizePace(merged);
+  const walkingToleranceAlias =
+    merged.walkingTolerance || mapPaceToWalkingTolerance(pace) || "medium";
+
+  const tripContext = buildTripContextWithCompatibility(merged.tripContext);
+  const paidQueueStrategy =
+    merged.paidQueueStrategy ||
+    merged.lightningLanePreference ||
+    DEFAULT_FAMILY_PROFILE.paidQueueStrategy;
+
   return {
     ...merged,
+    system: merged.system || DEFAULT_SYSTEM,
     adultCount,
     childCount,
     partySize: adultCount + childCount,
-    tripContext: {
-      ...merged.tripContext,
-      tripStartDate: merged.tripContext?.tripStartDate || "",
-      tripEndDate: merged.tripContext?.tripEndDate || "",
-      tripLengthDays: Math.max(1, Math.min(21, Number(merged.tripContext?.tripLengthDays) || 1)),
-      parkDays: Math.max(1, Math.min(21, Number(merged.tripContext?.parkDays) || 1)),
-      selectedParks: Array.isArray(merged.tripContext?.selectedParks)
-        ? merged.tripContext.selectedParks
-        : [],
-      firstPark: merged.tripContext?.firstPark || "",
-      priorityPark: merged.tripContext?.priorityPark || "",
-      parkHopper: merged.tripContext?.parkHopper || "unknown",
-    },
-    planningPreferences: {
-      ...DEFAULT_FAMILY_PROFILE.planningPreferences,
-      ...(merged.planningPreferences || {}),
-    },
     children,
+    tripContext,
+    planningPreferences: buildPlanningPreferencesWithCompatibility(merged.planningPreferences),
+    mobilityAccessibility: normalizeMobilityAccessibility(merged.mobilityAccessibility),
+    pace,
+    waterRidePreference: merged.waterRidePreference || DEFAULT_FAMILY_PROFILE.waterRidePreference,
+    stormTolerance: merged.stormTolerance || DEFAULT_FAMILY_PROFILE.stormTolerance,
+    priorities: normalizePriorities(merged.priorities),
+    paidQueueStrategy,
+
+    // Deprecated aliases retained for one compatibility cycle.
+    walkingTolerance: walkingToleranceAlias,
+    lightningLanePreference: paidQueueStrategy,
+
     // Keep guests available for any older logic, but do not ask adults for height.
     guests: [
       ...Array.from({ length: adultCount }, (_, index) => ({
@@ -264,7 +476,6 @@ export function normalizeFamilyProfile(profile = {}) {
       })),
       ...children,
     ],
-    priorities: Array.isArray(merged.priorities) ? merged.priorities : [],
   };
 }
 
@@ -274,7 +485,7 @@ export function buildFamilyProfileSummary(profile) {
 
   const childAgeSummary = children.reduce(
     (summary, child) => {
-      const ageClass = getDisneyAgeClass(child.age);
+      const ageClass = getAgeRangeId(child.age, safeProfile.system);
 
       if (ageClass === "under_3") summary.under3Count += 1;
       if (ageClass === "child") summary.childCount += 1;
