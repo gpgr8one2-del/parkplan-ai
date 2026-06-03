@@ -6,6 +6,11 @@ import { DataStatusBanner } from "./components/DataStatusBanner";
 import { getNextBestRides } from "./rideRecommendations";
 import { getWeatherMode, getRecoverySuggestions } from "./utils/weatherAdvice";
 import { generatePackingChecklist } from "./utils/packingChecklist";
+import {
+  readStoredTripPlan,
+  writeStoredTripPlan,
+  updateTripPlanPreferences,
+} from "./utils/tripPlan";
 import { getCurrentTimeContext } from "./utils/timeContext";
 import { buildAccessState } from "./utils/accessControl";
 import {
@@ -463,6 +468,7 @@ function App() {
     readDevPreviewFullApp()
   );
   const [familyProfileStep, setFamilyProfileStep] = useState(1);
+  const [tripPlan, setTripPlan] = useState(() => readStoredTripPlan());
 
   const [currentLand, setCurrentLand] = useState(null);
   const [completedRideIds, setCompletedRideIds] = useState([]);
@@ -479,6 +485,10 @@ function App() {
   useEffect(() => {
     writeDevPreviewFullApp(devPreviewFullApp);
   }, [devPreviewFullApp]);
+
+  useEffect(() => {
+    writeStoredTripPlan(tripPlan);
+  }, [tripPlan]);
 
   const familyProfileSummary = useMemo(() => {
     return buildFamilyProfileSummary(familyProfile);
@@ -1204,6 +1214,17 @@ function App() {
     setSkippedRideIds([]);
     setReportedRideIssueIds([]);
     setCurrentActivity(null);
+  }
+
+  function handleTripPreferenceChange(preferencePatch) {
+    setTripPlan((prev) => updateTripPlanPreferences(prev, preferencePatch));
+
+    trackAppEvent("trip_plan_preferences_updated", {
+      source: "plan_tune",
+      metadata: {
+        fields: Object.keys(preferencePatch),
+      },
+    });
   }
 
 
@@ -2734,6 +2755,8 @@ function App() {
               profileCompletion={profileCompletion}
               timeContext={timeContext}
               packingChecklist={packingChecklist}
+              tripPlan={tripPlan}
+              onUpdateTripPreferences={handleTripPreferenceChange}
               setActiveScreen={setActiveScreen}
             />
           )}
