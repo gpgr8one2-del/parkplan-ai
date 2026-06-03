@@ -445,10 +445,17 @@ function App() {
   const [lastAutoUpdateAt, setLastAutoUpdateAt] = useState("");
   const [lastLocationUpdateAt, setLastLocationUpdateAt] = useState("");
   const [detectedLocationContext, setDetectedLocationContext] = useState(null);
-  const [familyProfile, setFamilyProfile] = useState(() => readStoredFamilyProfile());
-  const [activeScreen, setActiveScreen] = useState(() =>
-    readStoredFamilyProfile().isSetupComplete ? "main" : "family_profile"
-  );
+  const [initialFamilyProfileState] = useState(() => {
+    const storedProfile = readStoredFamilyProfile();
+    const storedCompletion = getFamilyProfileCompletion(storedProfile);
+
+    return {
+      profile: storedProfile,
+      activeScreen: storedCompletion.isComplete ? "main" : "family_profile",
+    };
+  });
+  const [familyProfile, setFamilyProfile] = useState(() => initialFamilyProfileState.profile);
+  const [activeScreen, setActiveScreen] = useState(() => initialFamilyProfileState.activeScreen);
   const [activeTab, setActiveTab] = useState("home");
   const [devPreviewFullApp, setDevPreviewFullApp] = useState(() =>
     readDevPreviewFullApp()
@@ -894,7 +901,28 @@ function App() {
   }, [activeScreen]);
 
   function updateFamilyProfile(patch) {
-    setFamilyProfile((prev) => normalizeFamilyProfile({ ...prev, ...patch }));
+    setFamilyProfile((prev) =>
+      normalizeFamilyProfile({
+        ...prev,
+        ...patch,
+        tripContext: {
+          ...(prev.tripContext || {}),
+          ...(patch.tripContext || {}),
+        },
+        planningPreferences: {
+          ...(prev.planningPreferences || {}),
+          ...(patch.planningPreferences || {}),
+        },
+        resortContext: {
+          ...(prev.resortContext || {}),
+          ...(patch.resortContext || {}),
+        },
+        mobilityAccessibility: {
+          ...(prev.mobilityAccessibility || {}),
+          ...(patch.mobilityAccessibility || {}),
+        },
+      })
+    );
   }
 
   function handleAdultCountChange(nextAdultCount) {
@@ -1401,7 +1429,10 @@ function App() {
         skippedRideIds,
         reportedRideIssueIds,
         currentLand,
-        familyProfile: familyProfileSummary,
+        familyProfile: {
+          ...familyProfileSummary,
+          isSetupComplete: profileCompletion.isComplete,
+        },
         timeContext,
         locationContext: locationContextForDecisions,
         currentActivity: currentActivityContext,
