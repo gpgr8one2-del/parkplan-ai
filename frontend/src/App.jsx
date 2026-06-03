@@ -468,7 +468,7 @@ function App() {
     readDevPreviewFullApp()
   );
   const [familyProfileStep, setFamilyProfileStep] = useState(1);
-  const [tripPlan, setTripPlan] = useState(() => readStoredTripPlan());
+  const [tripPlanState, setTripPlanState] = useState(() => readStoredTripPlan());
 
   const [currentLand, setCurrentLand] = useState(null);
   const [completedRideIds, setCompletedRideIds] = useState([]);
@@ -487,8 +487,8 @@ function App() {
   }, [devPreviewFullApp]);
 
   useEffect(() => {
-    writeStoredTripPlan(tripPlan);
-  }, [tripPlan]);
+    writeStoredTripPlan(tripPlanState);
+  }, [tripPlanState]);
 
   const familyProfileSummary = useMemo(() => {
     return buildFamilyProfileSummary(familyProfile);
@@ -1217,7 +1217,7 @@ function App() {
   }
 
   function handleTripPreferenceChange(preferencePatch) {
-    setTripPlan((prev) => updateTripPlanPreferences(prev, preferencePatch));
+    setTripPlanState((prev) => updateTripPlanPreferences(prev, preferencePatch));
 
     trackAppEvent("trip_plan_preferences_updated", {
       source: "plan_tune",
@@ -2755,7 +2755,7 @@ function App() {
               profileCompletion={profileCompletion}
               timeContext={timeContext}
               packingChecklist={packingChecklist}
-              tripPlan={tripPlan}
+              tripPlan={tripPlanState}
               onUpdateTripPreferences={handleTripPreferenceChange}
               setActiveScreen={setActiveScreen}
             />
