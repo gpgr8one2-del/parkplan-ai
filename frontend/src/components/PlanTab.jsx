@@ -53,8 +53,6 @@ function PlanPreferenceSelect({
   options,
   onChange,
 }) {
-  const preferences = tripPlan?.preferences || {};
-
   return (
     <label
       htmlFor={id}
