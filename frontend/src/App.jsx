@@ -6,6 +6,7 @@ import { DataStatusBanner } from "./components/DataStatusBanner";
 import { getNextBestRides } from "./rideRecommendations";
 import { getWeatherMode, getRecoverySuggestions } from "./utils/weatherAdvice";
 import { generatePackingChecklist } from "./utils/packingChecklist";
+import { generateDayGamePlan } from "./utils/dayGamePlan";
 import {
   readStoredTripPlan,
   writeStoredTripPlan,
@@ -834,6 +835,26 @@ function App() {
       timeContext,
     });
   }, [familyProfileSummary, weather, weatherMode, activePark, timeContext]);
+
+  const dayGamePlan = useMemo(() => {
+    return generateDayGamePlan({
+      familyProfile: familyProfileSummary,
+      tripPlan: tripPlanState,
+      activePark,
+      weather,
+      weatherMode,
+      timeContext,
+      packingChecklist,
+    });
+  }, [
+    familyProfileSummary,
+    tripPlanState,
+    activePark,
+    weather,
+    weatherMode,
+    timeContext,
+    packingChecklist,
+  ]);
 
   const recoverySuggestions = useMemo(() => {
     return getRecoverySuggestions({
@@ -2755,6 +2776,7 @@ function App() {
               profileCompletion={profileCompletion}
               timeContext={timeContext}
               packingChecklist={packingChecklist}
+              dayGamePlan={dayGamePlan}
               tripPlan={tripPlanState}
               onUpdateTripPreferences={handleTripPreferenceChange}
               setActiveScreen={setActiveScreen}
