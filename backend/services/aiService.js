@@ -5,16 +5,25 @@ const ANTHROPIC_MODEL = "claude-sonnet-4-5-20250929";
 
 const STATIC_SYSTEM_PROMPT = `RESPONSE RULES — READ FIRST:
 You are a real-time park companion. Families are standing in the heat reading on a phone. Be extremely brief.
+For LIVE MODE, your first sentence must be a specific action recommendation. Do not start by summarizing context, saying "I see," "based on," "you're in the afternoon crash window," or giving a reality check.
 
 For any question about what to do next, what ride to do, or what the plan says:
+- LEAD WITH THE ACTION. The first words of every response must be the recommendation.
+- Never start with situation description, context, "Hey," "Based on," "I see," "You're in," or a reality check.
 - Maximum 3 sentences. No exceptions.
 - Give ONE recommendation. Not options. Not alternatives. The single best move.
 - State the move, one reason why, and stop.
 - Do not explain everything you know. Do not list "Option 1, Option 2, Option 3."
 - If the family wants more detail they will ask a follow-up question.
 
+Format for live next-move questions:
+[Action] — [one brief reason]. [One optional next step.]
+Nothing before the action. Nothing after the next step.
+
 Wrong: "Next Move: TRON. Why now: 65 minute wait is below normal. You're near Tomorrowland. Option 1: stay in Tomorrowland. Option 2: head to Fantasyland. Option 3: if energy is fading..."
 Right: "Head to TRON now — 65 minutes is well below its normal wait and you're already nearby. After, grab food in Tomorrowland and rest before the next move."
+Wrong: "You're in the afternoon crash window and your family has low walking tolerance."
+Right: "Use this moment for an AC reset at Carousel of Progress, then choose one nearby ride after everyone cools down."
 
 You are TOHI, a calm, family-first mobile companion for Disney World and Universal Orlando.
 
@@ -719,6 +728,23 @@ function getAnswerMode(message = "") {
   return isPlanningModeQuestion(message) ? "planning" : "live";
 }
 
+function isGenericLivePreamble(sentence = "") {
+  const value = String(sentence || "").trim().toLowerCase();
+
+  return (
+    value.startsWith("hey") ||
+    value.startsWith("based on") ||
+    value.startsWith("i see") ||
+    value.startsWith("you're in") ||
+    value.startsWith("you are in") ||
+    value.startsWith("this is") ||
+    value.startsWith("right now") ||
+    value.startsWith("quick reality check") ||
+    value.includes("prime time to protect") ||
+    value.includes("afternoon crash window") && !/\b(head|go|ride|skip|stay|grab|use|do|take)\b/.test(value)
+  );
+}
+
 function getFirstSentences(text = "", maxSentences = 2) {
   const cleaned = String(text || "").replace(/\s+/g, " ").trim();
   if (!cleaned) return "";
@@ -726,7 +752,16 @@ function getFirstSentences(text = "", maxSentences = 2) {
   const sentences = cleaned.match(/[^.!?]+[.!?]+/g);
 
   if (sentences?.length) {
-    return sentences.slice(0, maxSentences).join(" ").replace(/\s+/g, " ").trim();
+    const usefulSentences = sentences.filter((sentence, index) => {
+      if (index > 0) return true;
+      return !isGenericLivePreamble(sentence);
+    });
+
+    return (usefulSentences.length ? usefulSentences : sentences)
+      .slice(0, maxSentences)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   return cleaned;
