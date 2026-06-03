@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Home,
@@ -36,9 +36,68 @@ const TABS = [
   },
 ];
 
-const NAV_HEIGHT_PX = 78;
+const NAV_BASE_HEIGHT_PX = 78;
+
+function getVisualViewportStyle() {
+  if (typeof window === "undefined" || !window.visualViewport) {
+    return {
+      top: `calc(100dvh - ${NAV_BASE_HEIGHT_PX}px - env(safe-area-inset-bottom, 0px))`,
+    };
+  }
+
+  const viewport = window.visualViewport;
+  const viewportTop = viewport.offsetTop || 0;
+  const viewportHeight = viewport.height || window.innerHeight || 0;
+
+  return {
+    top: `calc(${Math.max(
+      0,
+      viewportTop + viewportHeight - NAV_BASE_HEIGHT_PX
+    )}px - env(safe-area-inset-bottom, 0px))`,
+  };
+}
+
+function useVisualViewportPosition() {
+  const [viewportStyle, setViewportStyle] = useState(() => getVisualViewportStyle());
+
+  useEffect(() => {
+    let frameId = null;
+
+    const update = () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+      }
+
+      frameId = requestAnimationFrame(() => {
+        setViewportStyle(getVisualViewportStyle());
+      });
+    };
+
+    update();
+
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, { passive: true });
+    window.visualViewport?.addEventListener("resize", update);
+    window.visualViewport?.addEventListener("scroll", update);
+
+    return () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+      }
+
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update);
+      window.visualViewport?.removeEventListener("resize", update);
+      window.visualViewport?.removeEventListener("scroll", update);
+    };
+  }, []);
+
+  return viewportStyle;
+}
 
 function BottomTabsContent({ activeTab = "home", onTabChange }) {
+  const viewportStyle = useVisualViewportPosition();
+
   return (
     <nav
       aria-label="Primary app navigation"
@@ -46,12 +105,12 @@ function BottomTabsContent({ activeTab = "home", onTabChange }) {
         position: "fixed",
         left: 0,
         right: 0,
-        bottom: 0,
-        top: "auto",
+        top: viewportStyle.top,
+        bottom: "auto",
         width: "100vw",
         zIndex: 2147483647,
         padding: "8px 10px calc(8px + env(safe-area-inset-bottom, 0px))",
-        background: "rgba(255, 252, 247, 0.98)",
+        background: "rgba(255, 252, 247, 0.985)",
         borderTop: "1px solid #EFE7DA",
         backdropFilter: "blur(18px)",
         WebkitBackdropFilter: "blur(18px)",
@@ -117,33 +176,28 @@ function BottomTabsContent({ activeTab = "home", onTabChange }) {
 }
 
 export function BottomTabs({ activeTab = "home", onTabChange }) {
-  const content = (
-    <>
-      <div
-        aria-hidden="true"
-        style={{
-          height: `calc(${NAV_HEIGHT_PX}px + env(safe-area-inset-bottom, 0px))`,
-          flex: "0 0 auto",
-        }}
-      />
-
-      <BottomTabsContent activeTab={activeTab} onTabChange={onTabChange} />
-    </>
+  const spacer = (
+    <div
+      aria-hidden="true"
+      style={{
+        height: `calc(${NAV_BASE_HEIGHT_PX}px + env(safe-area-inset-bottom, 0px))`,
+        flex: "0 0 auto",
+      }}
+    />
   );
 
   if (typeof document === "undefined" || !document.body) {
-    return content;
+    return (
+      <>
+        {spacer}
+        <BottomTabsContent activeTab={activeTab} onTabChange={onTabChange} />
+      </>
+    );
   }
 
   return (
     <>
-      <div
-        aria-hidden="true"
-        style={{
-          height: `calc(${NAV_HEIGHT_PX}px + env(safe-area-inset-bottom, 0px))`,
-          flex: "0 0 auto",
-        }}
-      />
+      {spacer}
       {createPortal(
         <BottomTabsContent activeTab={activeTab} onTabChange={onTabChange} />,
         document.body
