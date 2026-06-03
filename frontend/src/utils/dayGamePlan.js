@@ -22,6 +22,28 @@ function getPreferences(tripPlan = {}) {
   return tripPlan?.preferences || {};
 }
 
+function getMustDoExperiences(tripPlan = {}) {
+  return Array.isArray(tripPlan?.mustDoExperiences) ? tripPlan.mustDoExperiences : [];
+}
+
+function getMustDosForPark(tripPlan = {}, activePark = "") {
+  return getMustDoExperiences(tripPlan).filter((experience) => experience?.parkId === activePark);
+}
+
+function formatExperienceList(experiences = [], max = 3) {
+  const names = experiences
+    .map((experience) => experience?.name)
+    .filter(Boolean)
+    .slice(0, max);
+
+  if (!names.length) return "";
+
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+}
+
 function hasPriority(familyProfile = {}, priority) {
   return Array.isArray(familyProfile.priorities) && familyProfile.priorities.includes(priority);
 }
@@ -53,20 +75,23 @@ function getResortName(familyProfile = {}) {
   );
 }
 
-function buildStartPlan({ preferences, familyProfile, activePark, timeContext }) {
+function buildStartPlan({ preferences, familyProfile, activePark, timeContext, tripPlan }) {
   const parkLabel = PARK_LABELS[activePark] || "the park";
   const startStrategy = preferences.startStrategy || "moderate_morning";
   const firstParkLabel = familyProfile.tripContext?.firstPark
     ? PARK_LABELS[familyProfile.tripContext.firstPark] || familyProfile.tripContext.firstPark
     : parkLabel;
+  const activeParkMustDos = getMustDosForPark(tripPlan, activePark);
+  const mustDoLabel = formatExperienceList(activeParkMustDos, 2);
 
   if (startStrategy === "rope_drop") {
     return {
       id: "start_plan",
       eyebrow: "START PLAN",
-      title: "Protect the first big move.",
-      body:
-        `Treat ${firstParkLabel} like the day’s first anchor. Arrive early, do one high-value attraction before the park gets heavy, then slow the pace before the family burns out.`,
+      title: mustDoLabel ? `Use rope drop to protect ${mustDoLabel}.` : "Protect the first big move.",
+      body: mustDoLabel
+        ? `Treat ${firstParkLabel} like the day’s first anchor. Because ${mustDoLabel} is marked as important, the first cool, lower-wait window should be used intentionally instead of wandering into whatever looks close.`
+        : `Treat ${firstParkLabel} like the day’s first anchor. Arrive early, do one high-value attraction before the park gets heavy, then slow the pace before the family burns out.`,
       priority: "must",
       detail:
         "This keeps rope drop from turning into an all-day sprint. Win the first hour, then protect energy.",
@@ -82,7 +107,9 @@ function buildStartPlan({ preferences, familyProfile, activePark, timeContext })
         `Do not pretend this is a rope-drop day. Build around a smoother arrival, fewer cross-park walks, and one clear first target once everyone is actually inside ${parkLabel}.`,
       priority: "should",
       detail:
-        "Late starts can still work, but only if the plan stops chasing everything at once.",
+        mustDoLabel
+          ? `Since ${mustDoLabel} is a must-do, protect it with timing instead of hoping it works out later.`
+          : "Late starts can still work, but only if the plan stops chasing everything at once.",
     };
   }
 
@@ -95,7 +122,9 @@ function buildStartPlan({ preferences, familyProfile, activePark, timeContext })
         `Skip the full-day mindset. Use the cooler window for atmosphere, one or two priority moves, snacks, and a clean exit before everyone crashes.`,
       priority: "should",
       detail:
-        timeContext?.summary || "Evening visits should feel focused, not overloaded.",
+        mustDoLabel
+          ? `Do not bury ${mustDoLabel} behind filler. Treat it as the evening target if waits cooperate.`
+          : timeContext?.summary || "Evening visits should feel focused, not overloaded.",
     };
   }
 
@@ -107,18 +136,38 @@ function buildStartPlan({ preferences, familyProfile, activePark, timeContext })
       `Use the first park window to get oriented, pick one strong first move, and avoid turning the morning into a race across ${parkLabel}.`,
     priority: "should",
     detail:
-      "This is the safest default for families who want a real park day without a stressful launch.",
+      mustDoLabel
+        ? `Keep ${mustDoLabel} visible in the plan so it does not get crowded out by random wait-time chasing.`
+        : "This is the safest default for families who want a real park day without a stressful launch.",
   };
 }
 
-function buildMorningPriority({ preferences, familyProfile }) {
+function buildMorningPriority({ preferences, familyProfile, activePark, tripPlan }) {
+  const activeParkMustDos = getMustDosForPark(tripPlan, activePark);
+  const mustDoLabel = formatExperienceList(activeParkMustDos, 3);
+
+  if (mustDoLabel && preferences.startStrategy === "rope_drop") {
+    return {
+      id: "morning_priority",
+      eyebrow: "MORNING PRIORITY",
+      title: "Use the low-wait window on what matters.",
+      body:
+        `Your selected must-do moments include ${mustDoLabel}. If one of them is open, nearby, and reasonable early, this is when TOHI should help protect it before heat and crowds make the day harder.`,
+      priority: "must",
+      detail:
+        "Rope drop is not about doing everything. It is about using the best family-energy window on the right thing.",
+    };
+  }
+
   if (preferences.paidQueueStrategy === "use_paid") {
     return {
       id: "morning_priority",
       eyebrow: "MORNING PRIORITY",
       title: "Use paid access to remove pressure.",
       body:
-        "Treat Lightning Lane / paid access as a pressure release, not a trophy. Use it on the ride most likely to cause a long walk, a long wait, or a family-energy crash.",
+        mustDoLabel
+          ? `Use Lightning Lane / paid access as a pressure release for must-dos like ${mustDoLabel}, not as a trophy. The goal is protecting the tone of the day.`
+          : "Treat Lightning Lane / paid access as a pressure release, not a trophy. Use it on the ride most likely to cause a long walk, a long wait, or a family-energy crash.",
       priority: "should",
       detail:
         "The goal is not maximizing rides. The goal is protecting the tone of the day.",
@@ -131,7 +180,9 @@ function buildMorningPriority({ preferences, familyProfile }) {
       eyebrow: "MORNING PRIORITY",
       title: "Be selective with free standby moves.",
       body:
-        "Since paid access is not the plan, avoid wasting the best energy of the day on mediocre waits. Pick one high-value target, then use nearby backups.",
+        mustDoLabel
+          ? `Since paid access is not the plan, use the best standby windows carefully. Do not waste strong early energy before checking whether ${mustDoLabel} is realistic.`
+          : "Since paid access is not the plan, avoid wasting the best energy of the day on mediocre waits. Pick one high-value target, then use nearby backups.",
       priority: "should",
       detail:
         "Free strategy only works if you stop chasing far-away rides just because they look tempting.",
@@ -159,7 +210,9 @@ function buildMorningPriority({ preferences, familyProfile }) {
       "The morning should have one clear win. After that, use nearby options instead of bouncing around the park.",
     priority: "should",
     detail:
-      "One strong move plus calm flow beats three scattered half-wins.",
+      mustDoLabel
+        ? `Your must-do list gives TOHI the target: ${mustDoLabel}.`
+        : "One strong move plus calm flow beats three scattered half-wins.",
   };
 }
 
@@ -261,7 +314,10 @@ function buildWeatherStrategy({ weather, weatherMode, familyProfile }) {
   };
 }
 
-function buildEveningPivot({ preferences, familyProfile }) {
+function buildEveningPivot({ preferences, familyProfile, activePark, tripPlan }) {
+  const activeParkMustDos = getMustDosForPark(tripPlan, activePark);
+  const mustDoLabel = formatExperienceList(activeParkMustDos, 2);
+
   if (preferences.nighttimeImportance === "must_see_fireworks") {
     return {
       id: "evening_pivot",
@@ -271,7 +327,9 @@ function buildEveningPivot({ preferences, familyProfile }) {
         "If the nighttime show is a must, the afternoon has to be calmer. Do not spend every bit of patience before the final emotional anchor.",
       priority: "must",
       detail:
-        "Nighttime plans fail in the afternoon, not at showtime.",
+        mustDoLabel
+          ? `If ${mustDoLabel} is still unfinished by evening, compare it against the nighttime show before the family runs out of energy.`
+          : "Nighttime plans fail in the afternoon, not at showtime.",
     };
   }
 
@@ -284,7 +342,9 @@ function buildEveningPivot({ preferences, familyProfile }) {
         "Assume the family exits before the late-night push. Use the earlier part of the day for must-do moments instead of saving everything for the end.",
       priority: "should",
       detail:
-        "This prevents the classic mistake of saving the best thing for a family that is already finished.",
+        mustDoLabel
+          ? `Do not save ${mustDoLabel} for a tired family unless the wait is clearly better later.`
+          : "This prevents the classic mistake of saving the best thing for a family that is already finished.",
     };
   }
 
@@ -296,11 +356,46 @@ function buildEveningPivot({ preferences, familyProfile }) {
       "Keep nighttime flexible. If everyone still feels good, use the evening for atmosphere, one final ride, or entertainment. If not, leave cleanly.",
     priority: "optional",
     detail:
-      "Optional nighttime plans keep the day from feeling like a failure if the family is done early.",
+      mustDoLabel
+        ? `If ${mustDoLabel} is still open and the family has energy, this can become the final clean win.`
+        : "Optional nighttime plans keep the day from feeling like a failure if the family is done early.",
   };
 }
 
-function buildMustDoProtection({ preferences, familyProfile }) {
+function buildMustDoProtection({ preferences, familyProfile, activePark, tripPlan }) {
+  const allMustDos = getMustDoExperiences(tripPlan);
+  const activeParkMustDos = getMustDosForPark(tripPlan, activePark);
+  const activeParkLabel = formatExperienceList(activeParkMustDos, 4);
+  const allMustDoLabel = formatExperienceList(allMustDos, 4);
+
+  if (activeParkMustDos.length > 0) {
+    return {
+      id: "must_do_protection",
+      eyebrow: "MUST-DO PROTECTION",
+      title: "Protect the moments your family picked.",
+      body:
+        `Your protected moments in this park include ${activeParkLabel}. TOHI should treat those as success targets, not random nice-to-haves.`,
+      priority: "must",
+      detail:
+        preferences.startStrategy === "rope_drop"
+          ? "Because this is a rope-drop style day, the app should look for early low-wait windows before heat and crowds steal the opportunity."
+          : "These should influence later TOHI chat and recommendation scoring so the app protects what actually matters to the family.",
+    };
+  }
+
+  if (allMustDos.length > 0) {
+    return {
+      id: "must_do_protection",
+      eyebrow: "MUST-DO PROTECTION",
+      title: "Keep selected must-dos visible across the trip.",
+      body:
+        `Your protected moments include ${allMustDoLabel}. They are not in the current park view, but they still define what a successful trip feels like.`,
+      priority: "should",
+      detail:
+        "When you switch parks, TOHI should bring those targets back into the strategy instead of treating every park day as generic.",
+    };
+  }
+
   if (preferences.showsImportance === "high" || hasPriority(familyProfile, "shows_parades")) {
     return {
       id: "must_do_protection",
@@ -362,14 +457,15 @@ export function generateDayGamePlan({
   packingChecklist = [],
 } = {}) {
   const preferences = getPreferences(tripPlan);
+  const mustDoExperiences = getMustDoExperiences(tripPlan);
 
   const plan = [
-    buildStartPlan({ preferences, familyProfile, activePark, timeContext }),
-    buildMorningPriority({ preferences, familyProfile, activePark }),
+    buildStartPlan({ preferences, familyProfile, activePark, timeContext, tripPlan }),
+    buildMorningPriority({ preferences, familyProfile, activePark, tripPlan }),
     buildMiddayReset({ preferences, familyProfile, activePark, weather }),
     buildWeatherStrategy({ weather, weatherMode, familyProfile }),
-    buildEveningPivot({ preferences, familyProfile, activePark }),
-    buildMustDoProtection({ preferences, familyProfile, activePark }),
+    buildEveningPivot({ preferences, familyProfile, activePark, tripPlan }),
+    buildMustDoProtection({ preferences, familyProfile, activePark, tripPlan }),
   ];
 
   return plan.map((item, index) => ({
@@ -386,6 +482,7 @@ export function generateDayGamePlan({
       showsImportance: preferences.showsImportance,
       nighttimeImportance: preferences.nighttimeImportance,
       paidQueueStrategy: preferences.paidQueueStrategy,
+      mustDoExperienceCount: mustDoExperiences.length,
     },
   }));
 }
