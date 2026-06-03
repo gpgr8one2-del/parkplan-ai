@@ -2,6 +2,20 @@ import React from "react";
 import { getResortProfile } from "../resortProfiles";
 import { colors } from "../theme";
 
+const BETA_DISABLED_PARK_IDS = new Set([
+  "universal_sf",
+  "islands",
+  "epic_universe",
+]);
+
+function isTripParkSelectable(parkId) {
+  return !BETA_DISABLED_PARK_IDS.has(parkId);
+}
+
+function getTripParkStatusLabel(parkId) {
+  return BETA_DISABLED_PARK_IDS.has(parkId) ? "Coming soon" : "";
+}
+
 export function OnboardingFlow({
   familyProfileSummary,
   activePark,
@@ -59,6 +73,17 @@ export function OnboardingFlow({
   const selectedParksText = selectedParkIds.length
     ? selectedParkIds.map((parkId) => getParkLabel(parkId)).join(", ")
     : "not set";
+
+  const selectableParkOptions = DISNEY_PARK_OPTIONS.map((option) => ({
+    ...option,
+    isDisabled: !isTripParkSelectable(option.value),
+    statusLabel: getTripParkStatusLabel(option.value),
+  }));
+
+  const selectedEnabledParkOptions = selectableParkOptions.filter(
+    (park) => selectedParkIds.includes(park.value) && !park.isDisabled
+  );
+
 
   const setupPage = {
     ...page,
@@ -153,6 +178,17 @@ export function OnboardingFlow({
   }
 
   function handleParkSelectionToggle(parkValue) {
+    if (!isTripParkSelectable(parkValue)) {
+      trackAppEvent("profile_park_selection_blocked", {
+        source: "profile_setup",
+        metadata: {
+          blockedPark: parkValue,
+          status: "coming_soon",
+        },
+      });
+      return;
+    }
+
     const parks = new Set(selectedParkIds);
 
     if (parks.has(parkValue)) {
@@ -583,22 +619,28 @@ export function OnboardingFlow({
                 </p>
 
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {DISNEY_PARK_OPTIONS.map((option) => {
+                  {selectableParkOptions.map((option) => {
                     const selected = selectedParkIds.includes(option.value);
+                    const disabled = option.isDisabled;
 
                     return (
                       <button
                         key={option.value}
                         type="button"
+                        disabled={disabled}
+                        aria-disabled={disabled}
                         onClick={() => handleParkSelectionToggle(option.value)}
                         style={{
                           ...actionButton,
-                          background: selected ? "#0f172a" : "white",
-                          color: selected ? "white" : "#0f172a",
-                          borderColor: selected ? "#0f172a" : "#cbd5e1",
+                          background: selected ? "#0f172a" : disabled ? "#f8fafc" : "white",
+                          color: selected ? "white" : disabled ? "#94a3b8" : "#0f172a",
+                          borderColor: selected ? "#0f172a" : disabled ? "#e2e8f0" : "#cbd5e1",
+                          cursor: disabled ? "not-allowed" : "pointer",
+                          opacity: disabled ? 0.72 : 1,
                         }}
                       >
                         {option.label}
+                        {disabled ? " · Coming soon" : ""}
                       </button>
                     );
                   })}
@@ -614,9 +656,7 @@ export function OnboardingFlow({
                         style={inputStyle}
                       >
                         <option value="">Not sure yet</option>
-                        {DISNEY_PARK_OPTIONS.filter((park) =>
-                          selectedParkIds.includes(park.value)
-                        ).map((park) => (
+                        {selectedEnabledParkOptions.map((park) => (
                           <option key={park.value} value={park.value}>
                             {park.label}
                           </option>
@@ -632,9 +672,7 @@ export function OnboardingFlow({
                         style={inputStyle}
                       >
                         <option value="">Not sure yet</option>
-                        {DISNEY_PARK_OPTIONS.filter((park) =>
-                          selectedParkIds.includes(park.value)
-                        ).map((park) => (
+                        {selectedEnabledParkOptions.map((park) => (
                           <option key={park.value} value={park.value}>
                             {park.label}
                           </option>
