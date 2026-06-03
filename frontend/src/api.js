@@ -271,10 +271,103 @@ function normalizeOptionalString(value) {
   return undefined;
 }
 
+
+function sanitizeMustDoExperience(experience = {}) {
+  if (!experience || typeof experience !== "object") return undefined;
+
+  const cleaned = removeEmptyFields({
+    id: normalizeOptionalString(experience.id),
+    name: truncateString(experience.name, 160),
+    parkId: normalizeOptionalString(experience.parkId),
+    type: normalizeOptionalString(experience.type),
+    priority: normalizeOptionalString(experience.priority),
+    land: normalizeOptionalString(experience.land),
+    source: normalizeOptionalString(experience.source),
+  });
+
+  return cleaned.id && cleaned.name && cleaned.parkId ? cleaned : undefined;
+}
+
+function sanitizeTripPlanContext(tripPlan = {}) {
+  if (!tripPlan || typeof tripPlan !== "object" || Array.isArray(tripPlan)) {
+    return undefined;
+  }
+
+  const preferences =
+    tripPlan.preferences && typeof tripPlan.preferences === "object"
+      ? removeEmptyFields({
+          startStrategy: normalizeOptionalString(tripPlan.preferences.startStrategy),
+          breakPreference: normalizeOptionalString(tripPlan.preferences.breakPreference),
+          diningStyle: normalizeOptionalString(tripPlan.preferences.diningStyle),
+          showsImportance: normalizeOptionalString(tripPlan.preferences.showsImportance),
+          nighttimeImportance: normalizeOptionalString(tripPlan.preferences.nighttimeImportance),
+          paidQueueStrategy: normalizeOptionalString(tripPlan.preferences.paidQueueStrategy),
+        })
+      : {};
+
+  const mustDoExperiences = Array.isArray(tripPlan.mustDoExperiences)
+    ? tripPlan.mustDoExperiences
+        .slice(0, 30)
+        .map(sanitizeMustDoExperience)
+        .filter(Boolean)
+    : [];
+
+  return removeEmptyFields({
+    version: typeof tripPlan.version === "number" ? tripPlan.version : undefined,
+    system: normalizeOptionalString(tripPlan.system),
+    preferences,
+    mustDoExperiences,
+    updatedAt: normalizeOptionalString(tripPlan.updatedAt),
+  });
+}
+
+function sanitizeDayGamePlanItem(item = {}) {
+  if (!item || typeof item !== "object") return undefined;
+
+  const cleaned = removeEmptyFields({
+    id: normalizeOptionalString(item.id),
+    order: typeof item.order === "number" ? item.order : undefined,
+    eyebrow: truncateString(item.eyebrow, 80),
+    title: truncateString(item.title, 180),
+    body: truncateString(item.body, 700),
+    detail: truncateString(item.detail, 500),
+    priority: normalizeOptionalString(item.priority),
+    priorityLabel: truncateString(item.priorityLabel, 80),
+    generatedFrom:
+      item.generatedFrom && typeof item.generatedFrom === "object"
+        ? removeEmptyFields({
+            startStrategy: normalizeOptionalString(item.generatedFrom.startStrategy),
+            breakPreference: normalizeOptionalString(item.generatedFrom.breakPreference),
+            diningStyle: normalizeOptionalString(item.generatedFrom.diningStyle),
+            showsImportance: normalizeOptionalString(item.generatedFrom.showsImportance),
+            nighttimeImportance: normalizeOptionalString(item.generatedFrom.nighttimeImportance),
+            paidQueueStrategy: normalizeOptionalString(item.generatedFrom.paidQueueStrategy),
+          })
+        : undefined,
+  });
+
+  return cleaned.id || cleaned.title ? cleaned : undefined;
+}
+
+function sanitizeDayGamePlan(dayGamePlan = []) {
+  if (!Array.isArray(dayGamePlan)) return [];
+
+  return dayGamePlan.slice(0, 10).map(sanitizeDayGamePlanItem).filter(Boolean);
+}
+
 function sanitizeChatSessionData(sessionData = {}) {
   if (!sessionData || typeof sessionData !== "object" || Array.isArray(sessionData)) {
     return {};
   }
+
+  const safeTripPlan = sanitizeTripPlanContext(sessionData.tripPlan);
+  const safeMustDoExperiences = Array.isArray(sessionData.mustDoExperiences)
+    ? sessionData.mustDoExperiences
+        .slice(0, 30)
+        .map(sanitizeMustDoExperience)
+        .filter(Boolean)
+    : safeTripPlan?.mustDoExperiences || [];
+  const safeDayGamePlan = sanitizeDayGamePlan(sessionData.dayGamePlan);
 
   return removeEmptyFields({
     ...sessionData,
@@ -283,6 +376,12 @@ function sanitizeChatSessionData(sessionData = {}) {
     // starts with no selected land, but sending null fails Zod validation.
     activePark: normalizeOptionalString(sessionData.activePark),
     currentLand: normalizeOptionalString(sessionData.currentLand),
+
+    // Commit 32: keep the AI handoff structured and bounded. The deterministic
+    // Day Game Plan remains the source of truth; TOHI chat explains/adapts it.
+    tripPlan: safeTripPlan,
+    mustDoExperiences: safeMustDoExperiences,
+    dayGamePlan: safeDayGamePlan,
   });
 }
 
