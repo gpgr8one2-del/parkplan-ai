@@ -315,7 +315,7 @@ const chatSchema = z.object({
   sessionData: z
     .object({
       activePark: z.string().max(100).optional(),
-      currentLand: z.string().max(100).optional(),
+      currentLand: z.string().max(100).nullable().optional(),
       familyProfile: familyProfileSchema,
       timeContext: timeContextSchema,
       locationContext: locationContextSchema,
