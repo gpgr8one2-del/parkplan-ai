@@ -401,6 +401,18 @@ function buildWeatherDisplay(weather) {
   return parts.length ? parts.join(" · ") : "Loading weather...";
 }
 
+
+function stripMarkdown(text) {
+  return String(text || "")
+    .replace(/#{1,6}\s*/g, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/^---+$/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+
 function getRideMetaForDisplay(parkId, ride) {
   return getRideMeta(parkId, ride?.id ?? ride?.name) || getRideMeta(parkId, ride?.name);
 }
@@ -1578,28 +1590,27 @@ function App() {
           ...familyProfileSummary,
           isSetupComplete: profileCompletion.isComplete,
         },
-        tripPlan: tripPlanState,
-        mustDoExperiences: tripPlanState?.mustDoExperiences || [],
-        dayGamePlan,
         timeContext,
         locationContext: locationContextForDecisions,
         currentActivity: currentActivityContext,
         currentActivityContext,
       });
 
-      setChat([...nextChat, { role: "assistant", content: res.reply }]);
+      setChat([...nextChat, { role: "assistant", content: stripMarkdown(res.reply) }]);
     } catch {
       setChat([
         ...nextChat,
         {
           role: "assistant",
-          content: buildLocalChatFallback({
-            activePark,
-            weatherMode,
-            currentActivityContext,
-            familyProfile: familyProfileSummary,
-            recommendations,
-          }),
+          content: stripMarkdown(
+            buildLocalChatFallback({
+              activePark,
+              weatherMode,
+              currentActivityContext,
+              familyProfile: familyProfileSummary,
+              recommendations,
+            })
+          ),
         },
       ]);
     } finally {
