@@ -33,6 +33,7 @@ export const DEFAULT_FAMILY_PROFILE = {
   // Renamed from lightningLanePreference. This stays in the family profile
   // for one compatibility cycle, then moves to parkplan.tripPlan in 24E.
   paidQueueStrategy: "undecided",
+  lightningLanePreference: "undecided",
 
   tripContext: {
     tripStartDate: "",
@@ -214,9 +215,12 @@ function normalizePriorities(priorities = []) {
   const normalized = priorities
     .map((priority) => {
       if (priority === "bluey_younger_kids") return "young_kid_moments";
+      if (priority === "princesses") return "characters";
+      if (priority === "ac_breaks") return "low_stress";
+
       return priority;
     })
-    .filter((priority) => priority !== "princesses" && priority !== "ac_breaks");
+    .filter(Boolean);
 
   return Array.from(new Set(normalized));
 }
@@ -227,6 +231,32 @@ function normalizeMobilityAccessibility(value = {}) {
     usesWheelchair: toBoolean(value.usesWheelchair),
     mobilityNotes: String(value.mobilityNotes || "").slice(0, 300),
   };
+}
+
+function hasMeaningfulSelection(value, emptyValue = "undecided") {
+  const normalizedValue = String(value ?? "").trim();
+
+  return Boolean(normalizedValue && normalizedValue !== emptyValue);
+}
+
+function normalizePaidQueueStrategy(profile = {}) {
+  // 24C compatibility rule:
+  // Current OnboardingFlow.jsx still writes legacy lightningLanePreference.
+  // The new paidQueueStrategy default is "undecided", so it must not win over
+  // a real legacy value like "yes", "no", "multi_pass", etc.
+  if (hasMeaningfulSelection(profile.lightningLanePreference)) {
+    return profile.lightningLanePreference;
+  }
+
+  if (hasMeaningfulSelection(profile.paidQueueStrategy)) {
+    return profile.paidQueueStrategy;
+  }
+
+  return (
+    profile.lightningLanePreference ||
+    profile.paidQueueStrategy ||
+    DEFAULT_FAMILY_PROFILE.paidQueueStrategy
+  );
 }
 
 function buildTripContextWithCompatibility(tripContext = {}) {
@@ -374,9 +404,22 @@ export function getFamilyProfileCompletion(profile = {}) {
     missing.push("hotel / area");
   }
 
+  // 24C hotfix:
+  // Before 24D, the current onboarding UI may still be writing the legacy
+  // tripLengthDays field instead of tripStartDate/tripEndDate. Do not keep
+  // completed or otherwise valid legacy profiles locked out of TOHI chat just
+  // because the schema moved faster than the UI.
+  const compatibilityMissing = missing.filter((item) => item !== "trip dates");
+
+  const isComplete =
+    missing.length === 0 ||
+    safeProfile.isSetupComplete === true ||
+    compatibilityMissing.length === 0;
+
   return {
-    isComplete: missing.length === 0,
-    missing,
+    isComplete,
+    missing: isComplete ? [] : compatibilityMissing,
+    strictMissing: missing,
   };
 }
 
@@ -451,10 +494,7 @@ export function normalizeFamilyProfile(profile = {}) {
     merged.walkingTolerance || mapPaceToWalkingTolerance(pace) || "medium";
 
   const tripContext = buildTripContextWithCompatibility(merged.tripContext);
-  const paidQueueStrategy =
-    merged.paidQueueStrategy ||
-    merged.lightningLanePreference ||
-    DEFAULT_FAMILY_PROFILE.paidQueueStrategy;
+  const paidQueueStrategy = normalizePaidQueueStrategy(merged);
 
   return {
     ...merged,
@@ -535,9 +575,11 @@ export function buildFamilyProfileSummary(profile) {
 
   const resortProfile = getResortProfile(safeProfile.resortContext?.resortId);
   const tripAccessStatus = getDateAccessStatus(safeProfile.tripContext);
+  const completion = getFamilyProfileCompletion(safeProfile);
 
   return {
     ...safeProfile,
+    isSetupComplete: completion.isComplete,
     resortProfile,
     tripAccessStatus,
     ageSummary,
