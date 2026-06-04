@@ -1012,6 +1012,7 @@ export function PlanTab({
   timeContext,
   packingChecklist,
   dayGamePlan = [],
+  planNudges = [],
   tripPlanFreshness,
   onRefreshTripPlanContext,
   tripPlan = { preferences: {}, mustDoExperiences: [] },
