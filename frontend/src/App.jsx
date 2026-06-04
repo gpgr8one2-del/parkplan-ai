@@ -7,6 +7,7 @@ import { getNextBestRides } from "./rideRecommendations";
 import { getWeatherMode, getRecoverySuggestions } from "./utils/weatherAdvice";
 import { generatePackingChecklist } from "./utils/packingChecklist";
 import { generateDayGamePlan } from "./utils/dayGamePlan";
+import { generatePlanNudges } from "./utils/planNudges";
 import {
   readStoredTripPlan,
   writeStoredTripPlan,
@@ -1251,6 +1252,28 @@ function App() {
       currentContext: tripPlanFreshnessContext,
     });
   }, [tripPlanState, tripPlanFreshnessContext]);
+
+  const planNudges = useMemo(() => {
+    return generatePlanNudges({
+      familyProfile: familyProfileSummary,
+      tripPlan: tripPlanState,
+      activePark,
+      weather,
+      weatherMode,
+      timeContext,
+      tripPlanFreshness,
+      recommendations,
+    });
+  }, [
+    familyProfileSummary,
+    tripPlanState,
+    activePark,
+    weather,
+    weatherMode,
+    timeContext,
+    tripPlanFreshness,
+    recommendations,
+  ]);
 
   const mustDoExperienceOptions = useMemo(() => {
     return buildMustDoExperienceOptions({
@@ -3243,6 +3266,7 @@ function App() {
               timeContext={timeContext}
               packingChecklist={packingChecklist}
               dayGamePlan={dayGamePlan}
+              planNudges={planNudges}
               tripPlanFreshness={tripPlanFreshness}
               onRefreshTripPlanContext={handleRefreshTripPlanContext}
               tripPlan={tripPlanState}
