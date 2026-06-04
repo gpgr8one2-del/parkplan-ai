@@ -702,6 +702,122 @@ function formatPlanFreshnessAge(ageMinutes) {
   return minutes ? `${hours}h ${minutes}m ago` : `${hours}h ago`;
 }
 
+
+function PlanNudgesSection({
+  card,
+  button,
+  planNudges = [],
+  onRefreshTripPlanContext,
+}) {
+  if (!Array.isArray(planNudges) || planNudges.length === 0) return null;
+
+  return (
+    <section
+      style={{
+        ...card,
+        padding: 15,
+        background:
+          "radial-gradient(circle at 95% 0%, rgba(245, 158, 11, 0.18) 0%, rgba(245, 158, 11, 0.04) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #FFF7ED 100%)",
+        border: "1px solid rgba(245, 158, 11, 0.24)",
+        boxShadow: "0 14px 30px rgba(245, 158, 11, 0.08)",
+      }}
+    >
+      <SectionBadge background={colors.amberSoft} color="#92400E">
+        TOHI NUDGES
+      </SectionBadge>
+
+      <h3 style={{ margin: 0, color: colors.text, fontSize: 19, letterSpacing: -0.25 }}>
+        Worth noticing right now
+      </h3>
+
+      <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
+        Small course-corrections based on your setup, weather, timing, and plan freshness.
+      </p>
+
+      <div style={{ display: "grid", gap: 9, marginTop: 12 }}>
+        {planNudges.map((nudge) => (
+          <div
+            key={nudge.id}
+            style={{
+              padding: 12,
+              borderRadius: 17,
+              background: "rgba(255,255,255,0.82)",
+              border: `1px solid ${colors.cardBorder}`,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 10,
+                alignItems: "flex-start",
+                flexWrap: "wrap",
+              }}
+            >
+              <div style={{ minWidth: 220, flex: "1 1 260px" }}>
+                <div
+                  style={{
+                    color: colors.purpleDeep,
+                    fontSize: 10,
+                    fontWeight: 950,
+                    letterSpacing: 0.8,
+                    textTransform: "uppercase",
+                    marginBottom: 4,
+                  }}
+                >
+                  {nudge.eyebrow || "TOHI NUDGE"}
+                </div>
+
+                <div
+                  style={{
+                    color: colors.text,
+                    fontSize: 14,
+                    fontWeight: 950,
+                    lineHeight: 1.25,
+                  }}
+                >
+                  {nudge.title}
+                </div>
+
+                <p
+                  style={{
+                    margin: "5px 0 0",
+                    color: colors.muted,
+                    fontSize: 12.5,
+                    lineHeight: 1.38,
+                    fontWeight: 650,
+                  }}
+                >
+                  {nudge.body}
+                </p>
+              </div>
+
+              {nudge.action === "refresh_plan" && (
+                <button
+                  type="button"
+                  onClick={onRefreshTripPlanContext}
+                  style={{
+                    ...button,
+                    padding: "7px 10px",
+                    fontSize: 12,
+                    background: colors.purpleDeep,
+                    color: "white",
+                    borderColor: colors.purpleDeep,
+                    flexShrink: 0,
+                  }}
+                >
+                  {nudge.actionLabel || "Refresh plan"}
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+
 function PlanFreshnessNotice({ card, button, planFreshness, onRefreshTripPlanContext }) {
   if (!planFreshness?.isStale) return null;
 
@@ -961,6 +1077,13 @@ export function PlanTab({
         hasPersonalizedAccess={hasPersonalizedAccess}
         profileCompletion={profileCompletion}
         setActiveScreen={setActiveScreen}
+      />
+
+      <PlanNudgesSection
+        card={card}
+        button={button}
+        planNudges={planNudges}
+        onRefreshTripPlanContext={onRefreshTripPlanContext}
       />
 
       <PlanFreshnessNotice
