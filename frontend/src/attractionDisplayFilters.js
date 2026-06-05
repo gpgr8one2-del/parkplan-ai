@@ -53,6 +53,8 @@ const EXACT_HIDE_NAMES_BY_PARK = {
       "Meet Darth Vader at Star Wars Launch Bay",
       "Meet BB-8 at Star Wars Launch Bay",
       "Meet Chewbacca at Star Wars Launch Bay",
+      "Muppet*Vision 3D",
+      "MuppetVision 3D",
     ].map(normalizeName)
   ),
 
@@ -123,6 +125,7 @@ const GENERIC_HIDE_PATTERNS_BY_PARK = {
     /walt disney presents/i,
     /vacation fun/i,
     /disney junior/i,
+    /muppet\*?vision/i,
   ],
 
   animal_kingdom: [
