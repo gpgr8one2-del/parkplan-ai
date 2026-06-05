@@ -194,9 +194,9 @@ export function generatePlanNudges({
       id: "stale_plan",
       priority: "high",
       eyebrow: "PLAN CHECK",
-      title: "Refresh before trusting the next move.",
+      title: "Refresh before leaning on the next move.",
       body:
-        "Your timing, weather, park, or trip setup changed since this plan was refreshed. A quick refresh keeps TOHI from leaning on stale context.",
+        "Your timing, weather, park, or trip setup changed since this plan was refreshed. A quick refresh keeps TOHI using the right context.",
       actionLabel: "Refresh plan",
       action: "refresh_plan",
     });
@@ -250,10 +250,10 @@ export function generatePlanNudges({
     addNudge(nudges, {
       id: "heat_energy_window",
       priority: "high",
-      eyebrow: "ENERGY PROTECTION",
-      title: "Heat is climbing — protect the reset earlier.",
+      eyebrow: "PACE CHECK",
+      title: "Heat is climbing — cool down earlier.",
       body:
-        "This is the window where families usually wait too long to cool down. Use water, AC, food, shade, or a seated show before the day turns into damage control.",
+        "This is the window where families usually wait too long to cool down. Use water, AC, food, shade, or a seated show before the day gets harder.",
     });
   }
 
@@ -289,7 +289,7 @@ export function generatePlanNudges({
       eyebrow: "FAMILY ENERGY",
       title: "Watch for the quiet crash before it gets loud.",
       body:
-        "With younger kids, the warning signs can be subtle. Food, AC, stroller time, or a calm seated break now can save the evening.",
+        "With younger kids, the heads up signs can be subtle. Food, AC, stroller time, or a calm seated break now can save the evening.",
     });
   }
 
@@ -324,9 +324,9 @@ export function generatePlanNudges({
       id: "must_do_visibility",
       priority: "medium",
       eyebrow: "MUST-DO CHECK",
-      title: "Keep must-dos from getting crowded out.",
+      title: "Keep your priorities from getting crowded out.",
       body:
-        "Before chasing random waits, check whether one selected must-do still needs a protected window. One meaningful win beats scattered filler.",
+        "Before chasing random waits, check whether one selected priority has a good window. One meaningful win beats scattered filler.",
     });
   }
 
