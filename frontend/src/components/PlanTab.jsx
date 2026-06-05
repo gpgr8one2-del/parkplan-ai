@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { colors } from "../theme";
 
 const START_STRATEGY_OPTIONS = [
-  { value: "rope_drop", label: "Rope drop", helper: "Arrive early and protect the first big move." },
+  { value: "rope_drop", label: "Rope drop", helper: "Arrive early and make room for the first big move." },
   { value: "moderate_morning", label: "Moderate morning", helper: "Start steady without forcing a pre-dawn sprint." },
-  { value: "late_start", label: "Late start", helper: "Accept a slower start and protect energy." },
+  { value: "late_start", label: "Late start", helper: "Accept a slower start and keep energy in the day." },
   { value: "evening_only", label: "Evening only", helper: "Build around a shorter, cooler park window." },
 ];
 
@@ -12,7 +12,7 @@ const BREAK_PREFERENCE_OPTIONS = [
   { value: "no_break", label: "No formal break", helper: "Stay in the park and use smaller resets." },
   { value: "resort_return", label: "Resort return", helper: "Plan a real mid-day escape when realistic." },
   { value: "in_park_rest", label: "In-park rest", helper: "Use AC, shade, food, and seated shows." },
-  { value: "kids_nap_window", label: "Kids nap window", helper: "Protect a real rest window for younger kids." },
+  { value: "kids_nap_window", label: "Kids nap window", helper: "Make room for a real rest window for younger kids." },
 ];
 
 const DINING_STYLE_OPTIONS = [
@@ -25,7 +25,7 @@ const DINING_STYLE_OPTIONS = [
 const SHOWS_IMPORTANCE_OPTIONS = [
   { value: "low", label: "Low", helper: "Rides and flow matter more than shows." },
   { value: "medium", label: "Medium", helper: "Use shows when they help the day." },
-  { value: "high", label: "High", helper: "Protect parades, shows, and character moments." },
+  { value: "high", label: "High", helper: "Make room for parades, shows, and character moments." },
 ];
 
 const NIGHTTIME_IMPORTANCE_OPTIONS = [
@@ -37,7 +37,7 @@ const NIGHTTIME_IMPORTANCE_OPTIONS = [
 const PAID_QUEUE_OPTIONS = [
   { value: "undecided", label: "Undecided", helper: "Keep options open for now." },
   { value: "avoid_paid", label: "Avoid paid access", helper: "Only suggest free strategies unless the day is at risk." },
-  { value: "open_to_paid", label: "Open if it protects the day", helper: "Use paid access when it prevents stress." },
+  { value: "open_to_paid", label: "Open if it keeps the day easier", helper: "Use paid access when it keeps the day easier." },
   { value: "use_paid", label: "Plan around paid access", helper: "Treat paid queue access as part of the strategy." },
 ];
 
@@ -76,6 +76,29 @@ function SectionBadge({ children, background, color }) {
     >
       {children}
     </div>
+  );
+}
+
+
+function CollapseButton({ isOpen, openLabel = "See more", closeLabel = "Collapse", onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        border: `1px solid ${colors.cardBorder}`,
+        background: "rgba(255,255,255,0.82)",
+        color: colors.text,
+        borderRadius: 999,
+        padding: "7px 10px",
+        fontSize: 12,
+        fontWeight: 900,
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {isOpen ? `▲ ${closeLabel}` : `▶ ${openLabel}`}
+    </button>
   );
 }
 
@@ -139,6 +162,7 @@ function getMustDoKey(experience = {}) {
   return `${experience.parkId || ""}:${experience.id || ""}`;
 }
 
+
 function PlanningStatusCard({
   card,
   timeContext = {},
@@ -151,7 +175,7 @@ function PlanningStatusCard({
     <section
       style={{
         ...card,
-        padding: 14,
+        padding: 13,
         background: "linear-gradient(145deg, #FFFFFF 0%, #FFF9F1 100%)",
         border: `1px solid ${colors.cardBorder}`,
         boxShadow: "0 10px 24px rgba(28, 25, 23, 0.05)",
@@ -162,13 +186,13 @@ function PlanningStatusCard({
           display: "flex",
           justifyContent: "space-between",
           gap: 12,
-          alignItems: "flex-start",
+          alignItems: "center",
           flexWrap: "wrap",
         }}
       >
-        <div>
+        <div style={{ minWidth: 220, flex: "1 1 300px" }}>
           <SectionBadge background={colors.amberSoft} color="#92400E">
-            STATUS
+            TRIP STATUS
           </SectionBadge>
           <p
             style={{
@@ -182,33 +206,11 @@ function PlanningStatusCard({
             {timeContext.summary}
           </p>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-            <span
-              style={{
-                padding: "6px 9px",
-                borderRadius: 999,
-                background: colors.purpleSoft,
-                color: colors.purpleDeep,
-                fontSize: 12,
-                fontWeight: 900,
-              }}
-            >
-              Mode: {String(timeContext.planningMode || "planning").replace(/_/g, " ")}
-            </span>
-
-            <span
-              style={{
-                padding: "6px 9px",
-                borderRadius: 999,
-                background: hasPersonalizedAccess ? colors.successSoft : colors.coralSoft,
-                color: hasPersonalizedAccess ? colors.success : "#E11D48",
-                fontSize: 12,
-                fontWeight: 900,
-              }}
-            >
-              Personalization: {hasPersonalizedAccess ? "active" : "locked"}
-            </span>
-          </div>
+          <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+            {hasPersonalizedAccess
+              ? "Your setup is active. TOHI is using your family profile and trip tune in this plan."
+              : "Finish setup when you are ready for a plan that fits your family."}
+          </p>
         </div>
 
         <button
@@ -228,7 +230,14 @@ function PlanningStatusCard({
   );
 }
 
+
 function DayGamePlanSection({ card, dayGamePlan = [] }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const firstAnchor = dayGamePlan[0];
+  const preview = firstAnchor?.title
+    ? `${firstAnchor.eyebrow ? `${firstAnchor.eyebrow}: ` : ""}${firstAnchor.title}`
+    : "Tap to see the strategy behind the day.";
+
   return (
     <section
       style={{
@@ -256,130 +265,148 @@ function DayGamePlanSection({ card, dayGamePlan = [] }) {
       />
 
       <div style={{ position: "relative" }}>
-        <SectionBadge background={colors.skySoft} color="#0369A1">
-          DAY GAME PLAN
-        </SectionBadge>
-
-        <h2
+        <div
           style={{
-            margin: 0,
-            color: colors.text,
-            fontSize: 28,
-            letterSpacing: -0.7,
-            lineHeight: 1.12,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "flex-start",
+            flexWrap: "wrap",
           }}
         >
-          Today’s strategy
-        </h2>
+          <div style={{ minWidth: 220, flex: "1 1 320px" }}>
+            <SectionBadge background={colors.skySoft} color="#0369A1">
+              YOUR GAME PLAN
+            </SectionBadge>
 
-        <p
-          style={{
-            margin: "8px 0 0",
-            color: colors.muted,
-            fontSize: 14,
-            lineHeight: 1.45,
-            maxWidth: 660,
-          }}
-        >
-          This is the simple operating plan for the day. TOHI uses your setup,
-          must-dos, forecast, and trip tune to keep the family moving without
-          turning the park into homework.
-        </p>
+            <h2
+              style={{
+                margin: 0,
+                color: colors.text,
+                fontSize: 24,
+                letterSpacing: -0.55,
+                lineHeight: 1.12,
+              }}
+            >
+              Here’s how TOHI thinks about your trip
+            </h2>
 
-        <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
-          {dayGamePlan.map((item) => {
-            const styleForPriority =
-              PRIORITY_STYLES[item.priority] || PRIORITY_STYLES.optional;
+            <p
+              style={{
+                margin: "8px 0 0",
+                color: colors.muted,
+                fontSize: 14,
+                lineHeight: 1.45,
+                maxWidth: 660,
+              }}
+            >
+              {preview}
+            </p>
+          </div>
 
-            return (
-              <div
-                key={item.id}
-                style={{
-                  padding: 13,
-                  borderRadius: 18,
-                  background: "rgba(255,255,255,0.84)",
-                  border: `1px solid ${colors.cardBorder}`,
-                  boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
-                }}
-              >
+          <CollapseButton
+            isOpen={isOpen}
+            openLabel="See strategy"
+            closeLabel="Collapse"
+            onClick={() => setIsOpen((current) => !current)}
+          />
+        </div>
+
+        {isOpen && (
+          <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
+            {dayGamePlan.map((item) => {
+              const styleForPriority =
+                PRIORITY_STYLES[item.priority] || PRIORITY_STYLES.optional;
+
+              return (
                 <div
+                  key={item.id}
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    gap: 10,
+                    padding: 13,
+                    borderRadius: 18,
+                    background: "rgba(255,255,255,0.84)",
+                    border: `1px solid ${colors.cardBorder}`,
+                    boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
                   }}
                 >
-                  <div>
-                    <div
-                      style={{
-                        color: "#0369A1",
-                        fontSize: 11,
-                        fontWeight: 950,
-                        letterSpacing: 0.55,
-                      }}
-                    >
-                      {item.eyebrow}
-                    </div>
-                    <strong
-                      style={{
-                        display: "block",
-                        marginTop: 3,
-                        color: colors.text,
-                        fontSize: 15,
-                        lineHeight: 1.25,
-                      }}
-                    >
-                      {item.title}
-                    </strong>
-                    <p
-                      style={{
-                        margin: "6px 0 0",
-                        color: colors.text,
-                        fontSize: 13,
-                        lineHeight: 1.38,
-                      }}
-                    >
-                      {item.body}
-                    </p>
-                    {item.detail && (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      gap: 10,
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          color: "#0369A1",
+                          fontSize: 11,
+                          fontWeight: 950,
+                          letterSpacing: 0.55,
+                        }}
+                      >
+                        {item.eyebrow}
+                      </div>
+                      <strong
+                        style={{
+                          display: "block",
+                          marginTop: 3,
+                          color: colors.text,
+                          fontSize: 15,
+                          lineHeight: 1.25,
+                        }}
+                      >
+                        {item.title}
+                      </strong>
                       <p
                         style={{
                           margin: "6px 0 0",
-                          color: colors.muted,
-                          fontSize: 12,
-                          lineHeight: 1.35,
-                          fontWeight: 750,
+                          color: colors.text,
+                          fontSize: 13,
+                          lineHeight: 1.38,
                         }}
                       >
-                        {item.detail}
+                        {item.body}
                       </p>
-                    )}
-                  </div>
+                      {item.detail && (
+                        <p
+                          style={{
+                            margin: "6px 0 0",
+                            color: colors.muted,
+                            fontSize: 12,
+                            lineHeight: 1.35,
+                            fontWeight: 750,
+                          }}
+                        >
+                          {item.detail}
+                        </p>
+                      )}
+                    </div>
 
-                  <span
-                    style={{
-                      flexShrink: 0,
-                      padding: "5px 8px",
-                      borderRadius: 999,
-                      background: styleForPriority.bg,
-                      color: styleForPriority.color,
-                      fontSize: 11,
-                      fontWeight: 950,
-                    }}
-                  >
-                    {item.priorityLabel || styleForPriority.label}
-                  </span>
+                    <span
+                      style={{
+                        flexShrink: 0,
+                        padding: "5px 8px",
+                        borderRadius: 999,
+                        background: styleForPriority.bg,
+                        color: styleForPriority.color,
+                        fontSize: 11,
+                        fontWeight: 950,
+                      }}
+                    >
+                      {item.priorityLabel || styleForPriority.label}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );
 }
-
 
 function PlanningParkSelector({
   planningPark,
@@ -603,7 +630,7 @@ function MustDoMomentsSection({
               border: `1px solid ${colors.cardBorder}`,
             }}
           >
-            Add or edit must-dos
+            Add or edit priorities
           </summary>
 
           <div
@@ -667,7 +694,10 @@ function MustDoMomentsSection({
   );
 }
 
+
 function PlanTuneSection({ card, preferences = {}, onUpdateTripPreferences }) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <section
       style={{
@@ -678,40 +708,44 @@ function PlanTuneSection({ card, preferences = {}, onUpdateTripPreferences }) {
         boxShadow: "0 10px 24px rgba(124, 58, 237, 0.06)",
       }}
     >
-      <SectionBadge background="rgba(124, 58, 237, 0.10)" color={colors.purpleDeep}>
-        PLAN TUNE
-      </SectionBadge>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ minWidth: 220, flex: "1 1 300px" }}>
+          <SectionBadge background="rgba(124, 58, 237, 0.10)" color={colors.purpleDeep}>
+            PLAN TUNE
+          </SectionBadge>
 
-      <h3 style={{ margin: 0, color: colors.text, fontSize: 22, letterSpacing: -0.35 }}>
-        Fine-tune the day
-      </h3>
-      <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
-        These are the controls behind the strategy. Change them when the way you want
-        the day to feel changes.
-      </p>
+          <h3 style={{ margin: 0, color: colors.text, fontSize: 22, letterSpacing: -0.35 }}>
+            Fine-tune the day
+          </h3>
+          <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
+            These are the controls behind the strategy. Open them only when the way you want
+            the day to feel changes.
+          </p>
+        </div>
 
-      <details style={{ marginTop: 12 }}>
-        <summary
-          style={{
-            cursor: "pointer",
-            color: colors.text,
-            fontSize: 13,
-            fontWeight: 950,
-            padding: "10px 12px",
-            borderRadius: 16,
-            background: "rgba(255,255,255,0.78)",
-            border: `1px solid ${colors.cardBorder}`,
-          }}
-        >
-          Edit trip tune settings
-        </summary>
+        <CollapseButton
+          isOpen={isOpen}
+          openLabel="Edit controls"
+          closeLabel="Hide controls"
+          onClick={() => setIsOpen((current) => !current)}
+        />
+      </div>
 
+      {isOpen && (
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
             gap: 9,
-            marginTop: 10,
+            marginTop: 12,
           }}
         >
           <PlanPreferenceSelect
@@ -762,11 +796,10 @@ function PlanTuneSection({ card, preferences = {}, onUpdateTripPreferences }) {
             onChange={(value) => onUpdateTripPreferences({ paidQueueStrategy: value })}
           />
         </div>
-      </details>
+      )}
     </section>
   );
 }
-
 
 function formatPlanFreshnessAge(ageMinutes) {
   if (ageMinutes == null) return "";
@@ -982,7 +1015,14 @@ function PlanFreshnessNotice({ card, button, planFreshness, onRefreshTripPlanCon
 }
 
 
+
 function PackingPreviewSection({ card, packingChecklist = [] }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const previewItems = packingChecklist.slice(0, 2).map((item) => item.label).filter(Boolean);
+  const previewText = previewItems.length
+    ? previewItems.join(" · ")
+    : "TOHI will show the bag items that fit your forecast, park, and family setup.";
+
   return (
     <section
       style={{
@@ -1002,86 +1042,98 @@ function PackingPreviewSection({ card, packingChecklist = [] }) {
           flexWrap: "wrap",
         }}
       >
-        <div>
+        <div style={{ minWidth: 220, flex: "1 1 300px" }}>
           <SectionBadge background={colors.successSoft} color={colors.success}>
-            WHAT TO PACK TODAY
+            WHAT TO PACK
           </SectionBadge>
           <h3 style={{ margin: 0, color: colors.text, fontSize: 22, letterSpacing: -0.35 }}>
-            Forecast-aware park bag
+            What’s different about this trip’s bag
           </h3>
           <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
-            Only the items that fit today’s forecast, family setup, and park plan.
+            {previewText}
           </p>
         </div>
 
-        <span
-          style={{
-            padding: "7px 10px",
-            borderRadius: 999,
-            background: "rgba(255,255,255,0.78)",
-            border: `1px solid ${colors.cardBorder}`,
-            color: colors.text,
-            fontSize: 12,
-            fontWeight: 900,
-          }}
-        >
-          {packingChecklist.length} items
-        </span>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <span
+            style={{
+              padding: "7px 10px",
+              borderRadius: 999,
+              background: "rgba(255,255,255,0.78)",
+              border: `1px solid ${colors.cardBorder}`,
+              color: colors.text,
+              fontSize: 12,
+              fontWeight: 900,
+            }}
+          >
+            {packingChecklist.length} items
+          </span>
+
+          <CollapseButton
+            isOpen={isOpen}
+            openLabel="See bag"
+            closeLabel="Hide bag"
+            onClick={() => setIsOpen((current) => !current)}
+          />
+        </div>
       </div>
 
-      <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
-        {packingChecklist.map((item) => {
-          const styleForPriority =
-            PACKING_PRIORITY_STYLES[item.priority] || PACKING_PRIORITY_STYLES.nice_to_have;
+      {isOpen && (
+        <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
+          {packingChecklist.map((item) => {
+            const styleForPriority =
+              PACKING_PRIORITY_STYLES[item.priority] || PACKING_PRIORITY_STYLES.nice_to_have;
 
-          return (
-            <div
-              key={item.id}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr auto",
-                gap: 10,
-                alignItems: "start",
-                padding: 11,
-                borderRadius: 16,
-                background: "rgba(255,255,255,0.82)",
-                border: `1px solid ${colors.cardBorder}`,
-              }}
-            >
-              <div>
-                <strong style={{ color: colors.text, fontSize: 13 }}>{item.label}</strong>
-                <p
-                  style={{
-                    margin: "4px 0 0",
-                    color: colors.muted,
-                    fontSize: 12,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {item.reason}
-                </p>
-              </div>
-
-              <span
+            return (
+              <div
+                key={item.id}
                 style={{
-                  padding: "5px 8px",
-                  borderRadius: 999,
-                  background: styleForPriority.bg,
-                  color: styleForPriority.color,
-                  fontSize: 11,
-                  fontWeight: 950,
-                  whiteSpace: "nowrap",
+                  display: "grid",
+                  gridTemplateColumns: "1fr auto",
+                  gap: 10,
+                  alignItems: "start",
+                  padding: 11,
+                  borderRadius: 16,
+                  background: "rgba(255,255,255,0.82)",
+                  border: `1px solid ${colors.cardBorder}`,
                 }}
               >
-                {styleForPriority.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+                <div>
+                  <strong style={{ color: colors.text, fontSize: 13 }}>{item.label}</strong>
+                  <p
+                    style={{
+                      margin: "4px 0 0",
+                      color: colors.muted,
+                      fontSize: 12,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {item.reason}
+                  </p>
+                </div>
+
+                <span
+                  style={{
+                    padding: "5px 8px",
+                    borderRadius: 999,
+                    background: styleForPriority.bg,
+                    color: styleForPriority.color,
+                    fontSize: 11,
+                    fontWeight: 950,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {styleForPriority.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }
+
 
 export function PlanTab({
   card,
@@ -1148,7 +1200,7 @@ export function PlanTab({
               maxWidth: 640,
             }}
           >
-            A simple strategy for protecting the moments that matter without turning
+            A simple strategy for making room for what matters without turning
             the park day into a checklist.
           </p>
         </div>
@@ -1163,21 +1215,12 @@ export function PlanTab({
         setActiveScreen={setActiveScreen}
       />
 
-      <PlanNudgesSection
-        card={card}
-        button={button}
-        planNudges={planNudges}
-        onRefreshTripPlanContext={onRefreshTripPlanContext}
-      />
-
       <PlanFreshnessNotice
         card={card}
         button={button}
         planFreshness={tripPlanFreshness}
         onRefreshTripPlanContext={onRefreshTripPlanContext}
       />
-
-      <DayGamePlanSection card={card} dayGamePlan={dayGamePlan} />
 
       <MustDoMomentsSection
         card={card}
@@ -1190,6 +1233,15 @@ export function PlanTab({
         mustDoExperienceOptions={mustDoExperienceOptions}
         onToggleMustDoExperience={onToggleMustDoExperience}
       />
+
+      <PlanNudgesSection
+        card={card}
+        button={button}
+        planNudges={planNudges}
+        onRefreshTripPlanContext={onRefreshTripPlanContext}
+      />
+
+      <DayGamePlanSection card={card} dayGamePlan={dayGamePlan} />
 
       <PlanTuneSection
         card={card}
