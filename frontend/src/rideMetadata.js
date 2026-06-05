@@ -1416,8 +1416,9 @@ export const RIDE_METADATA = {
       tags: ["thrill", "drop", "classic", "indoor", "wait-for-drop"],
     },
 
-    "Rock 'n' Roller Coaster Starring Aerosmith": {
-      displayName: "Rock 'n' Roller Coaster Starring Aerosmith",
+    "Rock 'n' Roller Coaster Starring The Muppets": {
+      displayName: "Rock 'n' Roller Coaster Starring The Muppets",
+      aliases: ["Rock 'n' Roller Coaster Starring Aerosmith"],
       land: "sunset_boulevard",
       minHeightInches: 48,
       environment: "indoor",
@@ -1433,14 +1434,14 @@ export const RIDE_METADATA = {
         badValueOver: 85,
         usuallyHighAllDay: true,
         strategyNote:
-          "High-demand Tier 1 thrill ride. Single Rider is available but can move painfully slowly compared with other rides.",
+          "High-demand Tier 1 thrill ride now themed to The Muppets and Electric Mayhem. Single Rider may still move slowly compared with other rides.",
       },
       planningProfile: {
         category: "plan_ahead_multi_pass",
         paidAccess: "LLMP",
         appStatus: "plan_ahead",
         strategy:
-          "Use Multi Pass, rope drop Sunset Boulevard, or try late evening. Do not count on Single Rider as a reliable family strategy.",
+          "Use Multi Pass, rope drop Sunset Boulevard, or try late evening. Treat it as a high-demand Muppets thrill coaster, not a casual filler.",
       },
       tags: ["coaster", "thrill", "inversion", "indoor", "ac", "plan-ahead"],
     },
@@ -1588,35 +1589,6 @@ export const RIDE_METADATA = {
           "Good seated break when showtime is close, but not a true AC reset.",
       },
       tags: ["show", "stunts", "covered", "seated", "filler"],
-    },
-
-    "Muppet*Vision 3D": {
-      displayName: "Muppet*Vision 3D",
-      land: "grand_avenue",
-      minHeightInches: 0,
-      environment: "indoor",
-      hasAC: true,
-      getsWet: false,
-      closesInRain: false,
-      intensity: 1,
-      popularity: 38,
-      waitProfile: {
-        averageWait: 15,
-        goodDealUnder: 10,
-        normalRange: [10, 20],
-        badValueOver: 25,
-        usuallyHighAllDay: false,
-        strategyNote:
-          "Usually just waiting for the next show. Great AC and foot-rest option, especially during peak heat.",
-      },
-      planningProfile: {
-        category: "filler_or_recovery",
-        paidAccess: "LLMP_not_needed",
-        appStatus: "recovery",
-        strategy:
-          "Use as an easy Grand Avenue AC break. Do not burn a priority strategy on it unless seating matters to your group.",
-      },
-      tags: ["show", "family", "indoor", "ac", "recovery"],
     },
 
     "Star Wars: Rise of the Resistance": {
@@ -2512,7 +2484,7 @@ const OPENING_STRATEGY_BY_PARK_AND_NAME = {
     "Alien Swirling Saucers": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
     "Mickey & Minnie's Runaway Railway": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
     "Millennium Falcon: Smugglers Run": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
-    "Rock 'n' Roller Coaster Starring Aerosmith": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "Rock 'n' Roller Coaster Starring The Muppets": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
     "Slinky Dog Dash": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
     "Star Tours – The Adventures Continue": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
     "Star Wars: Rise of the Resistance": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
@@ -2603,7 +2575,9 @@ export function getRideMeta(parkId, rideIdOrName) {
   }
 
   const match = Object.values(park).find(
-    (m) => m.displayName === rideIdOrName
+    (m) =>
+      m.displayName === rideIdOrName ||
+      (Array.isArray(m.aliases) && m.aliases.includes(rideIdOrName))
   );
 
   return match ? withOpeningStrategyMeta(parkId, match) : null;
