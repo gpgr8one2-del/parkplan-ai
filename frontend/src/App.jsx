@@ -1184,6 +1184,7 @@ function App() {
       skippedRideIds: recommendationAvoidedRideIds,
       familyProfile: familyProfileSummary,
       timeContext,
+      tripPlan: tripPlanState,
     });
   }, [
     activePark,
@@ -1194,6 +1195,7 @@ function App() {
     recommendationAvoidedRideIds,
     familyProfileSummary,
     timeContext,
+    tripPlanState,
   ]);
 
   const weatherMode = useMemo(() => {
