@@ -630,9 +630,20 @@ export async function fetchParkData(parkId, options = {}) {
 }
 
 export async function fetchWeather(options = {}) {
-  const { force = false } = options;
+  const { force = false, parkId = "" } = options;
 
-  const path = "/api/weather" + (force ? "?force=true" : "");
+  const params = new URLSearchParams();
+
+  if (parkId) {
+    params.set("parkId", parkId);
+  }
+
+  if (force) {
+    params.set("force", "true");
+  }
+
+  const queryString = params.toString();
+  const path = `/api/weather${queryString ? `?${queryString}` : ""}`;
 
   return apiFetch(
     path,
