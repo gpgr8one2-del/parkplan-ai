@@ -574,6 +574,38 @@ function buildMustDoExperienceOptions({ activePark, rides = [] }) {
 }
 
 
+function isSelectableParkId(parkId) {
+  const park = PARKS.find((item) => item.id === parkId);
+  return Boolean(park && park.selectable !== false);
+}
+
+function getSafePlanningParkId(parkId, fallback = "magic_kingdom") {
+  if (isSelectableParkId(parkId)) return parkId;
+  if (isSelectableParkId(fallback)) return fallback;
+
+  return PARKS.find((park) => park.selectable !== false)?.id || "magic_kingdom";
+}
+
+function getPlanningParkFromProfile(profile = {}) {
+  const tripContext = profile?.tripContext || {};
+  const selectedParks = Array.isArray(tripContext.parkSelectionIds)
+    ? tripContext.parkSelectionIds
+    : Array.isArray(tripContext.selectedParks)
+    ? tripContext.selectedParks
+    : [];
+
+  return getSafePlanningParkId(
+    tripContext.firstParkId || tripContext.firstPark || selectedParks[0],
+    selectedParks.find(isSelectableParkId) || "magic_kingdom"
+  );
+}
+
+function getParkNameById(parkId) {
+  return PARKS.find((park) => park.id === parkId)?.name || parkId || "the park";
+}
+
+
+
 
 
 
@@ -844,6 +876,10 @@ function App() {
   );
   const [familyProfileStep, setFamilyProfileStep] = useState(1);
   const [tripPlanState, setTripPlanState] = useState(() => readStoredTripPlan());
+  const [planningPark, setPlanningPark] = useState(() =>
+    getPlanningParkFromProfile(initialFamilyProfileState.profile)
+  );
+  const lastProfilePlanningParkRef = useRef(planningPark);
 
   const [currentLand, setCurrentLand] = useState(null);
   const [completedRideIds, setCompletedRideIds] = useState([]);
@@ -865,6 +901,15 @@ function App() {
     writeStoredTripPlan(tripPlanState);
   }, [tripPlanState]);
 
+  useEffect(() => {
+    const nextPlanningPark = getPlanningParkFromProfile(familyProfile);
+
+    if (lastProfilePlanningParkRef.current !== nextPlanningPark) {
+      lastProfilePlanningParkRef.current = nextPlanningPark;
+      setPlanningPark(nextPlanningPark);
+    }
+  }, [familyProfile]);
+
   const familyProfileSummary = useMemo(() => {
     return buildFamilyProfileSummary(familyProfile);
   }, [familyProfile]);
@@ -881,6 +926,13 @@ function App() {
       familyProfile: familyProfileSummary,
     });
   }, [activePark, familyProfileSummary]);
+
+  const planningTimeContext = useMemo(() => {
+    return getCurrentTimeContext({
+      activePark: planningPark,
+      familyProfile: familyProfileSummary,
+    });
+  }, [planningPark, familyProfileSummary]);
 
   const access = useMemo(
     () =>
@@ -1202,21 +1254,24 @@ function App() {
     return getWeatherMode(weather);
   }, [weather]);
 
+  const planningParkLiveRides = activePark === planningPark ? parkData?.rides || [] : [];
+  const planningRecommendations = activePark === planningPark ? recommendations : {};
+
   const packingChecklist = useMemo(() => {
     return generatePackingChecklist({
       familyProfile: familyProfileSummary,
       weather,
       weatherMode,
-      activePark,
-      timeContext,
+      activePark: planningPark,
+      timeContext: planningTimeContext,
       tripPlan: tripPlanState,
     });
   }, [
     familyProfileSummary,
     weather,
     weatherMode,
-    activePark,
-    timeContext,
+    planningPark,
+    planningTimeContext,
     tripPlanState,
   ]);
 
@@ -1224,31 +1279,31 @@ function App() {
     return generateDayGamePlan({
       familyProfile: familyProfileSummary,
       tripPlan: tripPlanState,
-      activePark,
+      activePark: planningPark,
       weather,
       weatherMode,
-      timeContext,
+      timeContext: planningTimeContext,
       packingChecklist,
     });
   }, [
     familyProfileSummary,
     tripPlanState,
-    activePark,
+    planningPark,
     weather,
     weatherMode,
-    timeContext,
+    planningTimeContext,
     packingChecklist,
   ]);
 
   const tripPlanFreshnessContext = useMemo(() => {
     return createTripPlanFreshnessContext({
-      activePark,
-      timeContext,
+      activePark: planningPark,
+      timeContext: planningTimeContext,
       weatherMode,
       familyProfile: familyProfileSummary,
       tripPlan: tripPlanState,
     });
-  }, [activePark, timeContext, weatherMode, familyProfileSummary, tripPlanState]);
+  }, [planningPark, planningTimeContext, weatherMode, familyProfileSummary, tripPlanState]);
 
   const tripPlanFreshness = useMemo(() => {
     return getTripPlanFreshnessStatus({
@@ -1261,30 +1316,30 @@ function App() {
     return generatePlanNudges({
       familyProfile: familyProfileSummary,
       tripPlan: tripPlanState,
-      activePark,
+      activePark: planningPark,
       weather,
       weatherMode,
-      timeContext,
+      timeContext: planningTimeContext,
       tripPlanFreshness,
-      recommendations,
+      recommendations: planningRecommendations,
     });
   }, [
     familyProfileSummary,
     tripPlanState,
-    activePark,
+    planningPark,
     weather,
     weatherMode,
-    timeContext,
+    planningTimeContext,
     tripPlanFreshness,
-    recommendations,
+    planningRecommendations,
   ]);
 
   const mustDoExperienceOptions = useMemo(() => {
     return buildMustDoExperienceOptions({
-      activePark,
-      rides: parkData?.rides || [],
+      activePark: planningPark,
+      rides: planningParkLiveRides,
     });
-  }, [activePark, parkData]);
+  }, [planningPark, planningParkLiveRides]);
 
   const recoverySuggestions = useMemo(() => {
     return getRecoverySuggestions({
@@ -1676,6 +1731,7 @@ function App() {
       source: "plan_check",
       metadata: {
         activePark,
+        planningPark,
         dayPhase: tripPlanFreshnessContext?.dayPhase,
         planningMode: tripPlanFreshnessContext?.planningMode,
         weatherMode: tripPlanFreshnessContext?.weatherMode,
@@ -1704,6 +1760,22 @@ function App() {
         experienceName: experience?.name,
         parkId: experience?.parkId,
         type: experience?.type,
+      },
+    });
+  }
+
+  function handlePlanningParkChange(nextParkId) {
+    const safeNextPark = getSafePlanningParkId(nextParkId, planningPark);
+
+    setPlanningPark(safeNextPark);
+
+    trackAppEvent("planning_park_selected", {
+      source: "plan_tab",
+      metadata: {
+        previousPlanningPark: planningPark,
+        nextPlanningPark: safeNextPark,
+        liveActivePark: activePark,
+        firstParkFromProfile: getPlanningParkFromProfile(familyProfileSummary),
       },
     });
   }
@@ -3267,7 +3339,7 @@ function App() {
               button={button}
               hasPersonalizedAccess={hasPersonalizedAccess}
               profileCompletion={profileCompletion}
-              timeContext={timeContext}
+              timeContext={planningTimeContext}
               packingChecklist={packingChecklist}
               dayGamePlan={dayGamePlan}
               planNudges={planNudges}
@@ -3275,6 +3347,10 @@ function App() {
               onRefreshTripPlanContext={handleRefreshTripPlanContext}
               tripPlan={tripPlanState}
               activePark={activePark}
+              planningPark={planningPark}
+              planningParkLabel={getParkNameById(planningPark)}
+              parkOptions={PARKS.filter((park) => park.selectable !== false)}
+              onPlanningParkChange={handlePlanningParkChange}
               mustDoExperienceOptions={mustDoExperienceOptions}
               onUpdateTripPreferences={handleTripPreferenceChange}
               onToggleMustDoExperience={handleTripMustDoToggle}
