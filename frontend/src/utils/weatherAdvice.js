@@ -18,6 +18,9 @@ function getEffectiveTempF(weather) {
 }
 
 function isCurrentlyRaining(weather) {
+  if (weather?.currentPrecipitation === true ) return true;
+  if (weather?.currentPrecipitation === false) return false;
+
   const summary = getWeatherSummary(weather);
 
   return (
@@ -59,16 +62,16 @@ export function getWeatherMode(weather) {
       mode: "rain",
       label: "Rain Watch",
       message:
-        "Rain is being reported right now. Keep your plan flexible, lean on indoor options nearby, and be careful before walking across the park for outdoor rides.",
+        "Rain is being reported at the park right now. Keep your plan flexible, lean on indoor options nearby, and be careful before walking across the park for outdoor rides.",
     };
   }
 
-  if (rainRisk >= 0.45) {
+  if (rainRisk >= 0.55) {
     return {
       mode: "rain",
       label: "Rain Watch",
       message:
-        "Rain chances are elevated. Outdoor rides may pause briefly. Keep your plan flexible and lean on indoor options nearby.",
+        "Rain chances are elevated near the park. Outdoor rides may pause briefly. Keep your plan flexible and lean on indoor options nearby.",
     };
   }
 
