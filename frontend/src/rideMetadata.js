@@ -2446,6 +2446,150 @@ export const RIDE_METADATA = {
   // Future parks: animal_kingdom,
   // universal_studios, islands_of_adventure, epic_universe
 };
+
+/* -------------------------------------------------------------------------- */
+/* Opening strategy metadata                                                  */
+/* -------------------------------------------------------------------------- */
+
+const OPENING_STRATEGY_BY_PARK_AND_NAME = {
+  magic_kingdom: {
+    // Early Entry official: Fantasyland
+    "it's a small world": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+    "Dumbo the Flying Elephant": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+    "Mad Tea Party": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+    "Mickey's PhilharMagic": { earlyEntry: true, ropeDrop: false, ropeDropUse: "not_useful" },
+    "Peter Pan's Flight": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "Prince Charming Regal Carrousel": { earlyEntry: true, ropeDrop: false, ropeDropUse: "not_useful" },
+    "Seven Dwarfs Mine Train": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "The Barnstormer": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+    "The Many Adventures of Winnie the Pooh": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+    "Under the Sea - Journey of The Little Mermaid": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+
+    // Early Entry official: Tomorrowland
+    "Astro Orbiter": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+    "Buzz Lightyear's Space Ranger Spin": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+    "Space Mountain": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "Tomorrowland Speedway": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+    "Tomorrowland Transit Authority PeopleMover": { earlyEntry: true, ropeDrop: false, ropeDropUse: "not_useful" },
+    "Walt Disney's Carousel of Progress": { earlyEntry: true, ropeDrop: false, ropeDropUse: "not_useful" },
+    "Monsters Inc. Laugh Floor": { earlyEntry: false, ropeDrop: false, ropeDropUse: "not_useful" },
+
+    // Not Early Entry, but official park-open rope-drop candidates
+    "Big Thunder Mountain Railroad": { earlyEntry: false, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "Tiana's Bayou Adventure": { earlyEntry: false, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "Jungle Cruise": { earlyEntry: false, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "Pirates of the Caribbean": { earlyEntry: false, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+    "Haunted Mansion": { earlyEntry: false, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+
+    // TRON caveat: not official Early Entry
+    "TRON Lightcycle / Run": {
+      earlyEntry: false,
+      earlyEntryConfidence: "unofficial_queue_access_observed",
+      earlyEntryUse: "verify_day_of",
+      earlyEntryNote:
+        "TRON is not listed as an official Early Entry attraction. Queue access may sometimes occur, but verify day-of before relying on it.",
+      ropeDrop: true,
+      ropeDropUse: "official_open_target",
+      ropeDropNote:
+        "Treat TRON as an official park-open strategy or verify-day-of queue-access play, not a guaranteed Early Entry ride.",
+    },
+  },
+
+  epcot: {
+    "Frozen Ever After": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "Guardians of the Galaxy: Cosmic Rewind": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "Journey of Water, Inspired by Moana": { earlyEntry: true, ropeDrop: false, ropeDropUse: "not_useful" },
+    "Mission: SPACE": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+    "Remy's Ratatouille Adventure": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "Soarin' Around the World": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "Spaceship Earth": { earlyEntry: true, ropeDrop: false, ropeDropUse: "avoid_at_open" },
+    "Test Track": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "The Seas with Nemo & Friends": { earlyEntry: true, ropeDrop: false, ropeDropUse: "not_useful" },
+    "Beauty and the Beast Sing-Along": { earlyEntry: true, ropeDrop: false, ropeDropUse: "not_useful" },
+  },
+
+  hollywood: {
+    "Alien Swirling Saucers": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+    "Mickey & Minnie's Runaway Railway": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "Millennium Falcon: Smugglers Run": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+    "Rock 'n' Roller Coaster Starring Aerosmith": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "Slinky Dog Dash": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "Star Tours – The Adventures Continue": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+    "Star Wars: Rise of the Resistance": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "The Twilight Zone Tower of Terror": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "Toy Story Mania!": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+  },
+
+  animal_kingdom: {
+    "Avatar Flight of Passage": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "Na'vi River Journey": { earlyEntry: true, ropeDrop: true, ropeDropUse: "secondary_open_target" },
+    "Expedition Everest - Legend of the Forbidden Mountain": { earlyEntry: true, ropeDrop: true, ropeDropUse: "official_open_target" },
+    "Zootopia: Better Zoogether!": { earlyEntry: true, ropeDrop: false, ropeDropUse: "not_useful" },
+
+    "Kilimanjaro Safaris": {
+      earlyEntry: false,
+      earlyEntryUse: "not_early_entry",
+      earlyEntryNote:
+        "Kilimanjaro Safaris is not an Early Entry attraction. Treat it as an official park-open target when animal activity and operating hours make sense.",
+      ropeDrop: true,
+      ropeDropUse: "official_open_target",
+    },
+  },
+};
+
+function buildOpeningStrategyMeta(parkId, meta = {}) {
+  const displayName = meta?.displayName || "";
+  const strategy = OPENING_STRATEGY_BY_PARK_AND_NAME[parkId]?.[displayName] || {};
+
+  const earlyEntryEligible = strategy.earlyEntry === true;
+
+  return {
+    earlyEntry: {
+      eligible: earlyEntryEligible,
+      confidence:
+        strategy.earlyEntryConfidence ||
+        (earlyEntryEligible ? "official" : strategy.earlyEntry === false ? "official" : "unknown"),
+      strategyUse:
+        strategy.earlyEntryUse ||
+        (earlyEntryEligible ? "good_first_window" : "not_early_entry"),
+      note:
+        strategy.earlyEntryNote ||
+        (earlyEntryEligible
+          ? "Official Early Entry eligible attraction for resort-qualified guests."
+          : "Not listed as an official Early Entry attraction."),
+    },
+    ropeDrop: {
+      viable: strategy.ropeDrop === true,
+      strategyUse: strategy.ropeDropUse || (strategy.ropeDrop === true ? "official_open_target" : "not_useful"),
+      note:
+        strategy.ropeDropNote ||
+        (strategy.ropeDrop === true
+          ? "Can be considered during official park-open rope drop for all guests."
+          : "Not a strong official park-open rope-drop target."),
+    },
+  };
+}
+
+function withOpeningStrategyMeta(parkId, meta = {}) {
+  if (!meta) return meta;
+
+  return {
+    ...meta,
+    ...buildOpeningStrategyMeta(parkId, meta),
+  };
+}
+
+export function getOpeningStrategyMeta(parkId, rideIdOrName) {
+  const meta = getRideMeta(parkId, rideIdOrName);
+  return meta
+    ? {
+        earlyEntry: meta.earlyEntry,
+        ropeDrop: meta.ropeDrop,
+      }
+    : null;
+}
+
+
 /* -------------------------------------------------------------------------- */
 /* Lookup helpers                                                             */
 /* -------------------------------------------------------------------------- */
@@ -2455,19 +2599,22 @@ export function getRideMeta(parkId, rideIdOrName) {
   if (!park) return null;
 
   if (rideIdOrName != null && park[rideIdOrName]) {
-    return park[rideIdOrName];
+    return withOpeningStrategyMeta(parkId, park[rideIdOrName]);
   }
 
   const match = Object.values(park).find(
     (m) => m.displayName === rideIdOrName
   );
 
-  return match || null;
+  return match ? withOpeningStrategyMeta(parkId, match) : null;
 }
 
 export function getParkRides(parkId) {
   const park = RIDE_METADATA[parkId];
-  return park ? Object.entries(park) : [];
+
+  return park
+    ? Object.entries(park).map(([id, meta]) => [id, withOpeningStrategyMeta(parkId, meta)])
+    : [];
 }
 
 /* -------------------------------------------------------------------------- */
