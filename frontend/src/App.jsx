@@ -905,7 +905,7 @@ function App() {
       try {
         const [park, weatherData] = await Promise.all([
           fetchParkData(activePark, { force }),
-          fetchWeather({ force }),
+          fetchWeather({ parkId: activePark, force }),
         ]);
 
         setParkData(park);
