@@ -559,6 +559,8 @@ function buildMustDoExperienceOptions({ activePark, rides = [] }) {
         tags: Array.isArray(meta?.tags) ? meta.tags : [],
         planningCategory: meta?.planningProfile?.category || "",
         paidAccess: meta?.planningProfile?.paidAccess || "none",
+        earlyEntry: meta?.earlyEntry || null,
+        ropeDrop: meta?.ropeDrop || null,
       };
     })
     .filter((experience) => experience.name && experience.planningCategory !== "context_only")
