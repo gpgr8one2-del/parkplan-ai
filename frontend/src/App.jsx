@@ -348,7 +348,7 @@ function buildLocalChatFallback({
   } else if (resortName) {
     lines.push(
       "",
-      `Resort break guidance: ${resortName} is your selected resort. If the family is fading, only leave the park if transportation is realistic and you can protect enough return time.`
+      `Resort break guidance: ${resortName} is your selected resort. If the family is fading, only leave the park if transportation is realistic and you can leave enough return time.`
     );
   } else {
     lines.push(
@@ -3259,7 +3259,7 @@ function App() {
           renderLockedFeatureCard({
             title: "Personalized Best Move is locked until setup is finished",
             body:
-              "Without your family profile, TOHI cannot safely know height limits, thrill comfort, heat sensitivity, resort-break realism, or what kind of day you are trying to protect.",
+              "Without your family profile, TOHI cannot safely know height limits, thrill comfort, heat sensitivity, resort-break realism, or what kind of day you want.",
           })
         )}
 
@@ -3691,7 +3691,7 @@ function App() {
                       maxWidth: 620,
                     }}
                   >
-                    TOHI uses your family profile to protect height limits, thrill
+                    TOHI uses your family profile to make room for height limits, thrill
                     comfort, walking tolerance, heat sensitivity, resort-break realism,
                     and the kind of day you are trying to have.
                   </p>
