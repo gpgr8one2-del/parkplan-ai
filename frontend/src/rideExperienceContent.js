@@ -796,27 +796,6 @@ export const RIDE_EXPERIENCE_CONTENT = {
       ],
     },
 
-    "Rock 'n' Roller Coaster Starring Aerosmith": {
-      whileWaiting: [
-        {
-          title: "Quick Backstory",
-          text: "This indoor launch coaster accelerates from 0 to nearly 60 mph in just a few seconds, making the launch the star of the ride.",
-        },
-        {
-          title: "Queue Detail",
-          text: "You enter G-Force Records and move through a rock-and-roll recording studio setup before being sent to the super-stretch limo.",
-        },
-        {
-          title: "Look For This",
-          text: "Watch the recording studio props, posters, cables, and music gear. The queue is packed with rock-tour details.",
-        },
-        {
-          title: "Ask Your Group",
-          text: "If your family started a rock band today, what would the band name be, and who would play which instrument?",
-        },
-      ],
-    },
-
     "Rock 'n' Roller Coaster Starring The Muppets": {
       whileWaiting: [
         {
