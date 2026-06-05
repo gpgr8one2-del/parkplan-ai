@@ -1,3 +1,5 @@
+import { getOpeningStrategyMeta } from "../rideMetadata";
+
 const NUDGE_PRIORITY_SCORE = {
   critical: 0,
   high: 1,
@@ -27,6 +29,73 @@ function getMustDoCount(tripPlan = {}) {
     ? tripPlan.mustDoExperiences.length
     : 0;
 }
+
+
+function getMustDoExperiences(tripPlan = {}) {
+  return Array.isArray(tripPlan?.mustDoExperiences) ? tripPlan.mustDoExperiences : [];
+}
+
+function getMustDosForPark(tripPlan = {}, activePark = "") {
+  return getMustDoExperiences(tripPlan).filter((experience) => experience?.parkId === activePark);
+}
+
+function formatExperienceList(experiences = [], max = 2) {
+  const names = experiences
+    .map((experience) => experience?.name)
+    .filter(Boolean)
+    .slice(0, max);
+
+  if (!names.length) return "";
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+}
+
+function isEarlyEntryLikelyEligible(familyProfile = {}) {
+  return Boolean(
+    familyProfile.resortContext?.stayingOnProperty ||
+      familyProfile.resortProfile?.eligibleForEarlyEntry ||
+      familyProfile.resortProfile?.isDisneyResort ||
+      familyProfile.resortProfile?.areaLabel
+  );
+}
+
+function getOpeningStrategySummary(activePark, experiences = []) {
+  const items = experiences
+    .map((experience) => ({
+      experience,
+      opening: getOpeningStrategyMeta(activePark, experience?.id || experience?.name),
+    }))
+    .filter((item) => item.experience?.name);
+
+  const earlyEntryTargets = items.filter(
+    (item) =>
+      item.opening?.earlyEntry?.eligible &&
+      item.opening?.earlyEntry?.confidence === "official"
+  );
+
+  const verifyDayOfTargets = items.filter(
+    (item) => item.opening?.earlyEntry?.strategyUse === "verify_day_of"
+  );
+
+  const ropeDropTargets = items.filter(
+    (item) =>
+      !item.opening?.earlyEntry?.eligible &&
+      item.opening?.ropeDrop?.viable &&
+      item.opening?.ropeDrop?.strategyUse === "official_open_target"
+  );
+
+  return {
+    earlyEntryTargets,
+    verifyDayOfTargets,
+    ropeDropTargets,
+    earlyEntryLabel: formatExperienceList(earlyEntryTargets.map((item) => item.experience), 2),
+    verifyDayOfLabel: formatExperienceList(verifyDayOfTargets.map((item) => item.experience), 1),
+    ropeDropLabel: formatExperienceList(ropeDropTargets.map((item) => item.experience), 2),
+  };
+}
+
 
 function isHeatMode(weatherMode = {}, weather = {}) {
   const mode = normalizeString(weatherMode?.mode);
@@ -114,6 +183,9 @@ export function generatePlanNudges({
   const lowWalking = hasLowWalkingTolerance(familyProfile);
   const youngKids = hasYoungKids(familyProfile);
   const mustDoCount = getMustDoCount(tripPlan);
+  const activeParkMustDos = getMustDosForPark(tripPlan, activePark);
+  const openingSummary = getOpeningStrategySummary(activePark, activeParkMustDos);
+  const earlyEntryEligible = isEarlyEntryLikelyEligible(familyProfile);
   const bestMoveWait = recommendations?.bestMove?.waitTime;
   const parkLabel = activePark ? activePark.replace(/_/g, " ") : "the park";
 
@@ -127,6 +199,50 @@ export function generatePlanNudges({
         "Your timing, weather, park, or trip setup changed since this plan was refreshed. A quick refresh keeps TOHI from leaning on stale context.",
       actionLabel: "Refresh plan",
       action: "refresh_plan",
+    });
+  }
+
+  if (
+    preferences.startStrategy === "rope_drop" &&
+    earlyEntryEligible &&
+    openingSummary.earlyEntryTargets.length > 0
+  ) {
+    addNudge(nudges, {
+      id: "early_entry_first_window",
+      priority: "high",
+      eyebrow: "EARLY ENTRY",
+      title: `Use Early Entry for ${openingSummary.earlyEntryLabel}.`,
+      body:
+        "Because your setup appears resort-eligible, treat Early Entry as its own 30-minute window before regular rope drop. Use it on the official eligible target instead of mixing it up with full park opening.",
+    });
+  }
+
+  if (
+    preferences.startStrategy === "rope_drop" &&
+    openingSummary.ropeDropTargets.length > 0 &&
+    (!earlyEntryEligible || openingSummary.earlyEntryTargets.length === 0)
+  ) {
+    addNudge(nudges, {
+      id: "official_rope_drop_target",
+      priority: "medium",
+      eyebrow: "ROPE DROP",
+      title: `Use official park open for ${openingSummary.ropeDropLabel}.`,
+      body:
+        "This is regular rope drop strategy, not Early Entry. Arrive for official park opening and use the first public window before the park gets heavy.",
+    });
+  }
+
+  if (
+    preferences.startStrategy === "rope_drop" &&
+    openingSummary.verifyDayOfTargets.length > 0
+  ) {
+    addNudge(nudges, {
+      id: "verify_day_of_opening_strategy",
+      priority: "high",
+      eyebrow: "VERIFY DAY-OF",
+      title: `${openingSummary.verifyDayOfLabel} is not official Early Entry.`,
+      body:
+        "Do not treat this as guaranteed Early Entry. Check day-of access and use it as either a verified queue-access play or an official park-open rope-drop target.",
     });
   }
 
