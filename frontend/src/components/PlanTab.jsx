@@ -380,9 +380,80 @@ function DayGamePlanSection({ card, dayGamePlan = [] }) {
   );
 }
 
+
+function PlanningParkSelector({
+  planningPark,
+  planningParkLabel,
+  activePark,
+  parkOptions = [],
+  onPlanningParkChange,
+}) {
+  const activeParkLabel = parkOptions.find((park) => park.id === activePark)?.name || activePark;
+  const hasSeparateLivePark = activePark && planningPark && activePark !== planningPark;
+
+  return (
+    <div
+      style={{
+        marginTop: 12,
+        padding: 12,
+        borderRadius: 18,
+        background: "rgba(255,255,255,0.78)",
+        border: `1px solid ${colors.cardBorder}`,
+        display: "grid",
+        gap: 8,
+      }}
+    >
+      <label
+        htmlFor="planning-park-select"
+        style={{
+          display: "grid",
+          gap: 6,
+          color: colors.text,
+          fontSize: 12,
+          fontWeight: 950,
+        }}
+      >
+        Planning for
+        <select
+          id="planning-park-select"
+          value={planningPark}
+          onChange={(event) => onPlanningParkChange?.(event.target.value)}
+          style={{
+            width: "100%",
+            border: `1px solid ${colors.cardBorder}`,
+            borderRadius: 14,
+            padding: "10px 11px",
+            fontWeight: 900,
+            background: "white",
+            color: colors.text,
+          }}
+        >
+          {parkOptions.map((park) => (
+            <option key={park.id} value={park.id}>
+              {park.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <p style={{ margin: 0, color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+        Must-dos below are for {planningParkLabel || "this planning park"}.
+        {hasSeparateLivePark
+          ? ` Home is still showing ${activeParkLabel || "your current park"} for live waits.`
+          : " Change this without changing your live park on Home."}
+      </p>
+    </div>
+  );
+}
+
+
 function MustDoMomentsSection({
   card,
   activePark,
+  planningPark,
+  planningParkLabel,
+  parkOptions = [],
+  onPlanningParkChange,
   tripPlan,
   mustDoExperienceOptions = [],
   onToggleMustDoExperience,
@@ -392,11 +463,11 @@ function MustDoMomentsSection({
     : [];
 
   const selectedKeys = new Set(selectedExperiences.map(getMustDoKey));
-  const selectedForActivePark = selectedExperiences.filter(
-    (experience) => experience.parkId === activePark
+  const selectedForPlanningPark = selectedExperiences.filter(
+    (experience) => experience.parkId === planningPark
   );
   const otherParkSelections = selectedExperiences.filter(
-    (experience) => experience.parkId !== activePark
+    (experience) => experience.parkId !== planningPark
   );
 
   return (
@@ -421,13 +492,13 @@ function MustDoMomentsSection({
       >
         <div>
           <SectionBadge background={colors.coralSoft} color="#E11D48">
-            MUST-DO MOMENTS
+            YOUR PRIORITIES
           </SectionBadge>
           <h3 style={{ margin: 0, color: colors.text, fontSize: 22, letterSpacing: -0.35 }}>
-            What would disappoint your family to miss?
+            What should the day have room for?
           </h3>
           <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
-            Pick the rides, shows, and experiences TOHI should protect.
+            Pick the rides, shows, and experiences TOHI should keep in mind for {planningParkLabel || "this park"}.
           </p>
         </div>
 
@@ -445,6 +516,14 @@ function MustDoMomentsSection({
           {selectedExperiences.length} selected
         </span>
       </div>
+
+      <PlanningParkSelector
+        planningPark={planningPark}
+        planningParkLabel={planningParkLabel}
+        activePark={activePark}
+        parkOptions={parkOptions}
+        onPlanningParkChange={onPlanningParkChange}
+      />
 
       {selectedExperiences.length > 0 && (
         <div
@@ -507,8 +586,8 @@ function MustDoMomentsSection({
             lineHeight: 1.4,
           }}
         >
-          Select a park and let wait data load, then TOHI can show available
-          experiences for must-do planning.
+          Choose a planning park above, then TOHI can show available experiences
+          for that park.
         </div>
       ) : (
         <details style={{ marginTop: 12 }}>
@@ -578,10 +657,10 @@ function MustDoMomentsSection({
         </details>
       )}
 
-      {(selectedForActivePark.length > 0 || otherParkSelections.length > 0) && (
+      {(selectedForPlanningPark.length > 0 || otherParkSelections.length > 0) && (
         <p style={{ margin: "10px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
-          {selectedForActivePark.length} protected in this park
-          {otherParkSelections.length > 0 ? ` · ${otherParkSelections.length} saved for other parks` : ""}
+          {selectedForPlanningPark.length} in {planningParkLabel || "this park"}
+          {otherParkSelections.length > 0 ? ` · ${otherParkSelections.length} across your other park days` : ""}
         </p>
       )}
     </section>
@@ -1017,6 +1096,10 @@ export function PlanTab({
   onRefreshTripPlanContext,
   tripPlan = { preferences: {}, mustDoExperiences: [] },
   activePark,
+  planningPark,
+  planningParkLabel,
+  parkOptions = [],
+  onPlanningParkChange,
   mustDoExperienceOptions = [],
   onUpdateTripPreferences,
   onToggleMustDoExperience,
@@ -1099,6 +1182,10 @@ export function PlanTab({
       <MustDoMomentsSection
         card={card}
         activePark={activePark}
+        planningPark={planningPark}
+        planningParkLabel={planningParkLabel}
+        parkOptions={parkOptions}
+        onPlanningParkChange={onPlanningParkChange}
         tripPlan={tripPlan}
         mustDoExperienceOptions={mustDoExperienceOptions}
         onToggleMustDoExperience={onToggleMustDoExperience}
