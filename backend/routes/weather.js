@@ -5,13 +5,14 @@ const router = express.Router();
 
 router.get("/weather", async (req, res) => {
   const force = req.query.force === "true";
+  const parkId = typeof req.query.parkId === "string" ? req.query.parkId : undefined;
 
   try {
-    const data = await getWeather({ force });
+    const data = await getWeather({ force, parkId });
     res.json(data);
   } catch (err) {
     req.log?.error(
-      { force, err: err.message },
+      { force, parkId, err: err.message },
       "weather fetch failed"
     );
 
