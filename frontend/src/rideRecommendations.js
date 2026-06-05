@@ -54,9 +54,12 @@
  *
  * New fields on the response envelope:
  *   - `needsLocation` (boolean): true when currentLand is unknown.
- * New field on each scored ride:
+ * New fields on each scored ride:
  *   - `crossParkSumCapAdjustment` (number, <= 0): the amount removed by the
  *     cross-park sum cap, or 0 when the cap did not fire.
+ *   - `mustDoPriority`, `mustDoModifier`, `mustDoReason`, `shouldProtectLater`:
+ *     Commit 35 must-do awareness telemetry. The boost is capped with the
+ *     cross-park positive sum and never applies after caps.
  */
 
 import { getRideMeta, getWaitValueStatus, getParkRides } from "./rideMetadata";
@@ -85,6 +88,12 @@ const CROSS_PARK_POSITIVE_SUM_CAP = 30;
 const FALLBACK_BEST_MOVE_SCORE_FLOOR = 85;
 const WORTH_THE_WALK_SCORE_FLOOR = 75;
 const STRONG_CLOSEST_ANCHOR_THRESHOLD = 30;
+
+const MUST_DO_MODIFIERS = {
+  must_do: 12,
+  would_love: 7,
+  nice_if_possible: 3,
+};
 
 /* -------------------------------------------------------------------------- */
 /* Time helpers                                                               */
@@ -289,6 +298,186 @@ function getHeightWarning(meta, familyProfile) {
         : `Not everyone may meet the ${requiredHeight}-inch height requirement.`,
   };
 }
+
+
+/* -------------------------------------------------------------------------- */
+/* Must-do awareness                                                          */
+/* -------------------------------------------------------------------------- */
+
+function getMustDoExperiences(tripPlan = {}) {
+  return Array.isArray(tripPlan?.mustDoExperiences) ? tripPlan.mustDoExperiences : [];
+}
+
+function getMustDoPriorityLabel(priority) {
+  if (priority === "must_do") return "must-do";
+  if (priority === "would_love") return "would-love";
+  if (priority === "nice_if_possible") return "nice-if-possible";
+  return "must-do";
+}
+
+function getMustDoMatch(tripPlan, parkId, ride, meta) {
+  const mustDos = getMustDoExperiences(tripPlan);
+
+  if (!mustDos.length || !parkId || !ride || !meta) return null;
+
+  const rideId = ride?.id != null ? String(ride.id) : "";
+  const rideName = normalizeRideName(ride?.name);
+  const metaName = normalizeRideName(meta?.displayName);
+
+  const sameParkMustDos = mustDos.filter((experience) => experience?.parkId === parkId);
+
+  const idMatch = sameParkMustDos.find((experience) => {
+    return experience?.id != null && rideId && String(experience.id) === rideId;
+  });
+
+  if (idMatch) return idMatch;
+
+  // Conservative fallback only: exact-normalized name match.
+  // No fuzzy matching. Better to miss a boost than silently boost the wrong ride.
+  return (
+    sameParkMustDos.find((experience) => {
+      const experienceName = normalizeRideName(experience?.name);
+      return experienceName && (experienceName === rideName || experienceName === metaName);
+    }) || null
+  );
+}
+
+function shouldProtectMustDoLater({
+  mustDoMatch,
+  ride,
+  meta,
+  waitValueStatus,
+  weather,
+  currentLand,
+  proximityModifier,
+  familyProfile,
+  timeContext,
+}) {
+  if (!mustDoMatch || !meta) return false;
+
+  const status = waitValueStatus?.status;
+  const waitTime = ride?.waitTime;
+  const effectiveTempF = getEffectiveTempF(weather);
+  const heatActive =
+    timeContext?.dayPhase === "midday_heat_window" ||
+    timeContext?.dayPhase === "afternoon_crash_window" ||
+    (effectiveTempF != null && effectiveTempF >= 87);
+
+  if ((status === "bad_value" || status === "above_normal") && waitTime != null && waitTime >= 35) {
+    return true;
+  }
+
+  if (waitTime != null && waitTime >= 75) {
+    return true;
+  }
+
+  if (
+    heatActive &&
+    waitTime != null &&
+    waitTime >= 35 &&
+    (meta.environment === "outdoor" || meta.environment === "mixed") &&
+    !meta.hasAC &&
+    !meta.getsWet
+  ) {
+    return true;
+  }
+
+  if (
+    familyProfile?.walkingTolerance === "low" &&
+    isFarFromCurrentArea(meta, currentLand, proximityModifier)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function getMustDoModifier({
+  mustDoMatch,
+  ride,
+  meta,
+  waitValueStatus,
+  weather,
+  currentLand,
+  proximityModifier,
+  familyProfile,
+  timeContext,
+}) {
+  if (!mustDoMatch || !meta) {
+    return {
+      modifier: 0,
+      priority: null,
+      reason: null,
+      shouldProtectLater: false,
+    };
+  }
+
+  const priority = MUST_DO_MODIFIERS[mustDoMatch.priority]
+    ? mustDoMatch.priority
+    : "must_do";
+
+  const baseModifier = MUST_DO_MODIFIERS[priority] || 0;
+  const label = getMustDoPriorityLabel(priority);
+  const shouldProtectLater = shouldProtectMustDoLater({
+    mustDoMatch,
+    ride,
+    meta,
+    waitValueStatus,
+    weather,
+    currentLand,
+    proximityModifier,
+    familyProfile,
+    timeContext,
+  });
+
+  if (shouldProtectLater) {
+    return {
+      modifier: Math.min(baseModifier, 4),
+      priority,
+      reason: `This is one of your ${label} picks, but the current conditions make it smarter to protect for later.`,
+      shouldProtectLater: true,
+    };
+  }
+
+  return {
+    modifier: baseModifier,
+    priority,
+    reason: `This is one of your ${label} picks and the current conditions are reasonable enough to keep it visible.`,
+    shouldProtectLater: false,
+  };
+}
+
+function getMustDoPlanAheadPriorityBoost(ride) {
+  if (!ride?.mustDoPriority) return 0;
+
+  const baseBoost =
+    ride.mustDoPriority === "must_do"
+      ? 70
+      : ride.mustDoPriority === "would_love"
+      ? 42
+      : 18;
+
+  return ride.shouldProtectLater ? baseBoost + 35 : baseBoost;
+}
+
+function getMustDoWaitOnThisPriorityBoost(ride) {
+  if (!ride?.mustDoPriority) return 0;
+
+  if (!ride.shouldProtectLater) {
+    return ride.mustDoPriority === "must_do"
+      ? 24
+      : ride.mustDoPriority === "would_love"
+      ? 14
+      : 6;
+  }
+
+  return ride.mustDoPriority === "must_do"
+    ? 80
+    : ride.mustDoPriority === "would_love"
+    ? 50
+    : 20;
+}
+
 
 /* -------------------------------------------------------------------------- */
 /* Family profile modifier (unchanged from V1)                                */
@@ -1344,6 +1533,7 @@ function getCrossParkSumCapAdjustment({
   familyProfileModifier,
   trendModifier,
   nearbyHeadlinerOpportunityModifier,
+  mustDoModifier = 0,
 }) {
   const isSameLand = !!meta?.land && !!currentLand && meta.land === currentLand;
   if (isSameLand) return 0;
@@ -1356,7 +1546,8 @@ function getCrossParkSumCapAdjustment({
     Math.max(0, waitValueModifier) +
     Math.max(0, familyProfileModifier) +
     Math.max(0, trendModifier) +
-    Math.max(0, nearbyHeadlinerOpportunityModifier);
+    Math.max(0, nearbyHeadlinerOpportunityModifier) +
+    Math.max(0, mustDoModifier);
 
   if (positiveSum <= CROSS_PARK_POSITIVE_SUM_CAP) return 0;
 
@@ -1489,6 +1680,14 @@ function buildReason(ride, parts) {
     reasons.push("very close to your current location");
   }
 
+  if (parts.mustDoModifier > 0 && parts.mustDoReason) {
+    reasons.push(parts.mustDoReason);
+  }
+
+  if (parts.shouldProtectLater) {
+    reasons.push("protect this for a better window instead of forcing it now");
+  }
+
   if (parts.crossParkSumCapAdjustment <= -8) {
     reasons.push("personalization capped because of the walk");
   }
@@ -1528,6 +1727,7 @@ export function getNextBestRides({
   skippedRideIds = [],
   familyProfile = null,
   timeContext = null,
+  tripPlan = null,
 }) {
   const currentLand = resolveCurrentLand(parkId, locationContext);
 
@@ -1678,6 +1878,7 @@ export function getNextBestRides({
     const proximityModifier = getProximityModifier(meta, currentLand, parkId);
     const waitValueStatus = getWaitValueStatus(meta, ride.waitTime);
     const waitValueModifier = waitValueStatus.modifier || 0;
+    const mustDoMatch = getMustDoMatch(tripPlan, parkId, ride, meta);
 
     const rawFamilyProfileModifier = getFamilyProfileModifier(
       meta,
@@ -1751,6 +1952,19 @@ export function getNextBestRides({
         locationContext,
       });
 
+    const mustDoResult = getMustDoModifier({
+      mustDoMatch,
+      ride,
+      meta,
+      waitValueStatus,
+      weather,
+      currentLand,
+      proximityModifier,
+      familyProfile,
+      timeContext,
+    });
+    const mustDoModifier = mustDoResult.modifier || 0;
+
     // V1.1: cross-park sum cap. Applied as a separate adjustment so individual
     // modifier values stay readable for telemetry.
     const crossParkSumCapAdjustment = getCrossParkSumCapAdjustment({
@@ -1761,6 +1975,7 @@ export function getNextBestRides({
       familyProfileModifier,
       trendModifier,
       nearbyHeadlinerOpportunityModifier,
+      mustDoModifier,
     });
 
     const finalScore =
@@ -1779,6 +1994,7 @@ export function getNextBestRides({
       crossParkRealityModifier +
       nearbyHeadlinerOpportunityModifier +
       closestAnchorOpportunityModifier +
+      mustDoModifier +
       crossParkSumCapAdjustment -
       (heightWarning ? 16 : 0);
 
@@ -1809,6 +2025,10 @@ export function getNextBestRides({
       wetRideModifier,
       nearbyHeadlinerOpportunityModifier,
       closestAnchorOpportunityModifier,
+      mustDoPriority: mustDoResult.priority,
+      mustDoModifier,
+      mustDoReason: mustDoResult.reason,
+      shouldProtectLater: mustDoResult.shouldProtectLater,
       reason: buildReason(ride, {
         baseScore,
         trendModifier,
@@ -1825,6 +2045,9 @@ export function getNextBestRides({
         crossParkRealityModifier,
         nearbyHeadlinerOpportunityModifier,
         closestAnchorOpportunityModifier,
+        mustDoModifier,
+        mustDoReason: mustDoResult.reason,
+        shouldProtectLater: mustDoResult.shouldProtectLater,
         crossParkSumCapAdjustment,
       }),
     };
@@ -1867,16 +2090,18 @@ export function getNextBestRides({
     return ride.closestAnchorOpportunityModifier >= STRONG_CLOSEST_ANCHOR_THRESHOLD;
   });
 
-  const sameAreaRides = positivePool.filter((ride) => {
+  const goNowPositivePool = positivePool.filter((ride) => !ride.shouldProtectLater);
+
+  const sameAreaRides = goNowPositivePool.filter((ride) => {
     const meta = getMetaForRide(parkId, ride);
     return isSameArea(meta, currentLand, ride.proximityModifier);
   });
 
-  const nearbyRides = positivePool.filter((ride) => {
+  const nearbyRides = goNowPositivePool.filter((ride) => {
     return ride.proximityDistance !== "far";
   });
 
-  const farRides = positivePool.filter((ride) => {
+  const farRides = goNowPositivePool.filter((ride) => {
     if (ride.proximityDistance !== "far") return false;
 
     if (hasStrongClosestAnchorOpportunity && ride.recommendationScore < 95) {
@@ -1894,7 +2119,7 @@ export function getNextBestRides({
     return !isSoftRecoveryOnlyCandidate(parkId, ride, weather);
   });
 
-  const primaryPositivePool = positivePool.filter((ride) => {
+  const primaryPositivePool = goNowPositivePool.filter((ride) => {
     return !isSoftRecoveryOnlyCandidate(parkId, ride, weather);
   });
 
@@ -1985,11 +2210,12 @@ export function getNextBestRides({
 
       const isScheduledShow = isScheduledShowMeta(meta);
 
-      if (!isPlanAheadCategory && !isScheduledShow) return false;
+      if (!isPlanAheadCategory && !isScheduledShow && !ride.shouldProtectLater) return false;
 
       // Suppress same-area strike-now opportunities — they should have been
       // promoted into Best Move / Smart Backup / Worth the Walk already.
       if (
+        !ride.shouldProtectLater &&
         (ride.nearbyHeadlinerOpportunityModifier >= 20 ||
           ride.closestAnchorOpportunityModifier >= 30) &&
         (ride.waitValueStatus?.status === "great_value" ||
@@ -2023,9 +2249,13 @@ export function getNextBestRides({
       return {
         ...ride,
         planAheadPriority: isScheduledShowMeta(meta)
-          ? scheduledShowPriority
-          : getPlanningPriority(meta, waitValueStatus) + (ride.waitTime || 0),
-        planAheadReason: buildPlanAheadReason(meta, ride, waitValueStatus),
+          ? scheduledShowPriority + getMustDoPlanAheadPriorityBoost(ride)
+          : getPlanningPriority(meta, waitValueStatus) +
+            (ride.waitTime || 0) +
+            getMustDoPlanAheadPriorityBoost(ride),
+        planAheadReason: ride.shouldProtectLater
+          ? ride.mustDoReason || "This is important, but the current conditions make it smarter to protect for later."
+          : buildPlanAheadReason(meta, ride, waitValueStatus),
       };
     })
     .sort((a, b) => b.planAheadPriority - a.planAheadPriority);
@@ -2058,11 +2288,11 @@ export function getNextBestRides({
         category === "plan_ahead_multi_pass" ||
         category === "plan_ahead_standby_only";
 
-      if (isPlanAheadCategory) return false;
+      if (isPlanAheadCategory && !ride.shouldProtectLater) return false;
 
       if ((stormActive || rainActive) && isRainSensitiveRide(meta)) return false;
 
-      return status === "bad_value" || status === "above_normal";
+      return ride.shouldProtectLater || status === "bad_value" || status === "above_normal";
     })
     .map((ride) => {
       const status = ride.waitValueStatus?.status;
@@ -2070,10 +2300,14 @@ export function getNextBestRides({
 
       if (status === "bad_value") waitOnThisPriority += 40;
       if (status === "above_normal") waitOnThisPriority += 20;
+      waitOnThisPriority += getMustDoWaitOnThisPriorityBoost(ride);
 
       return {
         ...ride,
         waitOnThisPriority,
+        waitOnThisReason: ride.shouldProtectLater
+          ? ride.mustDoReason || "This matters, but the current conditions are not the right window."
+          : null,
       };
     })
     .sort((a, b) => b.waitOnThisPriority - a.waitOnThisPriority);
