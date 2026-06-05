@@ -188,7 +188,7 @@ export function generatePackingChecklist({
   const daytimeForwardPlan = isDaytimeForwardPlan(startStrategy);
   const eveningForwardPlan = startStrategy === "evening_only" || nighttimeImportance === "must_see_fireworks";
   const layerUseful = isCoolEnoughForLayer({ temperatureF, startStrategy, nighttimeImportance });
-  const waterRidesLikely = ["love", "okay_with_warning", "depends"].includes(waterRidePreference);
+  const waterRidesLikely = ["love", "okay_with_heads up", "depends"].includes(waterRidePreference);
   const waterRidesStrong = waterRidePreference === "love";
   const snackHeavyDay =
     childrenPresent ||
@@ -209,7 +209,7 @@ export function generatePackingChecklist({
     category: "essentials",
     label: "Refillable water bottles",
     reason: hotDay
-      ? "Today’s comfort read makes hydration part of protecting the family’s mood, not just a nice extra."
+      ? "Today’s comfort read makes hydration part of keeping the family’s mood steady, not just a nice extra."
       : "Even on easier weather days, refillable water keeps small delays from turning into avoidable stress.",
     priority: hotDay ? "must" : "should",
   });
@@ -222,7 +222,7 @@ export function generatePackingChecklist({
       reason:
         startStrategy === "evening_only" && temperatureF != null
           ? "This is lower priority for an evening-focused plan, but it still belongs in the bag if you arrive before full dark."
-          : "Today’s plan includes enough daytime park time that sun protection should not be a last-second purchase.",
+          : "Today’s plan includes enough daytime park time that sun support should not be a last-second purchase.",
       priority: startStrategy === "evening_only" ? "should" : "must",
     });
   }
@@ -233,7 +233,7 @@ export function generatePackingChecklist({
       category: "essentials",
       label: "Small backup snacks",
       reason: childrenPresent
-        ? "A quick snack can prevent a bad line, delayed meal, or transportation wait from becoming a meltdown moment."
+        ? "A quick snack can prevent a bad line, delayed meal, or transportation wait from becoming a hard moment."
         : "A small snack gives the day a buffer if mobile ordering, transportation, or a longer-than-expected wait gets in the way.",
       priority: childrenPresent ? "must" : "should",
     });
@@ -293,7 +293,7 @@ export function generatePackingChecklist({
       id: "stroller_fan",
       category: "kids",
       label: "Stroller fan",
-      reason: "Your setup says you use a stroller, and today is warm enough that airflow could protect comfort during waits or transportation.",
+      reason: "Your setup says you use a stroller, and today is warm enough that airflow could keep comfort in the day during waits or transportation.",
       priority: hotDay || heatSensitivity === "high" ? "must" : "should",
     });
   }
@@ -303,7 +303,7 @@ export function generatePackingChecklist({
       id: "stroller_rain_cover",
       category: "kids",
       label: "Stroller rain cover",
-      reason: "A wet stroller can wreck naps, comfort, and the rest of the day faster than people expect.",
+      reason: "A wet stroller can make naps, comfort, and the rest of the day harder fast.",
       priority: weather?.stormMode || rainChance >= 0.55 ? "must" : "should",
     });
   }
@@ -340,9 +340,9 @@ export function generatePackingChecklist({
     (youngerKids && nighttimeImportance === "must_see_fireworks")
   ) {
     addItem(items, {
-      id: "ear_protection",
+      id: "ear_support",
       category: "comfort",
-      label: "Kid ear protection",
+      label: "Kid ear support",
       reason: "Your plan includes the kind of loud show, nighttime, or sensory-heavy moments that can overwhelm younger or sensory-sensitive kids.",
       priority: sensorySupport || nighttimeImportance === "must_see_fireworks" ? "should" : "nice_to_have",
     });
@@ -353,7 +353,7 @@ export function generatePackingChecklist({
       id: "mobility_charger_or_backup",
       category: "comfort",
       label: "Mobility device charger or backup plan",
-      reason: "Your setup includes mobility support. The day needs to protect movement, charging, and realistic reset options.",
+      reason: "Your setup includes mobility support. The day needs to keep movement, charging, and realistic reset options in the plan.",
       priority: "must",
     });
   }
