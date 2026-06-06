@@ -529,6 +529,30 @@ export function OnboardingFlow({
               </div>
 
               <div style={sectionPanel}>
+                <strong>What should TOHI call you?</strong>
+                <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
+                  Optional. Use a first name or nickname only if it would make the app feel more personal.
+                </p>
+
+                <label htmlFor="preferred-name" style={fieldLabelStyle}>
+                  First name or nickname
+                  <input
+                    id="preferred-name"
+                    type="text"
+                    value={familyProfile.preferredName || ""}
+                    onChange={(e) =>
+                      updateFamilyProfile({
+                        preferredName: e.target.value,
+                      })
+                    }
+                    placeholder="ex: Gabe"
+                    maxLength={40}
+                    style={inputStyle}
+                  />
+                </label>
+              </div>
+
+              <div style={sectionPanel}>
                 <strong>Trip dates and parks</strong>
                 <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
                   Dates help TOHI understand whether this is pre-trip planning or an
