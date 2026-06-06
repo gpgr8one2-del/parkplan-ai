@@ -75,13 +75,13 @@ function isWarmEnoughForCooling({ temperatureF, humidity, heatSensitivity }) {
 }
 
 function isCoolEnoughForLayer({ temperatureF, startStrategy, nighttimeImportance }) {
-  return Boolean(
-    (temperatureF != null && temperatureF <= 68) ||
-      (temperatureF != null &&
-        temperatureF <= 74 &&
-        (startStrategy === "evening_only" || nighttimeImportance === "must_see_fireworks")) ||
-      (temperatureF == null && startStrategy === "evening_only")
-  );
+  const eveningForwardPlan =
+    startStrategy === "evening_only" || nighttimeImportance === "must_see_fireworks";
+
+  if (temperatureF == null) return false;
+  if (temperatureF <= 64) return true;
+
+  return eveningForwardPlan && temperatureF <= 66;
 }
 
 function isDaytimeForwardPlan(startStrategy = "") {
@@ -188,7 +188,7 @@ export function generatePackingChecklist({
   const daytimeForwardPlan = isDaytimeForwardPlan(startStrategy);
   const eveningForwardPlan = startStrategy === "evening_only" || nighttimeImportance === "must_see_fireworks";
   const layerUseful = isCoolEnoughForLayer({ temperatureF, startStrategy, nighttimeImportance });
-  const waterRidesLikely = ["love", "okay_with_heads up", "depends"].includes(waterRidePreference);
+  const waterRidesLikely = ["love", "okay_with_warning", "depends"].includes(waterRidePreference);
   const waterRidesStrong = waterRidePreference === "love";
   const snackHeavyDay =
     childrenPresent ||
@@ -268,9 +268,9 @@ export function generatePackingChecklist({
       category: "weather",
       label: "Light hoodie or layer",
       reason:
-        temperatureF != null
-          ? `The current comfort read is around ${temperatureF}°F, so a light layer is smarter than packing heat gear that does not fit today.`
-          : "Your plan leans into the evening, so a light layer is the safer one-off to check before leaving.",
+        eveningForwardPlan
+          ? `It is around ${temperatureF}°F right now. If you will be out late, a light layer may be worth checking before you leave.`
+          : `It is cool enough right now that a light layer may be worth checking before you leave.`,
       priority: eveningForwardPlan ? "should" : "nice_to_have",
     });
   }
