@@ -38,7 +38,7 @@ import {
   readStoredFamilyProfile,
   writeStoredFamilyProfile,
 } from "./utils/familyProfile";
-import { formatCloseTimeLabel } from "./parkHours";
+import { formatCloseTimeLabel, getParkHoursForDate } from "./parkHours";
 import { getRideExperienceContent } from "./rideExperienceContent";
 import { getRideMeta, getParkRides } from "./rideMetadata";
 import { shouldShowRideInWaitList } from "./attractionDisplayFilters";
@@ -612,6 +612,167 @@ function getParkNameById(parkId) {
   return PARKS.find((park) => park.id === parkId)?.name || parkId || "the park";
 }
 
+function getMinutesFromDateValue(value) {
+  if (!value) return null;
+
+  const date = value instanceof Date ? value : new Date(value);
+  const timeMs = date.getTime();
+
+  if (!Number.isFinite(timeMs)) return null;
+
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function formatPlanTimeLabel(value) {
+  if (!value) return "";
+
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(value);
+  } catch {
+    return "";
+  }
+}
+
+function buildPlanTabState({ activePark, timeContext = {} } = {}) {
+  const tripStatus = timeContext?.tripStatus || {};
+  const now = new Date(timeContext?.nowIso || Date.now());
+  const parkHours = getParkHoursForDate(activePark, now);
+  const openMinutes = getMinutesFromDateValue(parkHours?.open);
+  const closeMinutes = getMinutesFromDateValue(parkHours?.close);
+  const nowMinutes = Number(timeContext?.orlandoTotalMinutes);
+  const hasReliableParkWindow =
+    Number.isFinite(nowMinutes) && openMinutes != null && closeMinutes != null;
+
+  const base = {
+    parkId: activePark || "",
+    tripStatus: tripStatus.status || "unknown",
+    parkOpenLabel: formatPlanTimeLabel(parkHours?.open),
+    parkCloseLabel: formatPlanTimeLabel(parkHours?.close),
+    orlandoTimeLabel: timeContext?.orlandoTimeLabel || "",
+    dayPhase: timeContext?.dayPhase || "",
+    planningMode: timeContext?.planningMode || "",
+    isBeforeParkOpen: false,
+    isAfterParkClose: false,
+  };
+
+  if (!tripStatus.hasDates) {
+    return {
+      ...base,
+      mode: "pre_trip",
+      label: "Pre-trip",
+      headline: "Trip planning view.",
+      detail: "Set trip dates when you are ready so TOHI can shift into morning and park-day views.",
+      isPreTrip: true,
+      isMorningOf: false,
+      isInPark: false,
+    };
+  }
+
+  if (tripStatus.isBeforeTrip || tripStatus.isDayBeforeTrip) {
+    return {
+      ...base,
+      mode: "pre_trip",
+      label: tripStatus.isDayBeforeTrip ? "Day before" : "Pre-trip",
+      headline: tripStatus.isDayBeforeTrip ? "Tomorrow prep view." : "Trip planning view.",
+      detail: "Use this space to check priorities, tune the day, and get the bag ready.",
+      isPreTrip: true,
+      isMorningOf: false,
+      isInPark: false,
+    };
+  }
+
+  if (tripStatus.isAfterTrip) {
+    return {
+      ...base,
+      mode: "pre_trip",
+      label: "Trip dates passed",
+      headline: "Trip dates have passed.",
+      detail: "Update your trip dates when you are ready to plan the next park day.",
+      isPreTrip: true,
+      isMorningOf: false,
+      isInPark: false,
+      isAfterTrip: true,
+    };
+  }
+
+  if (tripStatus.isDuringTrip && hasReliableParkWindow) {
+    if (nowMinutes < openMinutes) {
+      return {
+        ...base,
+        mode: "morning_of",
+        label: "Morning of",
+        headline: "Morning check-in.",
+        detail: parkHours?.open
+          ? `${getParkNameById(activePark)} opens around ${formatPlanTimeLabel(parkHours.open)}. This is the window for a clear first move.`
+          : "This is the window for a clear first move before the park opens.",
+        isPreTrip: false,
+        isMorningOf: true,
+        isInPark: false,
+        isBeforeParkOpen: true,
+      };
+    }
+
+    if (nowMinutes >= closeMinutes) {
+      return {
+        ...base,
+        mode: "in_park",
+        label: "Park day wrap-up",
+        headline: "Park day wrap-up.",
+        detail: "Keep this light and use it to check what still matters before calling the day.",
+        isPreTrip: false,
+        isMorningOf: false,
+        isInPark: true,
+        isAfterParkClose: true,
+      };
+    }
+
+    return {
+      ...base,
+      mode: "in_park",
+      label: "In park",
+      headline: "In-park reference.",
+      detail: "Keep this light while the Right Now tab handles live moves.",
+      isPreTrip: false,
+      isMorningOf: false,
+      isInPark: true,
+    };
+  }
+
+  if (tripStatus.isDuringTrip) {
+    const morningLike =
+      timeContext?.dayPhase === "overnight" ||
+      timeContext?.dayPhase === "early_morning" ||
+      timeContext?.planningMode === "day_of_rope_drop";
+
+    return {
+      ...base,
+      mode: morningLike ? "morning_of" : "in_park",
+      label: morningLike ? "Morning of" : "In park",
+      headline: morningLike ? "Morning check-in." : "In-park reference.",
+      detail: morningLike
+        ? "This is the window for a clear first move before the park opens."
+        : "Keep this light while the Right Now tab handles live moves.",
+      isPreTrip: false,
+      isMorningOf: morningLike,
+      isInPark: !morningLike,
+    };
+  }
+
+  return {
+    ...base,
+    mode: "pre_trip",
+    label: "Pre-trip",
+    headline: "Trip planning view.",
+    detail: "Use this space to check priorities, tune the day, and get the bag ready.",
+    isPreTrip: true,
+    isMorningOf: false,
+    isInPark: false,
+  };
+}
+
 
 
 
@@ -942,6 +1103,13 @@ function App() {
       familyProfile: familyProfileSummary,
     });
   }, [planningPark, familyProfileSummary]);
+
+  const planTabState = useMemo(() => {
+    return buildPlanTabState({
+      activePark: planningPark,
+      timeContext: planningTimeContext,
+    });
+  }, [planningPark, planningTimeContext]);
 
   const access = useMemo(
     () =>
@@ -3350,6 +3518,7 @@ function App() {
               hasPersonalizedAccess={hasPersonalizedAccess}
               profileCompletion={profileCompletion}
               timeContext={planningTimeContext}
+              planTabState={planTabState}
               packingChecklist={packingChecklist}
               dayGamePlan={dayGamePlan}
               planNudges={planNudges}
