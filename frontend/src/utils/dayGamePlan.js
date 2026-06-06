@@ -91,8 +91,8 @@ function getOpeningStrategySummary(activePark, experiences = []) {
 
 function isEarlyEntryLikelyEligible(familyProfile = {}) {
   return Boolean(
-    familyProfile.resortContext?.stayingOnProperty ||
-      familyProfile.resortProfile?.eligibleForEarlyEntry ||
+    familyProfile.resortContext?.stayingOnProperty === "yes" ||
+      (familyProfile.resortProfile?.eligibleForEarlyEntry === true || familyProfile.resortProfile?.eligibleForEarlyEntry === "yes") ||
       familyProfile.resortProfile?.isDisneyResort ||
       familyProfile.resortProfile?.areaLabel
   );
@@ -268,7 +268,7 @@ function buildMorningPriority({ preferences, familyProfile, activePark, tripPlan
           `${openingSummary.ropeDropLabel} is not Early Entry, but it can be a strong official park-open move. This is rope drop strategy, not resort-only Early Entry strategy.`,
         priority: "must",
         detail:
-          "This make room fors the opening rush without implying resort eligibility or Early Entry access.",
+          "This makes room for the opening rush without implying resort eligibility or Early Entry access.",
       };
     }
 
@@ -499,12 +499,12 @@ function buildMustDoPriorities({ preferences, familyProfile, activePark, tripPla
       eyebrow: "YOUR PRIORITIES",
       title: "Make room for what your family picked.",
       body:
-        `Your priorities in this park include ${activeParkLabel}. TOHI should treat those as success targets, not random nice-to-haves.`,
+        `Your priorities in this park include ${activeParkLabel}. TOHI keeps those as success targets, not random nice-to-haves.`,
       priority: "must",
       detail:
         preferences.startStrategy === "rope_drop"
           ? "Because this is a rope-drop style day, the app should look for early low-wait windows before heat and crowds make it harder."
-          : "These should influence later TOHI chat and recommendation scoring so the app keeps what actually matters in view to the family.",
+          : "These shape what TOHI surfaces so the app keeps what actually matters in view to the family.",
     };
   }
 
