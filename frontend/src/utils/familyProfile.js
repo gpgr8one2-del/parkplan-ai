@@ -7,6 +7,7 @@ const DEFAULT_SYSTEM = "disney_wdw";
 export const DEFAULT_FAMILY_PROFILE = {
   system: DEFAULT_SYSTEM,
   isSetupComplete: false,
+  preferredName: null,
   adultCount: 2,
   childCount: 2,
   children: [
@@ -149,6 +150,11 @@ export function getParkLabel(parkId, system = DEFAULT_SYSTEM) {
 
 function toBoolean(value) {
   return value === true || value === "true" || value === "yes";
+}
+
+function normalizePreferredName(value) {
+  const trimmed = String(value || "").trim();
+  return trimmed ? trimmed.slice(0, 40) : null;
 }
 
 function clampNumber(value, min, max, fallback) {
@@ -499,6 +505,7 @@ export function normalizeFamilyProfile(profile = {}) {
   return {
     ...merged,
     system: merged.system || DEFAULT_SYSTEM,
+    preferredName: normalizePreferredName(merged.preferredName),
     adultCount,
     childCount,
     partySize: adultCount + childCount,
