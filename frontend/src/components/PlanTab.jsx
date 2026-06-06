@@ -166,6 +166,7 @@ function getMustDoKey(experience = {}) {
 function PlanningStatusCard({
   card,
   timeContext = {},
+  planTabState = {},
   hasPersonalizedAccess,
   profileCompletion,
   setActiveScreen,
@@ -205,6 +206,23 @@ function PlanningStatusCard({
           >
             {timeContext.summary}
           </p>
+
+          {planTabState?.headline && (
+            <p
+              style={{
+                margin: "7px 0 0",
+                color: colors.text,
+                fontSize: 13,
+                lineHeight: 1.38,
+                fontWeight: 850,
+              }}
+            >
+              {planTabState.headline}{" "}
+              <span style={{ color: colors.muted, fontWeight: 700 }}>
+                {planTabState.detail}
+              </span>
+            </p>
+          )}
 
           <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
             {hasPersonalizedAccess
@@ -1141,6 +1159,7 @@ export function PlanTab({
   hasPersonalizedAccess,
   profileCompletion,
   timeContext,
+  planTabState,
   packingChecklist,
   dayGamePlan = [],
   planNudges = [],
@@ -1210,6 +1229,7 @@ export function PlanTab({
         card={card}
         button={button}
         timeContext={timeContext}
+        planTabState={planTabState}
         hasPersonalizedAccess={hasPersonalizedAccess}
         profileCompletion={profileCompletion}
         setActiveScreen={setActiveScreen}
