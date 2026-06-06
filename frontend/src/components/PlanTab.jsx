@@ -276,7 +276,7 @@ function DayGamePlanSection({ card, dayGamePlan = [] }) {
         >
           <div style={{ minWidth: 220, flex: "1 1 320px" }}>
             <SectionBadge background={colors.skySoft} color="#0369A1">
-              YOUR GAME PLAN
+              DAY STRATEGY
             </SectionBadge>
 
             <h2
@@ -288,7 +288,7 @@ function DayGamePlanSection({ card, dayGamePlan = [] }) {
                 lineHeight: 1.12,
               }}
             >
-              Here’s how TOHI thinks about your trip
+              Today’s plan at a glance
             </h2>
 
             <p
@@ -306,7 +306,7 @@ function DayGamePlanSection({ card, dayGamePlan = [] }) {
 
           <CollapseButton
             isOpen={isOpen}
-            openLabel="See strategy"
+            openLabel="See full plan"
             closeLabel="Collapse"
             onClick={() => setIsOpen((current) => !current)}
           />
