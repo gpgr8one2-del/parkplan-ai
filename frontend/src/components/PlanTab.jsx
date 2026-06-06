@@ -1021,7 +1021,7 @@ function PackingPreviewSection({ card, packingChecklist = [] }) {
   const previewItems = packingChecklist.slice(0, 2).map((item) => item.label).filter(Boolean);
   const previewText = previewItems.length
     ? previewItems.join(" · ")
-    : "TOHI will show the bag items that fit your forecast, park, and family setup.";
+    : "The items most likely to matter for this park day.";
 
   return (
     <section
@@ -1047,7 +1047,7 @@ function PackingPreviewSection({ card, packingChecklist = [] }) {
             WHAT TO PACK
           </SectionBadge>
           <h3 style={{ margin: 0, color: colors.text, fontSize: 22, letterSpacing: -0.35 }}>
-            What’s different about this trip’s bag
+            Quick bag check for today
           </h3>
           <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
             {previewText}
