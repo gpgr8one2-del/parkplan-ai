@@ -54,8 +54,8 @@ function formatExperienceList(experiences = [], max = 2) {
 
 function isEarlyEntryLikelyEligible(familyProfile = {}) {
   return Boolean(
-    familyProfile.resortContext?.stayingOnProperty ||
-      familyProfile.resortProfile?.eligibleForEarlyEntry ||
+    familyProfile.resortContext?.stayingOnProperty === "yes" ||
+      (familyProfile.resortProfile?.eligibleForEarlyEntry === true || familyProfile.resortProfile?.eligibleForEarlyEntry === "yes") ||
       familyProfile.resortProfile?.isDisneyResort ||
       familyProfile.resortProfile?.areaLabel
   );
