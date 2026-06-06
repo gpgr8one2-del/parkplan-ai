@@ -373,6 +373,14 @@ function buildLocalChatFallback({
   return lines.join("\n");
 }
 
+function getTimeOfDayGreeting(preferredName, date = new Date()) {
+  const hour = date.getHours();
+  const dayPart = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
+  const name = String(preferredName || "").trim();
+
+  return name ? `Good ${dayPart}, ${name}.` : `Good ${dayPart}.`;
+}
+
 function buildWeatherDisplay(weather) {
   if (!weather) return "Loading weather...";
 
@@ -919,6 +927,7 @@ function App() {
   }, [familyProfileSummary]);
 
   const isProfileIncomplete = !profileCompletion.isComplete;
+  const homeGreeting = getTimeOfDayGreeting(familyProfileSummary?.preferredName);
 
   const timeContext = useMemo(() => {
     return getCurrentTimeContext({
@@ -2285,7 +2294,7 @@ function App() {
                 fontWeight: 900,
               }}
             >
-              Here&apos;s what matters right now.
+              {homeGreeting}
             </h1>
 
             <p
@@ -2297,7 +2306,8 @@ function App() {
                 maxWidth: 520,
               }}
             >
-              TOHI is watching the heat, waits, and walking so your family can keep the day feeling good.
+              Here&apos;s what matters right now. TOHI is watching the heat, waits,
+              and walking so your family can keep the day feeling good.
             </p>
           </div>
 
