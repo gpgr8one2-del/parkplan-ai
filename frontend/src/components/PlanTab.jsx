@@ -163,6 +163,224 @@ function getMustDoKey(experience = {}) {
 }
 
 
+
+function getFirstNameLabel(preferredName) {
+  return String(preferredName || "").trim();
+}
+
+function getMorningGreeting(preferredName) {
+  const name = getFirstNameLabel(preferredName);
+  return name ? `Good morning, ${name}. Here’s today.` : "Good morning. Here’s today.";
+}
+
+function getStartPlanAnchor(dayGamePlan = []) {
+  return (
+    dayGamePlan.find((item) => item?.id === "start_plan") ||
+    dayGamePlan.find((item) => item?.eyebrow === "START PLAN") ||
+    dayGamePlan[0] ||
+    null
+  );
+}
+
+function getMeaningfulWeatherNote(weatherMode = {}) {
+  const mode = String(weatherMode?.mode || "normal").toLowerCase();
+
+  if (!mode || mode === "normal") return "";
+
+  if (mode === "storm") {
+    return "Storms may shape the day — favor indoor, covered, or easy-to-reach choices until things settle.";
+  }
+
+  if (mode === "rain") {
+    return "Rain may affect outdoor rides and longer walks, so keep the first move flexible.";
+  }
+
+  if (mode === "extreme_heat") {
+    return "Heat builds fast today — plan your reset earlier than feels necessary.";
+  }
+
+  if (mode === "hot") {
+    return "It is warm enough to plan water, shade, and AC before everyone feels done.";
+  }
+
+  if (mode === "warm") {
+    return "A quick water stop early can keep the morning smoother.";
+  }
+
+  return weatherMode?.message || "";
+}
+
+function getPriorityPreview(tripPlan = {}, planningPark) {
+  const allPriorities = Array.isArray(tripPlan?.mustDoExperiences)
+    ? tripPlan.mustDoExperiences
+    : [];
+
+  const inPlanningPark = allPriorities.filter(
+    (experience) => experience?.parkId === planningPark
+  );
+
+  const visible = (inPlanningPark.length ? inPlanningPark : allPriorities)
+    .map((experience) => experience?.name)
+    .filter(Boolean)
+    .slice(0, 3);
+
+  if (!visible.length) {
+    return {
+      text: "No priorities selected yet.",
+      empty: true,
+    };
+  }
+
+  return {
+    text: `TOHI is making room for: ${visible.join(", ")}.`,
+    empty: false,
+  };
+}
+
+function MorningBriefingCard({
+  card,
+  preferredName,
+  dayGamePlan = [],
+  weatherMode = {},
+  tripPlan = {},
+  planningPark,
+  planningParkLabel,
+}) {
+  const startPlan = getStartPlanAnchor(dayGamePlan);
+  const weatherNote = getMeaningfulWeatherNote(weatherMode);
+  const priorityPreview = getPriorityPreview(tripPlan, planningPark);
+
+  return (
+    <section
+      style={{
+        ...card,
+        padding: 18,
+        position: "relative",
+        overflow: "hidden",
+        background:
+          "radial-gradient(circle at 92% 0%, rgba(251, 113, 133, 0.20) 0%, rgba(251, 113, 133, 0.05) 35%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #FFF7ED 54%, #FEF3C7 100%)",
+        border: "1px solid rgba(245, 158, 11, 0.26)",
+        boxShadow: "0 16px 38px rgba(245, 158, 11, 0.12)",
+      }}
+    >
+      <div style={{ position: "relative" }}>
+        <SectionBadge background={colors.amberSoft} color="#92400E">
+          MORNING BRIEFING
+        </SectionBadge>
+
+        <h2
+          style={{
+            margin: 0,
+            color: colors.text,
+            fontSize: 25,
+            letterSpacing: -0.55,
+            lineHeight: 1.12,
+          }}
+        >
+          {getMorningGreeting(preferredName)}
+        </h2>
+
+        <div style={{ display: "grid", gap: 10, marginTop: 13 }}>
+          <div
+            style={{
+              padding: 12,
+              borderRadius: 18,
+              background: "rgba(255,255,255,0.84)",
+              border: `1px solid ${colors.cardBorder}`,
+            }}
+          >
+            <div
+              style={{
+                color: "#92400E",
+                fontSize: 11,
+                fontWeight: 950,
+                letterSpacing: 0.55,
+              }}
+            >
+              FIRST MOVE
+            </div>
+
+            <strong
+              style={{
+                display: "block",
+                marginTop: 4,
+                color: colors.text,
+                fontSize: 15,
+                lineHeight: 1.28,
+              }}
+            >
+              {startPlan?.title || `Start with one clear move at ${planningParkLabel || "the park"}.`}
+            </strong>
+
+            {startPlan?.body && (
+              <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12.5, lineHeight: 1.38 }}>
+                {startPlan.body}
+              </p>
+            )}
+          </div>
+
+          {weatherNote && (
+            <div
+              style={{
+                padding: 12,
+                borderRadius: 18,
+                background: "rgba(255,255,255,0.72)",
+                border: `1px solid ${colors.cardBorder}`,
+              }}
+            >
+              <div
+                style={{
+                  color: "#0369A1",
+                  fontSize: 11,
+                  fontWeight: 950,
+                  letterSpacing: 0.55,
+                }}
+              >
+                WEATHER NOTE
+              </div>
+
+              <p style={{ margin: "4px 0 0", color: colors.text, fontSize: 13, lineHeight: 1.38 }}>
+                {weatherNote}
+              </p>
+            </div>
+          )}
+
+          <div
+            style={{
+              padding: 12,
+              borderRadius: 18,
+              background: "rgba(255,255,255,0.72)",
+              border: `1px solid ${colors.cardBorder}`,
+            }}
+          >
+            <div
+              style={{
+                color: "#E11D48",
+                fontSize: 11,
+                fontWeight: 950,
+                letterSpacing: 0.55,
+              }}
+            >
+              YOUR PRIORITIES
+            </div>
+
+            <p style={{ margin: "4px 0 0", color: colors.text, fontSize: 13, lineHeight: 1.38 }}>
+              {priorityPreview.text}
+            </p>
+
+            {priorityPreview.empty && (
+              <p style={{ margin: "5px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+                Add a few before the trip so the morning plan knows what would make the day feel like a win.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
 function PlanningStatusCard({
   card,
   timeContext = {},
@@ -1160,6 +1378,8 @@ export function PlanTab({
   profileCompletion,
   timeContext,
   planTabState,
+  preferredName,
+  weatherMode,
   packingChecklist,
   dayGamePlan = [],
   planNudges = [],
@@ -1177,6 +1397,7 @@ export function PlanTab({
   setActiveScreen,
 }) {
   const preferences = tripPlan?.preferences || {};
+  const showMorningBriefing = planTabState?.mode === "morning_of";
 
   return (
     <>
@@ -1224,6 +1445,18 @@ export function PlanTab({
           </p>
         </div>
       </section>
+
+      {showMorningBriefing && (
+        <MorningBriefingCard
+          card={card}
+          preferredName={preferredName}
+          dayGamePlan={dayGamePlan}
+          weatherMode={weatherMode}
+          tripPlan={tripPlan}
+          planningPark={planningPark}
+          planningParkLabel={planningParkLabel}
+        />
+      )}
 
       <PlanningStatusCard
         card={card}
