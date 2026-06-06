@@ -3519,6 +3519,8 @@ function App() {
               profileCompletion={profileCompletion}
               timeContext={planningTimeContext}
               planTabState={planTabState}
+              preferredName={familyProfileSummary?.preferredName}
+              weatherMode={weatherMode}
               packingChecklist={packingChecklist}
               dayGamePlan={dayGamePlan}
               planNudges={planNudges}
