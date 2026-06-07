@@ -44,6 +44,7 @@ export const DEFAULT_FAMILY_PROFILE = {
     firstParkId: "magic_kingdom",
     mostImportantParkId: "magic_kingdom",
     parkHopper: "unknown",
+    parkDaySchedule: [],
   },
 
   // Plan Tune fields eventually move to parkplan.tripPlan.
@@ -265,6 +266,122 @@ function normalizePaidQueueStrategy(profile = {}) {
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/* Park Day Schedule — schema foundation (44A)                               */
+/* -------------------------------------------------------------------------- */
+
+const SELECTABLE_TRIP_PARK_IDS = [
+  "magic_kingdom",
+  "epcot",
+  "hollywood",
+  "animal_kingdom",
+];
+
+function isSelectableTripParkId(parkId) {
+  return SELECTABLE_TRIP_PARK_IDS.includes(String(parkId || ""));
+}
+
+function isValidDateString(str) {
+  if (typeof str !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
+  const d = new Date(`${str}T12:00:00`);
+  return Number.isFinite(d.getTime());
+}
+
+function addDaysToTripDateString(dateString, daysToAdd) {
+  if (!isValidDateString(dateString)) return "";
+  const [year, month, day] = dateString.split("-").map(Number);
+  const d = new Date(Date.UTC(year, month - 1, day + daysToAdd));
+  return d.toISOString().slice(0, 10);
+}
+
+function normalizeParkDayScheduleItem(item, index, fallbackParkId, fallbackDate) {
+  return {
+    dayNumber: index + 1,
+    date: isValidDateString(item?.date) ? item.date : fallbackDate || "",
+    primaryParkId: isSelectableTripParkId(item?.primaryParkId)
+      ? item.primaryParkId
+      : (isSelectableTripParkId(fallbackParkId) ? fallbackParkId : "magic_kingdom"),
+    secondaryParkId: isSelectableTripParkId(item?.secondaryParkId)
+      ? item.secondaryParkId
+      : "",
+    notes: typeof item?.notes === "string" ? item.notes.slice(0, 160) : "",
+  };
+}
+
+function buildDefaultParkDaySchedule(normalizedTripContext = {}) {
+  const tripLength = Math.max(
+    1,
+    Math.min(
+      21,
+      Number(normalizedTripContext.tripLengthDays) ||
+        Number(normalizedTripContext.parkDays) ||
+        1
+    )
+  );
+
+  // Build selectable parks list from context fields
+  let selectedParks = [];
+
+  const selectionIds = normalizedTripContext.parkSelectionIds;
+  if (Array.isArray(selectionIds) && selectionIds.length) {
+    selectedParks = selectionIds.filter(isSelectableTripParkId);
+  }
+
+  if (!selectedParks.length) {
+    const fallback = [
+      normalizedTripContext.firstParkId,
+      normalizedTripContext.firstPark,
+    ].find(isSelectableTripParkId);
+    selectedParks = fallback ? [fallback] : ["magic_kingdom"];
+  }
+
+  // Day 1 prefers firstParkId / firstPark if valid and selectable
+  const day1Park =
+    [normalizedTripContext.firstParkId, normalizedTripContext.firstPark].find(
+      isSelectableTripParkId
+    ) ||
+    selectedParks[0] ||
+    "magic_kingdom";
+
+  // Rotate the selected parks array so day 1 starts at day1Park
+  const day1Index = selectedParks.indexOf(day1Park);
+  const rotation =
+    day1Index >= 0
+      ? [...selectedParks.slice(day1Index), ...selectedParks.slice(0, day1Index)]
+      : [day1Park, ...selectedParks];
+
+  const startDate = normalizedTripContext.tripStartDate || "";
+
+  return Array.from({ length: tripLength }, (_, index) => ({
+    dayNumber: index + 1,
+    date: isValidDateString(startDate)
+      ? addDaysToTripDateString(startDate, index)
+      : "",
+    primaryParkId: rotation[index % rotation.length],
+    secondaryParkId: "",
+    notes: "",
+  }));
+}
+
+export function normalizeParkDaySchedule(rawSchedule, normalizedTripContext = {}) {
+  const defaults = buildDefaultParkDaySchedule(normalizedTripContext);
+
+  if (!Array.isArray(rawSchedule) || rawSchedule.length === 0) {
+    return defaults;
+  }
+
+  return defaults.map((defaultItem, index) => {
+    const existing = rawSchedule[index];
+    if (!existing || typeof existing !== "object") return defaultItem;
+    return normalizeParkDayScheduleItem(
+      existing,
+      index,
+      defaultItem.primaryParkId,
+      defaultItem.date
+    );
+  });
+}
+
 function buildTripContextWithCompatibility(tripContext = {}) {
   // 24C compatibility rule:
   // Current OnboardingFlow.jsx still writes legacy selectedParks / firstPark /
@@ -310,6 +427,16 @@ function buildTripContextWithCompatibility(tripContext = {}) {
     ...normalizedTripContext,
   });
 
+  const contextForSchedule = {
+    ...normalizedTripContext,
+    tripLengthDays,
+  };
+
+  const parkDaySchedule = normalizeParkDaySchedule(
+    tripContext.parkDaySchedule,
+    contextForSchedule
+  );
+
   return {
     ...normalizedTripContext,
 
@@ -319,6 +446,8 @@ function buildTripContextWithCompatibility(tripContext = {}) {
     selectedParks: parkSelectionIds,
     firstPark: firstParkId,
     priorityPark: mostImportantParkId,
+
+    parkDaySchedule,
   };
 }
 
