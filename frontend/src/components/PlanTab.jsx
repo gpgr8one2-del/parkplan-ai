@@ -621,7 +621,7 @@ function PlanningStatusCard({
 
           <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
             {hasPersonalizedAccess
-              ? "Your setup is active. TOHI is using your family profile and trip tune in this plan."
+              ? "Your setup is active. This plan is using your family details, priorities, and day style."
               : "Finish setup when you are ready for a plan that fits your family."}
           </p>
         </div>
@@ -1072,7 +1072,7 @@ function MustDoMomentsSection({
               What still matters in {planningParkLabel || "this park"}
             </h3>
             <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12.5, lineHeight: 1.38 }}>
-              A quiet reminder of what TOHI is making room for today. Editing can wait until planning mode.
+              A quiet reminder of what TOHI is making room for today. You can adjust these later when you are not in the middle of the park.
             </p>
           </div>
 
@@ -1183,7 +1183,7 @@ function MustDoMomentsSection({
             What should the day have room for?
           </h3>
           <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
-            Pick the rides, shows, and experiences TOHI should keep in mind for {planningParkLabel || "this park"}.
+            Pick the rides, shows, and experiences that would make {planningParkLabel || "this park"} feel like a win.
           </p>
         </div>
 
@@ -1493,7 +1493,7 @@ function PlanNudgesSection({
       }}
     >
       <SectionBadge background={colors.amberSoft} color="#92400E">
-        TOHI NUDGES
+        WORTH NOTICING
       </SectionBadge>
 
       <h3 style={{ margin: 0, color: colors.text, fontSize: 19, letterSpacing: -0.25 }}>
@@ -1501,7 +1501,7 @@ function PlanNudgesSection({
       </h3>
 
       <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
-        Small course-corrections based on your setup, weather, timing, and plan freshness.
+        A few timely notes based on your setup, weather, and how fresh the plan is.
       </p>
 
       <div style={{ display: "grid", gap: 9, marginTop: 12 }}>
