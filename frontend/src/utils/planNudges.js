@@ -135,20 +135,19 @@ function isEnergyManagementWindow(timeContext = {}) {
   );
 }
 
-function isEveningWindow(timeContext = {}) {
-  const dayPhase = normalizeString(timeContext?.dayPhase);
-  return dayPhase === "evening" || dayPhase === "late_evening";
-}
-
-function isOpeningStrategyContext(timeContext = {}) {
+function isOpeningWindowContext(timeContext = {}, planTabState = {}) {
   const dayPhase = normalizeString(timeContext?.dayPhase);
   const planningMode = normalizeString(timeContext?.planningMode);
   const tripStatus = normalizeString(
     timeContext?.tripStatus?.status || timeContext?.tripStatus
   );
+  const totalMinutes = Number(timeContext?.orlandoTotalMinutes);
 
   return Boolean(
-    timeContext?.isPreTrip ||
+    planTabState?.mode === "pre_trip" ||
+      planTabState?.mode === "morning_of" ||
+      planTabState?.isBeforeParkOpen ||
+      timeContext?.isPreTrip ||
       timeContext?.isDayBeforeTrip ||
       tripStatus === "before_trip" ||
       tripStatus === "day_before_trip" ||
@@ -157,7 +156,34 @@ function isOpeningStrategyContext(timeContext = {}) {
       planningMode === "day_of_rope_drop" ||
       dayPhase === "overnight" ||
       dayPhase === "early_morning" ||
-      dayPhase === "rope_drop_window"
+      dayPhase === "rope_drop_window" ||
+      (Number.isFinite(totalMinutes) && totalMinutes < 11 * 60)
+  );
+}
+
+function isEveningWindowContext(timeContext = {}) {
+  const dayPhase = normalizeString(timeContext?.dayPhase);
+  const totalMinutes = Number(timeContext?.orlandoTotalMinutes);
+
+  return Boolean(
+    dayPhase === "evening" ||
+      dayPhase === "late_evening" ||
+      (Number.isFinite(totalMinutes) && totalMinutes >= 17 * 60)
+  );
+}
+
+function isActivelyInPark(planTabState = {}, timeContext = {}) {
+  const planningMode = normalizeString(timeContext?.planningMode);
+
+  if (planTabState?.mode === "in_park") {
+    return !planTabState?.isBeforeParkOpen && !planTabState?.isAfterParkClose;
+  }
+
+  return Boolean(
+    timeContext?.isDuringTrip &&
+      (planningMode === "day_of_active" ||
+        planningMode === "day_of_energy_management" ||
+        planningMode === "day_of_evening_strategy")
   );
 }
 
@@ -190,9 +216,11 @@ export function generatePlanNudges({
   familyProfile = {},
   tripPlan = {},
   activePark = "",
+  planningPark = activePark,
   weather = {},
   weatherMode = {},
   timeContext = {},
+  planTabState = {},
   tripPlanFreshness = {},
   recommendations = {},
 } = {}) {
@@ -201,15 +229,18 @@ export function generatePlanNudges({
   const heatMode = isHeatMode(weatherMode, weather);
   const rainOrStorm = isRainOrStormMode(weatherMode, weather);
   const energyWindow = isEnergyManagementWindow(timeContext);
-  const openingStrategyContext = isOpeningStrategyContext(timeContext);
+  const openingWindow = isOpeningWindowContext(timeContext, planTabState);
+  const eveningWindow = isEveningWindowContext(timeContext);
+  const activelyInPark = isActivelyInPark(planTabState, timeContext);
   const lowWalking = hasLowWalkingTolerance(familyProfile);
   const youngKids = hasYoungKids(familyProfile);
   const mustDoCount = getMustDoCount(tripPlan);
-  const activeParkMustDos = getMustDosForPark(tripPlan, activePark);
-  const openingSummary = getOpeningStrategySummary(activePark, activeParkMustDos);
+  const targetPark = planningPark || activePark;
+  const activeParkMustDos = getMustDosForPark(tripPlan, targetPark);
+  const openingSummary = getOpeningStrategySummary(targetPark, activeParkMustDos);
   const earlyEntryEligible = isEarlyEntryLikelyEligible(familyProfile);
   const bestMoveWait = recommendations?.bestMove?.waitTime;
-  const parkLabel = activePark ? activePark.replace(/_/g, " ") : "the park";
+  const parkLabel = targetPark ? targetPark.replace(/_/g, " ") : "the park";
 
   if (tripPlanFreshness?.isStale) {
     addNudge(nudges, {
@@ -225,7 +256,7 @@ export function generatePlanNudges({
   }
 
   if (
-    openingStrategyContext &&
+    openingWindow &&
     preferences.startStrategy === "rope_drop" &&
     earlyEntryEligible &&
     openingSummary.earlyEntryTargets.length > 0
@@ -241,7 +272,7 @@ export function generatePlanNudges({
   }
 
   if (
-    openingStrategyContext &&
+    openingWindow &&
     preferences.startStrategy === "rope_drop" &&
     openingSummary.ropeDropTargets.length > 0 &&
     (!earlyEntryEligible || openingSummary.earlyEntryTargets.length === 0)
@@ -257,7 +288,7 @@ export function generatePlanNudges({
   }
 
   if (
-    openingStrategyContext &&
+    openingWindow &&
     preferences.startStrategy === "rope_drop" &&
     openingSummary.verifyDayOfTargets.length > 0
   ) {
@@ -320,7 +351,7 @@ export function generatePlanNudges({
 
   if (
     preferences.nighttimeImportance === "must_see_fireworks" &&
-    !isEveningWindow(timeContext) &&
+    !eveningWindow &&
     energyWindow
   ) {
     addNudge(nudges, {
@@ -333,7 +364,7 @@ export function generatePlanNudges({
     });
   }
 
-  if (preferences.breakPreference === "resort_return" && energyWindow) {
+  if (preferences.breakPreference === "resort_return" && activelyInPark && energyWindow) {
     addNudge(nudges, {
       id: "resort_break_window",
       priority: "medium",
