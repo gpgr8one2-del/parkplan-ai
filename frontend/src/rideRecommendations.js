@@ -67,7 +67,7 @@ import {
   resolveCurrentLand,
   getProximityModifier,
 } from "./parkProximity";
-import { getParkCloseTime } from "./parkHours";
+import { getParkCloseTime, getParkHoursForDate } from "./parkHours";
 
 const DEFAULT_POPULARITY = 40;
 const WALK_BUFFER_MINUTES = 15;
@@ -108,18 +108,27 @@ function getOrlandoTimeParts(date = new Date()) {
   return { hour, minute, totalMinutes: hour * 60 + minute };
 }
 
-function isEarlyEntryWindow(parkId) {
+function isEarlyEntryWindow(parkId, date = new Date()) {
   if (parkId !== "magic_kingdom") return false;
 
-  const { totalMinutes } = getOrlandoTimeParts();
+  const parkHours = getParkHoursForDate(parkId, date);
+  const openTime = parkHours?.open;
 
-  // V1 assumption for Magic Kingdom testing: Early Entry / rope-drop strategy
-  // window 8:00 - 9:00 AM Orlando time. Replace later with official daily hours.
-  return totalMinutes >= 8 * 60 && totalMinutes < 9 * 60;
+  if (!(openTime instanceof Date) || !Number.isFinite(openTime.getTime())) {
+    return false;
+  }
+
+  const nowMs = date instanceof Date ? date.getTime() : new Date(date).getTime();
+  if (!Number.isFinite(nowMs)) return false;
+
+  const earlyEntryStartMs = openTime.getTime() - 30 * 60 * 1000;
+  const earlyEntryEndMs = openTime.getTime();
+
+  return nowMs >= earlyEntryStartMs && nowMs < earlyEntryEndMs;
 }
 
-function isAllowedDuringEarlyEntry(parkId, meta) {
-  if (!isEarlyEntryWindow(parkId)) return true;
+function isAllowedDuringEarlyEntry(parkId, meta, date = new Date()) {
+  if (!isEarlyEntryWindow(parkId, date)) return true;
 
   if (parkId === "magic_kingdom") {
     return meta?.land === "fantasyland" || meta?.land === "tomorrowland";
@@ -1796,7 +1805,7 @@ export function getNextBestRides({
     if (completed.has(String(ride.id))) return { reason: "completed", meta };
     if (skipped.has(String(ride.id))) return { reason: "skipped", meta };
 
-    if (!isAllowedDuringEarlyEntry(parkId, meta)) {
+    if (!isAllowedDuringEarlyEntry(parkId, meta, now)) {
       return { reason: "earlyEntryBlocked", meta };
     }
 
