@@ -351,7 +351,7 @@ export function generatePlanNudges({
       eyebrow: "MUST-DO CHECK",
       title: "Keep your priorities from getting crowded out.",
       body:
-        "Before chasing random waits, check whether one selected priority has a good window. One meaningful win beats scattered filler.",
+        "Before chasing stray waits, check whether one selected priority has a good window. One meaningful win beats scattered filler.",
     });
   }
 
