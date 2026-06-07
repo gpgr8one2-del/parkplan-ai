@@ -1494,9 +1494,11 @@ function App() {
       familyProfile: familyProfileSummary,
       tripPlan: tripPlanState,
       activePark: planningPark,
+      planningPark,
       weather,
       weatherMode,
       timeContext: planningTimeContext,
+      planTabState,
       tripPlanFreshness,
       recommendations: planningRecommendations,
     });
@@ -1507,6 +1509,7 @@ function App() {
     weather,
     weatherMode,
     planningTimeContext,
+    planTabState,
     tripPlanFreshness,
     planningRecommendations,
   ]);
