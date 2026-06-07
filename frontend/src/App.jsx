@@ -3520,6 +3520,7 @@ function App() {
               timeContext={planningTimeContext}
               planTabState={planTabState}
               preferredName={familyProfileSummary?.preferredName}
+              familyProfile={familyProfileSummary}
               weatherMode={weatherMode}
               packingChecklist={packingChecklist}
               dayGamePlan={dayGamePlan}
