@@ -1896,14 +1896,12 @@ export function PlanTab({
         setActiveScreen={setActiveScreen}
       />
 
-      {!isInParkView && (
-        <PlanFreshnessNotice
-          card={card}
-          button={button}
-          planFreshness={tripPlanFreshness}
-          onRefreshTripPlanContext={onRefreshTripPlanContext}
-        />
-      )}
+      <PlanFreshnessNotice
+        card={card}
+        button={button}
+        planFreshness={tripPlanFreshness}
+        onRefreshTripPlanContext={onRefreshTripPlanContext}
+      />
 
       <MustDoMomentsSection
         card={card}
@@ -1918,14 +1916,12 @@ export function PlanTab({
         isInParkView={isInParkView}
       />
 
-      {!isInParkView && (
-        <PlanNudgesSection
-          card={card}
-          button={button}
-          planNudges={planNudges}
-          onRefreshTripPlanContext={onRefreshTripPlanContext}
-        />
-      )}
+      <PlanNudgesSection
+        card={card}
+        button={button}
+        planNudges={planNudges}
+        onRefreshTripPlanContext={onRefreshTripPlanContext}
+      />
 
       <DayGamePlanSection
         card={card}
