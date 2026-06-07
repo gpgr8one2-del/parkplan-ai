@@ -200,7 +200,7 @@ export function generatePackingChecklist({
     id: "battery_pack",
     category: "essentials",
     label: "Portable battery pack",
-    reason: "TOHI, park apps, mobile ordering, photos, and ride updates all depend on your phone staying alive.",
+    reason: "Your phone powers TOHI, park apps, mobile ordering, photos, and ride updates all day.",
     priority: "must",
   });
 
@@ -209,7 +209,7 @@ export function generatePackingChecklist({
     category: "essentials",
     label: "Refillable water bottles",
     reason: hotDay
-      ? "Today’s comfort read makes hydration part of keeping the family’s mood steady, not just a nice extra."
+      ? "Today’s heat makes hydration part of keeping the family’s mood steady, not just a nice extra."
       : "Even on easier weather days, refillable water keeps small delays from turning into avoidable stress.",
     priority: hotDay ? "must" : "should",
   });
@@ -246,7 +246,7 @@ export function generatePackingChecklist({
       label: "Cooling towel",
       reason:
         temperatureF != null
-          ? `The current comfort read is around ${temperatureF}°F, so cooling support actually fits today’s forecast.`
+          ? `It feels around ${temperatureF}°F right now, so cooling support is worth having close.`
           : "Your family profile says heat sensitivity is high, so this is a reasonable backup even without a clean forecast read.",
       priority: hotDay || heatSensitivity === "high" ? "must" : "should",
     });
@@ -316,7 +316,7 @@ export function generatePackingChecklist({
       reason: waterRidesLikely
         ? "Kids plus water rides can turn one soaked outfit into a long afternoon problem."
         : rainOrStormLikely
-        ? "Rain risk makes a dry backup outfit more useful than a generic just-in-case item."
+        ? "Rain risk makes a dry backup outfit more useful than a vague just-in-case item."
         : "Heat and sweat can make a backup shirt useful for keeping kids comfortable later.",
       priority: waterRidesStrong || rainChance >= 0.55 ? "should" : "nice_to_have",
     });
