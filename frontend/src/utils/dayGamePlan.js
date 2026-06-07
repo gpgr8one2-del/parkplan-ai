@@ -164,7 +164,7 @@ function buildStartPlan({ preferences, familyProfile, activePark, timeContext, t
           `${openingSummary.verifyDayOfLabel} is not listed as an official Early Entry attraction. Do not build the morning around it as guaranteed Early Entry; treat it as verify-day-of or an official park-open rope-drop play.`,
         priority: "must",
         detail:
-          "This avoids the trust-break of calling something Early Entry when Disney does not list it that way.",
+          "This keeps the plan from calling something Early Entry when Disney does not list it that way.",
       };
     }
 
@@ -233,7 +233,7 @@ function buildStartPlan({ preferences, familyProfile, activePark, timeContext, t
     priority: "should",
     detail:
       mustDoLabel
-        ? `Keep ${mustDoLabel} visible in the plan so it does not get crowded out by random wait-time chasing.`
+        ? `Keep ${mustDoLabel} visible in the plan so it does not get crowded out by stray wait-time chasing.`
         : "This is the safest default for families who want a real park day without a stressful launch.",
   };
 }
@@ -255,7 +255,7 @@ function buildMorningPriority({ preferences, familyProfile, activePark, tripPlan
           `${openingSummary.earlyEntryLabel} is an official Early Entry target for eligible guests. Use that resort-only window first, then switch to regular rope-drop logic once the park officially opens.`,
         priority: "must",
         detail:
-          "Early Entry and rope drop are separate strategy windows. TOHI should keep them clean.",
+          "Early Entry and rope drop are separate strategy windows. Keep them separate so the morning does not get muddy.",
       };
     }
 
@@ -277,7 +277,7 @@ function buildMorningPriority({ preferences, familyProfile, activePark, tripPlan
       eyebrow: "MORNING PRIORITY",
       title: "Use the low-wait window on what matters.",
       body:
-        `Your selected must-do moments include ${mustDoLabel}. If one of them is open, nearby, and reasonable early, this is when TOHI should help make room for it before heat and crowds make the day harder.`,
+        `Your selected must-do moments include ${mustDoLabel}. If one of them is open, nearby, and reasonable early, this is the window to make room for it before heat and crowds make the day harder.`,
       priority: "must",
       detail:
         "Opening strategy is not about doing everything. It is about using the best family-energy window on the right thing.",
@@ -323,7 +323,7 @@ function buildMorningPriority({ preferences, familyProfile, activePark, tripPlan
         "Do not let headliners swallow the whole morning. If characters, younger-kid moments, or classic memories matter, make room for one of those before everyone is tired.",
       priority: "must",
       detail:
-        "This is where TOHI should be different from a hardcore ride ride counter.",
+        "This keeps the morning centered on the family, not just the ride count.",
     };
   }
 
@@ -423,7 +423,7 @@ function buildWeatherStrategy({ weather, weatherMode, familyProfile }) {
         "Treat hydration, cooling, shade, and AC as part of the plan, not something to remember after people get cranky.",
       priority: "must",
       detail:
-        "The app should keep the emotional tone steady of the day before the heat steals it.",
+        "This keeps the day steadier before heat starts draining patience.",
     };
   }
 
@@ -499,12 +499,12 @@ function buildMustDoPriorities({ preferences, familyProfile, activePark, tripPla
       eyebrow: "YOUR PRIORITIES",
       title: "Make room for what your family picked.",
       body:
-        `Your priorities in this park include ${activeParkLabel}. TOHI keeps those as success targets, not random nice-to-haves.`,
+        `Your priorities in this park include ${activeParkLabel}. TOHI keeps those as success targets, not background nice-to-haves.`,
       priority: "must",
       detail:
         preferences.startStrategy === "rope_drop"
-          ? "Because this is a rope-drop style day, the app should look for early low-wait windows before heat and crowds make it harder."
-          : "These shape what TOHI surfaces so the app keeps what actually matters in view to the family.",
+          ? "Because this is a rope-drop style day, early low-wait windows matter before heat and crowds make it harder."
+          : "These shape what TOHI surfaces so what actually matters stays in view for the family.",
     };
   }
 
@@ -517,7 +517,7 @@ function buildMustDoPriorities({ preferences, familyProfile, activePark, tripPla
         `Your priorities include ${allMustDoLabel}. They are not in the current park view, but they still define what a successful trip feels like.`,
       priority: "should",
       detail:
-        "When you switch parks, TOHI should bring those targets back into the strategy instead of treating every park day as generic.",
+        "When you switch parks, those targets should come back into view instead of every park day feeling generic.",
     };
   }
 
@@ -565,7 +565,7 @@ function buildMustDoPriorities({ preferences, familyProfile, activePark, tripPla
     eyebrow: "YOUR PRIORITIES",
     title: "Choose the memory, not the checklist.",
     body:
-      "Pick one moment that would make the day feel successful, then keep it from being crowded out by random wait-time chasing.",
+      "Pick one moment that would make the day feel successful, then keep it from being crowded out by stray wait-time chasing.",
     priority: "should",
     detail:
       "A good day needs an emotional anchor, not just efficient movement.",
