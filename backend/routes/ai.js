@@ -1,5 +1,8 @@
+const express = require("express");
 const Anthropic = require("@anthropic-ai/sdk");
 const logger = require("../logger");
+
+const router = express.Router();
 
 const ANTHROPIC_MODEL = "claude-sonnet-4-5-20250929";
 
@@ -702,4 +705,21 @@ async function getAIResponse(message, sessionData = {}) {
   return response.content?.[0]?.text || "I had trouble creating a response. Try again.";
 }
 
-module.exports = { getAIResponse };
+router.post("/ai-chat", async (req, res) => {
+  const message = String(req.body?.message || "").trim();
+  const sessionData = req.body?.sessionData || {};
+
+  if (!message) {
+    return res.status(400).json({ error: "message is required" });
+  }
+
+  try {
+    const reply = await getAIResponse(message, sessionData);
+    res.json({ reply });
+  } catch (err) {
+    req.log?.error({ err: err.message }, "AI chat error");
+    res.status(500).json({ error: "AI chat failed. Try again." });
+  }
+});
+
+module.exports = router;
