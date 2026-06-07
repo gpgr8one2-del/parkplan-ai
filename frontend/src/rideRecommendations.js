@@ -1609,92 +1609,85 @@ function fitsBeforeClose(waitTime, closeTime, now) {
 /* -------------------------------------------------------------------------- */
 
 function buildReason(ride, parts) {
-  const reasons = [];
+  const waitStatus = parts.waitValueStatus?.status;
+  const isNearby = parts.proximityModifier > 0;
+  const isCloseAnchor = parts.closestAnchorOpportunityModifier >= 30;
+  const isCrosspark = parts.crossParkRealityModifier <= -25;
+  const isModeratelyFar = !isCrosspark && parts.crossParkRealityModifier <= -12;
+  const hasGoodFamilyFit = parts.familyProfileModifier >= 10;
+  const hasWeakFamilyFit = parts.familyProfileModifier <= -15;
+  const hasGoodContext = parts.contextModifier >= 8;
+  const hasNearbyHeadliner = parts.nearbyHeadlinerOpportunityModifier >= 20;
+  const shouldProtect = parts.shouldProtectLater;
 
-  if (parts.waitValueStatus?.status === "great_value") {
-    reasons.push("well below its usual wait");
-  } else if (parts.waitValueStatus?.status === "good_value") {
-    reasons.push("better than usual for this ride");
-  } else if (parts.waitValueStatus?.status === "bad_value") {
-    reasons.push("higher than it is usually worth");
-  } else if (parts.waitValueStatus?.status === "plan_ahead") {
-    reasons.push("this ride usually runs high");
-  } else if (ride.waitTime <= 10) {
-    reasons.push("low wait right now");
-  } else if (ride.waitTime <= 25) {
-    reasons.push("reasonable wait");
+  // Must-do deferred to a better window
+  if (parts.mustDoModifier > 0 && shouldProtect && parts.mustDoReason) {
+    return parts.mustDoReason;
   }
 
-  if (parts.baseScore >= 85) reasons.push("high-priority attraction");
-
-  if (parts.proximityModifier > 0) reasons.push("near you");
-  else if (parts.proximityModifier < -8) reasons.push("worth considering, but farther away");
-
-  if (parts.trendModifier > 0) reasons.push("strong guest demand");
-
-  if (parts.contextModifier >= 8) reasons.push("great fit for current conditions");
-  else if (parts.contextModifier > 0) reasons.push("good weather-safe option");
-
-  if (parts.familyProfileModifier >= 10) {
-    reasons.push("strong fit for your family profile");
-  } else if (parts.rawFamilyProfileModifier >= 10 && parts.familyProfileModifier < 10) {
-    reasons.push("fits your profile, but the wait still matters");
-  } else if (parts.familyProfileModifier <= -15) {
-    reasons.push("less ideal for your family profile");
+  // Must-do being recommended now
+  if (parts.mustDoModifier > 0 && parts.mustDoReason) {
+    const waitNote =
+      waitStatus === "great_value" ? " Wait is lower than usual right now." :
+      waitStatus === "good_value" ? " Wait is running better than usual." : "";
+    return `${parts.mustDoReason}${waitNote}`;
   }
 
-  if (parts.planAheadRealityCheckModifier <= -15) {
-    reasons.push("better as a plan-ahead target unless the wait drops");
-  } else if (parts.planAheadRealityCheckModifier <= -8) {
-    reasons.push("wait is still a bit high for a go-now move");
+  // Primary sentence: wait value + location
+  let primary;
+
+  if (waitStatus === "great_value") {
+    if (isNearby || isCloseAnchor) {
+      primary = "Well below its usual wait and you're already nearby.";
+    } else if (isCrosspark) {
+      primary = "Well below its usual wait, though it requires crossing the park.";
+    } else {
+      primary = "Well below its usual wait right now.";
+    }
+  } else if (waitStatus === "good_value") {
+    primary = isNearby
+      ? "Running better than usual and you're nearby."
+      : "Running better than usual for this ride.";
+  } else if (waitStatus === "above_normal") {
+    primary = isNearby
+      ? "Busier than usual, but you're already nearby."
+      : "Running a bit busier than usual right now.";
+  } else if (waitStatus === "bad_value") {
+    primary = "Higher than this ride is usually worth right now.";
+  } else if (waitStatus === "plan_ahead") {
+    primary = "This ride usually requires a strategy. Worth planning around rather than waiting standby.";
+  } else if (ride.waitTime != null && ride.waitTime <= 10) {
+    primary = isNearby ? "Very short wait and you're nearby." : "Very short wait right now.";
+  } else if (ride.waitTime != null && ride.waitTime <= 25) {
+    primary = isNearby ? "Reasonable wait and you're nearby." : "Reasonable wait for this ride.";
+  } else if (isNearby || isCloseAnchor) {
+    primary = "Nearby — worth a look given the current window.";
+  } else if (hasNearbyHeadliner) {
+    primary = "Rare chance at a headliner without a long walk.";
+  } else {
+    primary = "Worth considering given the current effort and timing.";
   }
+
+  // Secondary: one additional signal if relevant
+  let secondary = "";
 
   if (parts.heightWarning) {
-    reasons.push(`height warning: ${parts.heightWarning.message}`);
+    secondary = ` ${parts.heightWarning.message}.`;
+  } else if (isCrosspark && waitStatus !== "great_value") {
+    secondary = " Requires crossing the park.";
+  } else if (isModeratelyFar) {
+    secondary = " Not the closest option right now.";
+  } else if (hasWeakFamilyFit) {
+    secondary = " Less ideal for your family's profile.";
+  } else if (hasGoodFamilyFit && !isNearby && waitStatus !== "great_value" && waitStatus !== "good_value") {
+    secondary = " Good fit for your family.";
+  } else if (hasGoodContext && !isNearby && waitStatus !== "great_value") {
+    secondary = " Good option for current conditions.";
+  } else if (shouldProtect) {
+    secondary = " Better saved for a different window.";
   }
 
-  if (parts.scheduledShowModifier >= 12) reasons.push("showtime timing may work well");
-  else if (parts.scheduledShowModifier <= -20) reasons.push("showtime timing matters");
-
-  if (parts.wetRideModifier >= 8) reasons.push("good water-ride timing");
-  else if (parts.wetRideModifier <= -8) reasons.push("water-ride timing is less ideal");
-
-  if (parts.parkStrategyModifier >= 8) reasons.push("strong park-specific opportunity");
-  else if (parts.parkStrategyModifier <= -8) reasons.push("less ideal for this park situation");
-
-  if (parts.crossParkRealityModifier <= -25) {
-    reasons.push("not worth crossing the park for unless it is a must-do");
-  } else if (parts.crossParkRealityModifier <= -12) {
-    reasons.push("farther than ideal for a go-now move");
-  }
-
-  if (parts.nearbyHeadlinerOpportunityModifier >= 20) {
-    reasons.push("rare nearby headliner opportunity");
-  } else if (parts.nearbyHeadlinerOpportunityModifier >= 10) {
-    reasons.push("strong nearby headliner value");
-  }
-
-  if (parts.closestAnchorOpportunityModifier >= 30) {
-    reasons.push("you are basically right here");
-  } else if (parts.closestAnchorOpportunityModifier >= 15) {
-    reasons.push("very close to your current location");
-  }
-
-  if (parts.mustDoModifier > 0 && parts.mustDoReason) {
-    reasons.push(parts.mustDoReason);
-  }
-
-  if (parts.shouldProtectLater) {
-    reasons.push("protect this for a better window instead of forcing it now");
-  }
-
-  if (parts.crossParkSumCapAdjustment <= -8) {
-    reasons.push("personalization capped because of the walk");
-  }
-
-  if (!reasons.length) reasons.push("solid value based on current conditions");
-
-  return reasons.join(", ");
+  return `${primary}${secondary}`;
 }
 
 function buildPlanAheadReason(meta, ride, waitValueStatus) {

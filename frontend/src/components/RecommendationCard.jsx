@@ -172,7 +172,7 @@ export function RecommendationCard({
             fontSize: 14,
           }}
         >
-          {ride.waitTime} min wait
+          {ride.waitTime != null ? `${ride.waitTime} min wait` : "Wait unavailable"}
         </div>
 
         {reason && (

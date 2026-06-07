@@ -165,7 +165,6 @@ function isOpeningWindowContext(timeContext = {}, planTabState = {}) {
       planningMode === "pre_trip" ||
       planningMode === "day_before" ||
       planningMode === "day_of_rope_drop" ||
-      dayPhase === "overnight" ||
       dayPhase === "early_morning" ||
       dayPhase === "rope_drop_window" ||
       (Number.isFinite(totalMinutes) && totalMinutes < 11 * 60)
@@ -180,7 +179,6 @@ function isEarlyEntryWindowContext(timeContext = {}, planTabState = {}) {
     planTabState?.mode === "morning_of" ||
       planTabState?.isBeforeParkOpen ||
       planningMode === "day_of_rope_drop" ||
-      dayPhase === "overnight" ||
       dayPhase === "early_morning" ||
       dayPhase === "rope_drop_window"
   );
@@ -292,7 +290,7 @@ export function generatePlanNudges({
       eyebrow: "EARLY ENTRY",
       title: `Use Early Entry for ${openingSummary.earlyEntryLabel}.`,
       body:
-        "Because your setup appears resort-eligible, treat Early Entry as its own 30-minute window before regular rope drop. Use it on the official eligible target instead of mixing it up with full park opening.",
+        "Because your setup appears resort-eligible, treat Early Entry as its own 30-minute window before regular rope drop. Use it on the official eligible target instead of mixing it up with full park opening. Confirm today's eligible attractions and timing in My Disney Experience before you head out.",
     });
   }
 

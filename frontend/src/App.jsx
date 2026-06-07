@@ -2270,6 +2270,12 @@ function App() {
     recommendations.backup ||
     recommendations.worthTheWalk;
 
+  const primarySlot =
+    recommendations.bestMove ? "bestMove" :
+    recommendations.backup ? "backup" :
+    recommendations.worthTheWalk ? "worthTheWalk" :
+    null;
+
   const hasAnyRecommendation = Boolean(primaryRecommendation);
 
   useEffect(() => {
@@ -3346,12 +3352,16 @@ function App() {
               ) : hasAnyRecommendation ? (
                 <div style={{ display: "grid", gap: 10 }}>
                   <RecommendationCard
-                    title="BEST MOVE"
+                    title={
+                      primarySlot === "backup" ? "SMART BACKUP" :
+                      primarySlot === "worthTheWalk" ? "WORTH THE WALK" :
+                      "BEST MOVE"
+                    }
                     ride={primaryRecommendation}
-                    reason={`Why: ${
+                    reason={
                       primaryRecommendation.reason ||
-                      "best available option based on current conditions"
-                    }.`}
+                      "This is the clearest move right now — the wait, effort, and family fit look reasonable."
+                    }
                     color="#166534"
                     borderColor="#bbf7d0"
                     background="#f0fdf4"
@@ -3364,7 +3374,7 @@ function App() {
                     <RecommendationCard
                       title="SMART BACKUP"
                       ride={recommendations.backup}
-                      reason={`Why: ${recommendations.backup.reason}.`}
+                      reason={recommendations.backup.reason || "A solid nearby option if the primary move doesn't work out."}
                       color="#1d4ed8"
                       borderColor="#bfdbfe"
                       background="#eff6ff"
@@ -3377,7 +3387,7 @@ function App() {
                     <RecommendationCard
                       title="WORTH THE WALK"
                       ride={recommendations.worthTheWalk}
-                      reason="Not nearby, but the current wait is strong enough that it may be worth crossing over for."
+                      reason={recommendations.worthTheWalk.reason || "The wait looks reasonable enough to consider the extra walk."}
                       color="#6d28d9"
                       borderColor="#ddd6fe"
                       background="#f5f3ff"
@@ -3406,7 +3416,7 @@ function App() {
                     <RecommendationCard
                       title="WAIT ON THIS"
                       ride={recommendations.waitOnThis}
-                      reason="This wait is higher than this ride is usually worth. Check again later when crowds shift."
+                      reason={recommendations.waitOnThis.waitOnThisReason || recommendations.waitOnThis.reason || "This may fit better later when the wait or effort drops."}
                       color="#9a3412"
                       borderColor="#fed7aa"
                       background="#fff7ed"
