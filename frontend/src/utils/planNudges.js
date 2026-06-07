@@ -140,6 +140,27 @@ function isEveningWindow(timeContext = {}) {
   return dayPhase === "evening" || dayPhase === "late_evening";
 }
 
+function isOpeningStrategyContext(timeContext = {}) {
+  const dayPhase = normalizeString(timeContext?.dayPhase);
+  const planningMode = normalizeString(timeContext?.planningMode);
+  const tripStatus = normalizeString(
+    timeContext?.tripStatus?.status || timeContext?.tripStatus
+  );
+
+  return Boolean(
+    timeContext?.isPreTrip ||
+      timeContext?.isDayBeforeTrip ||
+      tripStatus === "before_trip" ||
+      tripStatus === "day_before_trip" ||
+      planningMode === "pre_trip" ||
+      planningMode === "day_before" ||
+      planningMode === "day_of_rope_drop" ||
+      dayPhase === "overnight" ||
+      dayPhase === "early_morning" ||
+      dayPhase === "rope_drop_window"
+  );
+}
+
 function hasLowWalkingTolerance(familyProfile = {}) {
   const walkingTolerance = normalizeString(familyProfile.walkingTolerance);
   const pace = normalizeString(familyProfile.pace);
@@ -180,6 +201,7 @@ export function generatePlanNudges({
   const heatMode = isHeatMode(weatherMode, weather);
   const rainOrStorm = isRainOrStormMode(weatherMode, weather);
   const energyWindow = isEnergyManagementWindow(timeContext);
+  const openingStrategyContext = isOpeningStrategyContext(timeContext);
   const lowWalking = hasLowWalkingTolerance(familyProfile);
   const youngKids = hasYoungKids(familyProfile);
   const mustDoCount = getMustDoCount(tripPlan);
@@ -203,6 +225,7 @@ export function generatePlanNudges({
   }
 
   if (
+    openingStrategyContext &&
     preferences.startStrategy === "rope_drop" &&
     earlyEntryEligible &&
     openingSummary.earlyEntryTargets.length > 0
@@ -218,6 +241,7 @@ export function generatePlanNudges({
   }
 
   if (
+    openingStrategyContext &&
     preferences.startStrategy === "rope_drop" &&
     openingSummary.ropeDropTargets.length > 0 &&
     (!earlyEntryEligible || openingSummary.earlyEntryTargets.length === 0)
@@ -233,6 +257,7 @@ export function generatePlanNudges({
   }
 
   if (
+    openingStrategyContext &&
     preferences.startStrategy === "rope_drop" &&
     openingSummary.verifyDayOfTargets.length > 0
   ) {
