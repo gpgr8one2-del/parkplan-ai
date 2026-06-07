@@ -237,18 +237,152 @@ function getPriorityPreview(tripPlan = {}, planningPark) {
   };
 }
 
+
+function formatTransportationModeLabel(mode) {
+  const labels = {
+    bus: "bus",
+    walking: "walking path",
+    monorail: "monorail",
+    water_taxi: "boat",
+    skyliner: "Skyliner",
+    skyliner_via_epcot: "Skyliner",
+    walking_to_ttc: "walk to TTC",
+    monorail_transfer: "monorail transfer",
+    rideshare: "rideshare",
+    drive: "driving",
+    car: "driving",
+    unknown: "transportation",
+  };
+
+  return labels[mode] || String(mode || "transportation").replace(/_/g, " ");
+}
+
+function formatTransportationModes(modes = []) {
+  const labels = Array.from(
+    new Set((modes || []).map(formatTransportationModeLabel).filter(Boolean))
+  );
+
+  if (!labels.length) return "";
+  if (labels.length === 1) return labels[0];
+  if (labels.length === 2) return `${labels[0]} or ${labels[1]}`;
+
+  return `${labels.slice(0, -1).join(", ")}, or ${labels[labels.length - 1]}`;
+}
+
+function getResortDisplayName(familyProfile = {}) {
+  return (
+    familyProfile?.resortProfile?.name ||
+    familyProfile?.resortContext?.resortName ||
+    familyProfile?.resortContext?.offPropertyHotelName ||
+    ""
+  );
+}
+
+function buildTransportationBriefing({
+  familyProfile = {},
+  planningPark,
+  planningParkLabel,
+  planTabState = {},
+  tripPlan = {},
+} = {}) {
+  const resortContext = familyProfile?.resortContext || {};
+  const resortProfile = familyProfile?.resortProfile || null;
+  const parkLabel = planningParkLabel || "the park";
+  const resortName = getResortDisplayName(familyProfile);
+  const startStrategy = tripPlan?.preferences?.startStrategy || "moderate_morning";
+  const isRopeDropStyle = startStrategy === "rope_drop";
+  const openLabel = planTabState?.parkOpenLabel || "";
+  const directModes = resortProfile?.directAccess?.[planningPark] || [];
+  const resortTransportModes = Array.isArray(resortProfile?.transportation)
+    ? resortProfile.transportation
+    : [];
+  const selectedMode = resortContext?.transportationMode;
+  const selectedModeLabel =
+    selectedMode && selectedMode !== "unknown" ? formatTransportationModeLabel(selectedMode) : "";
+  const directModeLabel = formatTransportationModes(directModes);
+  const resortModeLabel =
+    directModeLabel || selectedModeLabel || formatTransportationModes(resortTransportModes);
+  const stayingOnProperty = resortContext?.stayingOnProperty === "yes";
+  const stayingOffProperty = resortContext?.stayingOnProperty === "no";
+
+  if (stayingOnProperty && resortName && directModeLabel) {
+    const morningContext = isRopeDropStyle
+      ? "If rope drop matters today, earlier is safer because resort transportation and entry points can stack up before open."
+      : "You do not need a perfect departure, but give yourself buffer for morning transportation and entry.";
+
+    return {
+      title: `${directModeLabel} from ${resortName}.`,
+      detail: openLabel
+        ? `${parkLabel} opens around ${openLabel}. ${morningContext}`
+        : morningContext,
+    };
+  }
+
+  if (stayingOnProperty && resortName) {
+    const modeText = resortModeLabel ? `Use ${resortModeLabel}` : "Use resort transportation";
+    const morningContext = isRopeDropStyle
+      ? "Build in extra buffer for the first transportation wave and the park entry line."
+      : "Give yourself some cushion so the first move does not feel rushed.";
+
+    return {
+      title: `${modeText} from ${resortName}.`,
+      detail: openLabel
+        ? `${parkLabel} opens around ${openLabel}. ${morningContext}`
+        : morningContext,
+    };
+  }
+
+  if (stayingOffProperty) {
+    const hotelOrArea = resortContext?.offPropertyHotelName || "your hotel or area";
+    const drivingContext = isRopeDropStyle
+      ? "Parking, trams, security, and the walk in can all add time before open."
+      : "Parking and getting through the entrance can still take longer than it feels like it should.";
+
+    return {
+      title: `Plan the drive from ${hotelOrArea}.`,
+      detail: openLabel
+        ? `${parkLabel} opens around ${openLabel}. ${drivingContext}`
+        : drivingContext,
+    };
+  }
+
+  if (resortName) {
+    return {
+      title: `Check the route from ${resortName}.`,
+      detail: "TOHI has your stay in the profile, but transportation details are not clear enough yet to give a stronger morning read.",
+    };
+  }
+
+  return {
+    title: "Check your route before you leave.",
+    detail: openLabel
+      ? `${parkLabel} opens around ${openLabel}. Leave room for parking, security, and getting to the first area of the park.`
+      : "Leave room for transportation, security, and getting to the first area of the park.",
+  };
+}
+
+
 function MorningBriefingCard({
   card,
   preferredName,
+  familyProfile = {},
   dayGamePlan = [],
   weatherMode = {},
   tripPlan = {},
   planningPark,
   planningParkLabel,
+  planTabState = {},
 }) {
   const startPlan = getStartPlanAnchor(dayGamePlan);
   const weatherNote = getMeaningfulWeatherNote(weatherMode);
   const priorityPreview = getPriorityPreview(tripPlan, planningPark);
+  const transportationBriefing = buildTransportationBriefing({
+    familyProfile,
+    planningPark,
+    planningParkLabel,
+    planTabState,
+    tripPlan,
+  });
 
   return (
     <section
@@ -318,6 +452,44 @@ function MorningBriefingCard({
               </p>
             )}
           </div>
+
+          {transportationBriefing && (
+            <div
+              style={{
+                padding: 12,
+                borderRadius: 18,
+                background: "rgba(255,255,255,0.72)",
+                border: `1px solid ${colors.cardBorder}`,
+              }}
+            >
+              <div
+                style={{
+                  color: "#5B21B6",
+                  fontSize: 11,
+                  fontWeight: 950,
+                  letterSpacing: 0.55,
+                }}
+              >
+                GETTING THERE
+              </div>
+
+              <strong
+                style={{
+                  display: "block",
+                  marginTop: 4,
+                  color: colors.text,
+                  fontSize: 14,
+                  lineHeight: 1.28,
+                }}
+              >
+                {transportationBriefing.title}
+              </strong>
+
+              <p style={{ margin: "5px 0 0", color: colors.muted, fontSize: 12.5, lineHeight: 1.38 }}>
+                {transportationBriefing.detail}
+              </p>
+            </div>
+          )}
 
           {weatherNote && (
             <div
@@ -1379,6 +1551,7 @@ export function PlanTab({
   timeContext,
   planTabState,
   preferredName,
+  familyProfile,
   weatherMode,
   packingChecklist,
   dayGamePlan = [],
@@ -1450,11 +1623,13 @@ export function PlanTab({
         <MorningBriefingCard
           card={card}
           preferredName={preferredName}
+          familyProfile={familyProfile}
           dayGamePlan={dayGamePlan}
           weatherMode={weatherMode}
           tripPlan={tripPlan}
           planningPark={planningPark}
           planningParkLabel={planningParkLabel}
+          planTabState={planTabState}
         />
       )}
 
