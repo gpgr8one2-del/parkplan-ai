@@ -551,12 +551,12 @@ function buildMustDoPriorities({ preferences, familyProfile, activePark, tripPla
     return {
       id: "must_do_priorities",
       eyebrow: "YOUR PRIORITIES",
-      title: "Choose the calmer day, even if it costs a ride.",
+      title: "Choose the calmer path when it matters.",
       body:
-        "When a choice is between one more attraction and keeping the family in a good mood, TOHI should bias toward the calmer day.",
+        "If the choice is one more attraction or keeping everyone in a good mood, the calmer move wins. A better memory beats a higher ride count.",
       priority: "must",
       detail:
-        "This is the core promise: less stress, better memories.",
+        "TOHI will keep this in mind when the day starts feeling stretched.",
     };
   }
 
