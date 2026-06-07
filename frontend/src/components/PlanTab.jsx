@@ -1026,6 +1026,7 @@ function MustDoMomentsSection({
   tripPlan,
   mustDoExperienceOptions = [],
   onToggleMustDoExperience,
+  isInParkView = false,
 }) {
   const selectedExperiences = Array.isArray(tripPlan?.mustDoExperiences)
     ? tripPlan.mustDoExperiences
@@ -1038,6 +1039,121 @@ function MustDoMomentsSection({
   const otherParkSelections = selectedExperiences.filter(
     (experience) => experience.parkId !== planningPark
   );
+
+  if (isInParkView) {
+    const visiblePriorities = selectedForPlanningPark.slice(0, 5);
+    const hiddenCount = Math.max(0, selectedForPlanningPark.length - visiblePriorities.length);
+
+    return (
+      <section
+        style={{
+          ...card,
+          padding: 13,
+          background:
+            "linear-gradient(145deg, rgba(255,255,255,0.98) 0%, #FFF1F2 100%)",
+          border: "1px solid rgba(251, 113, 133, 0.18)",
+          boxShadow: "0 10px 24px rgba(251, 113, 133, 0.06)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ minWidth: 220, flex: "1 1 300px" }}>
+            <SectionBadge background={colors.coralSoft} color="#E11D48">
+              YOUR PRIORITIES
+            </SectionBadge>
+            <h3 style={{ margin: 0, color: colors.text, fontSize: 20, letterSpacing: -0.25 }}>
+              What still matters in {planningParkLabel || "this park"}
+            </h3>
+            <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12.5, lineHeight: 1.38 }}>
+              A quiet reminder of what TOHI is making room for today. Editing can wait until planning mode.
+            </p>
+          </div>
+
+          <span
+            style={{
+              padding: "7px 10px",
+              borderRadius: 999,
+              background: "rgba(255,255,255,0.78)",
+              border: `1px solid ${colors.cardBorder}`,
+              color: colors.text,
+              fontSize: 12,
+              fontWeight: 900,
+            }}
+          >
+            {selectedForPlanningPark.length} here
+          </span>
+        </div>
+
+        {visiblePriorities.length > 0 ? (
+          <div
+            style={{
+              display: "flex",
+              gap: 7,
+              flexWrap: "wrap",
+              marginTop: 12,
+            }}
+          >
+            {visiblePriorities.map((experience) => (
+              <span
+                key={getMustDoKey(experience)}
+                style={{
+                  border: "1px solid rgba(225, 29, 72, 0.24)",
+                  borderRadius: 999,
+                  background: colors.coralSoft,
+                  color: "#9F1239",
+                  padding: "7px 9px",
+                  fontSize: 12,
+                  fontWeight: 900,
+                }}
+              >
+                ✓ {experience.name}
+              </span>
+            ))}
+
+            {hiddenCount > 0 && (
+              <span
+                style={{
+                  borderRadius: 999,
+                  background: "rgba(255,255,255,0.78)",
+                  border: `1px solid ${colors.cardBorder}`,
+                  color: colors.muted,
+                  padding: "7px 9px",
+                  fontSize: 12,
+                  fontWeight: 900,
+                }}
+              >
+                +{hiddenCount} more
+              </span>
+            )}
+          </div>
+        ) : (
+          <div
+            style={{
+              marginTop: 12,
+              padding: 12,
+              borderRadius: 16,
+              background: "rgba(255,255,255,0.82)",
+              border: `1px solid ${colors.cardBorder}`,
+              color: colors.muted,
+              fontSize: 13,
+              lineHeight: 1.4,
+            }}
+          >
+            {otherParkSelections.length > 0
+              ? `None of your priorities are in ${planningParkLabel || "this park"} today. You still have ${otherParkSelections.length} across your other park days.`
+              : "No priorities selected for this park day yet."}
+          </div>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section
@@ -1704,12 +1820,14 @@ export function PlanTab({
   setActiveScreen,
 }) {
   const preferences = tripPlan?.preferences || {};
+  const isInParkView = planTabState?.mode === "in_park";
   const showMorningBriefing = planTabState?.mode === "morning_of";
 
   return (
     <>
-      <section
-        style={{
+      {!isInParkView && (
+        <section
+          style={{
           ...card,
           padding: 16,
           position: "relative",
@@ -1751,7 +1869,8 @@ export function PlanTab({
             the park day into a checklist.
           </p>
         </div>
-      </section>
+        </section>
+      )}
 
       {showMorningBriefing && (
         <MorningBriefingCard
@@ -1777,12 +1896,14 @@ export function PlanTab({
         setActiveScreen={setActiveScreen}
       />
 
-      <PlanFreshnessNotice
-        card={card}
-        button={button}
-        planFreshness={tripPlanFreshness}
-        onRefreshTripPlanContext={onRefreshTripPlanContext}
-      />
+      {!isInParkView && (
+        <PlanFreshnessNotice
+          card={card}
+          button={button}
+          planFreshness={tripPlanFreshness}
+          onRefreshTripPlanContext={onRefreshTripPlanContext}
+        />
+      )}
 
       <MustDoMomentsSection
         card={card}
@@ -1794,14 +1915,17 @@ export function PlanTab({
         tripPlan={tripPlan}
         mustDoExperienceOptions={mustDoExperienceOptions}
         onToggleMustDoExperience={onToggleMustDoExperience}
+        isInParkView={isInParkView}
       />
 
-      <PlanNudgesSection
-        card={card}
-        button={button}
-        planNudges={planNudges}
-        onRefreshTripPlanContext={onRefreshTripPlanContext}
-      />
+      {!isInParkView && (
+        <PlanNudgesSection
+          card={card}
+          button={button}
+          planNudges={planNudges}
+          onRefreshTripPlanContext={onRefreshTripPlanContext}
+        />
+      )}
 
       <DayGamePlanSection
         card={card}
@@ -1810,13 +1934,17 @@ export function PlanTab({
         planTabState={planTabState}
       />
 
-      <PlanTuneSection
-        card={card}
-        preferences={preferences}
-        onUpdateTripPreferences={onUpdateTripPreferences}
-      />
+      {!isInParkView && (
+        <>
+          <PlanTuneSection
+            card={card}
+            preferences={preferences}
+            onUpdateTripPreferences={onUpdateTripPreferences}
+          />
 
-      <PackingPreviewSection card={card} packingChecklist={packingChecklist} />
+          <PackingPreviewSection card={card} packingChecklist={packingChecklist} />
+        </>
+      )}
     </>
   );
 }
