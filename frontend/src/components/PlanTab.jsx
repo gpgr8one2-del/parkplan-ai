@@ -644,11 +644,179 @@ function PlanningStatusCard({
 }
 
 
-function DayGamePlanSection({ card, dayGamePlan = [] }) {
+function getPlanItemById(dayGamePlan = [], id) {
+  return dayGamePlan.find((item) => item?.id === id) || null;
+}
+
+function getRollingGamePlanWindow({ dayGamePlan = [], timeContext = {}, planTabState = {} } = {}) {
+  const getItems = (ids = []) => ids.map((id) => getPlanItemById(dayGamePlan, id)).filter(Boolean);
+  const totalMinutes = Number(timeContext?.orlandoTotalMinutes);
+
+  if (!dayGamePlan.length) {
+    return {
+      label: "Day strategy",
+      description: "TOHI will show the right part of the plan once the day strategy is ready.",
+      items: [],
+    };
+  }
+
+  if (planTabState?.mode === "morning_of" || planTabState?.isBeforeParkOpen) {
+    return {
+      label: "Before park open",
+      description: "Start with the first move. The full day is still available when you want it.",
+      items: getItems(["start_plan"]),
+    };
+  }
+
+  if (planTabState?.mode === "pre_trip") {
+    return {
+      label: "Planning preview",
+      description: "Start with the opening idea, then open the full plan when you want the deeper view.",
+      items: getItems(["start_plan"]),
+    };
+  }
+
+  if (!Number.isFinite(totalMinutes)) {
+    return {
+      label: "Current window",
+      description: "Here is the closest useful part of the plan right now.",
+      items: getItems(["start_plan", "morning_priority"]),
+    };
+  }
+
+  if (totalMinutes < 11 * 60) {
+    return {
+      label: "Opening window",
+      description: "Use the early part of the day for the first clear win, then stop forcing it.",
+      items: getItems(["start_plan", "morning_priority"]),
+    };
+  }
+
+  if (totalMinutes < 13 * 60) {
+    return {
+      label: "Late morning",
+      description: "Shift from chasing the opening rush to keeping the day steady.",
+      items: getItems(["morning_priority", "midday_reset"]),
+    };
+  }
+
+  if (totalMinutes < 15 * 60) {
+    return {
+      label: "Midday window",
+      description: "This is where pacing matters more than squeezing in one more far-away ride.",
+      items: getItems(["midday_reset", "weather_strategy"]),
+    };
+  }
+
+  if (totalMinutes < 17 * 60) {
+    return {
+      label: "Afternoon window",
+      description: "Keep the day flexible and set up the evening instead of burning everyone out now.",
+      items: getItems(["weather_strategy", "evening_pivot"]),
+    };
+  }
+
+  return {
+    label: "Evening window",
+    description: "Use the last part of the day for what still matters, without turning it into a sprint.",
+    items: getItems(["evening_pivot", "must_do_priorities"]),
+  };
+}
+
+function DayGamePlanItemCard({ item }) {
+  const styleForPriority =
+    PRIORITY_STYLES[item.priority] || PRIORITY_STYLES.optional;
+
+  return (
+    <div
+      key={item.id}
+      style={{
+        padding: 13,
+        borderRadius: 18,
+        background: "rgba(255,255,255,0.84)",
+        border: `1px solid ${colors.cardBorder}`,
+        boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: 10,
+        }}
+      >
+        <div>
+          <div
+            style={{
+              color: "#0369A1",
+              fontSize: 11,
+              fontWeight: 950,
+              letterSpacing: 0.55,
+            }}
+          >
+            {item.eyebrow}
+          </div>
+          <strong
+            style={{
+              display: "block",
+              marginTop: 3,
+              color: colors.text,
+              fontSize: 15,
+              lineHeight: 1.25,
+            }}
+          >
+            {item.title}
+          </strong>
+          <p
+            style={{
+              margin: "6px 0 0",
+              color: colors.text,
+              fontSize: 13,
+              lineHeight: 1.38,
+            }}
+          >
+            {item.body}
+          </p>
+          {item.detail && (
+            <p
+              style={{
+                margin: "6px 0 0",
+                color: colors.muted,
+                fontSize: 12,
+                lineHeight: 1.35,
+                fontWeight: 750,
+              }}
+            >
+              {item.detail}
+            </p>
+          )}
+        </div>
+
+        <span
+          style={{
+            flexShrink: 0,
+            padding: "5px 8px",
+            borderRadius: 999,
+            background: styleForPriority.bg,
+            color: styleForPriority.color,
+            fontSize: 11,
+            fontWeight: 950,
+          }}
+        >
+          {item.priorityLabel || styleForPriority.label}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function DayGamePlanSection({ card, dayGamePlan = [], timeContext = {}, planTabState = {} }) {
   const [isOpen, setIsOpen] = useState(false);
-  const firstAnchor = dayGamePlan[0];
-  const preview = firstAnchor?.title
-    ? `${firstAnchor.eyebrow ? `${firstAnchor.eyebrow}: ` : ""}${firstAnchor.title}`
+  const rollingWindow = getRollingGamePlanWindow({ dayGamePlan, timeContext, planTabState });
+  const visibleItems = rollingWindow.items.length ? rollingWindow.items : dayGamePlan.slice(0, 1);
+  const preview = visibleItems[0]?.title
+    ? `${rollingWindow.label}: ${visibleItems.map((item) => item.title).join(" · ")}`
     : "Tap to see the strategy behind the day.";
 
   return (
@@ -720,100 +888,61 @@ function DayGamePlanSection({ card, dayGamePlan = [] }) {
           <CollapseButton
             isOpen={isOpen}
             openLabel="See full plan"
-            closeLabel="Collapse"
+            closeLabel="Hide full plan"
             onClick={() => setIsOpen((current) => !current)}
           />
         </div>
 
+        <div
+          style={{
+            marginTop: 14,
+            padding: 12,
+            borderRadius: 18,
+            background: "rgba(255,255,255,0.72)",
+            border: `1px solid ${colors.cardBorder}`,
+          }}
+        >
+          <div
+            style={{
+              color: "#0369A1",
+              fontSize: 11,
+              fontWeight: 950,
+              letterSpacing: 0.55,
+            }}
+          >
+            {rollingWindow.label.toUpperCase()}
+          </div>
+
+          <p style={{ margin: "4px 0 0", color: colors.muted, fontSize: 12.5, lineHeight: 1.38 }}>
+            {rollingWindow.description}
+          </p>
+        </div>
+
+        <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+          {visibleItems.map((item) => (
+            <DayGamePlanItemCard key={`rolling-${item.id}`} item={item} />
+          ))}
+        </div>
+
         {isOpen && (
-          <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
-            {dayGamePlan.map((item) => {
-              const styleForPriority =
-                PRIORITY_STYLES[item.priority] || PRIORITY_STYLES.optional;
+          <div style={{ marginTop: 14 }}>
+            <div
+              style={{
+                color: colors.muted,
+                fontSize: 12,
+                fontWeight: 950,
+                letterSpacing: 0.5,
+                marginBottom: 8,
+              }}
+            >
+              FULL DAY PLAN
+            </div>
 
-              return (
-                <div
-                  key={item.id}
-                  style={{
-                    padding: 13,
-                    borderRadius: 18,
-                    background: "rgba(255,255,255,0.84)",
-                    border: `1px solid ${colors.cardBorder}`,
-                    boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      gap: 10,
-                    }}
-                  >
-                    <div>
-                      <div
-                        style={{
-                          color: "#0369A1",
-                          fontSize: 11,
-                          fontWeight: 950,
-                          letterSpacing: 0.55,
-                        }}
-                      >
-                        {item.eyebrow}
-                      </div>
-                      <strong
-                        style={{
-                          display: "block",
-                          marginTop: 3,
-                          color: colors.text,
-                          fontSize: 15,
-                          lineHeight: 1.25,
-                        }}
-                      >
-                        {item.title}
-                      </strong>
-                      <p
-                        style={{
-                          margin: "6px 0 0",
-                          color: colors.text,
-                          fontSize: 13,
-                          lineHeight: 1.38,
-                        }}
-                      >
-                        {item.body}
-                      </p>
-                      {item.detail && (
-                        <p
-                          style={{
-                            margin: "6px 0 0",
-                            color: colors.muted,
-                            fontSize: 12,
-                            lineHeight: 1.35,
-                            fontWeight: 750,
-                          }}
-                        >
-                          {item.detail}
-                        </p>
-                      )}
-                    </div>
-
-                    <span
-                      style={{
-                        flexShrink: 0,
-                        padding: "5px 8px",
-                        borderRadius: 999,
-                        background: styleForPriority.bg,
-                        color: styleForPriority.color,
-                        fontSize: 11,
-                        fontWeight: 950,
-                      }}
-                    >
-                      {item.priorityLabel || styleForPriority.label}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+            <div style={{ display: "grid", gap: 10 }}>
+              {dayGamePlan.map((item) => (
+                <DayGamePlanItemCard key={`full-${item.id}`} item={item} />
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -1674,7 +1803,12 @@ export function PlanTab({
         onRefreshTripPlanContext={onRefreshTripPlanContext}
       />
 
-      <DayGamePlanSection card={card} dayGamePlan={dayGamePlan} />
+      <DayGamePlanSection
+        card={card}
+        dayGamePlan={dayGamePlan}
+        timeContext={timeContext}
+        planTabState={planTabState}
+      />
 
       <PlanTuneSection
         card={card}
