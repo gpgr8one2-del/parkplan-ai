@@ -7,8 +7,19 @@ const NUDGE_PRIORITY_SCORE = {
   low: 3,
 };
 
+const PARK_LABELS = {
+  magic_kingdom: "Magic Kingdom",
+  epcot: "EPCOT",
+  hollywood: "Hollywood Studios",
+  animal_kingdom: "Animal Kingdom",
+};
+
 function normalizeString(value = "") {
   return String(value || "").trim().toLowerCase();
+}
+
+function getParkLabel(parkId = "") {
+  return PARK_LABELS[parkId] || String(parkId || "the park").replace(/_/g, " ");
 }
 
 function hasYoungKids(familyProfile = {}) {
@@ -161,6 +172,20 @@ function isOpeningWindowContext(timeContext = {}, planTabState = {}) {
   );
 }
 
+function isEarlyEntryWindowContext(timeContext = {}, planTabState = {}) {
+  const dayPhase = normalizeString(timeContext?.dayPhase);
+  const planningMode = normalizeString(timeContext?.planningMode);
+
+  return Boolean(
+    planTabState?.mode === "morning_of" ||
+      planTabState?.isBeforeParkOpen ||
+      planningMode === "day_of_rope_drop" ||
+      dayPhase === "overnight" ||
+      dayPhase === "early_morning" ||
+      dayPhase === "rope_drop_window"
+  );
+}
+
 function isEveningWindowContext(timeContext = {}) {
   const dayPhase = normalizeString(timeContext?.dayPhase);
   const totalMinutes = Number(timeContext?.orlandoTotalMinutes);
@@ -230,17 +255,17 @@ export function generatePlanNudges({
   const rainOrStorm = isRainOrStormMode(weatherMode, weather);
   const energyWindow = isEnergyManagementWindow(timeContext);
   const openingWindow = isOpeningWindowContext(timeContext, planTabState);
+  const earlyEntryWindow = isEarlyEntryWindowContext(timeContext, planTabState);
   const eveningWindow = isEveningWindowContext(timeContext);
   const activelyInPark = isActivelyInPark(planTabState, timeContext);
   const lowWalking = hasLowWalkingTolerance(familyProfile);
   const youngKids = hasYoungKids(familyProfile);
-  const mustDoCount = getMustDoCount(tripPlan);
   const targetPark = planningPark || activePark;
   const activeParkMustDos = getMustDosForPark(tripPlan, targetPark);
   const openingSummary = getOpeningStrategySummary(targetPark, activeParkMustDos);
   const earlyEntryEligible = isEarlyEntryLikelyEligible(familyProfile);
   const bestMoveWait = recommendations?.bestMove?.waitTime;
-  const parkLabel = targetPark ? targetPark.replace(/_/g, " ") : "the park";
+  const parkLabel = getParkLabel(targetPark);
 
   if (tripPlanFreshness?.isStale) {
     addNudge(nudges, {
@@ -256,7 +281,7 @@ export function generatePlanNudges({
   }
 
   if (
-    openingWindow &&
+    earlyEntryWindow &&
     preferences.startStrategy === "rope_drop" &&
     earlyEntryEligible &&
     openingSummary.earlyEntryTargets.length > 0
@@ -375,7 +400,7 @@ export function generatePlanNudges({
     });
   }
 
-  if (mustDoCount > 0 && energyWindow) {
+  if (activeParkMustDos.length > 0 && energyWindow) {
     addNudge(nudges, {
       id: "must_do_visibility",
       priority: "medium",
