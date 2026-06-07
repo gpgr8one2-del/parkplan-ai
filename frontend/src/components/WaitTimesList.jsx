@@ -20,7 +20,16 @@ function getWaitTone(ride, isActiveRide) {
     };
   }
 
-  if ((ride.waitTime ?? 0) <= 20) {
+  if (ride.waitTime == null) {
+    return {
+      label: "Wait unavailable",
+      color: colors.muted,
+      bg: colors.backgroundSoft,
+      border: colors.cardBorder,
+    };
+  }
+
+  if (ride.waitTime <= 20) {
     return {
       label: "Low wait",
       color: colors.success,
@@ -29,7 +38,7 @@ function getWaitTone(ride, isActiveRide) {
     };
   }
 
-  if ((ride.waitTime ?? 0) <= 45) {
+  if (ride.waitTime <= 45) {
     return {
       label: "Manageable",
       color: colors.amber,
@@ -237,7 +246,7 @@ export function WaitTimesList({
                         letterSpacing: -0.7,
                       }}
                     >
-                      {ride.waitTime}
+                      {ride.waitTime != null ? ride.waitTime : "--"}
                     </div>
                     <div
                       style={{
@@ -247,7 +256,7 @@ export function WaitTimesList({
                         color: colors.muted,
                       }}
                     >
-                      min
+                      {ride.waitTime != null ? "min" : "wait"}
                     </div>
                   </div>
                 </div>

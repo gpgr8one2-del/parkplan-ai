@@ -84,6 +84,32 @@ function writeDevPreviewFullApp(enabled) {
   }
 }
 
+const DEBUG_SNAPSHOT_STORAGE_KEY = "parkplan.debugSnapshot";
+
+function readDebugSnapshotEnabled() {
+  try {
+    return localStorage.getItem(DEBUG_SNAPSHOT_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function writeDebugSnapshotEnabled(enabled) {
+  try {
+    localStorage.setItem(DEBUG_SNAPSHOT_STORAGE_KEY, enabled ? "true" : "false");
+  } catch (err) {
+    console.warn("TOHI: could not save debug snapshot flag", err);
+  }
+}
+
+function dbFmt(v) {
+  if (v === null || v === undefined) return "—";
+  if (typeof v === "boolean") return v ? "true" : "false";
+  if (Array.isArray(v)) return `[${v.length}]`;
+  if (typeof v === "object") return "{…}";
+  return String(v);
+}
+
 
 const page = {
   minHeight: "100vh",
@@ -1055,6 +1081,9 @@ function App() {
   const [skippedRideIds, setSkippedRideIds] = useState([]);
   const [reportedRideIssueIds, setReportedRideIssueIds] = useState([]);
   const [currentActivity, setCurrentActivity] = useState(null);
+  const [debugSnapshotEnabled, setDebugSnapshotEnabled] = useState(() =>
+    readDebugSnapshotEnabled()
+  );
 
   const isRestoringParkState = useRef(false);
 
@@ -1078,6 +1107,19 @@ function App() {
       setPlanningPark(nextPlanningPark);
     }
   }, [familyProfile]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const debugValue = params.get("debug");
+    if (debugValue === "1") {
+      setDebugSnapshotEnabled(true);
+      writeDebugSnapshotEnabled(true);
+    }
+    if (debugValue === "0") {
+      setDebugSnapshotEnabled(false);
+      writeDebugSnapshotEnabled(false);
+    }
+  }, []);
 
   const familyProfileSummary = useMemo(() => {
     return buildFamilyProfileSummary(familyProfile);
@@ -2307,6 +2349,264 @@ function App() {
     recommendations.planAhead?.id,
     recommendations.waitOnThis?.id,
   ]);
+
+  function hideDebugSnapshot() {
+    setDebugSnapshotEnabled(false);
+    writeDebugSnapshotEnabled(false);
+  }
+
+  function renderDebugSnapshot() {
+    const dbSectionStyle = {
+      marginBottom: 8,
+      padding: "8px 10px",
+      borderRadius: 10,
+      border: `1px solid ${colors.cardBorder}`,
+      background: "rgba(255,255,255,0.88)",
+    };
+    const dbSummaryStyle = {
+      cursor: "pointer",
+      fontWeight: 700,
+      color: colors.text,
+      fontSize: 12,
+      userSelect: "none",
+    };
+    const dbRowsStyle = { display: "grid", gap: 3, paddingTop: 6 };
+    const dbLabelStyle = { color: colors.muted, fontSize: 11, minWidth: 140, flexShrink: 0 };
+    const dbValStyle = { fontFamily: "monospace", fontSize: 11, color: colors.text, wordBreak: "break-all" };
+
+    function dbRow(label, value) {
+      return (
+        <div style={{ display: "flex", gap: 8, lineHeight: 1.5 }}>
+          <span style={dbLabelStyle}>{label}</span>
+          <span style={dbValStyle}>{dbFmt(value)}</span>
+        </div>
+      );
+    }
+
+    function renderSlot(slotLabel, ride) {
+      if (!ride) {
+        return (
+          <div key={slotLabel} style={{ color: colors.muted, fontSize: 11, paddingLeft: 4, marginBottom: 4 }}>
+            {slotLabel}: —
+          </div>
+        );
+      }
+      return (
+        <details key={slotLabel} style={{ marginBottom: 6 }}>
+          <summary style={{ fontSize: 11, cursor: "pointer", fontWeight: 700, color: colors.text }}>
+            {slotLabel}: {ride.name || "unnamed"} {ride.waitTime != null ? `(${ride.waitTime}m)` : "(wait n/a)"}
+          </summary>
+          <div style={{ ...dbRowsStyle, paddingLeft: 8, marginTop: 2 }}>
+            {dbRow("id", ride.id)}
+            {dbRow("isOpen", ride.isOpen)}
+            {dbRow("land", ride.land)}
+            {ride.score != null && dbRow("score", ride.score)}
+            {dbRow("waitTime", ride.waitTime ?? "unavailable")}
+            {ride.reason && dbRow("reason", ride.reason)}
+            {ride.planAheadReason && dbRow("planAheadReason", ride.planAheadReason)}
+            {ride.waitOnThisReason && dbRow("waitOnThisReason", ride.waitOnThisReason)}
+            {ride.mustDoPriority && dbRow("mustDoPriority", ride.mustDoPriority)}
+            {ride.mustDoModifier != null && dbRow("mustDoModifier", ride.mustDoModifier)}
+            {ride.mustDoReason && dbRow("mustDoReason", ride.mustDoReason)}
+            {ride.shouldProtectLater != null && dbRow("shouldProtectLater", ride.shouldProtectLater)}
+            {ride.proximityModifier != null && dbRow("proximityModifier", ride.proximityModifier)}
+            {ride.waitValueModifier != null && dbRow("waitValueModifier", ride.waitValueModifier)}
+            {ride.familyProfileModifier != null && dbRow("familyProfileModifier", ride.familyProfileModifier)}
+            {ride.trendModifier != null && dbRow("trendModifier", ride.trendModifier)}
+            {ride.contextModifier != null && dbRow("contextModifier", ride.contextModifier)}
+            {ride.lowWaitBonus != null && dbRow("lowWaitBonus", ride.lowWaitBonus)}
+            {ride.nearbyHeadlinerOpportunityModifier != null && dbRow("nearbyHeadlinerMod", ride.nearbyHeadlinerOpportunityModifier)}
+            {ride.crossParkSumCapAdjustment != null && dbRow("crossParkSumCap", ride.crossParkSumCapAdjustment)}
+            {ride.heightWarning && dbRow("heightWarning", ride.heightWarning.message)}
+            {ride.planningProfile?.category && dbRow("planningCategory", ride.planningProfile.category)}
+          </div>
+        </details>
+      );
+    }
+
+    const locationSource = locationAutoEnabled ? "GPS" : currentLand ? "manual" : "unknown";
+
+    return (
+      <section
+        style={{
+          margin: "20px 0 0",
+          padding: "12px 14px",
+          borderRadius: 16,
+          border: "1px solid rgba(124, 58, 237, 0.22)",
+          background: "rgba(245,243,255,0.94)",
+          fontSize: 12,
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+          <div>
+            <strong style={{ fontSize: 13, color: colors.text }}>Debug Snapshot</strong>
+            <div style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>
+              Field-test view — hidden unless debug mode is enabled.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={hideDebugSnapshot}
+            style={{
+              fontSize: 11,
+              padding: "4px 10px",
+              borderRadius: 999,
+              border: `1px solid ${colors.cardBorder}`,
+              background: "white",
+              color: colors.muted,
+              cursor: "pointer",
+              flexShrink: 0,
+            }}
+          >
+            Hide debug
+          </button>
+        </div>
+
+        <details open style={dbSectionStyle}>
+          <summary style={dbSummaryStyle}>App State</summary>
+          <div style={dbRowsStyle}>
+            {dbRow("activeScreen", activeScreen)}
+            {dbRow("activeTab", activeTab)}
+            {dbRow("activePark", activePark)}
+            {dbRow("planningPark", planningPark)}
+            {dbRow("currentLand", currentLand)}
+            {dbRow("locationSource", locationSource)}
+            {dbRow("locationAutoEnabled", locationAutoEnabled)}
+            {dbRow("confidence", detectedLocationContext?.confidence)}
+            {dbRow("nearestAnchor", detectedLocationContext?.nearestAnchorName)}
+            {dbRow("distanceMeters", detectedLocationContext?.distanceMeters)}
+            {dbRow("lastLocationUpdateAt", lastLocationUpdateAt)}
+            {dbRow("lastAutoUpdateAt", lastAutoUpdateAt)}
+            {locationMessage ? dbRow("locationMessage", locationMessage) : null}
+            {locationError ? dbRow("locationError", locationError) : null}
+          </div>
+        </details>
+
+        <details style={dbSectionStyle}>
+          <summary style={dbSummaryStyle}>Time / Park State</summary>
+          <div style={dbRowsStyle}>
+            {dbRow("orlandoDate", timeContext?.orlandoDate)}
+            {dbRow("orlandoTime", timeContext?.orlandoTimeLabel)}
+            {dbRow("dayPhase", timeContext?.dayPhase)}
+            {dbRow("dayPhaseLabel", timeContext?.dayPhaseLabel)}
+            {dbRow("planningMode", timeContext?.planningMode)}
+            {dbRow("tripStatus.status", timeContext?.tripStatus?.status)}
+            {dbRow("tripStatus.message", timeContext?.tripStatus?.message)}
+            {dbRow("planning.dayPhase", planningTimeContext?.dayPhase)}
+            {dbRow("planning.planningMode", planningTimeContext?.planningMode)}
+            {dbRow("planTabState.mode", planTabState?.mode)}
+            {dbRow("planTabState.label", planTabState?.label)}
+            {dbRow("parkOpen", planTabState?.parkOpenLabel)}
+            {dbRow("parkClose", planTabState?.parkCloseLabel)}
+            {dbRow("isBeforeParkOpen", planTabState?.isBeforeParkOpen)}
+            {dbRow("isAfterParkClose", planTabState?.isAfterParkClose)}
+          </div>
+        </details>
+
+        <details style={dbSectionStyle}>
+          <summary style={dbSummaryStyle}>Weather / Freshness</summary>
+          <div style={dbRowsStyle}>
+            {dbRow("weatherMode.mode", weatherMode?.mode)}
+            {dbRow("weatherMode.label", weatherMode?.label)}
+            {dbRow("tempF", weather?.tempF)}
+            {dbRow("feelsLikeF", weather?.feelsLikeF)}
+            {dbRow("heatIndexF", weather?.heatIndexF)}
+            {dbRow("humidity", weather?.humidity)}
+            {dbRow("summary", weather?.summary)}
+            {dbRow("rainRisk", weather?.rainRisk)}
+            {dbRow("stormMode", weather?.stormMode)}
+            {dbRow("freshness.status", tripPlanFreshness?.status)}
+            {dbRow("freshness.isStale", tripPlanFreshness?.isStale)}
+            {dbRow("freshness.severity", tripPlanFreshness?.severity)}
+            {dbRow("freshness.ageMinutes", tripPlanFreshness?.ageMinutes)}
+            {Array.isArray(tripPlanFreshness?.reasons) && tripPlanFreshness.reasons.length > 0 && (
+              <div>
+                <span style={dbLabelStyle}>freshness.reasons</span>
+                {tripPlanFreshness.reasons.map((r, i) => (
+                  <div key={i} style={{ ...dbValStyle, paddingLeft: 8 }}>· {r}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        </details>
+
+        <details style={dbSectionStyle}>
+          <summary style={dbSummaryStyle}>Current Activity</summary>
+          <div style={dbRowsStyle}>
+            {dbRow("type", currentActivity?.type)}
+            {dbRow("rideName", currentActivity?.rideName)}
+            {dbRow("rideId", currentActivity?.rideId)}
+            {dbRow("postedWait", currentActivity?.postedWaitAtStart)}
+            {dbRow("startedAt", currentActivity?.startedAt)}
+            {dbRow("elapsedMinutes", currentActivityContext?.elapsedMinutesInLine)}
+            {dbRow("completedRides", completedRideIds.length)}
+            {completedRideIds.length > 0 && (
+              <div style={{ paddingLeft: 8 }}>
+                {completedRideIds.map((id, i) => (
+                  <div key={i} style={dbValStyle}>· {id}</div>
+                ))}
+              </div>
+            )}
+            {dbRow("skippedRides", skippedRideIds.length)}
+            {skippedRideIds.length > 0 && (
+              <div style={{ paddingLeft: 8 }}>
+                {skippedRideIds.map((id, i) => (
+                  <div key={i} style={dbValStyle}>· {id}</div>
+                ))}
+              </div>
+            )}
+            {dbRow("reportedRides", reportedRideIssueIds.length)}
+            {reportedRideIssueIds.length > 0 && (
+              <div style={{ paddingLeft: 8 }}>
+                {reportedRideIssueIds.map((id, i) => (
+                  <div key={i} style={dbValStyle}>· {id}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        </details>
+
+        <details style={dbSectionStyle}>
+          <summary style={dbSummaryStyle}>Trip Plan / Must-Dos</summary>
+          <div style={dbRowsStyle}>
+            {dbRow("startStrategy", tripPlanState?.preferences?.startStrategy)}
+            {dbRow("breakPreference", tripPlanState?.preferences?.breakPreference)}
+            {dbRow("nighttimeImportance", tripPlanState?.preferences?.nighttimeImportance)}
+            {dbRow("paidQueueStrategy", tripPlanState?.preferences?.paidQueueStrategy)}
+            {dbRow("mustDos.count", tripPlanState?.mustDoExperiences?.length ?? 0)}
+            {Array.isArray(tripPlanState?.mustDoExperiences) && tripPlanState.mustDoExperiences.length > 0 && (
+              <div style={{ paddingLeft: 8 }}>
+                {tripPlanState.mustDoExperiences.map((md, i) => (
+                  <div key={i} style={dbValStyle}>· {md.name} ({md.parkId}, {md.priority})</div>
+                ))}
+              </div>
+            )}
+            {dbRow("parkDays.count", tripPlanState?.parkDays?.length ?? 0)}
+            {dbRow("lastGeneratedAt", tripPlanState?.lastGeneratedAt)}
+            {dbRow("updatedAt", tripPlanState?.updatedAt)}
+          </div>
+        </details>
+
+        <details style={dbSectionStyle}>
+          <summary style={dbSummaryStyle}>Recommendation Envelope</summary>
+          <div style={dbRowsStyle}>
+            {dbRow("needsLocation", recommendations?.needsLocation)}
+          </div>
+        </details>
+
+        <details style={dbSectionStyle}>
+          <summary style={dbSummaryStyle}>Recommendation Slots</summary>
+          <div style={{ paddingTop: 6 }}>
+            {renderSlot("bestMove", recommendations?.bestMove)}
+            {renderSlot("backup", recommendations?.backup)}
+            {renderSlot("worthTheWalk", recommendations?.worthTheWalk)}
+            {renderSlot("planAhead", recommendations?.planAhead)}
+            {renderSlot("waitOnThis", recommendations?.waitOnThis)}
+          </div>
+        </details>
+      </section>
+    );
+  }
 
   if (activeScreen === "family_profile") {
     return (
@@ -4326,6 +4626,8 @@ function App() {
               )}
             </>
           )}
+
+          {debugSnapshotEnabled && renderDebugSnapshot()}
 
       </div>
       </main>
