@@ -292,9 +292,14 @@ function buildTransportationBriefing({
   const startStrategy = tripPlan?.preferences?.startStrategy || "moderate_morning";
   const isRopeDropStyle = startStrategy === "rope_drop";
   const openLabel = planTabState?.parkOpenLabel || "";
-  const directModes = resortProfile?.directAccess?.[planningPark] || [];
+  const rawDirectAccess = resortProfile?.directAccess?.[planningPark];
   const resortTransportModes = Array.isArray(resortProfile?.transportation)
     ? resortProfile.transportation
+    : [];
+  const directModes = Array.isArray(rawDirectAccess)
+    ? rawDirectAccess
+    : rawDirectAccess === true
+    ? resortTransportModes
     : [];
   const selectedMode = resortContext?.transportationMode;
   const selectedModeLabel =
@@ -313,7 +318,7 @@ function buildTransportationBriefing({
     return {
       title: `${directModeLabel} from ${resortName}.`,
       detail: openLabel
-        ? `${parkLabel} opens around ${openLabel}. ${morningContext}`
+        ? `${parkLabel} is listed as opening around ${openLabel} — confirm in the official Disney app before you leave. ${morningContext}`
         : morningContext,
     };
   }
@@ -327,7 +332,7 @@ function buildTransportationBriefing({
     return {
       title: `${modeText} from ${resortName}.`,
       detail: openLabel
-        ? `${parkLabel} opens around ${openLabel}. ${morningContext}`
+        ? `${parkLabel} is listed as opening around ${openLabel} — confirm in the official Disney app before you leave. ${morningContext}`
         : morningContext,
     };
   }
@@ -339,9 +344,9 @@ function buildTransportationBriefing({
       : "Parking and getting through the entrance can still take longer than it feels like it should.";
 
     return {
-      title: `Plan the drive from ${hotelOrArea}.`,
+      title: `Plan the trip from ${hotelOrArea}.`,
       detail: openLabel
-        ? `${parkLabel} opens around ${openLabel}. ${drivingContext}`
+        ? `${parkLabel} is listed as opening around ${openLabel} — confirm in the official Disney app before you leave. ${drivingContext}`
         : drivingContext,
     };
   }
@@ -356,7 +361,7 @@ function buildTransportationBriefing({
   return {
     title: "Check your route before you leave.",
     detail: openLabel
-      ? `${parkLabel} opens around ${openLabel}. Leave room for parking, security, and getting to the first area of the park.`
+      ? `${parkLabel} is listed as opening around ${openLabel} — confirm in the official Disney app before you leave. Leave room for parking, security, and getting to the first area of the park.`
       : "Leave room for transportation, security, and getting to the first area of the park.",
   };
 }
