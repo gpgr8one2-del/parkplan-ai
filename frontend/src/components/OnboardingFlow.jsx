@@ -1,4 +1,4 @@
-import React from "react";
+import React from "react"; 
 import { getResortProfile } from "../resortProfiles";
 import { colors } from "../theme";
 
