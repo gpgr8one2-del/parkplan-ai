@@ -634,6 +634,50 @@ function getPlanningParkFromProfile(profile = {}) {
   );
 }
 
+function getScheduledParkForDate(profile = {}, todayDateString = "") {
+  const schedule = profile?.tripContext?.parkDaySchedule;
+
+  if (!todayDateString || !Array.isArray(schedule) || schedule.length === 0) {
+    return null;
+  }
+
+  const scheduledDay = schedule.find((day) => day?.date === todayDateString);
+
+  if (!scheduledDay || !isSelectableParkId(scheduledDay.primaryParkId)) {
+    return null;
+  }
+
+  return {
+    dayNumber: scheduledDay.dayNumber,
+    date: scheduledDay.date,
+    parkId: scheduledDay.primaryParkId,
+    secondaryParkId: isSelectableParkId(scheduledDay.secondaryParkId)
+      ? scheduledDay.secondaryParkId
+      : "",
+  };
+}
+
+function getPlanningParkDecisionFromProfile(profile = {}, todayDateString = "") {
+  const fallbackPark = getPlanningParkFromProfile(profile);
+  const scheduledParkForToday = getScheduledParkForDate(profile, todayDateString);
+
+  if (scheduledParkForToday?.parkId) {
+    return {
+      parkId: getSafePlanningParkId(scheduledParkForToday.parkId, fallbackPark),
+      source: "park_day_schedule",
+      fallbackPark,
+      scheduledParkForToday,
+    };
+  }
+
+  return {
+    parkId: fallbackPark,
+    source: "profile_fallback",
+    fallbackPark,
+    scheduledParkForToday: null,
+  };
+}
+
 function getParkNameById(parkId) {
   return PARKS.find((park) => park.id === parkId)?.name || parkId || "the park";
 }
@@ -1074,6 +1118,7 @@ function App() {
   const [planningPark, setPlanningPark] = useState(() =>
     getPlanningParkFromProfile(initialFamilyProfileState.profile)
   );
+  const [manualPlanningParkOverride, setManualPlanningParkOverride] = useState("");
   const lastProfilePlanningParkRef = useRef(planningPark);
 
   const [currentLand, setCurrentLand] = useState(null);
@@ -1098,15 +1143,6 @@ function App() {
   useEffect(() => {
     writeStoredTripPlan(tripPlanState);
   }, [tripPlanState]);
-
-  useEffect(() => {
-    const nextPlanningPark = getPlanningParkFromProfile(familyProfile);
-
-    if (lastProfilePlanningParkRef.current !== nextPlanningPark) {
-      lastProfilePlanningParkRef.current = nextPlanningPark;
-      setPlanningPark(nextPlanningPark);
-    }
-  }, [familyProfile]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1138,6 +1174,30 @@ function App() {
       familyProfile: familyProfileSummary,
     });
   }, [activePark, familyProfileSummary]);
+
+  const profilePlanningParkDecision = useMemo(() => {
+    return getPlanningParkDecisionFromProfile(
+      familyProfileSummary,
+      timeContext?.orlandoDate
+    );
+  }, [familyProfileSummary, timeContext?.orlandoDate]);
+
+  const scheduledParkForToday = profilePlanningParkDecision.scheduledParkForToday;
+  const planningParkSource = manualPlanningParkOverride
+    ? "manual_override"
+    : profilePlanningParkDecision.source;
+
+  useEffect(() => {
+    const nextPlanningPark = getSafePlanningParkId(
+      manualPlanningParkOverride || profilePlanningParkDecision.parkId,
+      profilePlanningParkDecision.fallbackPark || "magic_kingdom"
+    );
+
+    if (lastProfilePlanningParkRef.current !== nextPlanningPark) {
+      lastProfilePlanningParkRef.current = nextPlanningPark;
+      setPlanningPark(nextPlanningPark);
+    }
+  }, [manualPlanningParkOverride, profilePlanningParkDecision]);
 
   const planningTimeContext = useMemo(() => {
     return getCurrentTimeContext({
@@ -1988,7 +2048,11 @@ function App() {
 
   function handlePlanningParkChange(nextParkId) {
     const safeNextPark = getSafePlanningParkId(nextParkId, planningPark);
+    const nextManualOverride =
+      safeNextPark === profilePlanningParkDecision.parkId ? "" : safeNextPark;
 
+    setManualPlanningParkOverride(nextManualOverride);
+    lastProfilePlanningParkRef.current = safeNextPark;
     setPlanningPark(safeNextPark);
 
     trackAppEvent("planning_park_selected", {
@@ -1998,6 +2062,11 @@ function App() {
         nextPlanningPark: safeNextPark,
         liveActivePark: activePark,
         firstParkFromProfile: getPlanningParkFromProfile(familyProfileSummary),
+        scheduledParkForToday: scheduledParkForToday?.parkId || "",
+        scheduledParkDate: scheduledParkForToday?.date || "",
+        scheduledParkDayNumber: scheduledParkForToday?.dayNumber || "",
+        planningParkSource: nextManualOverride ? "manual_override" : profilePlanningParkDecision.source,
+        manualOverride: Boolean(nextManualOverride),
       },
     });
   }
@@ -2469,6 +2538,14 @@ function App() {
             {dbRow("activeTab", activeTab)}
             {dbRow("activePark", activePark)}
             {dbRow("planningPark", planningPark)}
+            {dbRow("planningParkSource", planningParkSource)}
+            {dbRow("planningParkManualOverride", Boolean(manualPlanningParkOverride))}
+            {manualPlanningParkOverride
+              ? dbRow("manualPlanningParkOverride", manualPlanningParkOverride)
+              : null}
+            {dbRow("scheduledParkForToday", scheduledParkForToday?.parkId)}
+            {dbRow("scheduledParkDay", scheduledParkForToday?.dayNumber)}
+            {dbRow("scheduledParkDate", scheduledParkForToday?.date)}
             {dbRow("currentLand", currentLand)}
             {dbRow("locationSource", locationSource)}
             {dbRow("locationAutoEnabled", locationAutoEnabled)}
