@@ -865,6 +865,106 @@ function buildParkHopperContext({
     guidance: `${secondaryParkLabel} can become relevant now if the family still feels good. Keep it optional, not automatic. ${secondParkMustDoContext}`,
   };
 }
+
+function buildLiveParkContext({
+  activePark = "",
+  planningPark = "",
+  scheduledParkForToday = null,
+  todayPlannedParkLabel = "",
+  parkHopperContext = {},
+} = {}) {
+  const activeParkId = activePark || "";
+  const planningParkId = planningPark || "";
+  const scheduledPrimaryParkId = scheduledParkForToday?.parkId || planningParkId || "";
+  const scheduledSecondaryParkId = scheduledParkForToday?.secondaryParkId || "";
+  const activeParkLabel = activeParkId ? getParkNameById(activeParkId) : "the live park";
+  const planningParkLabel = planningParkId ? getParkNameById(planningParkId) : "the planned park";
+  const scheduledPrimaryParkLabel = scheduledPrimaryParkId
+    ? getParkNameById(scheduledPrimaryParkId)
+    : planningParkLabel;
+  const scheduledSecondaryParkLabel = scheduledSecondaryParkId
+    ? getParkNameById(scheduledSecondaryParkId)
+    : "";
+  const planLabel = todayPlannedParkLabel || scheduledPrimaryParkLabel || planningParkLabel;
+  const isViewingPlanningPark = Boolean(activeParkId && planningParkId && activeParkId === planningParkId);
+  const isViewingScheduledPrimaryPark = Boolean(
+    activeParkId && scheduledPrimaryParkId && activeParkId === scheduledPrimaryParkId
+  );
+  const isViewingScheduledSecondPark = Boolean(
+    activeParkId && scheduledSecondaryParkId && activeParkId === scheduledSecondaryParkId
+  );
+  const isLiveParkMismatch = Boolean(activeParkId && planningParkId && activeParkId !== planningParkId);
+  const secondParkMustDoCount = Number(parkHopperContext?.secondParkMustDos?.count || 0);
+  const secondParkMustDoLabel = parkHopperContext?.secondParkMustDos?.label || "";
+  const secondParkHasMustDos = secondParkMustDoCount > 0;
+
+  const base = {
+    activeParkId,
+    activeParkLabel,
+    planningParkId,
+    planningParkLabel,
+    scheduledPrimaryParkId,
+    scheduledPrimaryParkLabel,
+    scheduledSecondaryParkId,
+    scheduledSecondaryParkLabel,
+    isViewingPlanningPark,
+    isViewingScheduledPrimaryPark,
+    isViewingScheduledSecondPark,
+    isLiveParkMismatch,
+  };
+
+  if (!activeParkId) {
+    return {
+      ...base,
+      status: "unknown",
+      label: "Live park not set",
+      guidance: "Choose a live park so Right Now can use the correct wait times.",
+      showNotice: false,
+    };
+  }
+
+  if (isViewingScheduledSecondPark) {
+    const mustDoContext = secondParkHasMustDos
+      ? ` It has ${formatMustDoCountLabel(secondParkMustDoCount)} saved: ${secondParkMustDoLabel}.`
+      : " It does not have saved must-dos yet, so keep the hop flexible.";
+
+    return {
+      ...base,
+      status: "viewing_second_park",
+      label: "Viewing your second park",
+      guidance: `You’re viewing ${activeParkLabel} live waits. Today’s plan is ${planLabel}, and ${activeParkLabel} is the second park.${mustDoContext} Right Now moves are using ${activeParkLabel}.`,
+      showNotice: true,
+    };
+  }
+
+  if (isViewingPlanningPark || isViewingScheduledPrimaryPark) {
+    return {
+      ...base,
+      status: "viewing_planned_park",
+      label: "Viewing planned park",
+      guidance: `You’re viewing ${activeParkLabel} live waits, which matches today’s planning park. Right Now moves are using ${activeParkLabel}.`,
+      showNotice: false,
+    };
+  }
+
+  if (isLiveParkMismatch) {
+    return {
+      ...base,
+      status: "viewing_different_park",
+      label: "Viewing a different live park",
+      guidance: `You’re viewing ${activeParkLabel} live waits, while today’s plan is ${planLabel}. Right Now moves are using ${activeParkLabel}; the Plan tab is still anchored to ${planningParkLabel}.`,
+      showNotice: true,
+    };
+  }
+
+  return {
+    ...base,
+    status: "live_only",
+    label: "Live park view",
+    guidance: `Right Now moves are using ${activeParkLabel} live waits.`,
+    showNotice: false,
+  };
+}
 function getMinutesFromDateValue(value) {
   if (!value) return null;
 
@@ -1413,6 +1513,16 @@ function App() {
       tripPlan: tripPlanState,
     });
   }, [scheduledParkForToday, planningTimeContext, planTabState, tripPlanState]);
+
+  const liveParkContext = useMemo(() => {
+    return buildLiveParkContext({
+      activePark,
+      planningPark,
+      scheduledParkForToday,
+      todayPlannedParkLabel,
+      parkHopperContext,
+    });
+  }, [activePark, planningPark, scheduledParkForToday, todayPlannedParkLabel, parkHopperContext]);
 
   const access = useMemo(
     () =>
@@ -2774,6 +2884,10 @@ function App() {
             {dbRow("hopperContext.secondParkMustDos.count", parkHopperContext?.secondParkMustDos?.count)}
             {dbRow("hopperContext.secondParkMustDos.label", parkHopperContext?.secondParkMustDos?.label)}
             {dbRow("hopperContext.secondParkPriority", parkHopperContext?.secondParkPriority)}
+            {dbRow("liveParkContext.status", liveParkContext?.status)}
+            {dbRow("liveParkContext.label", liveParkContext?.label)}
+            {dbRow("liveParkContext.isLiveParkMismatch", liveParkContext?.isLiveParkMismatch)}
+            {dbRow("liveParkContext.guidance", liveParkContext?.guidance)}
             {dbRow("scheduledParkDay", scheduledParkForToday?.dayNumber)}
             {dbRow("scheduledParkDate", scheduledParkForToday?.date)}
             {dbRow("currentLand", currentLand)}
@@ -3232,8 +3346,8 @@ function App() {
                   lineHeight: 1.4,
                 }}
               >
-                You&apos;re viewing {getParkNameById(activePark)} live waits right now.
-                Switch live park if you want Right Now moves for {planningParkLabel}.
+                {liveParkContext?.guidance ||
+                  `You’re viewing ${getParkNameById(activePark)} live waits right now. Switch live park if you want Right Now moves for ${planningParkLabel}.`}
               </p>
 
               {scheduledSecondaryParkLabel && (
@@ -3267,6 +3381,8 @@ function App() {
                     scheduledParkPlanLabel: todayPlannedParkLabel,
                     hopperContextStatus: parkHopperContext?.status || "",
                     shouldConsiderSecondPark: Boolean(parkHopperContext?.shouldConsiderSecondPark),
+                    liveParkContextStatus: liveParkContext?.status || "",
+                    isLiveParkMismatch: Boolean(liveParkContext?.isLiveParkMismatch),
                     scheduledParkDayNumber: scheduledParkForToday?.dayNumber || "",
                   },
                 });
@@ -4260,6 +4376,7 @@ function App() {
               scheduledParkForToday={scheduledParkForToday}
               scheduledSecondaryParkLabel={scheduledSecondaryParkLabel}
               parkHopperContext={parkHopperContext}
+              liveParkContext={liveParkContext}
               parkOptions={PARKS.filter((park) => park.selectable !== false)}
               onPlanningParkChange={handlePlanningParkChange}
               mustDoExperienceOptions={mustDoExperienceOptions}

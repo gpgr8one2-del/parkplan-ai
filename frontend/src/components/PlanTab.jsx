@@ -757,6 +757,46 @@ function ParkHopperTimingCard({ card, parkHopperContext = {} }) {
   );
 }
 
+function LiveParkContextCard({ card, liveParkContext = {} }) {
+  if (!liveParkContext?.showNotice) return null;
+
+  return (
+    <section
+      style={{
+        ...card,
+        padding: 13,
+        background: "linear-gradient(145deg, #FFFFFF 0%, #FFF7ED 100%)",
+        border: "1px solid rgba(245, 158, 11, 0.24)",
+        boxShadow: "0 10px 24px rgba(245, 158, 11, 0.06)",
+      }}
+    >
+      <SectionBadge background={colors.amberSoft} color="#92400E">
+        LIVE PARK CONTEXT
+      </SectionBadge>
+
+      <strong
+        style={{
+          display: "block",
+          marginTop: 2,
+          color: colors.text,
+          fontSize: 15,
+          lineHeight: 1.35,
+        }}
+      >
+        {liveParkContext.label || "Live park view"}
+      </strong>
+
+      <p style={{ margin: "6px 0 0", color: colors.text, fontSize: 12.5, lineHeight: 1.4 }}>
+        {liveParkContext.guidance}
+      </p>
+
+      <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+        This explains the view only. It does not automatically switch parks or change recommendation scoring.
+      </p>
+    </section>
+  );
+}
+
 function getPlanItemById(dayGamePlan = [], id) {
   return dayGamePlan.find((item) => item?.id === id) || null;
 }
@@ -1932,6 +1972,7 @@ export function PlanTab({
   todayPlannedParkLabel = "",
   scheduledSecondaryParkLabel = "",
   parkHopperContext = {},
+  liveParkContext = {},
   parkOptions = [],
   onPlanningParkChange,
   mustDoExperienceOptions = [],
@@ -2023,6 +2064,8 @@ export function PlanTab({
         planningParkLabel={planningParkLabel}
         scheduledSecondaryParkLabel={scheduledSecondaryParkLabel}
       />
+
+      <LiveParkContextCard card={card} liveParkContext={liveParkContext} />
 
       <ParkHopperTimingCard card={card} parkHopperContext={parkHopperContext} />
 
