@@ -2976,6 +2976,89 @@ function App() {
           )}
         </section>
 
+        {activePark !== planningPark && (
+          <section
+            style={{
+              ...card,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+              background:
+                "linear-gradient(145deg, rgba(255,255,255,0.96) 0%, #F5F3FF 100%)",
+              border: "1px solid rgba(124, 58, 237, 0.18)",
+              boxShadow: "0 12px 28px rgba(91, 33, 182, 0.08)",
+            }}
+          >
+            <div style={{ minWidth: 220, flex: "1 1 320px" }}>
+              <div
+                style={{
+                  color: colors.purple,
+                  fontSize: 11,
+                  fontWeight: 950,
+                  letterSpacing: 0.65,
+                  marginBottom: 5,
+                }}
+              >
+                TODAY&apos;S PLANNED PARK
+              </div>
+
+              <strong
+                style={{
+                  display: "block",
+                  color: colors.text,
+                  fontSize: 15,
+                  lineHeight: 1.35,
+                }}
+              >
+                Today&apos;s plan is {getParkNameById(planningPark)}.
+              </strong>
+
+              <p
+                style={{
+                  margin: "5px 0 0",
+                  color: colors.muted,
+                  fontSize: 12.5,
+                  lineHeight: 1.4,
+                }}
+              >
+                You&apos;re viewing {getParkNameById(activePark)} live waits right now.
+                Switch live park if you want Right Now moves for {getParkNameById(planningPark)}.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                trackAppEvent("live_park_switched_from_planned_park_notice", {
+                  source: "planned_park_notice",
+                  activePark: planningPark,
+                  metadata: {
+                    previousActivePark: activePark,
+                    nextActivePark: planningPark,
+                    planningPark,
+                    planningParkSource,
+                    scheduledParkForToday: scheduledParkForToday?.parkId || "",
+                    scheduledParkDayNumber: scheduledParkForToday?.dayNumber || "",
+                  },
+                });
+
+                setActivePark(planningPark);
+              }}
+              style={{
+                ...button,
+                background: colors.purpleDeep,
+                borderColor: colors.purpleDeep,
+                color: "white",
+                flexShrink: 0,
+              }}
+            >
+              Switch live park
+            </button>
+          </section>
+        )}
+
         <section style={card}>
           <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
             {PARKS.map((park) => (
