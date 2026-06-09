@@ -691,6 +691,11 @@ function TodayParkPlanCard({
 function ParkHopperTimingCard({ card, parkHopperContext = {} }) {
   if (!parkHopperContext?.hasSecondPark) return null;
 
+  const mustDoCount = Number(parkHopperContext?.secondParkMustDos?.count || 0);
+  const mustDoLabel = parkHopperContext?.secondParkMustDos?.label || "";
+  const hasSecondParkMustDos = mustDoCount > 0;
+  const secondaryParkLabel = parkHopperContext?.secondaryParkLabel || "the second park";
+
   return (
     <section
       style={{
@@ -721,6 +726,28 @@ function ParkHopperTimingCard({ card, parkHopperContext = {} }) {
         {parkHopperContext.guidance}
       </p>
 
+      <div
+        style={{
+          marginTop: 9,
+          padding: 10,
+          borderRadius: 16,
+          background: "rgba(255,255,255,0.72)",
+          border: `1px solid ${colors.cardBorder}`,
+        }}
+      >
+        <strong style={{ display: "block", color: colors.text, fontSize: 12.5, lineHeight: 1.3 }}>
+          {hasSecondParkMustDos
+            ? `${secondaryParkLabel} has ${mustDoCount} must-do${mustDoCount === 1 ? "" : "s"}.`
+            : `No ${secondaryParkLabel} must-dos saved yet.`}
+        </strong>
+
+        <p style={{ margin: "5px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+          {hasSecondParkMustDos
+            ? `TOHI should treat ${mustDoLabel} as a reason the second park may matter, not as a reason to rush the hop.`
+            : "Treat the hop as flexible until something in the second park is marked important."}
+        </p>
+      </div>
+
       <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
         {parkHopperContext.shouldConsiderSecondPark
           ? "This is a context signal, not an automatic recommendation to leave."
@@ -729,7 +756,6 @@ function ParkHopperTimingCard({ card, parkHopperContext = {} }) {
     </section>
   );
 }
-
 
 function getPlanItemById(dayGamePlan = [], id) {
   return dayGamePlan.find((item) => item?.id === id) || null;

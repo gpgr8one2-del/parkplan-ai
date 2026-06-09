@@ -698,10 +698,53 @@ function getScheduledParkPlanLabel(scheduledPark = {}, fallbackParkId = "") {
   });
 }
 
+function formatMustDoCountLabel(count) {
+  const numericCount = Number(count) || 0;
+  if (numericCount === 1) return "1 must-do";
+  return `${numericCount} must-dos`;
+}
+
+function formatMustDoNameList(experiences = [], max = 3) {
+  const names = experiences
+    .map((experience) => experience?.name)
+    .filter(Boolean)
+    .slice(0, max);
+
+  if (!names.length) return "";
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+}
+
+function getMustDosForParkFromTripPlan(tripPlan = {}, parkId = "") {
+  if (!parkId || !Array.isArray(tripPlan?.mustDoExperiences)) {
+    return [];
+  }
+
+  return tripPlan.mustDoExperiences.filter(
+    (experience) => experience?.parkId === parkId
+  );
+}
+
+function buildSecondParkMustDoSummary({ tripPlan = {}, secondaryParkId = "" } = {}) {
+  const experiences = getMustDosForParkFromTripPlan(tripPlan, secondaryParkId);
+  const count = experiences.length;
+  const label = formatMustDoNameList(experiences, 3);
+
+  return {
+    count,
+    label,
+    hasMustDos: count > 0,
+    names: experiences.map((experience) => experience?.name).filter(Boolean),
+  };
+}
+
 function buildParkHopperContext({
   scheduledParkForToday = null,
   timeContext = {},
   planTabState = {},
+  tripPlan = {},
 } = {}) {
   const primaryParkId = scheduledParkForToday?.parkId || "";
   const secondaryParkId = scheduledParkForToday?.secondaryParkId || "";
@@ -717,6 +760,13 @@ function buildParkHopperContext({
       secondaryParkId: "",
       primaryParkLabel: primaryParkId ? getParkNameById(primaryParkId) : "",
       secondaryParkLabel: "",
+      secondParkMustDos: {
+        count: 0,
+        label: "",
+        hasMustDos: false,
+        names: [],
+      },
+      secondParkPriority: "none",
     };
   }
 
@@ -725,6 +775,17 @@ function buildParkHopperContext({
   const totalMinutes = Number(timeContext?.orlandoTotalMinutes);
   const dayPhase = String(timeContext?.dayPhase || "");
   const isAfterPrimaryParkClose = Boolean(planTabState?.isAfterParkClose);
+  const secondParkMustDos = buildSecondParkMustDoSummary({
+    tripPlan,
+    secondaryParkId,
+  });
+  const secondParkPriority = secondParkMustDos.hasMustDos
+    ? "has_must_dos"
+    : "flexible_no_must_dos";
+  const mustDoCountLabel = formatMustDoCountLabel(secondParkMustDos.count);
+  const secondParkMustDoContext = secondParkMustDos.hasMustDos
+    ? `${secondaryParkLabel} has ${mustDoCountLabel} saved: ${secondParkMustDos.label}.`
+    : `${secondaryParkLabel} has no must-dos saved yet, so treat the hop as flexible instead of pressure.`;
 
   const base = {
     hasSecondPark: true,
@@ -732,6 +793,8 @@ function buildParkHopperContext({
     secondaryParkId,
     primaryParkLabel,
     secondaryParkLabel,
+    secondParkMustDos,
+    secondParkPriority,
   };
 
   if (isAfterPrimaryParkClose) {
@@ -740,7 +803,7 @@ function buildParkHopperContext({
       status: "late_day_check",
       label: "Late-day hopper check",
       shouldConsiderSecondPark: true,
-      guidance: `${primaryParkLabel} is at or past its listed close. ${secondaryParkLabel} can still make sense only if it is still open, the family has energy, and the move supports something that still matters.`,
+      guidance: `${primaryParkLabel} is at or past its listed close. ${secondaryParkLabel} can still make sense only if it is still open, the family has energy, and the move supports something that still matters. ${secondParkMustDoContext}`,
     };
   }
 
@@ -750,7 +813,7 @@ function buildParkHopperContext({
       status: "context_only",
       label: "Second park is set",
       shouldConsiderSecondPark: false,
-      guidance: `${secondaryParkLabel} is set as the second park today. Treat it as context until TOHI has a clearer time-of-day read.`,
+      guidance: `${secondaryParkLabel} is set as the second park today. Treat it as context until TOHI has a clearer time-of-day read. ${secondParkMustDoContext}`,
     };
   }
 
@@ -760,7 +823,7 @@ function buildParkHopperContext({
       status: "primary_focus",
       label: "Primary park first",
       shouldConsiderSecondPark: false,
-      guidance: `Start by protecting the ${primaryParkLabel} plan. Do not let the second park pull the family away before the first park has had a fair chance to deliver.`,
+      guidance: `Start by protecting the ${primaryParkLabel} plan. Do not let the second park pull the family away before the first park has had a fair chance to deliver. ${secondParkMustDoContext}`,
     };
   }
 
@@ -770,7 +833,7 @@ function buildParkHopperContext({
       status: "reset_before_hop",
       label: "Reset before hopping",
       shouldConsiderSecondPark: false,
-      guidance: `${secondaryParkLabel} is still on the plan, but this is usually the window to check food, water, heat, and family energy before committing to a hop.`,
+      guidance: `${secondaryParkLabel} is still on the plan, but this is usually the window to check food, water, heat, and family energy before committing to a hop. ${secondParkMustDoContext}`,
     };
   }
 
@@ -780,7 +843,7 @@ function buildParkHopperContext({
       status: "evaluate_hop",
       label: "Evaluate the hop",
       shouldConsiderSecondPark: true,
-      guidance: `This is the first real window to consider ${secondaryParkLabel}. Hop only if ${primaryParkLabel} has delivered enough value and the family still has enough energy for the transfer.`,
+      guidance: `This is the first real window to consider ${secondaryParkLabel}. Hop only if ${primaryParkLabel} has delivered enough value and the family still has enough energy for the transfer. ${secondParkMustDoContext}`,
     };
   }
 
@@ -790,7 +853,7 @@ function buildParkHopperContext({
       status: "evening_only_if_worth_it",
       label: "Only hop if it is worth it",
       shouldConsiderSecondPark: true,
-      guidance: `${secondaryParkLabel} is the second park, but late hops should be intentional: a must-do, nighttime goal, food plan, or clear family-energy win. Otherwise, leave cleanly.`,
+      guidance: `${secondaryParkLabel} is the second park, but late hops should be intentional: a must-do, nighttime goal, food plan, or clear family-energy win. ${secondParkMustDoContext}`,
     };
   }
 
@@ -799,10 +862,9 @@ function buildParkHopperContext({
     status: "second_park_window",
     label: "Second park window",
     shouldConsiderSecondPark: true,
-    guidance: `${secondaryParkLabel} can become relevant now if the family still feels good. Keep it optional, not automatic.`,
+    guidance: `${secondaryParkLabel} can become relevant now if the family still feels good. Keep it optional, not automatic. ${secondParkMustDoContext}`,
   };
 }
-
 function getMinutesFromDateValue(value) {
   if (!value) return null;
 
@@ -1348,8 +1410,9 @@ function App() {
       scheduledParkForToday,
       timeContext: planningTimeContext,
       planTabState,
+      tripPlan: tripPlanState,
     });
-  }, [scheduledParkForToday, planningTimeContext, planTabState]);
+  }, [scheduledParkForToday, planningTimeContext, planTabState, tripPlanState]);
 
   const access = useMemo(
     () =>
@@ -2708,6 +2771,9 @@ function App() {
             {dbRow("hopperContext.status", parkHopperContext?.status)}
             {dbRow("hopperContext.label", parkHopperContext?.label)}
             {dbRow("hopperContext.shouldConsiderSecondPark", parkHopperContext?.shouldConsiderSecondPark)}
+            {dbRow("hopperContext.secondParkMustDos.count", parkHopperContext?.secondParkMustDos?.count)}
+            {dbRow("hopperContext.secondParkMustDos.label", parkHopperContext?.secondParkMustDos?.label)}
+            {dbRow("hopperContext.secondParkPriority", parkHopperContext?.secondParkPriority)}
             {dbRow("scheduledParkDay", scheduledParkForToday?.dayNumber)}
             {dbRow("scheduledParkDate", scheduledParkForToday?.date)}
             {dbRow("currentLand", currentLand)}
