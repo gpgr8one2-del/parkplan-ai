@@ -688,6 +688,48 @@ function TodayParkPlanCard({
   );
 }
 
+function ParkHopperTimingCard({ card, parkHopperContext = {} }) {
+  if (!parkHopperContext?.hasSecondPark) return null;
+
+  return (
+    <section
+      style={{
+        ...card,
+        padding: 13,
+        background: "linear-gradient(145deg, #FFFFFF 0%, #ECFEFF 100%)",
+        border: "1px solid rgba(56, 189, 248, 0.24)",
+        boxShadow: "0 10px 24px rgba(14, 165, 233, 0.06)",
+      }}
+    >
+      <SectionBadge background="rgba(56, 189, 248, 0.14)" color="#0369A1">
+        PARK HOPPER CONTEXT
+      </SectionBadge>
+
+      <strong
+        style={{
+          display: "block",
+          marginTop: 2,
+          color: colors.text,
+          fontSize: 15,
+          lineHeight: 1.35,
+        }}
+      >
+        {parkHopperContext.label || "Second park timing"}
+      </strong>
+
+      <p style={{ margin: "6px 0 0", color: colors.text, fontSize: 12.5, lineHeight: 1.4 }}>
+        {parkHopperContext.guidance}
+      </p>
+
+      <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+        {parkHopperContext.shouldConsiderSecondPark
+          ? "This is a context signal, not an automatic recommendation to leave."
+          : "TOHI is intentionally not pushing the hop yet."}
+      </p>
+    </section>
+  );
+}
+
 
 function getPlanItemById(dayGamePlan = [], id) {
   return dayGamePlan.find((item) => item?.id === id) || null;
@@ -1863,6 +1905,7 @@ export function PlanTab({
   scheduledParkForToday = null,
   todayPlannedParkLabel = "",
   scheduledSecondaryParkLabel = "",
+  parkHopperContext = {},
   parkOptions = [],
   onPlanningParkChange,
   mustDoExperienceOptions = [],
@@ -1954,6 +1997,8 @@ export function PlanTab({
         planningParkLabel={planningParkLabel}
         scheduledSecondaryParkLabel={scheduledSecondaryParkLabel}
       />
+
+      <ParkHopperTimingCard card={card} parkHopperContext={parkHopperContext} />
 
       <PlanFreshnessNotice
         card={card}
