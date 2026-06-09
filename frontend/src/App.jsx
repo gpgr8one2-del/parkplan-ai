@@ -2495,6 +2495,27 @@ function App() {
 
     const locationSource = locationAutoEnabled ? "GPS" : currentLand ? "manual" : "unknown";
 
+    const parkDaySchedule = Array.isArray(familyProfileSummary?.tripContext?.parkDaySchedule)
+      ? familyProfileSummary.tripContext.parkDaySchedule
+      : [];
+
+    const parkDayScheduleRows = parkDaySchedule.map((day, index) => {
+      const dayNumber = day?.dayNumber ?? index + 1;
+      const primaryParkLabel = day?.primaryParkId
+        ? getParkLabel(day.primaryParkId) || day.primaryParkId
+        : "No park selected";
+      const secondaryParkLabel = day?.secondaryParkId
+        ? getParkLabel(day.secondaryParkId) || day.secondaryParkId
+        : "";
+
+      return {
+        label: `parkDaySchedule.day${dayNumber}`,
+        value: `${day?.date || "No date"} · ${primaryParkLabel}${
+          secondaryParkLabel ? ` + ${secondaryParkLabel}` : ""
+        }`,
+      };
+    });
+
     return (
       <section
         style={{
@@ -2658,7 +2679,11 @@ function App() {
                 ))}
               </div>
             )}
-            {dbRow("parkDays.count", tripPlanState?.parkDays?.length ?? 0)}
+            {dbRow("parkDaySchedule.count", parkDaySchedule.length)}
+            {parkDayScheduleRows.map((row) => (
+              <React.Fragment key={row.label}>{dbRow(row.label, row.value)}</React.Fragment>
+            ))}
+            {dbRow("generatedPlan.parkDays.count", tripPlanState?.parkDays?.length ?? 0)}
             {dbRow("lastGeneratedAt", tripPlanState?.lastGeneratedAt)}
             {dbRow("updatedAt", tripPlanState?.updatedAt)}
           </div>
