@@ -682,6 +682,22 @@ function getParkNameById(parkId) {
   return PARKS.find((park) => park.id === parkId)?.name || parkId || "the park";
 }
 
+function getParkPlanLabel({ primaryParkId, secondaryParkId, fallbackParkId } = {}) {
+  const primaryPark = primaryParkId || fallbackParkId || "";
+  const primaryLabel = primaryPark ? getParkNameById(primaryPark) : "the park";
+  const secondaryLabel = secondaryParkId ? getParkNameById(secondaryParkId) : "";
+
+  return secondaryLabel ? `${primaryLabel}, then ${secondaryLabel}` : primaryLabel;
+}
+
+function getScheduledParkPlanLabel(scheduledPark = {}, fallbackParkId = "") {
+  return getParkPlanLabel({
+    primaryParkId: scheduledPark?.parkId,
+    secondaryParkId: scheduledPark?.secondaryParkId,
+    fallbackParkId,
+  });
+}
+
 function getMinutesFromDateValue(value) {
   if (!value) return null;
 
@@ -1186,6 +1202,15 @@ function App() {
   const planningParkSource = manualPlanningParkOverride
     ? "manual_override"
     : profilePlanningParkDecision.source;
+  const scheduledSecondaryParkId = scheduledParkForToday?.secondaryParkId || "";
+  const scheduledSecondaryParkLabel = scheduledSecondaryParkId
+    ? getParkNameById(scheduledSecondaryParkId)
+    : "";
+  const todayPlannedParkLabel = getScheduledParkPlanLabel(
+    scheduledParkForToday,
+    planningPark
+  );
+  const planningParkLabel = getParkNameById(planningPark);
 
   useEffect(() => {
     const nextPlanningPark = getSafePlanningParkId(
@@ -2565,6 +2590,8 @@ function App() {
               ? dbRow("manualPlanningParkOverride", manualPlanningParkOverride)
               : null}
             {dbRow("scheduledParkForToday", scheduledParkForToday?.parkId)}
+            {dbRow("scheduledSecondaryParkForToday", scheduledParkForToday?.secondaryParkId)}
+            {dbRow("scheduledParkPlanLabel", todayPlannedParkLabel)}
             {dbRow("scheduledParkDay", scheduledParkForToday?.dayNumber)}
             {dbRow("scheduledParkDate", scheduledParkForToday?.date)}
             {dbRow("currentLand", currentLand)}
@@ -3012,7 +3039,7 @@ function App() {
                   lineHeight: 1.35,
                 }}
               >
-                Today&apos;s plan is {getParkNameById(planningPark)}.
+                Today&apos;s plan is {todayPlannedParkLabel}.
               </strong>
 
               <p
@@ -3024,8 +3051,22 @@ function App() {
                 }}
               >
                 You&apos;re viewing {getParkNameById(activePark)} live waits right now.
-                Switch live park if you want Right Now moves for {getParkNameById(planningPark)}.
+                Switch live park if you want Right Now moves for {planningParkLabel}.
               </p>
+
+              {scheduledSecondaryParkLabel && (
+                <p
+                  style={{
+                    margin: "5px 0 0",
+                    color: colors.muted,
+                    fontSize: 12,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  Second park: {scheduledSecondaryParkLabel}. For now, TOHI is only showing it as
+                  day context; live recommendations still follow the live park you choose.
+                </p>
+              )}
             </div>
 
             <button
@@ -3040,6 +3081,8 @@ function App() {
                     planningPark,
                     planningParkSource,
                     scheduledParkForToday: scheduledParkForToday?.parkId || "",
+                    scheduledSecondaryParkForToday: scheduledParkForToday?.secondaryParkId || "",
+                    scheduledParkPlanLabel: todayPlannedParkLabel,
                     scheduledParkDayNumber: scheduledParkForToday?.dayNumber || "",
                   },
                 });
@@ -4028,7 +4071,10 @@ function App() {
               tripPlan={tripPlanState}
               activePark={activePark}
               planningPark={planningPark}
-              planningParkLabel={getParkNameById(planningPark)}
+              planningParkLabel={planningParkLabel}
+              todayPlannedParkLabel={todayPlannedParkLabel}
+              scheduledParkForToday={scheduledParkForToday}
+              scheduledSecondaryParkLabel={scheduledSecondaryParkLabel}
               parkOptions={PARKS.filter((park) => park.selectable !== false)}
               onPlanningParkChange={handlePlanningParkChange}
               mustDoExperienceOptions={mustDoExperienceOptions}
