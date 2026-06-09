@@ -644,6 +644,51 @@ function PlanningStatusCard({
 }
 
 
+function TodayParkPlanCard({
+  card,
+  scheduledParkForToday,
+  todayPlannedParkLabel,
+  planningParkLabel,
+  scheduledSecondaryParkLabel,
+}) {
+  if (!scheduledParkForToday?.parkId) return null;
+
+  return (
+    <section
+      style={{
+        ...card,
+        padding: 13,
+        background: "linear-gradient(145deg, #FFFFFF 0%, #F5F3FF 100%)",
+        border: "1px solid rgba(124, 58, 237, 0.18)",
+        boxShadow: "0 10px 24px rgba(91, 33, 182, 0.06)",
+      }}
+    >
+      <SectionBadge background="rgba(124, 58, 237, 0.10)" color={colors.purpleDeep}>
+        TODAY&apos;S PARK PLAN
+      </SectionBadge>
+
+      <strong
+        style={{
+          display: "block",
+          marginTop: 2,
+          color: colors.text,
+          fontSize: 15,
+          lineHeight: 1.35,
+        }}
+      >
+        Today&apos;s plan: {todayPlannedParkLabel || planningParkLabel || "the park"}.
+      </strong>
+
+      <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12.5, lineHeight: 1.4 }}>
+        {scheduledSecondaryParkLabel
+          ? `Second park: ${scheduledSecondaryParkLabel}. For now, treat this as context; Right Now still follows the live park you choose.`
+          : "This is the park TOHI is using for today’s planning view."}
+      </p>
+    </section>
+  );
+}
+
+
 function getPlanItemById(dayGamePlan = [], id) {
   return dayGamePlan.find((item) => item?.id === id) || null;
 }
@@ -1021,6 +1066,9 @@ function MustDoMomentsSection({
   activePark,
   planningPark,
   planningParkLabel,
+  todayPlannedParkLabel,
+  scheduledParkForToday,
+  scheduledSecondaryParkLabel,
   parkOptions = [],
   onPlanningParkChange,
   tripPlan,
@@ -1894,6 +1942,14 @@ export function PlanTab({
         hasPersonalizedAccess={hasPersonalizedAccess}
         profileCompletion={profileCompletion}
         setActiveScreen={setActiveScreen}
+      />
+
+      <TodayParkPlanCard
+        card={card}
+        scheduledParkForToday={scheduledParkForToday}
+        todayPlannedParkLabel={todayPlannedParkLabel}
+        planningParkLabel={planningParkLabel}
+        scheduledSecondaryParkLabel={scheduledSecondaryParkLabel}
       />
 
       <PlanFreshnessNotice

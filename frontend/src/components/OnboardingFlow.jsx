@@ -734,32 +734,88 @@ export function OnboardingFlow({
                           : `Day ${dayEntry.dayNumber}`;
 
                         return (
-                          <label key={dayEntry.dayNumber} style={fieldLabelStyle}>
-                            {dayLabel}
-                            <select
-                              value={dayEntry.primaryParkId || ""}
-                              onChange={(e) => {
-                                const updatedSchedule = summary.tripContext.parkDaySchedule.map(
-                                  (day, index) =>
-                                    index === dayIndex
-                                      ? { ...day, primaryParkId: e.target.value }
-                                      : day
-                                );
+                          <div
+                            key={dayEntry.dayNumber}
+                            style={{
+                              display: "grid",
+                              gap: 8,
+                              padding: 11,
+                              borderRadius: 16,
+                              border: `1px solid ${colors.cardBorder}`,
+                              background: "rgba(255,255,255,0.72)",
+                            }}
+                          >
+                            <strong style={{ color: colors.text, fontSize: 13 }}>{dayLabel}</strong>
 
-                                updateTripContext({ parkDaySchedule: updatedSchedule });
-                              }}
-                              style={inputStyle}
-                            >
-                              <option value="">Not sure yet</option>
-                              {selectableParkOptions
-                                .filter((park) => !park.isDisabled)
-                                .map((park) => (
-                                  <option key={park.value} value={park.value}>
-                                    {park.label}
-                                  </option>
-                                ))}
-                            </select>
-                          </label>
+                            <label style={fieldLabelStyle}>
+                              Primary park
+                              <select
+                                value={dayEntry.primaryParkId || ""}
+                                onChange={(e) => {
+                                  const nextPrimaryParkId = e.target.value;
+                                  const updatedSchedule = summary.tripContext.parkDaySchedule.map(
+                                    (day, index) =>
+                                      index === dayIndex
+                                        ? {
+                                            ...day,
+                                            primaryParkId: nextPrimaryParkId,
+                                            secondaryParkId:
+                                              day.secondaryParkId === nextPrimaryParkId
+                                                ? ""
+                                                : day.secondaryParkId,
+                                          }
+                                        : day
+                                  );
+
+                                  updateTripContext({ parkDaySchedule: updatedSchedule });
+                                }}
+                                style={inputStyle}
+                              >
+                                <option value="">Not sure yet</option>
+                                {selectableParkOptions
+                                  .filter((park) => !park.isDisabled)
+                                  .map((park) => (
+                                    <option key={park.value} value={park.value}>
+                                      {park.label}
+                                    </option>
+                                  ))}
+                              </select>
+                            </label>
+
+                            <label style={fieldLabelStyle}>
+                              Second park / park hopper optional
+                              <select
+                                value={dayEntry.secondaryParkId || ""}
+                                onChange={(e) => {
+                                  const updatedSchedule = summary.tripContext.parkDaySchedule.map(
+                                    (day, index) =>
+                                      index === dayIndex
+                                        ? { ...day, secondaryParkId: e.target.value }
+                                        : day
+                                  );
+
+                                  updateTripContext({ parkDaySchedule: updatedSchedule });
+                                }}
+                                style={inputStyle}
+                              >
+                                <option value="">No second park</option>
+                                {selectableParkOptions
+                                  .filter(
+                                    (park) =>
+                                      !park.isDisabled && park.value !== dayEntry.primaryParkId
+                                  )
+                                  .map((park) => (
+                                    <option key={park.value} value={park.value}>
+                                      {park.label}
+                                    </option>
+                                  ))}
+                              </select>
+                            </label>
+
+                            <p style={{ margin: 0, color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+                              Use this only if you expect to hop later. TOHI will show it as context for now.
+                            </p>
+                          </div>
                         );
                       })}
                     </div>
