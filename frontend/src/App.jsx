@@ -3299,7 +3299,7 @@ function App() {
           )}
         </section>
 
-        {activePark !== planningPark && (
+        {liveParkContext?.showNotice && (
           <section
             style={{
               ...card,
@@ -3309,22 +3309,22 @@ function App() {
               gap: 12,
               flexWrap: "wrap",
               background:
-                "linear-gradient(145deg, rgba(255,255,255,0.96) 0%, #F5F3FF 100%)",
-              border: "1px solid rgba(124, 58, 237, 0.18)",
-              boxShadow: "0 12px 28px rgba(91, 33, 182, 0.08)",
+                "linear-gradient(145deg, rgba(255,255,255,0.97) 0%, #FFF7ED 52%, #F5F3FF 100%)",
+              border: "1px solid rgba(245, 158, 11, 0.24)",
+              boxShadow: "0 12px 28px rgba(245, 158, 11, 0.08)",
             }}
           >
-            <div style={{ minWidth: 220, flex: "1 1 320px" }}>
+            <div style={{ minWidth: 220, flex: "1 1 340px" }}>
               <div
                 style={{
-                  color: colors.purple,
+                  color: "#92400E",
                   fontSize: 11,
                   fontWeight: 950,
                   letterSpacing: 0.65,
                   marginBottom: 5,
                 }}
               >
-                TODAY&apos;S PLANNED PARK
+                RIGHT NOW VIEW
               </div>
 
               <strong
@@ -3335,70 +3335,107 @@ function App() {
                   lineHeight: 1.35,
                 }}
               >
-                Today&apos;s plan is {todayPlannedParkLabel}.
+                {liveParkContext.label || `Viewing ${getParkNameById(activePark)} live waits`}
               </strong>
 
               <p
                 style={{
                   margin: "5px 0 0",
-                  color: colors.muted,
+                  color: colors.text,
                   fontSize: 12.5,
                   lineHeight: 1.4,
                 }}
               >
-                {liveParkContext?.guidance ||
-                  `You’re viewing ${getParkNameById(activePark)} live waits right now. Switch live park if you want Right Now moves for ${planningParkLabel}.`}
+                {liveParkContext.guidance ||
+                  `You’re viewing ${getParkNameById(activePark)} live waits right now. Right Now moves are using ${getParkNameById(activePark)}.`}
               </p>
 
-              {scheduledSecondaryParkLabel && (
+              {liveParkContext?.status === "viewing_second_park" &&
+                Number(parkHopperContext?.secondParkMustDos?.count || 0) > 0 && (
+                  <div
+                    style={{
+                      marginTop: 9,
+                      padding: 10,
+                      borderRadius: 16,
+                      background: "rgba(255,255,255,0.72)",
+                      border: `1px solid ${colors.cardBorder}`,
+                    }}
+                  >
+                    <strong
+                      style={{
+                        display: "block",
+                        color: colors.text,
+                        fontSize: 12.5,
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      Second-park priorities are loaded.
+                    </strong>
+
+                    <p
+                      style={{
+                        margin: "5px 0 0",
+                        color: colors.muted,
+                        fontSize: 12,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      Saved must-dos: {parkHopperContext.secondParkMustDos.label}. TOHI should use this as
+                      context, not pressure to rush.
+                    </p>
+                  </div>
+                )}
+
+              {liveParkContext?.status === "viewing_different_park" && (
                 <p
                   style={{
-                    margin: "5px 0 0",
+                    margin: "7px 0 0",
                     color: colors.muted,
                     fontSize: 12,
-                    lineHeight: 1.4,
+                    lineHeight: 1.35,
                   }}
                 >
-                  Second park: {scheduledSecondaryParkLabel}. For now, TOHI is only showing it as
-                  day context; live recommendations still follow the live park you choose.
+                  The Plan tab is still anchored to {todayPlannedParkLabel || planningParkLabel}.
                 </p>
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                trackAppEvent("live_park_switched_from_planned_park_notice", {
-                  source: "planned_park_notice",
-                  activePark: planningPark,
-                  metadata: {
-                    previousActivePark: activePark,
-                    nextActivePark: planningPark,
-                    planningPark,
-                    planningParkSource,
-                    scheduledParkForToday: scheduledParkForToday?.parkId || "",
-                    scheduledSecondaryParkForToday: scheduledParkForToday?.secondaryParkId || "",
-                    scheduledParkPlanLabel: todayPlannedParkLabel,
-                    hopperContextStatus: parkHopperContext?.status || "",
-                    shouldConsiderSecondPark: Boolean(parkHopperContext?.shouldConsiderSecondPark),
-                    liveParkContextStatus: liveParkContext?.status || "",
-                    isLiveParkMismatch: Boolean(liveParkContext?.isLiveParkMismatch),
-                    scheduledParkDayNumber: scheduledParkForToday?.dayNumber || "",
-                  },
-                });
+            {planningPark && activePark !== planningPark && (
+              <button
+                type="button"
+                onClick={() => {
+                  trackAppEvent("live_park_switched_from_planned_park_notice", {
+                    source: "right_now_live_park_context_notice",
+                    activePark: planningPark,
+                    metadata: {
+                      previousActivePark: activePark,
+                      nextActivePark: planningPark,
+                      planningPark,
+                      planningParkSource,
+                      scheduledParkForToday: scheduledParkForToday?.parkId || "",
+                      scheduledSecondaryParkForToday: scheduledParkForToday?.secondaryParkId || "",
+                      scheduledParkPlanLabel: todayPlannedParkLabel,
+                      hopperContextStatus: parkHopperContext?.status || "",
+                      shouldConsiderSecondPark: Boolean(parkHopperContext?.shouldConsiderSecondPark),
+                      liveParkContextStatus: liveParkContext?.status || "",
+                      isLiveParkMismatch: Boolean(liveParkContext?.isLiveParkMismatch),
+                      scheduledParkDayNumber: scheduledParkForToday?.dayNumber || "",
+                    },
+                  });
 
-                setActivePark(planningPark);
-              }}
-              style={{
-                ...button,
-                background: colors.purpleDeep,
-                borderColor: colors.purpleDeep,
-                color: "white",
-                flexShrink: 0,
-              }}
-            >
-              Switch live park
-            </button>
+                  setActivePark(planningPark);
+                }}
+                style={{
+                  ...button,
+                  background: colors.purpleDeep,
+                  borderColor: colors.purpleDeep,
+                  color: "white",
+                  flexShrink: 0,
+                }}
+              >
+                Use {planningParkLabel} waits
+              </button>
+            )}
           </section>
         )}
 
