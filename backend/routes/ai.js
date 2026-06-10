@@ -12,6 +12,15 @@ TOHI may still be internally coded with legacy ParkPlan names in some backend/fr
 
 You help families make practical in-park decisions using the live context provided.
 
+FIELD-TEST CHAT TUNING:
+- For live next-move questions, make one clear call from the active/live park, current land, family state, weather, and recommendation cards.
+- Start live next-move answers with the action itself. Do not start with context, "Based on," "I see," "You're in," "Right now," or a schedule explanation.
+- Do not explain parkDayScheduleStatus, profile fallback, missing_today, after_trip_schedule, or no_schedule during normal live next-move answers unless the user specifically asks why the plan changed or asks about the schedule.
+- If today's schedule is missing or ended, silently treat the active/live park and recommendation cards as the working context.
+- If the user answered a live-state check-in, make the recommendation now. Do not ask another clarifying question.
+- Prefer nearby or low-friction moves from the current land unless a recommendation card clearly justifies the walk.
+- Keep live answers to one recommendation, one reason, and one simple next step at most.
+
 Rules:
 - Be concise, useful, and practical.
 - Act like a calm park expert, not a generic travel blogger.
@@ -349,7 +358,12 @@ function buildParkPlanContext(sessionData = {}) {
     `- Hopper should consider second park: ${parkHopperContext?.shouldConsiderSecondPark === true ? "yes" : "no"}`,
     `- Second park priority: ${parkHopperContext?.secondParkPriority || "unknown"}`,
     `- Second park must-dos: ${secondParkMustDoCount}${secondParkMustDoLabel ? ` · ${secondParkMustDoLabel}` : ""}`,
-    "- AI handling: For immediate next-move answers, use the active/live park waits and recommendation cards unless the user explicitly asks to switch parks or plan from another park. If the live park is the scheduled second park, treat that as intentional context, not a contradiction. If no saved park day matches today, do not invent one; treat the planning park as the profile fallback.",
+    sessionData.chatResponseMode ? `- Chat response mode: ${sessionData.chatResponseMode}` : null,
+    sessionData.chatFieldTestIntent ? `- Chat field-test intent: ${sessionData.chatFieldTestIntent}` : null,
+    sessionData.activeLandLabel || sessionData.currentLand
+      ? `- Active land context: ${sessionData.activeLandLabel || sessionData.currentLand}`
+      : null,
+    "- AI handling: For immediate next-move answers, make one specific recommendation using the active/live park waits, current land, family state, weather, and recommendation cards. Do not explain schedule fallback or missing schedule status unless the user asks why the plan changed. If the live park is the scheduled second park, treat that as intentional context, not a contradiction. If no saved park day matches today, do not invent one; quietly treat the planning park as the profile fallback.",
   ];
 
   return lines.filter(Boolean).join("\n");
@@ -696,6 +710,9 @@ function buildDynamicContext(sessionData = {}) {
     liveParkContext,
     planTabState,
     planningTimeContext,
+    chatResponseMode,
+    chatFieldTestIntent,
+    activeLandLabel,
     completedRideIds = [],
     skippedRideIds = [],
     reportedRideIssueIds = [],
@@ -717,6 +734,10 @@ function buildDynamicContext(sessionData = {}) {
       parkHopperContext,
       liveParkContext,
       planTabState,
+      chatResponseMode,
+      chatFieldTestIntent,
+      activeLandLabel,
+      currentLand,
       activeParkLabel: sessionData.activeParkLabel,
       planningParkLabel: sessionData.planningParkLabel,
     }),
@@ -745,8 +766,101 @@ function buildDynamicContext(sessionData = {}) {
     .join("\n");
 }
 
+function stripMarkdown(text = "") {
+  return String(text || "")
+    .replace(/#{1,6}\s*/g, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/^---+$/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function isPlanningModeQuestion(message = "") {
+  const text = String(message || "").toLowerCase();
+
+  return (
+    text.includes("full game plan") ||
+    text.includes("gameplan") ||
+    text.includes("game plan") ||
+    text.includes("plan the rest of") ||
+    text.includes("rest of our day") ||
+    text.includes("full plan") ||
+    text.includes("build a plan") ||
+    text.includes("build me a plan") ||
+    text.includes("compare") ||
+    text.includes("tradeoff") ||
+    text.includes("trade off") ||
+    text.includes("explain why") ||
+    text.includes("why is") ||
+    text.includes("walk me through") ||
+    text.includes("strategy for the day") ||
+    text.includes("morning strategy") ||
+    text.includes("evening strategy")
+  );
+}
+
+function getAnswerMode(message = "") {
+  return isPlanningModeQuestion(message) ? "planning" : "live";
+}
+
+function isGenericLivePreamble(sentence = "") {
+  const value = String(sentence || "").trim().toLowerCase();
+
+  return (
+    value.startsWith("hey") ||
+    value.startsWith("based on") ||
+    value.startsWith("i see") ||
+    value.startsWith("you're in") ||
+    value.startsWith("you are in") ||
+    value.startsWith("this is") ||
+    value.startsWith("right now") ||
+    value.startsWith("quick reality check") ||
+    value.startsWith("since ") ||
+    value.includes("saved schedule") ||
+    value.includes("park-day schedule") ||
+    value.includes("profile fallback") ||
+    value.includes("no scheduled park") ||
+    (value.includes("afternoon crash window") && !/\b(head|go|ride|skip|stay|grab|use|do|take)\b/.test(value))
+  );
+}
+
+function getFirstSentences(text = "", maxSentences = 2) {
+  const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return "";
+
+  const sentences = cleaned.match(/[^.!?]+[.!?]+/g);
+
+  if (sentences?.length) {
+    const usefulSentences = sentences.filter((sentence, index) => {
+      if (index > 0) return true;
+      return !isGenericLivePreamble(sentence);
+    });
+
+    return (usefulSentences.length ? usefulSentences : sentences)
+      .slice(0, maxSentences)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  return cleaned;
+}
+
+function finalizeAIReply(reply = "", message = "") {
+  const cleaned = stripMarkdown(reply);
+
+  if (getAnswerMode(message) === "live") {
+    return getFirstSentences(cleaned, 2);
+  }
+
+  return cleaned;
+}
+
 async function getAIResponse(message, sessionData = {}) {
   const trimmedMessage = String(message || "").trim().slice(0, 500);
+  const answerMode = getAnswerMode(trimmedMessage);
+  const maxTokens = answerMode === "live" ? 200 : 650;
 
   logger.info(
     {
@@ -778,6 +892,9 @@ async function getAIResponse(message, sessionData = {}) {
       tripStatus: sessionData.timeContext?.tripStatus?.status,
       familyProfileComplete: sessionData.familyProfile?.isSetupComplete,
       familyPlanningMode: sessionData.familyProfile?.planningPreferences?.planningMode,
+      chatResponseMode: sessionData.chatResponseMode,
+      chatFieldTestIntent: sessionData.chatFieldTestIntent,
+      activeLandLabel: sessionData.activeLandLabel,
       tripPlanStartStrategy: sessionData.tripPlan?.preferences?.startStrategy,
       tripPlanBreakPreference: sessionData.tripPlan?.preferences?.breakPreference,
       mustDoCount:
@@ -787,6 +904,7 @@ async function getAIResponse(message, sessionData = {}) {
       dayGamePlanCount: Array.isArray(sessionData.dayGamePlan)
         ? sessionData.dayGamePlan.length
         : 0,
+      answerMode,
       resortName:
         sessionData.familyProfile?.resortProfile?.name ||
         sessionData.familyProfile?.resortContext?.resortName,
@@ -815,13 +933,13 @@ async function getAIResponse(message, sessionData = {}) {
     apiKey: process.env.ANTHROPIC_API_KEY,
   });
 
-  const dynamicContext = buildDynamicContext(sessionData);
+  const dynamicContext = buildDynamicContext({ ...sessionData, message: trimmedMessage });
   const history = summarizeHistory(sessionData.conversationHistory || []);
 
   const response = await Promise.race([
     anthropic.messages.create({
       model: ANTHROPIC_MODEL,
-      max_tokens: 325,
+      max_tokens: maxTokens,
       temperature: 0.35,
       system: STATIC_SYSTEM_PROMPT,
       messages: [
@@ -832,7 +950,9 @@ async function getAIResponse(message, sessionData = {}) {
         ...history,
         {
           role: "user",
-          content: trimmedMessage,
+          content: `User question: ${trimmedMessage}
+
+Answer mode: ${answerMode}. If answer mode is live, answer in 1–2 complete sentences with one recommendation only. Do not mention schedule fallback, missing schedule, or profile fallback unless the user asked why the plan changed.`,
         },
       ],
     }),
@@ -841,7 +961,8 @@ async function getAIResponse(message, sessionData = {}) {
     ),
   ]);
 
-  return response.content?.[0]?.text || "I had trouble creating a response. Try again.";
+  const rawReply = response.content?.[0]?.text || "I had trouble creating a response. Try again.";
+  return finalizeAIReply(rawReply, trimmedMessage);
 }
 
 router.post("/ai-chat", async (req, res) => {
