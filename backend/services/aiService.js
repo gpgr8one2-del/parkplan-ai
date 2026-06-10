@@ -748,6 +748,8 @@ function previousAssistantWasLiveStateQuestion(conversationHistory = []) {
     content.includes("starting to fade") ||
     content.includes("ready to hit something big") ||
     content.includes("starting to wind down") ||
+    content.includes("energy right now") ||
+    content.includes("how's the crew") ||
     content.includes("how's everyone's energy") ||
     content.includes("how are the little ones")
   );
@@ -1113,6 +1115,8 @@ function isPlanningModeQuestion(message = "") {
     text.includes("trade off") ||
     text.includes("explain why") ||
     text.includes("why is") ||
+    text.includes("why does") ||
+    text.includes("why are") ||
     text.includes("walk me through") ||
     text.includes("strategy for the day") ||
     text.includes("morning strategy") ||
@@ -1122,6 +1126,18 @@ function isPlanningModeQuestion(message = "") {
 
 function getAnswerMode(message = "") {
   return isPlanningModeQuestion(message) ? "planning" : "live";
+}
+
+function isScheduleContextQuestion(message = "") {
+  const text = String(message || "").toLowerCase();
+
+  return (
+    text.includes("schedule") ||
+    text.includes("plan say") ||
+    text.includes("plan says") ||
+    text.includes("plan changed") ||
+    text.includes("plan change")
+  );
 }
 
 function isGenericLivePreamble(sentence = "") {
@@ -1420,7 +1436,6 @@ async function getAIResponse(message, sessionData = {}) {
 
   const response = await Promise.race([
     anthropic.messages.create({
-      answerMode,
       model: ANTHROPIC_MODEL,
       max_tokens: maxTokens,
       temperature: 0.35,
