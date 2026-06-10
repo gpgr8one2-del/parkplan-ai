@@ -54,6 +54,7 @@ Rules:
 - Prioritize current park, current land, current activity, time context, family profile, weather mode, live waits, and the recommendation cards.
 - Use the app's recommendation cards as the source of truth when available, but explain them through the family profile and time context.
 - Use the provided Park Plan / Live View context before answering next-move questions.
+- Use parkDayScheduleStatus to understand whether today has a saved park plan. If status is no_schedule, missing_today, before_trip_schedule, or after_trip_schedule, do not pretend there is a scheduled park today; use the active/live park, profile fallback, and recommendation cards unless the user asks about the saved schedule.
 - If the active/live park differs from the planning park, do not treat that as a mistake. Right Now recommendations use the active/live park unless the user explicitly asks to switch parks or plan from a different park.
 - If liveParkContext says the guest is viewing the second park, answer as if the guest is actively using that second park’s live waits and briefly account for any saved second-park must-dos.
 - Use parkHopperContext as context for whether the second park matters and whether a hop is worth considering, but do not force a hop unless the user asks or the context clearly supports it.
@@ -327,6 +328,7 @@ function buildParkPlanContext(sessionData = {}) {
     scheduledPark.secondaryParkId ||
     sessionData.scheduledSecondaryParkForToday ||
     "";
+  const parkDayScheduleStatus = sessionData.parkDayScheduleStatus || {};
   const parkHopperContext = sessionData.parkHopperContext || {};
   const liveParkContext = sessionData.liveParkContext || {};
   const planTabState = sessionData.planTabState || {};
@@ -359,6 +361,16 @@ function buildParkPlanContext(sessionData = {}) {
     `- Active/live wait park: ${activeParkLabel} (${activeParkId || "unknown"})`,
     `- Planning park: ${planningParkLabel} (${planningParkId || "unknown"})`,
     `- Planning park source: ${sessionData.planningParkSource || "unknown"}`,
+    parkDayScheduleStatus?.status
+      ? `- Park-day schedule status: ${parkDayScheduleStatus.status} · ${parkDayScheduleStatus.label || ""}`
+      : "- Park-day schedule status: unavailable",
+    parkDayScheduleStatus?.guidance ? `- Park-day schedule guidance: ${parkDayScheduleStatus.guidance}` : null,
+    parkDayScheduleStatus?.firstScheduleDate || parkDayScheduleStatus?.lastScheduleDate
+      ? `- Saved schedule range: ${parkDayScheduleStatus.firstScheduleDate || "unknown"} to ${parkDayScheduleStatus.lastScheduleDate || "unknown"}`
+      : null,
+    parkDayScheduleStatus?.fallbackParkId
+      ? `- Schedule fallback park: ${parkDayScheduleStatus.fallbackParkLabel || "unknown"} (${parkDayScheduleStatus.fallbackParkId})`
+      : null,
     `- Manual planning park override: ${sessionData.planningParkManualOverride === true ? "yes" : "no"}`,
     scheduledPrimaryParkId
       ? `- Scheduled primary park today: ${scheduledPrimaryParkLabel} (${scheduledPrimaryParkId})`
@@ -380,7 +392,7 @@ function buildParkPlanContext(sessionData = {}) {
     `- Hopper should consider second park: ${parkHopperContext?.shouldConsiderSecondPark === true ? "yes" : "no"}`,
     `- Second park priority: ${parkHopperContext?.secondParkPriority || "unknown"}`,
     `- Second park must-dos: ${secondParkMustDoCount}${secondParkMustDoLabel ? ` · ${secondParkMustDoLabel}` : ""}`,
-    "- AI handling: For immediate next-move answers, use the active/live park waits and recommendation cards unless the user explicitly asks to switch parks or plan from another park. If the live park is the scheduled second park, treat that as intentional context, not a contradiction.",
+    "- AI handling: For immediate next-move answers, use the active/live park waits and recommendation cards unless the user explicitly asks to switch parks or plan from another park. If the live park is the scheduled second park, treat that as intentional context, not a contradiction. If no saved park day matches today, do not invent one; treat the planning park as the profile fallback.",
   ];
 
   return lines.filter(Boolean).join("\n");
@@ -848,6 +860,7 @@ function buildDynamicContext(sessionData = {}) {
     todayPlannedParkLabel,
     scheduledSecondaryParkForToday,
     scheduledSecondaryParkLabel,
+    parkDayScheduleStatus,
     parkHopperContext,
     liveParkContext,
     planTabState,
@@ -874,6 +887,7 @@ function buildDynamicContext(sessionData = {}) {
       todayPlannedParkLabel,
       scheduledSecondaryParkForToday,
       scheduledSecondaryParkLabel,
+      parkDayScheduleStatus,
       parkHopperContext,
       liveParkContext,
       planTabState,
