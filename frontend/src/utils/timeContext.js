@@ -224,20 +224,21 @@ function getPlanningModeForNow({ tripStatus, dayPhase, planningPreferences = {} 
 function getAiAccessContext({ tripStatus, planningPreferences = {} }) {
   // This is intentionally not a hard paywall yet. It gives us clean logic
   // for future free vs paid access without breaking the current app.
+  const dayBeforePreference = planningPreferences.dayBeforeHelp;
+  const dayOfPreference = planningPreferences.dayOfHelp;
+
   const dayBeforeAllowed =
-    planningPreferences.dayBeforeHelp === "yes" ||
-    planningPreferences.dayBeforeHelp === "minimal";
+    dayBeforePreference !== "no" && dayBeforePreference !== false;
 
   const dayOfAllowed =
-    planningPreferences.dayOfHelp === "yes" ||
-    planningPreferences.dayOfHelp === "light";
+    dayOfPreference !== "no" && dayOfPreference !== false;
 
   if (tripStatus.status === "day_before_trip") {
     return {
       phase: "day_before",
       shouldAllowAi: dayBeforeAllowed,
       reason: dayBeforeAllowed
-        ? "Day-before help is enabled."
+        ? "Day-before help is available."
         : "Day-before help is disabled by preference.",
     };
   }
@@ -247,7 +248,7 @@ function getAiAccessContext({ tripStatus, planningPreferences = {} }) {
       phase: "day_of",
       shouldAllowAi: dayOfAllowed,
       reason: dayOfAllowed
-        ? "Day-of help is enabled."
+        ? "Day-of help is available."
         : "Day-of help is disabled by preference.",
     };
   }
@@ -274,7 +275,6 @@ function getAiAccessContext({ tripStatus, planningPreferences = {} }) {
     reason: "Trip dates are missing, so AI remains available for setup/testing.",
   };
 }
-
 export function getCurrentTimeContext({
   activePark = null,
   familyProfile = null,
