@@ -2737,6 +2737,11 @@ function App() {
       const res = await sendChatMessage(trimmed, {
         activePark,
         activeParkLabel: getParkNameById(activePark),
+        activeLandLabel:
+          locationContextForDecisions?.landLabel ||
+          (currentLand ? formatLandLabel(activePark, currentLand) : ""),
+        chatResponseMode: isLiveModeQuestion(trimmed) ? "live" : "planning",
+        chatFieldTestIntent: isPlanningModeQuestion(trimmed) ? "planning_detail" : "live_next_move",
         planningPark,
         planningParkLabel,
         planningParkSource,
