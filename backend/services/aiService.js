@@ -53,6 +53,10 @@ Rules:
 - Act like a calm park expert, not a generic travel blogger.
 - Prioritize current park, current land, current activity, time context, family profile, weather mode, live waits, and the recommendation cards.
 - Use the app's recommendation cards as the source of truth when available, but explain them through the family profile and time context.
+- Use the provided Park Plan / Live View context before answering next-move questions.
+- If the active/live park differs from the planning park, do not treat that as a mistake. Right Now recommendations use the active/live park unless the user explicitly asks to switch parks or plan from a different park.
+- If liveParkContext says the guest is viewing the second park, answer as if the guest is actively using that second park’s live waits and briefly account for any saved second-park must-dos.
+- Use parkHopperContext as context for whether the second park matters and whether a hop is worth considering, but do not force a hop unless the user asks or the context clearly supports it.
 - Never tell the guest that live help, day-of help, or in-park guidance is disabled because of a family profile preference. If this chat request reached you, TOHI is allowed to help. Access control is handled by the app UI before the message is sent.
 - Treat legacy planningPreferences such as dayBeforeHelp/dayOfHelp as old setup hints only. Do not use them to refuse, limit, or downgrade guidance.
 - Use the provided Trip Plan, Must-Dos, and Day Game Plan as structured context. The Day Game Plan is deterministic app output, not a draft for you to replace.
@@ -298,6 +302,90 @@ function formatList(values = [], fallback = "none") {
   if (!Array.isArray(values) || !values.length) return fallback;
   return values.slice(0, 12).join(", ");
 }
+
+
+function getSimpleParkLabel(parkId = "", fallback = "unknown") {
+  const labels = {
+    magic_kingdom: "Magic Kingdom",
+    epcot: "EPCOT",
+    hollywood: "Hollywood Studios",
+    animal_kingdom: "Animal Kingdom",
+    universal_studios_florida: "Universal Studios Florida",
+    islands_of_adventure: "Islands of Adventure",
+    epic_universe: "Epic Universe",
+  };
+
+  return labels[parkId] || parkId || fallback;
+}
+
+function buildParkPlanContext(sessionData = {}) {
+  const activeParkId = sessionData.activePark || "";
+  const planningParkId = sessionData.planningPark || "";
+  const scheduledPark = sessionData.scheduledParkForToday || {};
+  const scheduledPrimaryParkId = scheduledPark.parkId || scheduledPark.primaryParkId || planningParkId || "";
+  const scheduledSecondaryParkId =
+    scheduledPark.secondaryParkId ||
+    sessionData.scheduledSecondaryParkForToday ||
+    "";
+  const parkHopperContext = sessionData.parkHopperContext || {};
+  const liveParkContext = sessionData.liveParkContext || {};
+  const planTabState = sessionData.planTabState || {};
+  const scheduledPlanLabel =
+    sessionData.scheduledParkPlanLabel ||
+    sessionData.todayPlannedParkLabel ||
+    "";
+  const secondParkMustDos = parkHopperContext.secondParkMustDos || {};
+  const secondParkMustDoCount = Number(secondParkMustDos.count || 0);
+  const secondParkMustDoLabel = secondParkMustDos.label || "";
+  const activeParkLabel =
+    sessionData.activeParkLabel ||
+    liveParkContext.activeParkLabel ||
+    getSimpleParkLabel(activeParkId);
+  const planningParkLabel =
+    sessionData.planningParkLabel ||
+    liveParkContext.planningParkLabel ||
+    getSimpleParkLabel(planningParkId);
+  const scheduledPrimaryParkLabel =
+    liveParkContext.scheduledPrimaryParkLabel ||
+    getSimpleParkLabel(scheduledPrimaryParkId);
+  const scheduledSecondaryParkLabel =
+    sessionData.scheduledSecondaryParkLabel ||
+    liveParkContext.scheduledSecondaryParkLabel ||
+    parkHopperContext.secondaryParkLabel ||
+    getSimpleParkLabel(scheduledSecondaryParkId, "");
+
+  const lines = [
+    "Park Plan / Live View context:",
+    `- Active/live wait park: ${activeParkLabel} (${activeParkId || "unknown"})`,
+    `- Planning park: ${planningParkLabel} (${planningParkId || "unknown"})`,
+    `- Planning park source: ${sessionData.planningParkSource || "unknown"}`,
+    `- Manual planning park override: ${sessionData.planningParkManualOverride === true ? "yes" : "no"}`,
+    scheduledPrimaryParkId
+      ? `- Scheduled primary park today: ${scheduledPrimaryParkLabel} (${scheduledPrimaryParkId})`
+      : "- Scheduled primary park today: none",
+    scheduledSecondaryParkId
+      ? `- Scheduled second park today: ${scheduledSecondaryParkLabel} (${scheduledSecondaryParkId})`
+      : "- Scheduled second park today: none",
+    scheduledPlanLabel ? `- Scheduled park plan label: ${scheduledPlanLabel}` : null,
+    planTabState?.label ? `- Plan tab state: ${planTabState.label} (${planTabState.mode || "unknown"})` : null,
+    liveParkContext?.status
+      ? `- Live park context: ${liveParkContext.status} · ${liveParkContext.label || ""}`
+      : "- Live park context: unavailable",
+    liveParkContext?.guidance ? `- Live park guidance: ${liveParkContext.guidance}` : null,
+    `- Live park mismatch: ${liveParkContext?.isLiveParkMismatch === true ? "yes" : "no"}`,
+    parkHopperContext?.status
+      ? `- Hopper context: ${parkHopperContext.status} · ${parkHopperContext.label || ""}`
+      : "- Hopper context: unavailable",
+    parkHopperContext?.guidance ? `- Hopper guidance: ${parkHopperContext.guidance}` : null,
+    `- Hopper should consider second park: ${parkHopperContext?.shouldConsiderSecondPark === true ? "yes" : "no"}`,
+    `- Second park priority: ${parkHopperContext?.secondParkPriority || "unknown"}`,
+    `- Second park must-dos: ${secondParkMustDoCount}${secondParkMustDoLabel ? ` · ${secondParkMustDoLabel}` : ""}`,
+    "- AI handling: For immediate next-move answers, use the active/live park waits and recommendation cards unless the user explicitly asks to switch parks or plan from another park. If the live park is the scheduled second park, treat that as intentional context, not a contradiction.",
+  ];
+
+  return lines.filter(Boolean).join("\n");
+}
+
 
 function buildFamilyProfileContext(familyProfile) {
   if (!familyProfile) {
@@ -752,6 +840,18 @@ function buildDynamicContext(sessionData = {}) {
     tripPlan,
     mustDoExperiences = [],
     dayGamePlan = [],
+    planningPark,
+    planningParkSource,
+    planningParkManualOverride,
+    scheduledParkForToday,
+    scheduledParkPlanLabel,
+    todayPlannedParkLabel,
+    scheduledSecondaryParkForToday,
+    scheduledSecondaryParkLabel,
+    parkHopperContext,
+    liveParkContext,
+    planTabState,
+    planningTimeContext,
     completedRideIds = [],
     skippedRideIds = [],
     reportedRideIssueIds = [],
@@ -764,9 +864,26 @@ function buildDynamicContext(sessionData = {}) {
 
   return [
     `Active park: ${activePark || "unknown"}`,
+    buildParkPlanContext({
+      activePark,
+      planningPark,
+      planningParkSource,
+      planningParkManualOverride,
+      scheduledParkForToday,
+      scheduledParkPlanLabel,
+      todayPlannedParkLabel,
+      scheduledSecondaryParkForToday,
+      scheduledSecondaryParkLabel,
+      parkHopperContext,
+      liveParkContext,
+      planTabState,
+      activeParkLabel: sessionData.activeParkLabel,
+      planningParkLabel: sessionData.planningParkLabel,
+    }),
     liveFamilyStateContext || null,
     `Live-state clarification pending: ${sessionData.liveStateClarificationPending === true ? "yes - user is answering the prior clarifying question; recommend now" : "no"}`,
     buildTimeContext(timeContext),
+    planningTimeContext ? `Planning-park time context:\n${buildTimeContext(planningTimeContext)}` : null,
     buildFamilyProfileContext(familyProfile),
     buildResortProfileContext(familyProfile, activePark),
     buildTripPlanContext({ tripPlan, mustDoExperiences, dayGamePlan }),
@@ -1084,6 +1201,14 @@ async function getAIResponse(message, sessionData = {}) {
     {
       messageLength: trimmedMessage.length,
       activePark: sessionData.activePark,
+      planningPark: sessionData.planningPark,
+      planningParkSource: sessionData.planningParkSource,
+      scheduledPrimaryPark: sessionData.scheduledParkForToday?.parkId,
+      scheduledSecondPark: sessionData.scheduledParkForToday?.secondaryParkId,
+      hopperStatus: sessionData.parkHopperContext?.status,
+      hopperSecondParkPriority: sessionData.parkHopperContext?.secondParkPriority,
+      liveParkStatus: sessionData.liveParkContext?.status,
+      liveParkMismatch: sessionData.liveParkContext?.isLiveParkMismatch,
       currentLand: sessionData.currentLand,
       currentActivityType:
         sessionData.currentActivityContext?.type || sessionData.currentActivity?.type,
