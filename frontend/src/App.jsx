@@ -1415,6 +1415,157 @@ function isWithinLiveStateFollowupWindow(chatHistory = [], maxUserMessages = 3) 
   return userMessagesAfter > 0 && userMessagesAfter <= maxUserMessages;
 }
 
+function familyStateTextIncludesAny(text = "", patterns = []) {
+  return patterns.some((pattern) => text.includes(pattern));
+}
+
+function inferLatestLiveFamilyState(message = "", chatHistory = []) {
+  const sourceText = String(message || "").trim();
+  const text = sourceText.toLowerCase();
+  const cameFromLiveStateQuestion =
+    isAwaitingLiveStateAnswer(chatHistory) || isWithinLiveStateFollowupWindow(chatHistory, 3);
+
+  const readyPatterns = [
+    "ready",
+    "ready for one",
+    "one more",
+    "keep going",
+    "keep moving",
+    "still going",
+    "good to go",
+    "we're good",
+    "were good",
+    "we are good",
+    "up for it",
+    "want to ride",
+    "do a ride",
+    "another ride",
+  ];
+
+  const tiredPatterns = [
+    "tired",
+    "exhausted",
+    "wiped",
+    "beat",
+    "drained",
+    "fading",
+    "starting to fade",
+    "low energy",
+    "energy is low",
+    "done walking",
+    "cranky",
+    "meltdown",
+    "melting down",
+    "overwhelmed",
+    "overstimulated",
+  ];
+
+  const hotPatterns = [
+    "hot",
+    "overheated",
+    "too hot",
+    "need ac",
+    "need a/c",
+    "need air",
+    "air conditioning",
+    "cool down",
+    "cool off",
+    "shade",
+  ];
+
+  const hungryPatterns = [
+    "hungry",
+    "starving",
+    "need food",
+    "needs food",
+    "food",
+    "eat",
+    "lunch",
+    "dinner",
+    "snack",
+  ];
+
+  const bathroomPatterns = ["bathroom", "restroom", "potty"];
+  const waterPatterns = ["water", "thirsty", "dehydrated", "drink"];
+  const calmPatterns = ["calm", "quiet", "sensory", "overstimulated", "overwhelmed"];
+  const windDownPatterns = [
+    "wind down",
+    "winding down",
+    "done",
+    "leave",
+    "head out",
+    "back to hotel",
+    "back to resort",
+    "call it",
+    "call it a day",
+  ];
+
+  const needs = [];
+  if (familyStateTextIncludesAny(text, hungryPatterns)) needs.push("food");
+  if (familyStateTextIncludesAny(text, hotPatterns)) needs.push("ac_or_shade");
+  if (familyStateTextIncludesAny(text, bathroomPatterns)) needs.push("bathroom");
+  if (familyStateTextIncludesAny(text, waterPatterns)) needs.push("water");
+  if (familyStateTextIncludesAny(text, calmPatterns)) needs.push("calm");
+  if (
+    familyStateTextIncludesAny(text, tiredPatterns) ||
+    text.includes("need a break") ||
+    text.includes("needs a break") ||
+    text.includes("rest")
+  ) {
+    needs.push("rest");
+  }
+
+  const wantsOneMore = familyStateTextIncludesAny(text, readyPatterns);
+  const isTired = familyStateTextIncludesAny(text, tiredPatterns);
+  const isHot = familyStateTextIncludesAny(text, hotPatterns);
+  const isHungry = familyStateTextIncludesAny(text, hungryPatterns);
+  const isWindingDown = familyStateTextIncludesAny(text, windDownPatterns);
+
+  let energy = "unknown";
+  if (isWindingDown || isTired) energy = "tired";
+  else if (isHot || isHungry) energy = "fading";
+  else if (wantsOneMore) energy = "ready";
+
+  let intent = "unknown";
+  if (isWindingDown) intent = "wind_down";
+  else if (isTired || isHot || isHungry || needs.includes("rest") || needs.includes("calm")) intent = "reset";
+  else if (wantsOneMore) intent = "one_more_ride";
+
+  const uniqueNeeds = Array.from(new Set(needs));
+  const recoveryMode =
+    energy === "tired" ||
+    energy === "fading" ||
+    intent === "reset" ||
+    uniqueNeeds.some((need) => ["food", "ac_or_shade", "water", "rest", "calm", "bathroom"].includes(need));
+
+  const confidence =
+    cameFromLiveStateQuestion && (energy !== "unknown" || uniqueNeeds.length || intent !== "unknown")
+      ? "strong"
+      : energy !== "unknown" || uniqueNeeds.length || intent !== "unknown"
+      ? "normal"
+      : "none";
+
+  const summary =
+    confidence === "none"
+      ? ""
+      : `Family state from latest chat: energy=${energy}; intent=${intent}; needs=${
+          uniqueNeeds.length ? uniqueNeeds.join(", ") : "none"
+        }.`;
+
+  return {
+    sourceText,
+    source: cameFromLiveStateQuestion ? "live_state_answer" : "user_message",
+    cameFromLiveStateQuestion,
+    energy,
+    needs: uniqueNeeds,
+    intent,
+    recoveryMode,
+    confidence,
+    shouldRecommendNow: cameFromLiveStateQuestion,
+    summary,
+  };
+}
+
 function getLiveStateClarifyingQuestionForContext({
   familyProfile = {},
   timeContext = {},
@@ -2740,6 +2891,7 @@ function App() {
         activeLandLabel:
           locationContextForDecisions?.landLabel ||
           (currentLand ? formatLandLabel(activePark, currentLand) : ""),
+        latestFamilyState: inferLatestLiveFamilyState(trimmed, chat),
         chatResponseMode: isLiveModeQuestion(trimmed) ? "live" : "planning",
         chatFieldTestIntent: isPlanningModeQuestion(trimmed) ? "planning_detail" : "live_next_move",
         planningPark,

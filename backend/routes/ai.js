@@ -17,7 +17,9 @@ FIELD-TEST CHAT TUNING:
 - Start live next-move answers with the action itself. Do not start with context, "Based on," "I see," "You're in," "Right now," or a schedule explanation.
 - Do not explain parkDayScheduleStatus, profile fallback, missing_today, after_trip_schedule, or no_schedule during normal live next-move answers unless the user specifically asks why the plan changed or asks about the schedule.
 - If today's schedule is missing or ended, silently treat the active/live park and recommendation cards as the working context.
-- If the user answered a live-state check-in, make the recommendation now. Do not ask another clarifying question.
+- If the user answered a live-state check-in, use that answer naturally as the latest family state instead of asking the same question again.
+- If latestFamilyState or liveFamilyState is provided, treat it as the guest's answer to TOHI's check-in. Do not mention data fields; translate it into a calm next step.
+- If the family says they are ready, lean toward one nearby ride or the best active recommendation. If they are tired, hungry, hot, overwhelmed, or need a break, lean toward food, AC, shade, water, bathroom, or a calm seated reset.
 - Prefer nearby or low-friction moves from the current land unless a recommendation card clearly justifies the walk.
 - Keep live answers to one recommendation, one reason, and one simple next step at most.
 
@@ -268,6 +270,215 @@ function buildWeatherContext(weather, weatherMode) {
 function formatList(values = [], fallback = "none") {
   if (!Array.isArray(values) || !values.length) return fallback;
   return values.slice(0, 12).join(", ");
+}
+
+
+function getMostRecentUserMessageFromHistory(conversationHistory = [], fallbackMessage = "") {
+  const lastUserMessage = [...(conversationHistory || [])]
+    .reverse()
+    .find((entry) => entry.role === "user");
+
+  return String(lastUserMessage?.content || fallbackMessage || "");
+}
+
+function previousAssistantWasLiveStateQuestion(conversationHistory = []) {
+  const lastAssistantMessage = [...(conversationHistory || [])]
+    .reverse()
+    .find((entry) => entry.role === "assistant");
+
+  if (lastAssistantMessage?.isLiveStateQuestion === true) return true;
+
+  const content = String(lastAssistantMessage?.content || "").toLowerCase();
+
+  return (
+    content.includes("still going") ||
+    content.includes("starting to fade") ||
+    content.includes("ready to hit something big") ||
+    content.includes("starting to wind down") ||
+    content.includes("energy right now") ||
+    content.includes("how's the crew") ||
+    content.includes("how are the little ones")
+  );
+}
+
+function textIncludesAny(text = "", patterns = []) {
+  return patterns.some((pattern) => text.includes(pattern));
+}
+
+function normalizeLiveFamilyStatePayload(payload) {
+  if (!payload || typeof payload !== "object") return null;
+
+  const needs = Array.isArray(payload.needs)
+    ? payload.needs.map((need) => String(need || "").trim()).filter(Boolean).slice(0, 8)
+    : [];
+
+  return {
+    sourceText: String(payload.sourceText || ""),
+    source: String(payload.source || ""),
+    cameFromLiveStateQuestion: payload.cameFromLiveStateQuestion === true,
+    energy: String(payload.energy || "unknown"),
+    needs,
+    intent: String(payload.intent || "unknown"),
+    recoveryMode: payload.recoveryMode === true,
+    confidence: String(payload.confidence || "none"),
+    shouldRecommendNow: payload.shouldRecommendNow === true,
+    summary: String(payload.summary || ""),
+  };
+}
+
+function detectLiveFamilyState(message = "", conversationHistory = []) {
+  const sourceText = getMostRecentUserMessageFromHistory(conversationHistory, message);
+  const text = String(sourceText || "").toLowerCase();
+  const cameFromLiveStateQuestion = previousAssistantWasLiveStateQuestion(conversationHistory);
+
+  const readyPatterns = [
+    "ready",
+    "one more",
+    "keep going",
+    "keep moving",
+    "still going",
+    "good to go",
+    "we're good",
+    "were good",
+    "we are good",
+    "up for it",
+    "want to ride",
+    "another ride",
+  ];
+
+  const tiredPatterns = [
+    "tired",
+    "exhausted",
+    "wiped",
+    "beat",
+    "drained",
+    "fading",
+    "starting to fade",
+    "low energy",
+    "done walking",
+    "cranky",
+    "meltdown",
+    "melting down",
+    "overwhelmed",
+    "overstimulated",
+  ];
+
+  const hotPatterns = [
+    "hot",
+    "overheated",
+    "too hot",
+    "need ac",
+    "need a/c",
+    "need air",
+    "air conditioning",
+    "cool down",
+    "cool off",
+    "shade",
+  ];
+
+  const hungryPatterns = [
+    "hungry",
+    "starving",
+    "need food",
+    "needs food",
+    "food",
+    "eat",
+    "lunch",
+    "dinner",
+    "snack",
+  ];
+
+  const needs = [];
+  if (textIncludesAny(text, hungryPatterns)) needs.push("food");
+  if (textIncludesAny(text, hotPatterns)) needs.push("ac_or_shade");
+  if (textIncludesAny(text, ["bathroom", "restroom", "potty"])) needs.push("bathroom");
+  if (textIncludesAny(text, ["water", "thirsty", "dehydrated", "drink"])) needs.push("water");
+  if (textIncludesAny(text, ["calm", "quiet", "sensory", "overwhelmed", "overstimulated"])) needs.push("calm");
+  if (textIncludesAny(text, tiredPatterns) || text.includes("need a break") || text.includes("rest")) {
+    needs.push("rest");
+  }
+
+  const wantsOneMore = textIncludesAny(text, readyPatterns);
+  const isTired = textIncludesAny(text, tiredPatterns);
+  const isHot = textIncludesAny(text, hotPatterns);
+  const isHungry = textIncludesAny(text, hungryPatterns);
+  const isWindingDown = textIncludesAny(text, [
+    "wind down",
+    "winding down",
+    "done",
+    "leave",
+    "head out",
+    "back to hotel",
+    "back to resort",
+    "call it a day",
+  ]);
+
+  let energy = "unknown";
+  if (isWindingDown || isTired) energy = "tired";
+  else if (isHot || isHungry) energy = "fading";
+  else if (wantsOneMore) energy = "ready";
+
+  let intent = "unknown";
+  if (isWindingDown) intent = "wind_down";
+  else if (isTired || isHot || isHungry || needs.includes("rest") || needs.includes("calm")) intent = "reset";
+  else if (wantsOneMore) intent = "one_more_ride";
+
+  const uniqueNeeds = Array.from(new Set(needs));
+  const recoveryMode =
+    energy === "tired" ||
+    energy === "fading" ||
+    intent === "reset" ||
+    uniqueNeeds.length > 0;
+
+  const confidence =
+    cameFromLiveStateQuestion && (energy !== "unknown" || uniqueNeeds.length || intent !== "unknown")
+      ? "strong"
+      : energy !== "unknown" || uniqueNeeds.length || intent !== "unknown"
+      ? "normal"
+      : "none";
+
+  return {
+    sourceText,
+    source: cameFromLiveStateQuestion ? "live_state_answer" : "user_message",
+    cameFromLiveStateQuestion,
+    energy,
+    needs: uniqueNeeds,
+    intent,
+    recoveryMode,
+    confidence,
+    shouldRecommendNow: cameFromLiveStateQuestion,
+    summary:
+      confidence === "none"
+        ? ""
+        : `Family state from latest chat: energy=${energy}; intent=${intent}; needs=${
+            uniqueNeeds.length ? uniqueNeeds.join(", ") : "none"
+          }.`,
+  };
+}
+
+function buildLiveFamilyStateContext(liveFamilyState = {}) {
+  if (!liveFamilyState || liveFamilyState.confidence === "none") return "";
+
+  const needsLabel = Array.isArray(liveFamilyState.needs) && liveFamilyState.needs.length
+    ? liveFamilyState.needs.join(", ")
+    : "none";
+
+  const lines = [
+    "Live family state handoff:",
+    `- Source: ${liveFamilyState.source || "unknown"}`,
+    `- Energy: ${liveFamilyState.energy || "unknown"}`,
+    `- Intent: ${liveFamilyState.intent || "unknown"}`,
+    `- Needs: ${needsLabel}`,
+    liveFamilyState.summary ? `- Summary: ${liveFamilyState.summary}` : null,
+    liveFamilyState.shouldRecommendNow || liveFamilyState.cameFromLiveStateQuestion
+      ? "- Conversation handling: The guest answered TOHI's check-in. Use this answer and continue the conversation; do not ask the same state question again."
+      : null,
+    liveFamilyState.recoveryMode
+      ? "- Recommendation bias: favor food, AC/shade, water, bathroom, calm, seated reset, or a short low-friction attraction before bigger moves."
+      : "- Recommendation bias: if the family is ready, a nearby ride or the best active recommendation is appropriate.",
+  ];
+
+  return lines.filter(Boolean).join("\n");
 }
 
 
@@ -713,10 +924,19 @@ function buildDynamicContext(sessionData = {}) {
     chatResponseMode,
     chatFieldTestIntent,
     activeLandLabel,
+    latestFamilyState,
+    liveFamilyState,
     completedRideIds = [],
     skippedRideIds = [],
     reportedRideIssueIds = [],
+    message = "",
+    conversationHistory = [],
   } = sessionData;
+
+  const resolvedLiveFamilyState =
+    normalizeLiveFamilyStatePayload(latestFamilyState || liveFamilyState) ||
+    detectLiveFamilyState(message, conversationHistory);
+  const liveFamilyStateContext = buildLiveFamilyStateContext(resolvedLiveFamilyState);
 
   return [
     `Active park: ${activePark || "unknown"}`,
@@ -741,6 +961,7 @@ function buildDynamicContext(sessionData = {}) {
       activeParkLabel: sessionData.activeParkLabel,
       planningParkLabel: sessionData.planningParkLabel,
     }),
+    liveFamilyStateContext || null,
     buildTimeContext(timeContext),
     planningTimeContext ? `Planning-park time context:\n${buildTimeContext(planningTimeContext)}` : null,
     buildFamilyProfileContext(familyProfile),
@@ -895,6 +1116,12 @@ async function getAIResponse(message, sessionData = {}) {
       chatResponseMode: sessionData.chatResponseMode,
       chatFieldTestIntent: sessionData.chatFieldTestIntent,
       activeLandLabel: sessionData.activeLandLabel,
+      latestFamilyStateEnergy:
+        sessionData.latestFamilyState?.energy || sessionData.liveFamilyState?.energy,
+      latestFamilyStateIntent:
+        sessionData.latestFamilyState?.intent || sessionData.liveFamilyState?.intent,
+      latestFamilyStateNeeds:
+        sessionData.latestFamilyState?.needs || sessionData.liveFamilyState?.needs,
       tripPlanStartStrategy: sessionData.tripPlan?.preferences?.startStrategy,
       tripPlanBreakPreference: sessionData.tripPlan?.preferences?.breakPreference,
       mustDoCount:
