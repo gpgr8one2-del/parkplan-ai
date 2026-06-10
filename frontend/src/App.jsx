@@ -698,6 +698,96 @@ function getScheduledParkPlanLabel(scheduledPark = {}, fallbackParkId = "") {
   });
 }
 
+
+function getParkDayScheduleDays(profile = {}) {
+  const schedule = profile?.tripContext?.parkDaySchedule;
+
+  if (!Array.isArray(schedule)) {
+    return [];
+  }
+
+  return schedule
+    .filter((day) => day?.date)
+    .slice()
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+}
+
+function buildParkDayScheduleStatus({
+  familyProfile = {},
+  todayDateString = "",
+  scheduledParkForToday = null,
+  fallbackParkId = "",
+} = {}) {
+  const scheduleDays = getParkDayScheduleDays(familyProfile);
+  const scheduleCount = scheduleDays.length;
+  const firstDay = scheduleDays[0] || null;
+  const lastDay = scheduleDays[scheduleDays.length - 1] || null;
+  const todayDate = String(todayDateString || "");
+  const fallbackLabel = fallbackParkId ? getParkNameById(fallbackParkId) : "your profile fallback park";
+  const scheduledPlanLabel = scheduledParkForToday?.parkId
+    ? getScheduledParkPlanLabel(scheduledParkForToday, fallbackParkId)
+    : "";
+
+  const base = {
+    hasSchedule: scheduleCount > 0,
+    scheduleCount,
+    todayDate,
+    firstScheduleDate: firstDay?.date || "",
+    lastScheduleDate: lastDay?.date || "",
+    fallbackParkId,
+    fallbackParkLabel: fallbackLabel,
+    scheduledParkId: scheduledParkForToday?.parkId || "",
+    scheduledSecondaryParkId: scheduledParkForToday?.secondaryParkId || "",
+    scheduledDayNumber: scheduledParkForToday?.dayNumber || null,
+    scheduledPlanLabel,
+  };
+
+  if (!scheduleCount) {
+    return {
+      ...base,
+      status: "no_schedule",
+      label: "No park-day schedule set",
+      guidance: `No park-day schedule is saved, so TOHI is using ${fallbackLabel} from your profile as the planning park.`,
+    };
+  }
+
+  if (scheduledParkForToday?.parkId) {
+    return {
+      ...base,
+      status: "active_today",
+      label: scheduledParkForToday?.dayNumber
+        ? `Trip day ${scheduledParkForToday.dayNumber} is scheduled`
+        : "Today has a saved park plan",
+      guidance: `Today's saved park plan is ${scheduledPlanLabel || getParkNameById(scheduledParkForToday.parkId)}.`,
+    };
+  }
+
+  if (todayDate && firstDay?.date && todayDate < firstDay.date) {
+    return {
+      ...base,
+      status: "before_trip_schedule",
+      label: "Park schedule starts soon",
+      guidance: `Your saved park-day schedule starts on ${firstDay.date}. Until then, TOHI is using ${fallbackLabel} from your profile as the planning park.`,
+    };
+  }
+
+  if (todayDate && lastDay?.date && todayDate > lastDay.date) {
+    return {
+      ...base,
+      status: "after_trip_schedule",
+      label: "Saved schedule has ended",
+      guidance: `Your saved park-day schedule ended on ${lastDay.date}, so TOHI is using ${fallbackLabel} from your profile as the planning park.`,
+    };
+  }
+
+  return {
+    ...base,
+    status: "missing_today",
+    label: "No park scheduled for today",
+    guidance: `Your saved park-day schedule does not include today, so TOHI is using ${fallbackLabel} from your profile as the planning park.`,
+  };
+}
+
 function formatMustDoCountLabel(count) {
   const numericCount = Number(count) || 0;
   if (numericCount === 1) return "1 must-do";
@@ -1477,6 +1567,14 @@ function App() {
     scheduledParkForToday,
     planningPark
   );
+  const parkDayScheduleStatus = useMemo(() => {
+    return buildParkDayScheduleStatus({
+      familyProfile: familyProfileSummary,
+      todayDateString: timeContext?.orlandoDate,
+      scheduledParkForToday,
+      fallbackParkId: profilePlanningParkDecision.fallbackPark || planningPark,
+    });
+  }, [familyProfileSummary, timeContext?.orlandoDate, scheduledParkForToday, profilePlanningParkDecision.fallbackPark, planningPark]);
   const planningParkLabel = getParkNameById(planningPark);
 
   useEffect(() => {
@@ -2648,6 +2746,7 @@ function App() {
         todayPlannedParkLabel,
         scheduledSecondaryParkForToday: scheduledParkForToday?.secondaryParkId || "",
         scheduledSecondaryParkLabel,
+        parkDayScheduleStatus,
         parkHopperContext,
         liveParkContext,
         planTabState,
@@ -2895,6 +2994,12 @@ function App() {
             {dbRow("scheduledParkForToday", scheduledParkForToday?.parkId)}
             {dbRow("scheduledSecondaryParkForToday", scheduledParkForToday?.secondaryParkId)}
             {dbRow("scheduledParkPlanLabel", todayPlannedParkLabel)}
+            {dbRow("parkDayScheduleStatus.status", parkDayScheduleStatus?.status)}
+            {dbRow("parkDayScheduleStatus.label", parkDayScheduleStatus?.label)}
+            {dbRow("parkDayScheduleStatus.guidance", parkDayScheduleStatus?.guidance)}
+            {dbRow("parkDayScheduleStatus.firstScheduleDate", parkDayScheduleStatus?.firstScheduleDate)}
+            {dbRow("parkDayScheduleStatus.lastScheduleDate", parkDayScheduleStatus?.lastScheduleDate)}
+            {dbRow("parkDayScheduleStatus.fallbackPark", parkDayScheduleStatus?.fallbackParkId)}
             {dbRow("hopperContext.status", parkHopperContext?.status)}
             {dbRow("hopperContext.label", parkHopperContext?.label)}
             {dbRow("hopperContext.shouldConsiderSecondPark", parkHopperContext?.shouldConsiderSecondPark)}
@@ -4429,6 +4534,7 @@ function App() {
               todayPlannedParkLabel={todayPlannedParkLabel}
               scheduledParkForToday={scheduledParkForToday}
               scheduledSecondaryParkLabel={scheduledSecondaryParkLabel}
+              parkDayScheduleStatus={parkDayScheduleStatus}
               parkHopperContext={parkHopperContext}
               liveParkContext={liveParkContext}
               parkOptions={PARKS.filter((park) => park.selectable !== false)}

@@ -688,6 +688,54 @@ function TodayParkPlanCard({
   );
 }
 
+
+function ParkDayScheduleStatusCard({ card, parkDayScheduleStatus = {}, planningParkLabel = "" }) {
+  const status = parkDayScheduleStatus?.status || "";
+
+  if (!status || status === "active_today") return null;
+
+  const fallbackLabel = parkDayScheduleStatus?.fallbackParkLabel || planningParkLabel || "your profile fallback park";
+  const hasDateRange = parkDayScheduleStatus?.firstScheduleDate || parkDayScheduleStatus?.lastScheduleDate;
+
+  return (
+    <section
+      style={{
+        ...card,
+        padding: 13,
+        background: "linear-gradient(145deg, #FFFFFF 0%, #FFF7ED 100%)",
+        border: "1px solid rgba(245, 158, 11, 0.22)",
+        boxShadow: "0 10px 24px rgba(245, 158, 11, 0.06)",
+      }}
+    >
+      <SectionBadge background={colors.amberSoft} color="#92400E">
+        PARK SCHEDULE STATUS
+      </SectionBadge>
+
+      <strong
+        style={{
+          display: "block",
+          marginTop: 2,
+          color: colors.text,
+          fontSize: 15,
+          lineHeight: 1.35,
+        }}
+      >
+        {parkDayScheduleStatus.label || "Using your profile park."}
+      </strong>
+
+      <p style={{ margin: "6px 0 0", color: colors.text, fontSize: 12.5, lineHeight: 1.4 }}>
+        {parkDayScheduleStatus.guidance || `TOHI is using ${fallbackLabel} for the planning view.`}
+      </p>
+
+      {hasDateRange && (
+        <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+          Saved schedule: {parkDayScheduleStatus.firstScheduleDate || "—"} to {parkDayScheduleStatus.lastScheduleDate || "—"}.
+        </p>
+      )}
+    </section>
+  );
+}
+
 function ParkHopperTimingCard({ card, parkHopperContext = {} }) {
   if (!parkHopperContext?.hasSecondPark) return null;
 
@@ -1971,6 +2019,7 @@ export function PlanTab({
   scheduledParkForToday = null,
   todayPlannedParkLabel = "",
   scheduledSecondaryParkLabel = "",
+  parkDayScheduleStatus = {},
   parkHopperContext = {},
   liveParkContext = {},
   parkOptions = [],
@@ -2063,6 +2112,12 @@ export function PlanTab({
         todayPlannedParkLabel={todayPlannedParkLabel}
         planningParkLabel={planningParkLabel}
         scheduledSecondaryParkLabel={scheduledSecondaryParkLabel}
+      />
+
+      <ParkDayScheduleStatusCard
+        card={card}
+        parkDayScheduleStatus={parkDayScheduleStatus}
+        planningParkLabel={planningParkLabel}
       />
 
       <LiveParkContextCard card={card} liveParkContext={liveParkContext} />
