@@ -1263,7 +1263,7 @@ function getFirstSentences(text = "", maxSentences = 2) {
 function finalizeAIReply(reply = "", message = "") {
   const cleaned = typeof stripMarkdown === "function" ? stripMarkdown(reply) : String(reply || "").trim();
 
-  if (getAnswerMode(message) === "live") {
+  if (getAnswerMode(message) === "live" && !isScheduleContextQuestion(message)) {
     return getFirstSentences(cleaned, 2);
   }
 
