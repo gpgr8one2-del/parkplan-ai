@@ -471,6 +471,9 @@ function isPlanningModeQuestion(text = "") {
     value.includes("trade off") ||
     value.includes("explain why") ||
     value.includes("why is") ||
+    value.includes("why does") ||
+    value.includes("why are") ||
+    value.includes("why did") ||
     value.includes("walk me through") ||
     value.includes("strategy for the day") ||
     value.includes("morning strategy") ||
