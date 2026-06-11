@@ -2854,10 +2854,20 @@ function App() {
     setChat(nextChat);
     setMessage("");
 
+    const freshTimeContext = getCurrentTimeContext({
+      activePark,
+      familyProfile: familyProfileSummary,
+    });
+
+    const freshPlanningTimeContext = getCurrentTimeContext({
+      activePark: planningPark,
+      familyProfile: familyProfileSummary,
+    });
+
     if (shouldAskFrontendLiveStateQuestion(trimmed, chat)) {
       const clarifyingQuestion = getLiveStateClarifyingQuestionForContext({
         familyProfile: familyProfileSummary,
-        timeContext,
+        timeContext: freshTimeContext,
       });
 
       setChat([
@@ -2874,8 +2884,8 @@ function App() {
         metadata: {
           reason: "open_ended_next_move",
           interceptedBeforeAi: true,
-          dayPhase: timeContext?.dayPhase,
-          planningMode: timeContext?.planningMode,
+          dayPhase: freshTimeContext?.dayPhase,
+          planningMode: freshTimeContext?.planningMode,
         },
       });
 
@@ -2907,7 +2917,7 @@ function App() {
         parkHopperContext,
         liveParkContext,
         planTabState,
-        planningTimeContext,
+        planningTimeContext: freshPlanningTimeContext,
         tripPlan: tripPlanState,
         mustDoExperiences: tripPlanState?.mustDoExperiences || [],
         dayGamePlan,
@@ -2924,7 +2934,7 @@ function App() {
           ...familyProfileSummary,
           isSetupComplete: profileCompletion.isComplete,
         },
-        timeContext,
+        timeContext: freshTimeContext,
         locationContext: locationContextForDecisions,
         currentActivity: currentActivityContext,
         currentActivityContext,
