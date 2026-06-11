@@ -2866,6 +2866,33 @@ function App() {
 
     const freshCurrentActivityContext = buildCurrentActivityContext(currentActivity);
 
+    const dataFreshness = {
+      computedAt: freshTimeContext?.nowIso || new Date().toISOString(),
+      waits: {
+        source: parkData?.source || "",
+        ageMs: parkData?.ageMs ?? null,
+        fetchedAt: parkData?.fetchedAt || "",
+        clientLastUpdatedAt: lastAutoUpdateAt || "",
+        hasData: Array.isArray(parkData?.rides) && parkData.rides.length > 0,
+      },
+      weather: {
+        source: weather?.source || "",
+        ageMs: weather?.ageMs ?? null,
+        fetchedAt: weather?.fetchedAt || "",
+        clientLastUpdatedAt: lastAutoUpdateAt || "",
+        hasData: Boolean(weather),
+      },
+      tripPlan: {
+        status: tripPlanFreshness?.status || "",
+        isStale: Boolean(tripPlanFreshness?.isStale),
+        severity: tripPlanFreshness?.severity || "",
+        ageMinutes: tripPlanFreshness?.ageMinutes ?? null,
+        reasons: Array.isArray(tripPlanFreshness?.reasons)
+          ? tripPlanFreshness.reasons.slice(0, 5)
+          : [],
+      },
+    };
+
     if (shouldAskFrontendLiveStateQuestion(trimmed, chat)) {
       const clarifyingQuestion = getLiveStateClarifyingQuestionForContext({
         familyProfile: familyProfileSummary,
@@ -2937,6 +2964,7 @@ function App() {
           isSetupComplete: profileCompletion.isComplete,
         },
         timeContext: freshTimeContext,
+        dataFreshness,
         locationContext: locationContextForDecisions,
         currentActivity: freshCurrentActivityContext,
         currentActivityContext: freshCurrentActivityContext,
