@@ -1378,8 +1378,6 @@ function isOpenEndedLiveStrategyQuestion(message = "") {
     "what next",
     "what now",
     "where should",
-    "help",
-    "lost",
     "not sure",
     "thoughts",
     "what's good",
