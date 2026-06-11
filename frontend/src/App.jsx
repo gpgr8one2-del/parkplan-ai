@@ -2864,6 +2864,8 @@ function App() {
       familyProfile: familyProfileSummary,
     });
 
+    const freshCurrentActivityContext = buildCurrentActivityContext(currentActivity);
+
     if (shouldAskFrontendLiveStateQuestion(trimmed, chat)) {
       const clarifyingQuestion = getLiveStateClarifyingQuestionForContext({
         familyProfile: familyProfileSummary,
@@ -2936,8 +2938,8 @@ function App() {
         },
         timeContext: freshTimeContext,
         locationContext: locationContextForDecisions,
-        currentActivity: currentActivityContext,
-        currentActivityContext,
+        currentActivity: freshCurrentActivityContext,
+        currentActivityContext: freshCurrentActivityContext,
       });
 
       setChat([...nextChat, { role: "assistant", content: cleanAssistantReply(res.reply, trimmed) }]);
@@ -2950,7 +2952,7 @@ function App() {
             buildLocalChatFallback({
               activePark,
               weatherMode,
-              currentActivityContext,
+              currentActivityContext: freshCurrentActivityContext,
               familyProfile: familyProfileSummary,
               recommendations,
             }),
