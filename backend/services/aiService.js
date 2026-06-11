@@ -310,6 +310,80 @@ function buildWeatherContext(weather, weatherMode) {
 }
 
 
+function formatFreshnessAge(ageMs) {
+  if (ageMs == null) return "age unknown";
+
+  const numericAgeMs = Number(ageMs);
+  if (!Number.isFinite(numericAgeMs) || numericAgeMs < 0) {
+    return "age unknown";
+  }
+
+  const minutes = Math.round(numericAgeMs / 60000);
+
+  if (minutes < 1) return "less than 1 minute old";
+  if (minutes === 1) return "1 minute old";
+  if (minutes < 60) return `${minutes} minutes old`;
+
+  const hours = Math.round(minutes / 60);
+  if (hours === 1) return "about 1 hour old";
+  return `about ${hours} hours old`;
+}
+
+function formatFreshnessItem(label, item = {}) {
+  if (!item || typeof item !== "object") {
+    return `- ${label}: freshness not provided.`;
+  }
+
+  const source = item.source || "unknown source";
+  const ageLabel = formatFreshnessAge(item.ageMs);
+  const hasData =
+    typeof item.hasData === "boolean"
+      ? item.hasData
+        ? "data present"
+        : "data missing"
+      : "data presence unknown";
+  const fetchedAt = item.fetchedAt ? `; fetched at ${item.fetchedAt}` : "";
+  const clientLastUpdatedAt = item.clientLastUpdatedAt
+    ? `; app last refreshed at ${item.clientLastUpdatedAt}`
+    : "";
+
+  return `- ${label}: ${hasData}; source ${source}; ${ageLabel}${fetchedAt}${clientLastUpdatedAt}.`;
+}
+
+function buildDataFreshnessContext(dataFreshness = {}) {
+  if (!dataFreshness || typeof dataFreshness !== "object") {
+    return "Data freshness: not provided.";
+  }
+
+  const tripPlan = dataFreshness.tripPlan || {};
+  const tripPlanParts = [];
+
+  if (tripPlan.status) tripPlanParts.push(`status ${tripPlan.status}`);
+  if (typeof tripPlan.isStale === "boolean") {
+    tripPlanParts.push(tripPlan.isStale ? "stale" : "not stale");
+  }
+  if (tripPlan.severity) tripPlanParts.push(`severity ${tripPlan.severity}`);
+  if (tripPlan.ageMinutes != null) {
+    tripPlanParts.push(`${tripPlan.ageMinutes} minutes old`);
+  }
+
+  const tripPlanLine = tripPlanParts.length
+    ? `- Trip plan: ${tripPlanParts.join("; ")}.`
+    : "- Trip plan: freshness not provided.";
+
+  const reasons = Array.isArray(tripPlan.reasons) && tripPlan.reasons.length
+    ? `\n- Trip plan freshness reasons: ${tripPlan.reasons.slice(0, 5).join("; ")}.`
+    : "";
+
+  return [
+    "Data freshness:",
+    formatFreshnessItem("Wait data", dataFreshness.waits),
+    formatFreshnessItem("Weather data", dataFreshness.weather),
+    tripPlanLine + reasons,
+  ].join("\n");
+}
+
+
 function formatList(values = [], fallback = "none") {
   if (!Array.isArray(values) || !values.length) return fallback;
   return values.slice(0, 12).join(", ");
@@ -950,6 +1024,7 @@ function buildDynamicContext(sessionData = {}) {
     locationContext,
     weather,
     weatherMode,
+    dataFreshness,
     recommendations = {},
     tripPlan,
     mustDoExperiences = [],
@@ -1016,6 +1091,7 @@ function buildDynamicContext(sessionData = {}) {
     buildTransportationContext(activePark),
     buildCurrentActivityContext(currentActivityContext || currentActivity),
     buildWeatherContext(weather, weatherMode),
+    buildDataFreshnessContext(dataFreshness),
     "",
     "Current recommendation cards:",
     formatRideCard("Best Move", recommendations.bestMove),
