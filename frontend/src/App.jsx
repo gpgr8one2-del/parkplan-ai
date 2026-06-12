@@ -4314,7 +4314,7 @@ function App() {
                     textTransform: "uppercase",
                   }}
                 >
-                  Current park area
+                  What area are you near?
                 </label>
 
                 <select
@@ -4351,7 +4351,7 @@ function App() {
                     boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
                   }}
                 >
-                  <option value="">Pick where you are now</option>
+                  <option value="">Pick your current area</option>
                   {landOptions.map((land) => (
                     <option key={land.value} value={land.value}>
                       {land.label}
