@@ -275,7 +275,7 @@ app.use((err, req, res, _next) => {
 setInterval(() => cleanupExpired(), 15 * 60 * 1000);
 
 app.listen(PORT, () => {
-  logger.info({ port: PORT }, "ParkPlan AI backend started");
+  logger.info({ port: PORT }, "TOHI backend started");
   logger.info(
     {
       openWeather: Boolean(process.env.OPENWEATHER_API_KEY),

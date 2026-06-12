@@ -1,6 +1,6 @@
-# ParkPlan AI
+# TOHI
 
-Smart theme park planner for Disney World and Universal Orlando.
+A calm family theme park companion for Disney World and Universal Orlando.
 
 ## Structure
 - `backend/` Express API for park data, weather, AI chat, caching, logging, and resiliency.
