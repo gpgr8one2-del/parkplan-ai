@@ -41,15 +41,15 @@ export function useMiniGames({
   }, []);
 
   const triggerMiniCelebration = useCallback(() => {
-    const shapes = ["🎈", "✨", "🎉", "⭐"];
-    const pieces = Array.from({ length: 18 }, (_, index) => ({
+    const shapes = ["🎉", "✨", "🎈", "⭐", "💫"];
+    const pieces = Array.from({ length: 34 }, (_, index) => ({
       id: `${Date.now()}_${index}`,
-      left: 12 + Math.random() * 76,
-      drift: -90 + Math.random() * 180,
-      delay: Math.random() * 160,
-      size: 16 + Math.random() * 13,
+      left: 6 + Math.random() * 88,
+      drift: -150 + Math.random() * 300,
+      delay: Math.random() * 260,
+      size: 15 + Math.random() * 24,
       shape: shapes[index % shapes.length],
-      rotate: -35 + Math.random() * 70,
+      rotate: -90 + Math.random() * 180,
     }));
 
     setCelebrationPieces(pieces);
@@ -60,7 +60,7 @@ export function useMiniGames({
 
     const timeoutId = setTimeout(() => {
       setCelebrationPieces([]);
-    }, 1400);
+    }, 1900);
 
     return () => clearTimeout(timeoutId);
   }, [celebrationPieces]);
