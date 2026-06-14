@@ -11,6 +11,7 @@ function LineTimeCompanion({
   lookAroundFound,
   handleMiniGameTypeChange,
   handleTriviaChoice,
+  handleTriviaSuccess,
   handleLookAroundFound,
   handleFamilyVote,
   handleNextMiniGame,
@@ -159,7 +160,9 @@ function LineTimeCompanion({
                 {activeMiniGame.question}
               </p>
 
-              <div style={{ display: "grid", gap: 8 }}>
+              {Array.isArray(activeMiniGame.choices) &&
+                activeMiniGame.choices.length > 0 && (
+                  <div style={{ display: "grid", gap: 8 }}>
                 {activeMiniGame.choices.map((choice) => {
                   const isCorrect = choice === activeMiniGame.answer;
                   const isSelected = selectedTriviaChoice === choice;
@@ -210,7 +213,8 @@ function LineTimeCompanion({
                     </button>
                   );
                 })}
-              </div>
+                  </div>
+                )}
 
               {!revealedTriviaAnswer ? (
                 <button
@@ -263,9 +267,36 @@ function LineTimeCompanion({
                       : activeMiniGame.answer}
                   </strong>
 
-                  <p style={{ margin: "6px 0 0", color: colors.text }}>
-                    {activeMiniGame.fact}
-                  </p>
+                  {activeMiniGame.fact && (
+                    <p style={{ margin: "6px 0 0", color: colors.text }}>
+                      {activeMiniGame.fact}
+                    </p>
+                  )}
+
+                  {(!Array.isArray(activeMiniGame.choices) ||
+                    activeMiniGame.choices.length === 0) && (
+                    <button
+                      type="button"
+                      onClick={handleTriviaSuccess}
+                      disabled={selectedTriviaChoice === activeMiniGame.answer}
+                      style={{
+                        ...button,
+                        marginTop: 11,
+                        color:
+                          selectedTriviaChoice === activeMiniGame.answer
+                            ? colors.success
+                            : colors.purple,
+                        borderColor:
+                          selectedTriviaChoice === activeMiniGame.answer
+                            ? "rgba(5, 150, 105, 0.24)"
+                            : "rgba(124, 58, 237, 0.18)",
+                      }}
+                    >
+                      {selectedTriviaChoice === activeMiniGame.answer
+                        ? "Nice — got it!"
+                        : "We got it!"}
+                    </button>
+                  )}
                 </div>
               )}
             </>
@@ -413,6 +444,7 @@ export function WhileYouWaitCard({
   lookAroundFound,
   handleMiniGameTypeChange,
   handleTriviaChoice,
+  handleTriviaSuccess,
   handleLookAroundFound,
   handleFamilyVote,
   handleNextMiniGame,
@@ -518,6 +550,7 @@ export function WhileYouWaitCard({
           lookAroundFound={lookAroundFound}
           handleMiniGameTypeChange={handleMiniGameTypeChange}
           handleTriviaChoice={handleTriviaChoice}
+          handleTriviaSuccess={handleTriviaSuccess}
           handleLookAroundFound={handleLookAroundFound}
           handleFamilyVote={handleFamilyVote}
           handleNextMiniGame={handleNextMiniGame}

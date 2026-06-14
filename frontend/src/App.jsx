@@ -2247,6 +2247,7 @@ function App() {
     celebrationPieces,
     handleMiniGameTypeChange,
     handleTriviaChoice,
+    handleTriviaSuccess,
     handleLookAroundFound,
     handleFamilyVote,
     handleNextMiniGame,
@@ -4212,6 +4213,8 @@ function App() {
             lookAroundFound={lookAroundFound}
             handleMiniGameTypeChange={handleMiniGameTypeChange}
             handleTriviaChoice={handleTriviaChoice}
+
+            handleTriviaSuccess={handleTriviaSuccess}
             handleLookAroundFound={handleLookAroundFound}
             handleFamilyVote={handleFamilyVote}
             handleNextMiniGame={handleNextMiniGame}

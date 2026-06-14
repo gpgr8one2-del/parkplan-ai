@@ -161,6 +161,35 @@ export function useMiniGames({
     resetMiniGameInteractionState();
   }, [resetMiniGameInteractionState]);
 
+  const handleTriviaSuccess = useCallback(() => {
+    if (!activeMiniGame) return;
+
+    setRevealedTriviaAnswer(true);
+    setSelectedTriviaChoice(activeMiniGame.answer || "Correct");
+
+    trackAppEvent("mini_game_trivia_answered", {
+      source: "while_you_wait",
+      action: {
+        type: "self_marked_correct",
+        label: "We got it",
+      },
+      metadata: {
+        rideName: currentActivity?.rideName,
+        gameTitle: activeMiniGame.title,
+        correctAnswer: activeMiniGame.answer,
+        isCorrect: true,
+        mode: "open_answer",
+      },
+    });
+
+    triggerMiniCelebration();
+  }, [
+    activeMiniGame,
+    currentActivity?.rideName,
+    trackAppEvent,
+    triggerMiniCelebration,
+  ]);
+
   const showTriviaAnswer = useCallback(() => {
     setRevealedTriviaAnswer(true);
     setSelectedTriviaChoice("");
@@ -176,6 +205,7 @@ export function useMiniGames({
     celebrationPieces,
     handleMiniGameTypeChange,
     handleTriviaChoice,
+    handleTriviaSuccess,
     handleLookAroundFound,
     handleFamilyVote,
     handleNextMiniGame,
