@@ -297,7 +297,7 @@ function addDaysToTripDateString(dateString, daysToAdd) {
 function normalizeParkDayScheduleItem(item, index, fallbackParkId, fallbackDate) {
   return {
     dayNumber: index + 1,
-    date: isValidDateString(item?.date) ? item.date : fallbackDate || "",
+    date: isValidDateString(fallbackDate) ? fallbackDate : "",
     primaryParkId: isSelectableTripParkId(item?.primaryParkId)
       ? item.primaryParkId
       : (isSelectableTripParkId(fallbackParkId) ? fallbackParkId : "magic_kingdom"),
