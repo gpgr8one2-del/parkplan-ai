@@ -12,427 +12,269 @@
  */
 
 const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
-  "Space Mountain": [
-    {
-      question: "Disney nerd check: what year did Magic Kingdom’s Space Mountain open?",
-      choices: ["1971", "1975", "1982", "1994"],
-      answer: "1975",
-      fact:
-        "Magic Kingdom’s Space Mountain opened in 1975 and was the first Space Mountain Disney built.",
-    },
-    {
-      question: "Space Mountain is mostly famous for being what kind of coaster?",
-      choices: [
-        "A water coaster",
-        "An indoor dark coaster",
-        "A spinning coaster",
-        "A wooden coaster",
-      ],
-      answer: "An indoor dark coaster",
-      fact:
-        "The darkness does a lot of the magic. The actual top speed feels much faster because you cannot see what is coming.",
-    },
-  ],
-
   "TRON Lightcycle / Run": [
-    {
-      question: "On TRON, what are guests riding?",
-      choices: ["A banshee", "A lightcycle", "A rocket sled", "A time machine"],
-      answer: "A lightcycle",
-      fact:
-        "The ride vehicles are designed to make you feel like you are racing on a lightcycle through the Grid.",
-    },
+    { question: "What color is the team you are racing for on the Grid?", answer: "Team Blue.", difficulty: "easy", kidFriendly: true },
+    { question: "What are the vehicles you ride called?", answer: "Lightcycles.", difficulty: "easy", kidFriendly: true },
+    { question: "What shape is the glowing identity disc on the back of the riders' suits?", answer: "A circle.", difficulty: "easy", kidFriendly: true },
+    { question: "Who is the leader of the opposing Team Orange?", answer: "Rinzler.", difficulty: "medium", kidFriendly: true },
+    { question: "What is the giant, sweeping canopy over the outside of the ride called?", answer: "The Upload Conduit.", difficulty: "hard", kidFriendly: false },
+    { question: "What is the digital world you are entering called?", answer: "The Grid.", difficulty: "medium", kidFriendly: true },
+    { question: "What do the Lightcycles leave behind them as they race?", answer: "A light ribbon.", difficulty: "medium", kidFriendly: true },
+    { question: "How many energy gates do you have to pass through to win the race?", answer: "Eight.", difficulty: "hard", kidFriendly: false },
+    { question: "What does the large laser in the pre-show room do?", answer: "It digitizes you so you can enter the computer world.", difficulty: "medium", kidFriendly: true },
+    { question: "What happens to a Lightcycle if it crashes into a light ribbon?", answer: "It derezzes, or shatters into pixels.", difficulty: "medium", kidFriendly: true },
   ],
 
   "Seven Dwarfs Mine Train": [
-    {
-      question: "What makes Seven Dwarfs Mine Train’s ride vehicles unusual?",
-      choices: [
-        "They float",
-        "They swing side to side",
-        "They spin freely",
-        "They go backward",
-      ],
-      answer: "They swing side to side",
-      fact:
-        "The mine cars sway during the ride, which helps make it feel smoother and more playful than a standard coaster.",
-    },
+    { question: "What kind of gems are the dwarfs digging for in the mine?", answer: "Diamonds and rubies.", difficulty: "easy", kidFriendly: true },
+    { question: "Which dwarf is the only one who does not have a beard?", answer: "Dopey.", difficulty: "easy", kidFriendly: true },
+    { question: "What tool do the dwarfs use to break the rocks?", answer: "Pickaxes.", difficulty: "easy", kidFriendly: true },
+    { question: "Which dwarf wears glasses?", answer: "Doc.", difficulty: "medium", kidFriendly: true },
+    { question: "What song do the dwarfs sing while they are working?", answer: "Heigh-Ho.", difficulty: "easy", kidFriendly: true },
+    { question: "What makes the mine carts on this ride different from a normal roller coaster?", answer: "They swing side to side.", difficulty: "medium", kidFriendly: true },
+    { question: "Who is the dwarf who is usually sleepy?", answer: "Sleepy.", difficulty: "easy", kidFriendly: true },
+    { question: "What fruit is important in Snow White's story?", answer: "An apple.", difficulty: "easy", kidFriendly: true },
+    { question: "What animal helps the dwarfs wash up?", answer: "A deer.", difficulty: "medium", kidFriendly: true },
+    { question: "Who is secretly watching near the end of the ride?", answer: "The Evil Queen disguised as an old hag.", difficulty: "medium", kidFriendly: true },
   ],
 
   "Peter Pan's Flight": [
-    {
-      question: "In Peter Pan’s Flight, what are you riding in?",
-      choices: [
-        "A pirate ship",
-        "A flying boat",
-        "A pixie-dusted pirate galleon",
-        "A hot air balloon",
-      ],
-      answer: "A pixie-dusted pirate galleon",
-      fact:
-        "The ride vehicles hang from above, which helps create the feeling that you are flying over London and Never Land.",
-    },
-  ],
-
-  "Pirates of the Caribbean": [
-    {
-      question: "Disney nerd check: did the ride Pirates of the Caribbean come before the movie?",
-      choices: ["Yes", "No"],
-      answer: "Yes",
-      fact:
-        "The original Disneyland attraction opened decades before the movie series. The ride inspired the movies, not the other way around.",
-    },
-    {
-      question: "What kind of ride system is Pirates of the Caribbean?",
-      choices: ["Boat ride", "Roller coaster", "Omnimover", "Simulator"],
-      answer: "Boat ride",
-      fact:
-        "It is a slow-moving boat ride, which is one reason it can move a lot of guests and works well as a heat break.",
-    },
-  ],
-
-  "Haunted Mansion": [
-    {
-      question: "What do Disney fans call the Haunted Mansion ghosts?",
-      choices: ["Happy Haunts", "Spooky Buddies", "Mansion Mates", "The Boo Crew"],
-      answer: "Happy Haunts",
-      fact:
-        "The Haunted Mansion famously has room for 999 happy haunts, but there is always room for one more.",
-    },
-  ],
-
-  "Tiana's Bayou Adventure": [
-    {
-      question: "Tiana’s Bayou Adventure continues the story after which Disney movie?",
-      choices: ["Moana", "The Princess and the Frog", "Encanto", "The Little Mermaid"],
-      answer: "The Princess and the Frog",
-      fact:
-        "The ride follows Tiana and friends after the events of the film as they prepare for a Mardi Gras celebration.",
-    },
+    { question: "What does Peter Pan lose in the Darling family nursery?", answer: "His shadow.", difficulty: "easy", kidFriendly: true },
+    { question: "What is the name of the dog who acts as the children's nursemaid?", answer: "Nana.", difficulty: "medium", kidFriendly: true },
+    { question: "What animal is Captain Hook absolutely terrified of?", answer: "A crocodile.", difficulty: "easy", kidFriendly: true },
+    { question: "Besides a happy thought, what else do you need to fly?", answer: "Pixie dust.", difficulty: "easy", kidFriendly: true },
+    { question: "What famous city do you fly over in the dark?", answer: "London.", difficulty: "medium", kidFriendly: true },
+    { question: "Who gets jealous when Peter Pan talks to Wendy?", answer: "Tinker Bell.", difficulty: "easy", kidFriendly: true },
+    { question: "What is the name of Captain Hook's pirate ship?", answer: "The Jolly Roger.", difficulty: "medium", kidFriendly: true },
+    { question: "Which hand is Captain Hook missing?", answer: "His left hand.", difficulty: "hard", kidFriendly: false },
+    { question: "What shape is the vehicle you ride in?", answer: "A pirate galleon.", difficulty: "easy", kidFriendly: true },
+    { question: "What does the crocodile have in its stomach that makes a noise?", answer: "An alarm clock.", difficulty: "easy", kidFriendly: true },
   ],
 
   "Jungle Cruise": [
-    {
-      question: "What is the most dangerous part of the Jungle Cruise?",
-      choices: [
-        "The hippos",
-        "The backside of water",
-        "The skipper’s jokes",
-        "The butterflies",
-      ],
-      answer: "The skipper’s jokes",
-      fact:
-        "Okay, the official answer is probably not the jokes, but the skippers’ terrible puns are the whole charm.",
-    },
+    { question: "What do you call the person driving the Jungle Cruise boat?", answer: "A Skipper.", difficulty: "easy", kidFriendly: true },
+    { question: "Which animal is famous for taking a shower in the waterfall?", answer: "An elephant.", difficulty: "easy", kidFriendly: true },
+    { question: "What famous river do you sail on in South America?", answer: "The Amazon.", difficulty: "medium", kidFriendly: true },
+    { question: "What are the lions watching over in the cave scene?", answer: "A sleeping zebra.", difficulty: "medium", kidFriendly: true },
+    { question: "What does the skipper call the 8th Wonder of the World?", answer: "The backside of water.", difficulty: "easy", kidFriendly: true },
+    { question: "What animal chased the safari explorers up the tall pole?", answer: "A rhino.", difficulty: "easy", kidFriendly: true },
+    { question: "How do the hippos warn you before they attack?", answer: "They wiggle their ears.", difficulty: "medium", kidFriendly: true },
+    { question: "What color are many Jungle Cruise boat canopies?", answer: "Red and white striped.", difficulty: "hard", kidFriendly: false },
+    { question: "What is the most dangerous part of the Jungle Cruise?", answer: "The skipper's jokes.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of ride vehicle do you board on Jungle Cruise?", answer: "A boat.", difficulty: "easy", kidFriendly: true },
+  ],
+
+  "Haunted Mansion": [
+    { question: "How many happy haunts live inside the Haunted Mansion?", answer: "999, but there is room for one more.", difficulty: "easy", kidFriendly: true },
+    { question: "What vehicle do you ride in through the dark hallways?", answer: "A Doom Buggy.", difficulty: "easy", kidFriendly: true },
+    { question: "Who is the floating head calling the spirits inside the crystal ball?", answer: "Madame Leota.", difficulty: "medium", kidFriendly: true },
+    { question: "What instrument is playing in the graveyard scene?", answer: "A pipe organ.", difficulty: "easy", kidFriendly: true },
+    { question: "What animals are pulling the invisible hearse outside?", answer: "Invisible horses.", difficulty: "medium", kidFriendly: true },
+    { question: "What famous ghost holds his head in a box?", answer: "The Hatbox Ghost.", difficulty: "medium", kidFriendly: true },
+    { question: "What are the ghosts doing in the grand ballroom?", answer: "Waltzing and dancing.", difficulty: "easy", kidFriendly: true },
+    { question: "How many singing busts perform in the graveyard?", answer: "Five.", difficulty: "hard", kidFriendly: false },
+    { question: "What happens in the very first room you enter?", answer: "The room stretches.", difficulty: "easy", kidFriendly: true },
+    { question: "What color is the bride's beating heart in the attic?", answer: "Red.", difficulty: "medium", kidFriendly: true },
   ],
 
   "Big Thunder Mountain Railroad": [
-    {
-      question: "What is Big Thunder Mountain’s famous nickname?",
-      choices: [
-        "The Wildest Ride in the Wilderness",
-        "The Fastest Train in Frontierland",
-        "The Haunted Mine Express",
-        "The Gold Rush Rocket",
-      ],
-      answer: "The Wildest Ride in the Wilderness",
-      fact:
-        "Big Thunder has earned that nickname. It is not the tallest or fastest coaster, but it feels wild because the train whips through turns, caves, and mining-town chaos.",
-    },
-    {
-      question: "Big Thunder is themed around what kind of runaway vehicle?",
-      choices: ["A mine train", "A riverboat", "A stagecoach", "A rocket train"],
-      answer: "A mine train",
-      fact:
-        "The story is that the mine train has a mind of its own. Great news for fun. Terrible news for fictional mining safety.",
-    },
-    {
-      question: "Best family debate: where is Big Thunder usually the wildest?",
-      choices: ["Front row", "Middle", "Back row", "Standing by the exit watching everyone scream"],
-      answer: "Back row",
-      fact:
-        "The back tends to get pulled over drops and turns with more whip. This is also where brave family members suddenly become very quiet.",
-    },
+    { question: "What kind of town is Big Thunder located in?", answer: "A mining town.", difficulty: "easy", kidFriendly: true },
+    { question: "What animal can you spot chewing on clothing during the ride?", answer: "A goat.", difficulty: "medium", kidFriendly: true },
+    { question: "What famous warning does the announcer give before the train leaves?", answer: "Hold onto your hats and glasses.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of bones are sticking out near the ride tracks?", answer: "Dinosaur bones.", difficulty: "medium", kidFriendly: true },
+    { question: "What can the interactive queue cranks set off?", answer: "Fake dynamite explosions.", difficulty: "easy", kidFriendly: true },
+    { question: "What natural feature shoots water high into the air?", answer: "Geysers.", difficulty: "easy", kidFriendly: true },
+    { question: "What is the name of the mining company on the signs?", answer: "Big Thunder Mining Co.", difficulty: "medium", kidFriendly: true },
+    { question: "What flying animals do you hear in the dark cavern?", answer: "Bats.", difficulty: "easy", kidFriendly: true },
+    { question: "Big Thunder is themed around what runaway vehicle?", answer: "A mine train.", difficulty: "easy", kidFriendly: true },
+    { question: "Which row usually feels wildest on Big Thunder?", answer: "The back row.", difficulty: "easy", kidFriendly: true },
   ],
 
-  "it's a small world": [
-    {
-      question: "Who created the famous visual style of “it’s a small world”?",
-      choices: ["Mary Blair", "Claude Coats", "Tony Baxter", "X Atencio"],
-      answer: "Mary Blair",
-      fact:
-        "Mary Blair’s bold colors, simple shapes, and joyful designs are a huge reason Small World looks so iconic.",
-    },
-    {
-      question: "What major event was “it’s a small world” originally created for?",
-      choices: [
-        "The 1964 New York World’s Fair",
-        "EPCOT opening day",
-        "Disneyland’s 10th anniversary",
-        "Magic Kingdom opening day",
-      ],
-      answer: "The 1964 New York World’s Fair",
-      fact:
-        "The original attraction debuted at the 1964 New York World’s Fair before becoming a Disney park classic.",
-    },
-    {
-      question: "What is the main message of “it’s a small world”?",
-      choices: [
-        "The world is connected",
-        "Boats are the best way to travel",
-        "Dolls secretly run everything",
-        "Never get the song stuck in your head",
-      ],
-      answer: "The world is connected",
-      fact:
-        "The ride is simple on purpose: kids from around the world singing together. Also yes, the song is now renting space in your brain.",
-    },
+  "Space Mountain": [
+    { question: "What shape is the Space Mountain building from the outside?", answer: "A dome or cone shape.", difficulty: "easy", kidFriendly: true },
+    { question: "Are the rockets in Space Mountain flying in the light or the dark?", answer: "In the dark.", difficulty: "easy", kidFriendly: true },
+    { question: "What color lights flash in the long tunnel near the start?", answer: "Blue lights.", difficulty: "medium", kidFriendly: true },
+    { question: "How many people sit in one Magic Kingdom Space Mountain rocket?", answer: "Three, single-file.", difficulty: "medium", kidFriendly: true },
+    { question: "What is the name of the spaceport you are walking through?", answer: "Starport 75.", difficulty: "hard", kidFriendly: false },
+    { question: "What flies across the ceiling while you wait in the main indoor queue?", answer: "Asteroids and meteors.", difficulty: "medium", kidFriendly: true },
+    { question: "What color is the outside of Space Mountain?", answer: "White.", difficulty: "easy", kidFriendly: true },
+    { question: "Which slow-moving ride passes inside Space Mountain?", answer: "The PeopleMover.", difficulty: "medium", kidFriendly: true },
+    { question: "True or false: Space Mountain goes upside down.", answer: "False.", difficulty: "easy", kidFriendly: true },
+    { question: "Space Mountain is mostly famous for being what kind of coaster?", answer: "An indoor dark coaster.", difficulty: "easy", kidFriendly: true },
+  ],
+
+  "Tiana's Bayou Adventure": [
+    { question: "What city is Tiana's Bayou Adventure set near?", answer: "New Orleans.", difficulty: "easy", kidFriendly: true },
+    { question: "What instrument does Louis the alligator play?", answer: "The trumpet.", difficulty: "easy", kidFriendly: true },
+    { question: "What food is Tiana famous for making?", answer: "Beignets.", difficulty: "medium", kidFriendly: true },
+    { question: "Who is the 200-year-old fairy godmother of the bayou?", answer: "Mama Odie.", difficulty: "medium", kidFriendly: true },
+    { question: "What bugs light up the bayou at night?", answer: "Fireflies.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of business is Tiana running in the ride story?", answer: "Tiana's Foods.", difficulty: "hard", kidFriendly: false },
+    { question: "What is Tiana searching for in the bayou?", answer: "Musicians for the celebration.", difficulty: "medium", kidFriendly: true },
+    { question: "What type of ride vehicle do you sit in?", answer: "A log.", difficulty: "easy", kidFriendly: true },
+    { question: "True or false: You will probably get wet on this ride.", answer: "True.", difficulty: "easy", kidFriendly: true },
+    { question: "Tiana's Bayou Adventure continues the story after which Disney movie?", answer: "The Princess and the Frog.", difficulty: "easy", kidFriendly: true },
+  ],
+
+  "Pirates of the Caribbean": [
+    { question: "What kind of animal holds the keys in the jail cell scene?", answer: "A dog.", difficulty: "easy", kidFriendly: true },
+    { question: "What does a pirate use to look far away across the ocean?", answer: "A spyglass.", difficulty: "easy", kidFriendly: true },
+    { question: "What is the weather like near the beginning of the ride?", answer: "A thunderstorm.", difficulty: "medium", kidFriendly: true },
+    { question: "Who is hiding in a barrel looking at a treasure map?", answer: "Captain Jack Sparrow.", difficulty: "medium", kidFriendly: true },
+    { question: "What song do the pirates sing?", answer: "Yo Ho, A Pirate's Life for Me.", difficulty: "easy", kidFriendly: true },
   ],
 
   "Buzz Lightyear's Space Ranger Spin": [
-    {
-      question: "Who are you trying to defeat on Buzz Lightyear’s Space Ranger Spin?",
-      choices: ["Emperor Zurg", "Lotso", "Sid", "The Claw"],
-      answer: "Emperor Zurg",
-      fact:
-        "Your mission is to stop Zurg by blasting targets. Your family’s real mission is figuring out who secretly spins the vehicle too much.",
-    },
-    {
-      question: "Which target shape is usually worth looking for if you want a better score?",
-      choices: ["Triangles and diamonds", "Only circles", "Stars only", "Anything blue"],
-      answer: "Triangles and diamonds",
-      fact:
-        "Not all targets are equal. Disney scoring games are where calm family members become terrifyingly competitive.",
-    },
+    { question: "Who is Buzz Lightyear's sworn enemy?", answer: "Evil Emperor Zurg.", difficulty: "easy", kidFriendly: true },
+    { question: "What shape are the targets you are trying to hit with your laser?", answer: "The letter Z.", difficulty: "easy", kidFriendly: true },
+    { question: "Where does Buzz Lightyear get his power from?", answer: "Batteries.", difficulty: "medium", kidFriendly: true },
+    { question: "What color are the little aliens?", answer: "Green.", difficulty: "easy", kidFriendly: true },
+    { question: "What tool do you use to spin your ride vehicle?", answer: "A joystick or lever.", difficulty: "easy", kidFriendly: true },
   ],
 
-  "Tomorrowland Transit Authority PeopleMover": [
-    {
-      question: "The PeopleMover is best described as what kind of ride?",
-      choices: ["A slow moving tour", "A spinning coaster", "A boat ride", "A drop tower"],
-      answer: "A slow moving tour",
-      fact:
-        "PeopleMover is part ride, part rest, part Tomorrowland therapy. It is one of the best “we need a minute” attractions in Magic Kingdom.",
-    },
-    {
-      question: "What famous model can you see while riding the PeopleMover?",
-      choices: ["Progress City", "A tiny Disneyland castle", "A model of Batuu", "A miniature Monorail hotel"],
-      answer: "Progress City",
-      fact:
-        "The Progress City model connects back to Walt Disney’s original ideas that helped inspire EPCOT.",
-    },
-  ],
-
-  "Under the Sea - Journey of The Little Mermaid": [
-    {
-      question: "What kind of ride vehicle do you board on Under the Sea?",
-      choices: ["A clamshell", "A pirate ship", "A seahorse", "A bubble pod"],
-      answer: "A clamshell",
-      fact:
-        "The clamshell vehicles move continuously, which helps the line move and makes it a solid family reset ride.",
-    },
-    {
-      question: "Which villain appears in a big dramatic scene on this ride?",
-      choices: ["Ursula", "Maleficent", "Cruella", "Mother Gothel"],
-      answer: "Ursula",
-      fact:
-        "Ursula is huge in this attraction. She is basically the definition of “do not sign paperwork underwater.”",
-    },
+  "it's a small world": [
+    { question: "How do you travel through this ride?", answer: "On a boat.", difficulty: "easy", kidFriendly: true },
+    { question: "What are the dolls doing inside the ride?", answer: "Singing and dancing.", difficulty: "easy", kidFriendly: true },
+    { question: "What greets you at the very end of the ride?", answer: "Goodbye signs in different languages.", difficulty: "medium", kidFriendly: true },
+    { question: "Who created the famous visual style of it's a small world?", answer: "Mary Blair.", difficulty: "medium", kidFriendly: false },
+    { question: "What is the main message of it's a small world?", answer: "The world is connected.", difficulty: "easy", kidFriendly: true },
   ],
 
   "The Many Adventures of Winnie the Pooh": [
-    {
-      question: "Which former Magic Kingdom ride did Winnie the Pooh replace?",
-      choices: ["Mr. Toad’s Wild Ride", "Snow White’s Scary Adventures", "20,000 Leagues", "Skyway"],
-      answer: "Mr. Toad’s Wild Ride",
-      fact:
-        "Mr. Toad fans were not quiet about losing it. Disney fans can hold a grudge longer than a standby queue.",
-    },
-    {
-      question: "Which Pooh character is most likely to turn a normal day into bouncing chaos?",
-      choices: ["Tigger", "Piglet", "Rabbit", "Owl"],
-      answer: "Tigger",
-      fact:
-        "Tigger energy is fun until your group is hot, hungry, and someone says “let’s walk to the other side of the park.”",
-    },
+    { question: "What is Winnie the Pooh's favorite food?", answer: "Honey, spelled Hunny on his pots.", difficulty: "easy", kidFriendly: true },
+    { question: "Which animal loves to bounce on its tail?", answer: "Tigger.", difficulty: "easy", kidFriendly: true },
+    { question: "What color is Pooh's shirt?", answer: "Red.", difficulty: "easy", kidFriendly: true },
+    { question: "Who lives in a house shaped like a giant tree?", answer: "Owl.", difficulty: "medium", kidFriendly: true },
+    { question: "What spooky creatures does Pooh dream about?", answer: "Heffalumps and Woozles.", difficulty: "medium", kidFriendly: true },
   ],
 
   "Dumbo the Flying Elephant": [
-    {
-      question: "What controls how high Dumbo flies?",
-      choices: ["A lever in your elephant", "The Cast Member only", "A hidden foot pedal", "The elephant’s ears"],
-      answer: "A lever in your elephant",
-      fact:
-        "Dumbo is simple, but kids love being in control. Adults love when the line is not brutal.",
-    },
-    {
-      question: "What makes Magic Kingdom’s Dumbo queue especially family-friendly?",
-      choices: ["An indoor play area", "Free popcorn", "A boat ride", "A character meal"],
-      answer: "An indoor play area",
-      fact:
-        "The circus tent play area is one of the better kid-energy pressure valves in the park.",
-    },
-  ],
-
-  "Mad Tea Party": [
-    {
-      question: "Who pops out of the giant teapot near Mad Tea Party?",
-      choices: ["The Dormouse", "The White Rabbit", "Cheshire Cat", "The Queen of Hearts"],
-      answer: "The Dormouse",
-      fact:
-        "The Dormouse is living his best tiny chaotic life in the teapot.",
-    },
-    {
-      question: "What is the biggest family risk on Mad Tea Party?",
-      choices: ["Someone spins too much", "The tea gets cold", "The cups go backward", "The Queen steals your seat"],
-      answer: "Someone spins too much",
-      fact:
-        "Every family has one person who says “I won’t spin it too fast” and then immediately becomes the villain.",
-    },
-  ],
-
-  "Prince Charming Regal Carrousel": [
-    {
-      question: "Prince Charming Regal Carrousel is tied to which Disney story?",
-      choices: ["Cinderella", "Sleeping Beauty", "Snow White", "Tangled"],
-      answer: "Cinderella",
-      fact:
-        "The carrousel’s painted scenes tell Cinderella’s story, which makes it feel more special than a standard merry-go-round.",
-    },
-    {
-      question: "What detail is said to identify Cinderella’s Horse?",
-      choices: ["A golden ribbon on the tail", "A blue saddle", "A glass slipper mark", "A crown on the mane"],
-      answer: "A golden ribbon on the tail",
-      fact:
-        "Families love hunting for this one. Whether you find it or not, everyone will suddenly have strong horse opinions.",
-    },
-  ],
-
-  "Mickey's PhilharMagic": [
-    {
-      question: "Who accidentally causes most of the chaos in Mickey’s PhilharMagic?",
-      choices: ["Donald Duck", "Goofy", "Minnie", "Pluto"],
-      answer: "Donald Duck",
-      fact:
-        "Donald plus magical objects is almost never a stable business plan.",
-    },
-    {
-      question: "PhilharMagic is especially useful because it gives families what?",
-      choices: ["AC and seats", "A thrill launch", "A boat ride", "A parade view"],
-      answer: "AC and seats",
-      fact:
-        "Sometimes the best attraction is the one that quietly saves everyone’s mood.",
-    },
+    { question: "What makes Dumbo able to fly?", answer: "His giant ears.", difficulty: "easy", kidFriendly: true },
+    { question: "What is the name of the mouse who helps Dumbo?", answer: "Timothy Q. Mouse.", difficulty: "medium", kidFriendly: true },
+    { question: "What object helps Dumbo believe he can fly?", answer: "A magic feather.", difficulty: "medium", kidFriendly: true },
+    { question: "What controls how high your Dumbo flies?", answer: "A lever or joystick inside the ride.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of animal stands on top of the ride spinning the sign?", answer: "A stork.", difficulty: "hard", kidFriendly: false },
   ],
 
   "The Barnstormer": [
-    {
-      question: "The Barnstormer is themed around which classic Disney character?",
-      choices: ["Goofy", "Donald", "Mickey", "Chip"],
-      answer: "Goofy",
-      fact:
-        "It is a junior coaster with Goofy’s stunt-plane energy, which is exactly as safe-sounding as it needs to be.",
-    },
-    {
-      question: "The Barnstormer is usually best for what kind of family moment?",
-      choices: ["First coaster confidence", "Long AC break", "Huge thrill ride", "Fireworks viewing"],
-      answer: "First coaster confidence",
-      fact:
-        "For younger kids, this can be the “I did a coaster!” moment without going full Space Mountain.",
-    },
+    { question: "Who is the star of this roller coaster?", answer: "Goofy, also called The Great Goofini.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of vehicle are you riding in?", answer: "An airplane or biplane.", difficulty: "easy", kidFriendly: true },
+    { question: "What does Goofy crash through at the end of the ride?", answer: "A billboard.", difficulty: "medium", kidFriendly: true },
+    { question: "What is Goofy trying to do as a stunt pilot?", answer: "Perform a daredevil trick.", difficulty: "medium", kidFriendly: true },
+    { question: "The Barnstormer is usually best for what kind of family moment?", answer: "First coaster confidence.", difficulty: "easy", kidFriendly: true },
   ],
 
-  "The Magic Carpets of Aladdin": [
-    {
-      question: "What can the camel near Magic Carpets sometimes do?",
-      choices: ["Spit water", "Sing", "Tell jokes", "Spin the carpet"],
-      answer: "Spit water",
-      fact:
-        "The camel splash is harmless, but it is absolutely personal if it gets you.",
-    },
-    {
-      question: "Magic Carpets is most similar to which other Magic Kingdom ride style?",
-      choices: ["Dumbo-style spinner", "Boat ride", "Dark ride", "Roller coaster"],
-      answer: "Dumbo-style spinner",
-      fact:
-        "It is a spinner with a little Adventureland chaos added in.",
-    },
+  "Under the Sea - Journey of The Little Mermaid": [
+    { question: "What kind of shell do you ride in?", answer: "A clamshell.", difficulty: "easy", kidFriendly: true },
+    { question: "Who is the sea witch that steals Ariel's voice?", answer: "Ursula.", difficulty: "easy", kidFriendly: true },
+    { question: "What does Ariel call a fork?", answer: "A dinglehopper.", difficulty: "medium", kidFriendly: true },
+    { question: "What is the name of Ariel's fish best friend?", answer: "Flounder.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of animal is Sebastian?", answer: "A crab.", difficulty: "easy", kidFriendly: true },
   ],
 
-  "Walt Disney's Enchanted Tiki Room": [
-    {
-      question: "The Enchanted Tiki Room is famous for using what Disney technology?",
-      choices: ["Audio-Animatronics", "Trackless vehicles", "Omnicoaster cars", "Virtual reality"],
-      answer: "Audio-Animatronics",
-      fact:
-        "The singing birds and flowers helped make Audio-Animatronics a signature Disney storytelling tool.",
-    },
-    {
-      question: "What is the correct emotional response when the Tiki birds start singing?",
-      choices: ["Join in", "Question your life choices", "Look for a snack", "All of the above"],
-      answer: "All of the above",
-      fact:
-        "The Tiki Room is classic Disney weirdness, and that is exactly why it works.",
-    },
-  ],
-
-  "Astro Orbiter": [
-    {
-      question: "What makes Astro Orbiter feel more intense than many spinner rides?",
-      choices: ["It loads high above Tomorrowland", "It goes underwater", "It spins backward", "It has a launch"],
-      answer: "It loads high above Tomorrowland",
-      fact:
-        "The height makes the view great and the ride feel more dramatic than it looks from the ground.",
-    },
+  "Mad Tea Party": [
+    { question: "What kind of objects do you ride inside?", answer: "Giant teacups.", difficulty: "easy", kidFriendly: true },
+    { question: "Which Disney movie is this ride from?", answer: "Alice in Wonderland.", difficulty: "easy", kidFriendly: true },
+    { question: "Who pops out of the giant teapot in the center?", answer: "The Dormouse.", difficulty: "medium", kidFriendly: true },
+    { question: "What do you turn to make your cup spin faster?", answer: "A wheel.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of party are they celebrating?", answer: "An Unbirthday party.", difficulty: "medium", kidFriendly: true },
   ],
 
   "Tomorrowland Speedway": [
-    {
-      question: "Tomorrowland Speedway cars top out around what speed?",
-      choices: ["7 mph", "25 mph", "45 mph", "65 mph"],
-      answer: "7 mph",
-      fact:
-        "Seven miles per hour has never felt more powerful to a kid holding a steering wheel.",
-    },
-    {
-      question: "Who should drive on Tomorrowland Speedway?",
-      choices: ["The kid with confidence", "The adult with patience", "The person who hits the rail least", "All of the above"],
-      answer: "All of the above",
-      fact:
-        "The guide rail is doing heroic work out there.",
-    },
+    { question: "What do you use to steer the cars?", answer: "A steering wheel.", difficulty: "easy", kidFriendly: true },
+    { question: "What stops the cars from driving off the road?", answer: "A guide rail in the center.", difficulty: "medium", kidFriendly: true },
+    { question: "Do the cars run on gas or electricity?", answer: "Gas.", difficulty: "medium", kidFriendly: true },
+    { question: "What flag is associated with the end of a race?", answer: "A checkered flag.", difficulty: "easy", kidFriendly: true },
+    { question: "Tomorrowland Speedway cars go about how fast?", answer: "About 7 miles per hour.", difficulty: "medium", kidFriendly: true },
+  ],
+
+  "Tomorrowland Transit Authority PeopleMover": [
+    { question: "Which dark roller coaster does the PeopleMover drive inside of?", answer: "Space Mountain.", difficulty: "easy", kidFriendly: true },
+    { question: "Where does the PeopleMover take you?", answer: "High above Tomorrowland.", difficulty: "easy", kidFriendly: true },
+    { question: "What color are many PeopleMover ride vehicles?", answer: "Blue.", difficulty: "easy", kidFriendly: true },
+    { question: "What giant model of a futuristic city do you pass?", answer: "Progress City.", difficulty: "hard", kidFriendly: false },
+    { question: "Is the PeopleMover better as a thrill ride, a nap ride, or a foot-rest ride?", answer: "The perfect foot-rest ride.", difficulty: "easy", kidFriendly: true },
+  ],
+
+  "Walt Disney's Carousel of Progress": [
+    { question: "Does the stage move, or does the audience move?", answer: "The audience moves around the stage.", difficulty: "medium", kidFriendly: true },
+    { question: "What is the famous song throughout the show?", answer: "There's a Great Big Beautiful Tomorrow.", difficulty: "medium", kidFriendly: true },
+    { question: "Who is the father character narrating the story?", answer: "John.", difficulty: "hard", kidFriendly: false },
+    { question: "What appliance keeps causing trouble in the kitchen?", answer: "The oven or stove.", difficulty: "easy", kidFriendly: true },
+    { question: "What holiday is the family celebrating in the last scene?", answer: "Christmas.", difficulty: "medium", kidFriendly: true },
+  ],
+
+  "Mickey's PhilharMagic": [
+    { question: "What magical object does Donald Duck take?", answer: "Mickey's Sorcerer Hat.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of show is PhilharMagic?", answer: "A 3D movie.", difficulty: "easy", kidFriendly: true },
+    { question: "What song plays during the magic carpet scene?", answer: "A Whole New World.", difficulty: "medium", kidFriendly: true },
+    { question: "Who accidentally causes the chaos in PhilharMagic?", answer: "Donald Duck.", difficulty: "easy", kidFriendly: true },
+    { question: "PhilharMagic is especially useful for families because it gives them what?", answer: "Air conditioning and seats.", difficulty: "easy", kidFriendly: true },
   ],
 
   "Monsters Inc. Laugh Floor": [
-    {
-      question: "Monsters Inc. Laugh Floor powers Monstropolis with what?",
-      choices: ["Laughter", "Screams", "Pixie dust", "Dole Whip"],
-      answer: "Laughter",
-      fact:
-        "It is a great recovery show because the commitment is low, the seats are real, and the jokes are family-safe.",
-    },
+    { question: "What powers Monstropolis now?", answer: "Laughter.", difficulty: "easy", kidFriendly: true },
+    { question: "Who is the main host of the comedy show?", answer: "Mike Wazowski.", difficulty: "medium", kidFriendly: true },
+    { question: "Who constantly watches Mike?", answer: "Roz.", difficulty: "medium", kidFriendly: false },
+    { question: "What do they ask the audience to send in before the show?", answer: "Jokes.", difficulty: "easy", kidFriendly: true },
+    { question: "What happens if they do not fill the laugh canister?", answer: "The audience cannot leave.", difficulty: "medium", kidFriendly: true },
+  ],
+
+  "Walt Disney's Enchanted Tiki Room": [
+    { question: "What kind of animals sing in this show?", answer: "Tropical birds.", difficulty: "easy", kidFriendly: true },
+    { question: "What famous dessert is sold nearby?", answer: "Dole Whip.", difficulty: "easy", kidFriendly: true },
+    { question: "What do the flowers do during the show?", answer: "They sing.", difficulty: "medium", kidFriendly: true },
+    { question: "What kind of Disney technology helped make this show famous?", answer: "Audio-Animatronics.", difficulty: "medium", kidFriendly: false },
+    { question: "What weather event happens outside the fake windows?", answer: "A rainstorm.", difficulty: "medium", kidFriendly: true },
+  ],
+
+  "The Magic Carpets of Aladdin": [
+    { question: "What animal spits water at the riders?", answer: "A golden camel.", difficulty: "easy", kidFriendly: true },
+    { question: "What controls the carpet going up and down?", answer: "A lever in the front seat.", difficulty: "easy", kidFriendly: true },
+    { question: "What controls the carpet tilting forward and backward?", answer: "A magic scarab button in the back seat.", difficulty: "medium", kidFriendly: true },
+    { question: "What color is the Genie?", answer: "Blue.", difficulty: "easy", kidFriendly: true },
+    { question: "Magic Carpets is most similar to which Magic Kingdom ride style?", answer: "A Dumbo-style spinner.", difficulty: "easy", kidFriendly: true },
+  ],
+
+  "Prince Charming Regal Carrousel": [
+    { question: "What kind of animal do you ride?", answer: "A horse.", difficulty: "easy", kidFriendly: true },
+    { question: "Which princess does this ride connect to?", answer: "Cinderella.", difficulty: "easy", kidFriendly: true },
+    { question: "What detail is said to identify Cinderella's horse?", answer: "A golden ribbon on the tail.", difficulty: "hard", kidFriendly: false },
+    { question: "What plays the music while you ride?", answer: "A mechanical organ.", difficulty: "medium", kidFriendly: true },
+    { question: "Are any two horses carved exactly the same?", answer: "No.", difficulty: "medium", kidFriendly: true },
+  ],
+
+  "Enchanted Tales with Belle": [
+    { question: "What object does Maurice ask you to look at in the workshop?", answer: "A magic mirror.", difficulty: "medium", kidFriendly: true },
+    { question: "What does the magic mirror turn into?", answer: "A door to the castle.", difficulty: "easy", kidFriendly: true },
+    { question: "Who do you meet inside the library?", answer: "Belle.", difficulty: "easy", kidFriendly: true },
+    { question: "Who is the talking candlestick?", answer: "Lumiere.", difficulty: "easy", kidFriendly: true },
+    { question: "What magical object is central to Beauty and the Beast?", answer: "The enchanted rose.", difficulty: "medium", kidFriendly: true },
   ],
 
   "Country Bear Musical Jamboree": [
-    {
-      question: "Country Bear Musical Jamboree is what kind of attraction?",
-      choices: ["An Audio-Animatronic show", "A boat ride", "A roller coaster", "A simulator"],
-      answer: "An Audio-Animatronic show",
-      fact:
-        "It is weird, musical, indoors, and exactly the kind of show that gives tired families a needed reset.",
-    },
+    { question: "What kind of animals are putting on the show?", answer: "Bears.", difficulty: "easy", kidFriendly: true },
+    { question: "What hangs on the wall and talks during the show?", answer: "Animal heads.", difficulty: "medium", kidFriendly: true },
+    { question: "What style of music do the bears perform?", answer: "Country-style music.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of attraction is Country Bear Musical Jamboree?", answer: "An Audio-Animatronic show.", difficulty: "medium", kidFriendly: true },
+    { question: "If the bears started a family band, what would they probably need first?", answer: "A stage and instruments.", difficulty: "easy", kidFriendly: true },
   ],
 
   "The Hall of Presidents": [
-    {
-      question: "Hall of Presidents is one of Magic Kingdom’s best hidden weapons for what?",
-      choices: ["A long seated AC break", "A thrill ride", "A fireworks shortcut", "A water ride"],
-      answer: "A long seated AC break",
-      fact:
-        "Sometimes the smartest park move is not glamorous. It is sitting down in air conditioning before everyone melts.",
-    },
+    { question: "Which president is one of the main figures in the show?", answer: "Abraham Lincoln.", difficulty: "medium", kidFriendly: true },
+    { question: "How many presidents appear on stage at the end?", answer: "All of them.", difficulty: "easy", kidFriendly: true },
+    { question: "What famous American building does the outside resemble?", answer: "Independence Hall.", difficulty: "hard", kidFriendly: false },
+    { question: "What does the animatronic Lincoln famously do?", answer: "He stands up from his chair.", difficulty: "medium", kidFriendly: false },
+    { question: "Hall of Presidents is one of Magic Kingdom's best hidden weapons for what?", answer: "A long seated air-conditioned break.", difficulty: "easy", kidFriendly: true },
   ],
 
+  "Astro Orbiter": [
+    { question: "Where do you board Astro Orbiter compared with most spinner rides?", answer: "High above Tomorrowland.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of vehicles do you ride?", answer: "Rocket ships.", difficulty: "easy", kidFriendly: true },
+    { question: "What can riders control during the ride?", answer: "How high their rocket flies.", difficulty: "easy", kidFriendly: true },
+    { question: "Astro Orbiter is located near which relaxing Tomorrowland ride?", answer: "The PeopleMover.", difficulty: "medium", kidFriendly: true },
+    { question: "What makes Astro Orbiter feel more intense than it looks?", answer: "It spins high above Tomorrowland.", difficulty: "medium", kidFriendly: true },
+  ],
 };
 
 const MAGIC_KINGDOM_TRIVIA_BY_LAND = {
