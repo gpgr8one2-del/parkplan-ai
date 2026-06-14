@@ -309,12 +309,12 @@ function normalizeParkDayScheduleItem(item, index, fallbackParkId, fallbackDate)
 }
 
 function buildDefaultParkDaySchedule(normalizedTripContext = {}) {
-  const tripLength = Math.max(
+  const parkDayCount = Math.max(
     1,
     Math.min(
       21,
-      Number(normalizedTripContext.tripLengthDays) ||
-        Number(normalizedTripContext.parkDays) ||
+      Number(normalizedTripContext.parkDays) ||
+        Number(normalizedTripContext.tripLengthDays) ||
         1
     )
   );
@@ -352,7 +352,7 @@ function buildDefaultParkDaySchedule(normalizedTripContext = {}) {
 
   const startDate = normalizedTripContext.tripStartDate || "";
 
-  return Array.from({ length: tripLength }, (_, index) => ({
+  return Array.from({ length: parkDayCount }, (_, index) => ({
     dayNumber: index + 1,
     date: isValidDateString(startDate)
       ? addDaysToTripDateString(startDate, index)
