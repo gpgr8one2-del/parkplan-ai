@@ -697,208 +697,125 @@ const WOULD_YOU_RATHER_PROMPTS = [
 
 
 const EPCOT_TRIVIA_BY_RIDE = {
-  "Spaceship Earth": [
-    {
-      question: "How long does it take for Spaceship Earth to complete one full rotation of its historical timeline?",
-      choices: ["About 8 minutes", "About 16 minutes", "About 24 minutes", "About 32 minutes"],
-      answer: "About 16 minutes",
-      fact: "Spaceship Earth is a slow-moving trip through communication history, which makes it one of EPCOT’s best calm reset rides.",
-    },
-    {
-      question: "Disney nerd check: which phrase from Spaceship Earth became one of EPCOT’s most quoted lines?",
-      choices: ["Thank the Phoenicians", "Paging Mr. Morrow", "Por favor manténganse alejado", "Nothing can stop us now"],
-      answer: "Thank the Phoenicians",
-      fact: "The Phoenicians helped spread one of the earliest alphabets, and EPCOT fans have turned that line into a full personality trait.",
-    },
-    {
-      question: "What kind of ride system slowly moves guests through Spaceship Earth?",
-      choices: ["Boat flume", "Omnimover", "Trackless ride", "Suspended coaster"],
-      answer: "Omnimover",
-      fact: "An Omnimover keeps vehicles moving continuously, which is why Spaceship Earth can move a lot of guests while staying calm.",
-    },
-  ],
-
   "Guardians of the Galaxy: Cosmic Rewind": [
-    {
-      question: "What famous 1980s pop song plays when you get the “Conga” track on Cosmic Rewind?",
-      choices: ["September", "Conga", "Everybody Wants to Rule the World", "I Ran"],
-      answer: "Conga",
-      fact: "There are multiple possible songs on Cosmic Rewind, so half the fun is finding out which space jam your family gets.",
-    },
-    {
-      question: "Cosmic Rewind is special because the ride vehicles do what during the coaster?",
-      choices: ["Rotate toward the action", "Let guests steer", "Go underwater", "Launch backward only"],
-      answer: "Rotate toward the action",
-      fact: "Disney calls it an Omnicoaster. The vehicles turn so the ride can point your attention like a moving movie camera.",
-    },
-    {
-      question: "What former EPCOT attraction area did Cosmic Rewind replace?",
-      choices: ["Universe of Energy", "Horizons", "World of Motion", "Body Wars"],
-      answer: "Universe of Energy",
-      fact: "Old-school EPCOT fans still have complicated feelings about this one. Cosmic Rewind is amazing, but Universe of Energy was a classic.",
-    },
-  ],
-
-  "Mission: SPACE": [
-    {
-      question: "How many miles is the simulated journey from Earth to Mars on Mission: SPACE?",
-      choices: ["About 3 million", "About 12 million", "About 34 million", "About 100 million"],
-      answer: "About 34 million",
-      fact: "The ride turns a huge space journey into a few intense minutes. That is either awesome or a terrible idea right after lunch.",
-    },
-    {
-      question: "Mission: SPACE has two versions. Which one is the more intense Mars mission?",
-      choices: ["Green", "Orange", "Blue", "Silver"],
-      answer: "Orange",
-      fact: "Orange is the more intense version. Green is the calmer orbit version and usually the better pick for nervous riders.",
-    },
-  ],
-
-  "Test Track": [
-    {
-      question: "Test Track reaches what top speed?",
-      choices: ["45 mph", "55 mph", "65 mph", "75 mph"],
-      answer: "65 mph",
-      fact: "At 65 mph, Test Track is one of the fastest rides at Walt Disney World.",
-    },
-    {
-      question: "What classic EPCOT ride used to live in the Test Track building?",
-      choices: ["World of Motion", "Horizons", "Journey Into Imagination", "Body Wars"],
-      answer: "World of Motion",
-      fact: "World of Motion was a classic transportation dark ride before Test Track moved into the same building.",
-    },
-    {
-      question: "Best family debate: what is the most important car feature?",
-      choices: ["Speed", "Safety", "Comfort", "Snack storage"],
-      answer: "Snack storage",
-      fact: "Okay, not officially. But any family that has done a full park day knows snack storage is elite engineering.",
-    },
-  ],
-
-  "Soarin' Around the World": [
-    {
-      question: "What does the Chief Flight Attendant call Mickey ear hats in the pre-show?",
-      choices: ["Little beauties", "Mouse helmets", "Flight ears", "Tiny wings"],
-      answer: "Little beauties",
-      fact: "Patrick Warburton’s delivery is half the reason Disney fans can quote this pre-show from memory.",
-    },
-    {
-      question: "What kind of experience is Soarin’?",
-      choices: ["Hang gliding simulator", "Boat ride", "Dark coaster", "Trackless chase"],
-      answer: "Hang gliding simulator",
-      fact: "The ride lifts you into a giant screen and uses motion, wind, and scents to make it feel like a world tour.",
-    },
-  ],
-
-  "Living with the Land": [
-    {
-      question: "What happens to some of the fruits and vegetables grown in Living with the Land?",
-      choices: ["They are thrown away", "They are painted for display", "They are served in EPCOT restaurants", "They are sent to Magic Kingdom"],
-      answer: "They are served in EPCOT restaurants",
-      fact: "Some food grown in the greenhouses is harvested for use at Disney restaurants. EPCOT somehow made vegetables cool.",
-    },
-    {
-      question: "In the greenhouses, some plants grow without soil. What is that method called?",
-      choices: ["Hydroponics", "Root floating", "Soil skipping", "Plant magic"],
-      answer: "Hydroponics",
-      fact: "Hydroponics uses nutrient-rich water instead of traditional soil. Living with the Land is secretly a science class on a boat.",
-    },
-    {
-      question: "Disney fan check: what abbreviation do fans use for Living with the Land?",
-      choices: ["LWTL", "LWL", "LANDY", "Boat Veggies"],
-      answer: "LWTL",
-      fact: "Living with the Land has a huge fanbase because it is calm, cool, weirdly fascinating, and peak EPCOT comfort.",
-    },
-  ],
-
-  "The Seas with Nemo & Friends": [
-    {
-      question: "How much water is inside the massive aquarium at The Seas pavilion?",
-      choices: ["570,000 gallons", "1.2 million gallons", "5.7 million gallons", "10 million gallons"],
-      answer: "5.7 million gallons",
-      fact: "It is so massive that Spaceship Earth could fit inside the aquarium. EPCOT does not do subtle.",
-    },
-    {
-      question: "What type of ride vehicle do you board on The Seas with Nemo & Friends?",
-      choices: ["Clamobile", "Seashell spinner", "Submarine pod", "Turtle shell"],
-      answer: "Clamobile",
-      fact: "The Clamobiles move through the story before dropping you into the real aquarium area.",
-    },
-  ],
-
-  "Journey of Water, Inspired by Moana": [
-    {
-      question: "What shape is the first water feature that greets you near the entrance of Journey of Water?",
-      choices: ["A spiral wave", "A giant turtle", "A waterfall door", "A hidden Mickey fountain"],
-      answer: "A spiral wave",
-      fact: "It feels like the ocean waving hello, which is exactly the kind of small detail families actually remember.",
-    },
-    {
-      question: "Journey of Water is mostly about what?",
-      choices: ["The water cycle", "Volcanoes", "Space travel", "Norwegian mythology"],
-      answer: "The water cycle",
-      fact: "The trail turns the water cycle into something kids can touch, hear, and play with instead of just reading about it.",
-    },
-  ],
-
-  "Journey into Imagination with Figment": [
-    {
-      question: "What exactly is Figment?",
-      choices: ["A purple dragon made from imagination", "A tiny dinosaur", "A Norway troll", "A science robot"],
-      answer: "A purple dragon made from imagination",
-      fact: "Figment is the little purple spark of imagination, and EPCOT fans are very protective of him.",
-    },
-    {
-      question: "Figment was originally paired with which beloved EPCOT character?",
-      choices: ["Dreamfinder", "Buzzy", "Captain EO", "Sonny Eclipse"],
-      answer: "Dreamfinder",
-      fact: "Dreamfinder and Figment are sacred EPCOT nostalgia. Mention Dreamfinder around an EPCOT fan and watch what happens.",
-    },
-  ],
-
-  "Gran Fiesta Tour Starring The Three Caballeros": [
-    {
-      question: "What are the names of Donald Duck’s two bird best friends in Gran Fiesta Tour?",
-      choices: ["Panchito and José Carioca", "Lumiere and Cogsworth", "Timon and Pumbaa", "Chip and Dale"],
-      answer: "Panchito and José Carioca",
-      fact: "Panchito is the rooster, José Carioca is the parrot, and Donald is somehow always the problem.",
-    },
-    {
-      question: "Gran Fiesta Tour is hidden inside which EPCOT pavilion?",
-      choices: ["Mexico", "Norway", "Italy", "Morocco"],
-      answer: "Mexico",
-      fact: "The Mexico pavilion hides a twilight marketplace, a volcano backdrop, restaurants, shops, and a full boat ride.",
-    },
+    { question: "What planet are you visiting in the Guardians of the Galaxy queue story?", answer: "Xandar.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of coaster is Cosmic Rewind known for being?", answer: "A rotating indoor storytelling coaster.", difficulty: "medium", kidFriendly: true },
+    { question: "Which Guardians character is a talking raccoon?", answer: "Rocket.", difficulty: "easy", kidFriendly: true },
+    { question: "Which Guardians character is a tree-like hero?", answer: "Groot.", difficulty: "easy", kidFriendly: true },
+    { question: "What does Star-Lord love listening to?", answer: "Classic pop and rock music.", difficulty: "easy", kidFriendly: true },
+    { question: "What is the large ship associated with the Guardians called?", answer: "The Milano.", difficulty: "medium", kidFriendly: true },
+    { question: "What color is Gamora often associated with?", answer: "Green.", difficulty: "easy", kidFriendly: true },
+    { question: "What is unusual about the ride vehicles on Cosmic Rewind?", answer: "They rotate to point riders toward the story.", difficulty: "medium", kidFriendly: true },
+    { question: "Cosmic Rewind is located in which EPCOT neighborhood?", answer: "World Discovery.", difficulty: "medium", kidFriendly: true },
+    { question: "What kind of music surprise can happen during the ride?", answer: "The ride can play different songs.", difficulty: "medium", kidFriendly: true },
   ],
 
   "Frozen Ever After": [
-    {
-      question: "What is the name of the giant snow monster Elsa created to guard her ice palace?",
-      choices: ["Marshmallow", "Snowball", "Olaf 2", "Frostbite"],
-      answer: "Marshmallow",
-      fact: "Marshmallow is not exactly cuddly, but he does take his ice palace security job seriously.",
-    },
-    {
-      question: "Frozen Ever After replaced what original Norway pavilion boat ride?",
-      choices: ["Maelstrom", "El Rio del Tiempo", "Horizons", "Body Wars"],
-      answer: "Maelstrom",
-      fact: "Maelstrom was a cult-favorite Norway ride. EPCOT fans still bring it up like an unresolved family argument.",
-    },
+    { question: "Which sisters are the main characters of Frozen?", answer: "Anna and Elsa.", difficulty: "easy", kidFriendly: true },
+    { question: "What is the name of the snowman who loves warm hugs?", answer: "Olaf.", difficulty: "easy", kidFriendly: true },
+    { question: "What is the name of Kristoff's reindeer?", answer: "Sven.", difficulty: "easy", kidFriendly: true },
+    { question: "What song is Elsa most famous for singing?", answer: "Let It Go.", difficulty: "easy", kidFriendly: true },
+    { question: "What is the name of the giant snow monster Elsa creates?", answer: "Marshmallow.", difficulty: "medium", kidFriendly: true },
+    { question: "Frozen Ever After is located in which EPCOT pavilion?", answer: "Norway.", difficulty: "easy", kidFriendly: true },
+    { question: "Frozen Ever After replaced what original Norway pavilion boat ride?", answer: "Maelstrom.", difficulty: "hard", kidFriendly: false },
+    { question: "What kind of ride vehicle do you board on Frozen Ever After?", answer: "A boat.", difficulty: "easy", kidFriendly: true },
+    { question: "True or false: Frozen Ever After has a small backward movement.", answer: "True.", difficulty: "medium", kidFriendly: true },
+    { question: "What kingdom is Frozen set in?", answer: "Arendelle.", difficulty: "medium", kidFriendly: true },
   ],
 
   "Remy's Ratatouille Adventure": [
-    {
-      question: "What is the name of the famous chef whose spirit guides Remy?",
-      choices: ["Chef Auguste Gusteau", "Chef Linguini", "Chef Skinner", "Chef Anton Ego"],
-      answer: "Chef Auguste Gusteau",
-      fact: "Gusteau’s motto is that anyone can cook, which is encouraging until you remember Remy is a rat doing better than most adults.",
-    },
-    {
-      question: "Remy’s Ratatouille Adventure uses what type of ride system?",
-      choices: ["Trackless", "Boat ride", "Omnimover", "Suspended coaster"],
-      answer: "Trackless",
-      fact: "The vehicles move without a visible track, which helps them scurry around like tiny rats in a giant kitchen.",
-    },
+    { question: "What kind of animal is Remy?", answer: "A rat.", difficulty: "easy", kidFriendly: true },
+    { question: "What city is Remy's Ratatouille Adventure set in?", answer: "Paris.", difficulty: "easy", kidFriendly: true },
+    { question: "What is the name of the famous chef whose motto inspires Remy?", answer: "Chef Auguste Gusteau.", difficulty: "medium", kidFriendly: true },
+    { question: "What is Gusteau's famous motto?", answer: "Anyone can cook.", difficulty: "easy", kidFriendly: true },
+    { question: "What type of ride system does Remy's Ratatouille Adventure use?", answer: "A trackless ride system.", difficulty: "medium", kidFriendly: true },
+    { question: "In the ride, guests are made to feel about the size of what?", answer: "A rat.", difficulty: "easy", kidFriendly: true },
+    { question: "Which EPCOT pavilion is Remy's Ratatouille Adventure in?", answer: "France.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of kitchen chaos does Remy try to escape?", answer: "A busy restaurant kitchen.", difficulty: "easy", kidFriendly: true },
+    { question: "What is the name of the restaurant from Ratatouille?", answer: "Gusteau's.", difficulty: "medium", kidFriendly: true },
+    { question: "What food is in the attraction's title?", answer: "Ratatouille.", difficulty: "easy", kidFriendly: true },
+  ],
+
+  "Test Track": [
+    { question: "What type of vehicle do you ride on Test Track?", answer: "A test car.", difficulty: "easy", kidFriendly: true },
+    { question: "What is Test Track mostly about?", answer: "Testing how a vehicle performs.", difficulty: "easy", kidFriendly: true },
+    { question: "What part of Test Track is famous for feeling the fastest?", answer: "The outdoor speed section.", difficulty: "easy", kidFriendly: true },
+    { question: "True or false: Test Track is a slow boat ride.", answer: "False.", difficulty: "easy", kidFriendly: true },
+    { question: "What does a vehicle need to handle during testing?", answer: "Speed, turns, weather, and road conditions.", difficulty: "medium", kidFriendly: true },
+    { question: "Which EPCOT neighborhood is Test Track in?", answer: "World Discovery.", difficulty: "medium", kidFriendly: true },
+    { question: "What kind of real-world process inspires the attraction?", answer: "Automotive testing.", difficulty: "medium", kidFriendly: true },
+    { question: "What should riders do before the high-speed section?", answer: "Hold on and get ready.", difficulty: "easy", kidFriendly: true },
+    { question: "What is one thing engineers care about when testing a car?", answer: "Safety, speed, handling, or efficiency.", difficulty: "medium", kidFriendly: true },
+    { question: "Why does the outdoor section feel exciting?", answer: "Because the car accelerates quickly outside.", difficulty: "easy", kidFriendly: true },
+  ],
+
+  "Soarin' Around the World": [
+    { question: "What does Soarin' make you feel like you are doing?", answer: "Flying.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of screen helps create the flying feeling?", answer: "A giant curved screen.", difficulty: "medium", kidFriendly: true },
+    { question: "What do your feet do during Soarin'?", answer: "They hang in the air.", difficulty: "easy", kidFriendly: true },
+    { question: "What sense besides sight and sound does Soarin' sometimes use?", answer: "Smell.", difficulty: "medium", kidFriendly: true },
+    { question: "What famous structure in Paris can guests see on Soarin' Around the World?", answer: "The Eiffel Tower.", difficulty: "easy", kidFriendly: true },
+    { question: "What natural wonder in Africa may appear during Soarin' Around the World?", answer: "Mount Kilimanjaro.", difficulty: "medium", kidFriendly: true },
+    { question: "Which EPCOT pavilion area is Soarin' located near?", answer: "The Land pavilion.", difficulty: "easy", kidFriendly: true },
+    { question: "What should you buckle before the flight begins?", answer: "Your seat belt.", difficulty: "easy", kidFriendly: true },
+    { question: "What is the ride's main family-friendly thrill?", answer: "The feeling of gliding high above the world.", difficulty: "easy", kidFriendly: true },
+    { question: "True or false: Soarin' is a roller coaster.", answer: "False.", difficulty: "easy", kidFriendly: true },
+  ],
+
+  "Spaceship Earth": [
+    { question: "What giant shape is Spaceship Earth famous for?", answer: "A geodesic sphere.", difficulty: "medium", kidFriendly: true },
+    { question: "What is the ride mostly about?", answer: "The history of human communication.", difficulty: "medium", kidFriendly: true },
+    { question: "What invention helped people print books faster?", answer: "The printing press.", difficulty: "medium", kidFriendly: true },
+    { question: "What do you ride in on Spaceship Earth?", answer: "A slow-moving ride vehicle.", difficulty: "easy", kidFriendly: true },
+    { question: "What does Spaceship Earth look like to many kids from far away?", answer: "A giant golf ball.", difficulty: "easy", kidFriendly: true },
+  ],
+
+  "Mission: SPACE": [
+    { question: "What planet is Mission: SPACE most famously connected to?", answer: "Mars.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of job are guests pretending to train for?", answer: "Astronaut.", difficulty: "easy", kidFriendly: true },
+    { question: "What color mission is usually the more intense version?", answer: "Orange.", difficulty: "medium", kidFriendly: true },
+    { question: "What color mission is usually the less intense version?", answer: "Green.", difficulty: "medium", kidFriendly: true },
+    { question: "What should guests pay attention to before riding Mission: SPACE?", answer: "The intensity warnings.", difficulty: "easy", kidFriendly: true },
+  ],
+
+  "Living with the Land": [
+    { question: "What does Living with the Land teach guests about?", answer: "Farming, food, and the environment.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of ride vehicle do you board?", answer: "A boat.", difficulty: "easy", kidFriendly: true },
+    { question: "What do you see growing inside the greenhouses?", answer: "Plants, fruits, vegetables, and other crops.", difficulty: "easy", kidFriendly: true },
+    { question: "What is one animal-based farming area shown on the ride?", answer: "Aquaculture.", difficulty: "medium", kidFriendly: true },
+    { question: "Which EPCOT pavilion is Living with the Land inside?", answer: "The Land pavilion.", difficulty: "easy", kidFriendly: true },
+  ],
+
+  "The Seas with Nemo & Friends": [
+    { question: "What kind of animal is Nemo?", answer: "A clownfish.", difficulty: "easy", kidFriendly: true },
+    { question: "Who is Nemo's forgetful friend?", answer: "Dory.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of shell-shaped vehicle do guests ride in?", answer: "A clamobile.", difficulty: "medium", kidFriendly: true },
+    { question: "Where does the ride lead guests after the attraction?", answer: "Into The Seas aquarium area.", difficulty: "easy", kidFriendly: true },
+    { question: "What is Nemo's dad's name?", answer: "Marlin.", difficulty: "easy", kidFriendly: true },
+  ],
+
+  "Journey of Water, Inspired by Moana": [
+    { question: "Which Disney character inspires Journey of Water?", answer: "Moana.", difficulty: "easy", kidFriendly: true },
+    { question: "What natural element is the walkthrough all about?", answer: "Water.", difficulty: "easy", kidFriendly: true },
+    { question: "What can guests do with some of the water features?", answer: "Interact with them.", difficulty: "easy", kidFriendly: true },
+    { question: "What chicken from Moana can guests look for in the rockwork?", answer: "Hei Hei.", difficulty: "medium", kidFriendly: true },
+    { question: "True or false: Journey of Water is a roller coaster.", answer: "False.", difficulty: "easy", kidFriendly: true },
+  ],
+
+  "Journey into Imagination with Figment": [
+    { question: "Who is the purple dragon in this attraction?", answer: "Figment.", difficulty: "easy", kidFriendly: true },
+    { question: "What is Figment all about?", answer: "Imagination.", difficulty: "easy", kidFriendly: true },
+    { question: "What sense gets a silly surprise during the ride?", answer: "Smell.", difficulty: "medium", kidFriendly: true },
+    { question: "What is the name of the Imagination Institute character who guides the tour?", answer: "Dr. Nigel Channing.", difficulty: "hard", kidFriendly: false },
+    { question: "What does Figment usually do to the serious tour?", answer: "He causes playful chaos.", difficulty: "easy", kidFriendly: true },
+  ],
+
+  "Gran Fiesta Tour Starring The Three Caballeros": [
+    { question: "Which Disney duck stars in Gran Fiesta Tour?", answer: "Donald Duck.", difficulty: "easy", kidFriendly: true },
+    { question: "Who are Donald's two bird friends in The Three Caballeros?", answer: "Panchito and José Carioca.", difficulty: "medium", kidFriendly: true },
+    { question: "Which EPCOT pavilion hides Gran Fiesta Tour?", answer: "Mexico.", difficulty: "easy", kidFriendly: true },
+    { question: "What kind of ride is Gran Fiesta Tour?", answer: "A boat ride.", difficulty: "easy", kidFriendly: true },
+    { question: "What is Donald doing during much of the ride story?", answer: "Getting separated from his friends.", difficulty: "medium", kidFriendly: true },
   ],
 };
 
