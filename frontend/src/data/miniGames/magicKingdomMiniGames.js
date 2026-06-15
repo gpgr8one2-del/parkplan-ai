@@ -2641,14 +2641,16 @@ function buildMiniGameForType({
   }
 
   if (gameType === "queue_clues") {
-    const words = pickFromList(parkQueueClues, seed);
+    const wordSet = pickFromList(parkQueueClues, seed);
+    const word = wordSet?.length ? pickFromList(wordSet, seed + 1) : null;
 
-    return words?.length
+    return word
       ? {
           type: "queue_clues",
           title: "Queue Clues",
-          prompt: "Can your family spot or say these before the line moves?",
-          words,
+          prompt:
+            "Hold the phone up without looking. Your family gives clues until you guess the word.",
+          word,
         }
       : null;
   }
@@ -2760,7 +2762,7 @@ export const MINI_GAME_TYPES = [
   {
     key: "queue_clues",
     label: "Queue Clues",
-    description: "A tiny word hunt using the queue around you.",
+    description: "Hold the phone up and guess the word from family clues.",
   },
   {
     key: "prediction_game",

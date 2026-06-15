@@ -410,26 +410,51 @@ function LineTimeCompanion({
                 {activeMiniGame.prompt}
               </p>
 
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {activeMiniGame.words.map((word) => (
-                  <span
-                    key={word}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      borderRadius: 999,
-                      padding: "8px 11px",
-                      fontSize: 13,
-                      fontWeight: 900,
-                      color: colors.purpleDeep,
-                      background: "rgba(124, 58, 237, 0.08)",
-                      border: "1px solid rgba(124, 58, 237, 0.18)",
-                    }}
-                  >
-                    {word}
-                  </span>
-                ))}
+              <div
+                style={{
+                  marginTop: 10,
+                  padding: "22px 16px",
+                  borderRadius: 22,
+                  textAlign: "center",
+                  background: "rgba(124, 58, 237, 0.08)",
+                  border: "1px solid rgba(124, 58, 237, 0.18)",
+                }}
+              >
+                <p
+                  style={{
+                    margin: "0 0 7px",
+                    color: colors.muted,
+                    fontSize: 12,
+                    fontWeight: 900,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.4,
+                  }}
+                >
+                  Guess this
+                </p>
+                <p
+                  style={{
+                    margin: 0,
+                    color: colors.purpleDeep,
+                    fontSize: 28,
+                    fontWeight: 950,
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {activeMiniGame.word}
+                </p>
               </div>
+
+              <p
+                style={{
+                  margin: "10px 0 0",
+                  color: colors.muted,
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                }}
+              >
+                Clue-givers: describe it, act it out, or point around the queue — just do not say the word.
+              </p>
             </div>
           )}
 
