@@ -384,6 +384,81 @@ function LineTimeCompanion({
             </p>
           )}
 
+          {activeMiniGame.type === "conversation_starter" && (
+            <p
+              style={{
+                margin: "9px 0 0",
+                color: colors.text,
+                fontWeight: 850,
+                lineHeight: 1.45,
+              }}
+            >
+              {activeMiniGame.prompt}
+            </p>
+          )}
+
+          {activeMiniGame.type === "queue_clues" && (
+            <div>
+              <p
+                style={{
+                  margin: "9px 0 12px",
+                  color: colors.text,
+                  fontWeight: 850,
+                  lineHeight: 1.45,
+                }}
+              >
+                {activeMiniGame.prompt}
+              </p>
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {activeMiniGame.words.map((word) => (
+                  <span
+                    key={word}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      borderRadius: 999,
+                      padding: "8px 11px",
+                      fontSize: 13,
+                      fontWeight: 900,
+                      color: colors.purpleDeep,
+                      background: "rgba(124, 58, 237, 0.08)",
+                      border: "1px solid rgba(124, 58, 237, 0.18)",
+                    }}
+                  >
+                    {word}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeMiniGame.type === "prediction_game" && (
+            <p
+              style={{
+                margin: "9px 0 0",
+                color: colors.text,
+                fontWeight: 850,
+                lineHeight: 1.45,
+              }}
+            >
+              {activeMiniGame.prompt}
+            </p>
+          )}
+
+          {activeMiniGame.type === "family_challenge" && (
+            <p
+              style={{
+                margin: "9px 0 0",
+                color: colors.text,
+                fontWeight: 850,
+                lineHeight: 1.45,
+              }}
+            >
+              {activeMiniGame.prompt}
+            </p>
+          )}
+
           <button
             type="button"
             onClick={handleNextMiniGame}

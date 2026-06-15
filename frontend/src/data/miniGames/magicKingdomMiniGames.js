@@ -2117,6 +2117,127 @@ const ANIMAL_KINGDOM_WOULD_YOU_RATHER_PROMPTS = [
   "Would you rather find a secret animal trail or a secret air-conditioned lounge?",
 ];
 
+
+const CONVERSATION_STARTERS_BY_PARK = {
+  magic_kingdom: [
+    "What has been the funniest moment of our day so far?",
+    "If we could ride one attraction again with no wait, which one would you pick?",
+    "What snack should officially represent our family vacation?",
+    "Which Disney character would be the best tour guide for our family?",
+    "What is one thing someone in our family did today that made the day better?",
+  ],
+  epcot: [
+    "If we could visit any country in World Showcase for real tomorrow, where should we go?",
+    "What food or drink have we seen today that looked the most interesting?",
+    "If our family invented a future city, what would it absolutely need?",
+    "Which EPCOT pavilion would make the best place to live for a week?",
+    "What has felt most peaceful, weird, or surprising about EPCOT today?",
+  ],
+  hollywood_studios: [
+    "If our family was cast in a movie, what kind of movie would it be?",
+    "Who in our group would survive best in a Star Wars adventure?",
+    "What Toy Story toy would fit our family personality best?",
+    "If we had a backstage pass to any show or ride here, what would we want to see?",
+    "What has been the most cinematic moment of the day so far?",
+  ],
+  animal_kingdom: [
+    "What animal have we seen today that best matches our family energy?",
+    "If we could explore one real jungle, mountain, or river together, where would we go?",
+    "What has been the best nature detail we noticed today?",
+    "If our family had a wilderness team name, what would it be?",
+    "What is one calm moment from today that we should remember?",
+  ],
+};
+
+const QUEUE_CLUES_BY_PARK = {
+  magic_kingdom: [
+    ["Castle", "Lantern", "Boat", "Clock", "Crown"],
+    ["Mountain", "Star", "Rocket", "Robot", "Train"],
+    ["Pirate", "Ghost", "Gem", "Honey", "Elephant"],
+    ["Sword", "Map", "Flower", "Dragon", "Teacup"],
+  ],
+  epcot: [
+    ["Sphere", "Passport", "Garden", "Rocket", "Chef"],
+    ["Boat", "Planet", "Figment", "Water", "Lantern"],
+    ["France", "Norway", "Mexico", "Land", "Seas"],
+    ["Music", "Bridge", "Fountain", "Spaceship", "Monorail"],
+  ],
+  hollywood_studios: [
+    ["Camera", "Droid", "Toy", "Tower", "Star"],
+    ["Alien", "Slinky", "Falcon", "Train", "Guitar"],
+    ["Popcorn", "Poster", "Stage", "Robot", "Backlot"],
+    ["Lightning", "Stormtrooper", "Mickey", "Woody", "Spaceship"],
+  ],
+  animal_kingdom: [
+    ["Tree", "River", "Drum", "Bird", "Mountain"],
+    ["Safari", "Tiger", "Gorilla", "Banshee", "Yeti"],
+    ["Leaf", "Bridge", "Waterfall", "Dinosaur", "Feather"],
+    ["Trail", "Nest", "Vine", "Lantern", "Creature"],
+  ],
+};
+
+const PREDICTION_GAMES_BY_PARK = {
+  magic_kingdom: [
+    "Predict the next stroller color we will see.",
+    "Predict whether the next group walking by has matching shirts.",
+    "Predict the first character, castle, mountain, or boat detail someone spots from here.",
+    "Predict whether our ride vehicle will be in the front half or back half.",
+    "Predict who in our family will laugh first on the ride.",
+  ],
+  epcot: [
+    "Predict the next country, food item, or plant detail someone mentions.",
+    "Predict whether we will hear music, water, or a ride announcement next.",
+    "Predict the first color we see repeated three times from this spot.",
+    "Predict whether the next family walking by is heading to food, a ride, or shopping.",
+    "Predict who in our group will notice the weirdest detail first.",
+  ],
+  hollywood_studios: [
+    "Predict the next Star Wars, Toy Story, or movie shirt we see.",
+    "Predict whether the next sound we notice is music, a ride vehicle, or a character voice.",
+    "Predict who in our family would be the best actor in this park.",
+    "Predict whether our next ride moment will feel funny, thrilling, or chaotic.",
+    "Predict the next color lightsaber, alien, or Mickey detail someone spots.",
+  ],
+  animal_kingdom: [
+    "Predict the next animal we hear, see, or talk about.",
+    "Predict whether the next sound we notice is music, water, birds, or people.",
+    "Predict who in our family would be best at leading a jungle expedition.",
+    "Predict the next nature detail someone spots: leaf, rock, water, animal, or flower.",
+    "Predict whether our next reset should be shade, snack, show, or slower walking.",
+  ],
+};
+
+const FAMILY_CHALLENGES_BY_PARK = {
+  magic_kingdom: [
+    "Everyone name one Disney character before the line moves again.",
+    "Do your best silent parade wave. The family votes on the most royal one.",
+    "Name five Magic Kingdom rides as fast as you can.",
+    "Everyone pick a vacation nickname for the person on your left.",
+    "Try to make the group laugh using only one Disney word.",
+  ],
+  epcot: [
+    "Name five countries, foods, or inventions before the line moves again.",
+    "Everyone say one place in the world they want to visit someday.",
+    "Make up a fake EPCOT festival food booth and one ridiculous menu item.",
+    "Each person names one thing they learned or noticed today.",
+    "Try to pronounce a fancy imaginary restaurant name with total confidence.",
+  ],
+  hollywood_studios: [
+    "Everyone make a movie trailer voice for what our family is doing right now.",
+    "Name five movie, Toy Story, or Star Wars characters before the line moves.",
+    "Do your best silent robot, alien, or movie star pose.",
+    "Create a fake movie title for our day so far.",
+    "Everyone picks who would be director, actor, stunt double, and snack manager.",
+  ],
+  animal_kingdom: [
+    "Name five animals before the line moves again.",
+    "Everyone make a quiet animal face. No loud animal noises in line.",
+    "Pick an expedition role for each family member: guide, snack scout, map reader, photographer.",
+    "Name one way to cool down or slow down before anyone gets cranky.",
+    "Invent a fake nature documentary title about our family today.",
+  ],
+};
+
 const TRIVIA_BY_PARK_AND_RIDE = {
   magic_kingdom: MAGIC_KINGDOM_TRIVIA_BY_RIDE,
   epcot: EPCOT_TRIVIA_BY_RIDE,
@@ -2442,6 +2563,10 @@ function buildMiniGameForType({
   const parkLookAroundByLand = LOOK_AROUND_BY_PARK_AND_LAND[parkId] || {};
   const parkFamilyVotes = FAMILY_VOTE_BY_PARK[parkId] || [];
   const parkWouldYouRather = WOULD_YOU_RATHER_BY_PARK[parkId] || [];
+  const parkConversationStarters = CONVERSATION_STARTERS_BY_PARK[parkId] || [];
+  const parkQueueClues = QUEUE_CLUES_BY_PARK[parkId] || [];
+  const parkPredictionGames = PREDICTION_GAMES_BY_PARK[parkId] || [];
+  const parkFamilyChallenges = FAMILY_CHALLENGES_BY_PARK[parkId] || [];
 
   if (gameType === "trivia") {
     const rideTrivia = getRideSpecificList(parkTriviaByRide, rideName);
@@ -2503,6 +2628,55 @@ function buildMiniGameForType({
       : null;
   }
 
+  if (gameType === "conversation_starter") {
+    const prompt = pickFromList(parkConversationStarters, seed);
+
+    return prompt
+      ? {
+          type: "conversation_starter",
+          title: "Conversation Starter",
+          prompt,
+        }
+      : null;
+  }
+
+  if (gameType === "queue_clues") {
+    const words = pickFromList(parkQueueClues, seed);
+
+    return words?.length
+      ? {
+          type: "queue_clues",
+          title: "Queue Clues",
+          prompt: "Can your family spot or say these before the line moves?",
+          words,
+        }
+      : null;
+  }
+
+  if (gameType === "prediction_game") {
+    const prompt = pickFromList(parkPredictionGames, seed);
+
+    return prompt
+      ? {
+          type: "prediction_game",
+          title: "Prediction Game",
+          prompt,
+        }
+      : null;
+  }
+
+  if (gameType === "family_challenge") {
+    const prompt = pickFromList(parkFamilyChallenges, seed);
+
+    return prompt
+      ? {
+          type: "family_challenge",
+          title: "Family Challenge",
+          prompt,
+        }
+      : null;
+  }
+
   return null;
 }
 
@@ -2531,6 +2705,10 @@ export function getMiniGameForContext({
     "look_around",
     "family_vote",
     "would_you_rather",
+    "conversation_starter",
+    "queue_clues",
+    "prediction_game",
+    "family_challenge",
   ].filter((type) => type !== gameType);
 
   for (const fallbackType of fallbackOrder) {
@@ -2567,11 +2745,31 @@ export const MINI_GAME_TYPES = [
   {
     key: "family_vote",
     label: "Family Vote",
-    description: "Pass the phone and let the group pick the vibe.",
+    description: "Pass the phone and let everyone pick a side.",
   },
   {
     key: "would_you_rather",
     label: "Would You Rather",
     description: "Silly park questions for laughs in line.",
+  },
+  {
+    key: "conversation_starter",
+    label: "Conversation",
+    description: "A simple prompt to get the family talking.",
+  },
+  {
+    key: "queue_clues",
+    label: "Queue Clues",
+    description: "A tiny word hunt using the queue around you.",
+  },
+  {
+    key: "prediction_game",
+    label: "Prediction",
+    description: "Guess what will happen before the line moves.",
+  },
+  {
+    key: "family_challenge",
+    label: "Family Challenge",
+    description: "A quick no-pressure group challenge.",
   },
 ];
