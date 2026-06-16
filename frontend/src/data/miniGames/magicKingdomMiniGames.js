@@ -32,6 +32,54 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "The darkness does a lot of the magic. The actual top speed feels much faster because you cannot see what is coming.",
     },
+    {
+      question: "What kind of roller coaster is Space Mountain?",
+      choices: ["Indoor dark coaster", "Water raft ride", "Spinning tea cup", "Safari ride"],
+      answer: "Indoor dark coaster",
+      fact: "Space Mountain is an indoor roller coaster where darkness makes the turns and drops feel more surprising.",
+    },
+    {
+      question: "What land is Space Mountain located in?",
+      choices: ["Tomorrowland", "Fantasyland", "Adventureland", "Frontierland"],
+      answer: "Tomorrowland",
+      fact: "Space Mountain fits Tomorrowland because it is themed around rockets, space travel, and futuristic adventure.",
+    },
+    {
+      question: "What are Space Mountain ride vehicles styled like?",
+      choices: ["Rockets", "Mine trains", "Pirate boats", "Doom Buggies"],
+      answer: "Rockets",
+      fact: "Space Mountain's ride vehicles are styled like rockets to match the outer-space theme.",
+    },
+    {
+      question: "What makes Space Mountain feel extra surprising?",
+      choices: ["Most of the track is dark", "It goes underwater", "It has live actors", "It spins nonstop"],
+      answer: "Most of the track is dark",
+      fact: "Because much of Space Mountain happens in darkness, riders cannot easily see the next turn or dip coming.",
+    },
+    {
+      question: "How do guests sit in many Space Mountain rockets?",
+      choices: ["One behind another", "In a big circle", "Sideways on benches", "Standing up"],
+      answer: "One behind another",
+      fact: "Space Mountain uses single-file style seating, which helps each rocket feel narrow and fast.",
+    },
+    {
+      question: "What theme do guests see throughout Space Mountain?",
+      choices: ["Outer space", "The Wild West", "A haunted mansion", "A jungle river"],
+      answer: "Outer space",
+      fact: "The attraction uses stars, tunnels, and space-station style details to create a space-flight feeling.",
+    },
+    {
+      question: "What color is the outside of Space Mountain best known for?",
+      choices: ["White", "Red", "Green", "Brown"],
+      answer: "White",
+      fact: "The outside of Space Mountain is a large white futuristic structure that stands out in Tomorrowland.",
+    },
+    {
+      question: "What is the main thrill of Space Mountain?",
+      choices: ["A fast ride through darkness", "A slow boat tour", "A 3D movie", "A spinning carousel"],
+      answer: "A fast ride through darkness",
+      fact: "Space Mountain combines coaster motion with darkness to make the ride feel faster and more mysterious.",
+    },
   ],
 
   "TRON Lightcycle / Run": [
@@ -41,6 +89,60 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "A lightcycle",
       fact:
         "The ride vehicles are designed to make you feel like you are racing on a lightcycle through the Grid.",
+    },
+    {
+      question: "What kind of vehicle do guests ride on TRON Lightcycle / Run?",
+      choices: ["Lightcycle", "Pirate ship", "Safari truck", "Doom Buggy"],
+      answer: "Lightcycle",
+      fact: "TRON Lightcycle / Run uses motorcycle-style ride vehicles called Lightcycles.",
+    },
+    {
+      question: "What movie world inspires TRON Lightcycle / Run?",
+      choices: ["TRON", "Frozen", "Toy Story", "The Lion King"],
+      answer: "TRON",
+      fact: "The ride is inspired by the digital world of TRON, where riders enter a glowing computer-like Grid.",
+    },
+    {
+      question: "What kind of coaster launch does TRON use?",
+      choices: ["Fast forward launch", "Slow boat start", "Backward elevator drop", "Spinning lift hill"],
+      answer: "Fast forward launch",
+      fact: "TRON begins with a quick launch that sends riders racing forward on their Lightcycles.",
+    },
+    {
+      question: "How do riders sit on a TRON Lightcycle?",
+      choices: ["Leaning forward", "Lying flat", "Sideways", "In a circle"],
+      answer: "Leaning forward",
+      fact: "The Lightcycle position makes riders lean forward like they are riding a futuristic motorcycle.",
+    },
+    {
+      question: "What land is TRON Lightcycle / Run in?",
+      choices: ["Tomorrowland", "Liberty Square", "Adventureland", "Main Street"],
+      answer: "Tomorrowland",
+      fact: "TRON is in Tomorrowland, close to Space Mountain, which gives that area two major futuristic thrill rides.",
+    },
+    {
+      question: "What is the glowing outdoor roof area on TRON known for?",
+      choices: ["Neon light effects", "Jungle vines", "Pirate flags", "Snowy mountains"],
+      answer: "Neon light effects",
+      fact: "TRON's outdoor canopy glows with bright lighting that matches the ride's digital racing theme.",
+    },
+    {
+      question: "What does TRON make riders feel like they are entering?",
+      choices: ["The Grid", "A haunted attic", "A mine shaft", "A royal ballroom"],
+      answer: "The Grid",
+      fact: "The ride is themed as a race through the Grid, a digital world from the TRON story.",
+    },
+    {
+      question: "What should guests store before riding TRON?",
+      choices: ["Loose items", "Park maps only", "Shoes", "MagicBands"],
+      answer: "Loose items",
+      fact: "TRON uses lockers for loose items because the Lightcycle ride position is different from a normal coaster seat.",
+    },
+    {
+      question: "What is one big visual feature of TRON Lightcycle / Run?",
+      choices: ["Blue glowing race energy", "A castle tower", "A riverboat dock", "A circus tent"],
+      answer: "Blue glowing race energy",
+      fact: "TRON uses bright blue lighting and racing visuals to make the coaster feel like a digital competition.",
     },
   ],
 
@@ -57,6 +159,60 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "The mine cars sway during the ride, which helps make it feel smoother and more playful than a standard coaster.",
     },
+    {
+      question: "What story is Seven Dwarfs Mine Train based on?",
+      choices: ["Snow White and the Seven Dwarfs", "Peter Pan", "Aladdin", "Moana"],
+      answer: "Snow White and the Seven Dwarfs",
+      fact: "The ride brings guests into the world of Snow White and the Seven Dwarfs, especially the dwarfs' mine.",
+    },
+    {
+      question: "What are the ride vehicles themed as?",
+      choices: ["Mine carts", "Pirate boats", "Rocket ships", "Tea cups"],
+      answer: "Mine carts",
+      fact: "Seven Dwarfs Mine Train uses mine cart vehicles to match the dwarfs' jewel-filled mine.",
+    },
+    {
+      question: "What special motion do the mine carts have?",
+      choices: ["They sway side to side", "They float on water", "They spin freely", "They fly overhead"],
+      answer: "They sway side to side",
+      fact: "The mine carts are designed to gently sway, giving the family coaster a playful motion.",
+    },
+    {
+      question: "What do guests see inside the mine scene?",
+      choices: ["Glowing gems", "Pirate treasure maps", "Space rockets", "Jungle animals"],
+      answer: "Glowing gems",
+      fact: "The indoor mine scene is filled with colorful glowing gems and the dwarfs working happily.",
+    },
+    {
+      question: "Which song feeling is strongly connected to the mine scene?",
+      choices: ["Heigh-Ho", "Yo Ho", "Grim Grinning Ghosts", "Great Big Beautiful Tomorrow"],
+      answer: "Heigh-Ho",
+      fact: "The dwarfs' mine scene uses the cheerful Heigh-Ho spirit from Snow White and the Seven Dwarfs.",
+    },
+    {
+      question: "What kind of ride is Seven Dwarfs Mine Train?",
+      choices: ["Family coaster", "Drop tower", "Boat ride", "3D theater"],
+      answer: "Family coaster",
+      fact: "Seven Dwarfs Mine Train is a family coaster with outdoor coaster sections and indoor story scenes.",
+    },
+    {
+      question: "Where is Seven Dwarfs Mine Train located?",
+      choices: ["Fantasyland", "Tomorrowland", "Frontierland", "Adventureland"],
+      answer: "Fantasyland",
+      fact: "The ride sits in Fantasyland because it is based on a classic Disney fairy tale.",
+    },
+    {
+      question: "What character group is most important to the ride?",
+      choices: ["The Seven Dwarfs", "The Pirates", "The Muppets", "The Incredibles"],
+      answer: "The Seven Dwarfs",
+      fact: "The Seven Dwarfs are the heart of the attraction, especially during the mine scene.",
+    },
+    {
+      question: "What scene appears near the end of Seven Dwarfs Mine Train?",
+      choices: ["The dwarfs' cottage", "A space station", "A pirate fort", "A jungle temple"],
+      answer: "The dwarfs' cottage",
+      fact: "Near the end, guests pass the dwarfs' cottage, tying the coaster back to the Snow White story.",
+    },
   ],
 
   "Peter Pan's Flight": [
@@ -71,6 +227,60 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "A pixie-dusted pirate galleon",
       fact:
         "The ride vehicles hang from above, which helps create the feeling that you are flying over London and Never Land.",
+    },
+    {
+      question: "What do guests ride in on Peter Pan's Flight?",
+      choices: ["Flying pirate ships", "Mine carts", "Rocket bikes", "Safari jeeps"],
+      answer: "Flying pirate ships",
+      fact: "Peter Pan's Flight uses suspended pirate ships that make guests feel like they are flying.",
+    },
+    {
+      question: "What city do guests fly over near the beginning?",
+      choices: ["London", "Paris", "Orlando", "New York"],
+      answer: "London",
+      fact: "The ride famously lifts guests over a miniature nighttime London before heading toward Never Land.",
+    },
+    {
+      question: "What magical place does Peter Pan's Flight travel to?",
+      choices: ["Never Land", "Arendelle", "Radiator Springs", "Pandora"],
+      answer: "Never Land",
+      fact: "Peter Pan's Flight takes guests from London into Never Land, the storybook home of Peter Pan's adventures.",
+    },
+    {
+      question: "What makes the ride feel like flying?",
+      choices: ["The ships hang from above", "The cars bounce on springs", "The seats spin fast", "The boat floats outside"],
+      answer: "The ships hang from above",
+      fact: "The pirate ships are suspended from an overhead track, helping create the flying feeling.",
+    },
+    {
+      question: "Which character is the ride named after?",
+      choices: ["Peter Pan", "Captain Jack Sparrow", "Mickey Mouse", "Buzz Lightyear"],
+      answer: "Peter Pan",
+      fact: "The ride is named for Peter Pan, the boy who leads the Darling children to Never Land.",
+    },
+    {
+      question: "Which villain's ship appears in the Never Land scenes?",
+      choices: ["Captain Hook", "Jafar", "Gaston", "Hades"],
+      answer: "Captain Hook",
+      fact: "Captain Hook's pirate ship is part of the Never Land adventure in Peter Pan's Flight.",
+    },
+    {
+      question: "What type of attraction is Peter Pan's Flight?",
+      choices: ["Dark ride", "Water coaster", "Drop tower", "Walking trail"],
+      answer: "Dark ride",
+      fact: "Peter Pan's Flight is a classic dark ride, using indoor scenes, lighting, and music to tell the story.",
+    },
+    {
+      question: "Where is Peter Pan's Flight located?",
+      choices: ["Fantasyland", "Tomorrowland", "Adventureland", "Frontierland"],
+      answer: "Fantasyland",
+      fact: "Peter Pan's Flight is in Fantasyland because it is based on a classic Disney fantasy story.",
+    },
+    {
+      question: "What tiny glowing effect helps the story feel magical?",
+      choices: ["Pixie dust", "Lightning bolts", "Campfire sparks", "Rocket fuel"],
+      answer: "Pixie dust",
+      fact: "Pixie dust is part of Peter Pan's story and helps explain the magical flight to Never Land.",
     },
   ],
 
