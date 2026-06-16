@@ -309,6 +309,60 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "The Haunted Mansion famously has room for 999 happy haunts, but there is always room for one more.",
     },
+    {
+      question: "What are the ride vehicles in Haunted Mansion called?",
+      choices: ["Doom Buggies", "Ghost Wagons", "Bat Boats", "Shadow Cars"],
+      answer: "Doom Buggies",
+      fact: "Haunted Mansion uses slow-moving Doom Buggies so guests can glide through each spooky scene.",
+    },
+    {
+      question: "Who is the voice that guides guests through Haunted Mansion?",
+      choices: ["The Ghost Host", "The Jungle Skipper", "The Toy Sheriff", "The Mine Boss"],
+      answer: "The Ghost Host",
+      fact: "The Ghost Host narration helps set the playful spooky tone throughout the attraction.",
+    },
+    {
+      question: "What room appears to grow taller near the start of Haunted Mansion?",
+      choices: ["Stretching room", "Ballroom", "Library", "Attic"],
+      answer: "Stretching room",
+      fact: "The stretching room creates a mysterious illusion before guests board the ride.",
+    },
+    {
+      question: "Which scene shows ghosts dancing and dining?",
+      choices: ["Ballroom", "Space station", "Mine shaft", "Bayou dock"],
+      answer: "Ballroom",
+      fact: "The ballroom scene uses classic haunted-house effects to make ghostly figures appear throughout the room.",
+    },
+    {
+      question: "What kind of attraction is Haunted Mansion?",
+      choices: ["Dark ride", "Water coaster", "Outdoor train", "Spinning carnival ride"],
+      answer: "Dark ride",
+      fact: "Haunted Mansion is a dark ride that uses indoor scenes, lighting, music, and illusions.",
+    },
+    {
+      question: "What is the mood of Haunted Mansion meant to be?",
+      choices: ["Spooky but playful", "Very serious history", "High-speed racing", "Underwater exploring"],
+      answer: "Spooky but playful",
+      fact: "Haunted Mansion mixes ghostly scenes with humor, making it spooky without being too intense for many families.",
+    },
+    {
+      question: "Which Haunted Mansion scene includes many outdoor-style ghost characters?",
+      choices: ["Graveyard", "Rocket tunnel", "Safari plain", "Castle courtyard"],
+      answer: "Graveyard",
+      fact: "The graveyard scene is full of singing and playful ghost characters near the end of the ride.",
+    },
+    {
+      question: "What object often appears to follow guests with its eyes?",
+      choices: ["Portraits", "Traffic cones", "Lanterns", "Treasure chests"],
+      answer: "Portraits",
+      fact: "Haunted Mansion uses changing portraits and visual tricks to make the house feel alive.",
+    },
+    {
+      question: "Where is Haunted Mansion located in Magic Kingdom?",
+      choices: ["Liberty Square", "Tomorrowland", "Storybook Circus", "Frontierland"],
+      answer: "Liberty Square",
+      fact: "Haunted Mansion sits in Liberty Square, giving that corner of the park a spooky old-estate feeling.",
+    },
   ],
 
   "Tiana's Bayou Adventure": [
@@ -318,6 +372,60 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "The Princess and the Frog",
       fact:
         "The ride follows Tiana and friends after the events of the film as they prepare for a Mardi Gras celebration.",
+    },
+    {
+      question: "Which Disney story inspires Tiana's Bayou Adventure?",
+      choices: ["The Princess and the Frog", "Frozen", "Peter Pan", "Toy Story"],
+      answer: "The Princess and the Frog",
+      fact: "The attraction continues the world of The Princess and the Frog with Tiana, Louis, and bayou music.",
+    },
+    {
+      question: "What kind of ride vehicle do guests use on Tiana's Bayou Adventure?",
+      choices: ["Log-style boats", "Rocket bikes", "Doom Buggies", "Flying carpets"],
+      answer: "Log-style boats",
+      fact: "Tiana's Bayou Adventure is a water ride with log-style boats that travel through bayou scenes.",
+    },
+    {
+      question: "What is one major thrill on Tiana's Bayou Adventure?",
+      choices: ["A big water drop", "A spinning teacup", "A backwards launch", "A flying theater"],
+      answer: "A big water drop",
+      fact: "The ride includes a large outdoor drop that is one of the biggest thrill moments in Magic Kingdom.",
+    },
+    {
+      question: "Which character is a jazz-loving alligator in Tiana's story?",
+      choices: ["Louis", "Olaf", "Figment", "Baloo"],
+      answer: "Louis",
+      fact: "Louis is the trumpet-playing alligator connected to the music and fun of Tiana's bayou world.",
+    },
+    {
+      question: "What setting is central to Tiana's Bayou Adventure?",
+      choices: ["Louisiana bayou", "Outer space", "Swiss mountain", "London rooftops"],
+      answer: "Louisiana bayou",
+      fact: "The ride's scenes are built around a lively Louisiana bayou atmosphere with music, water, and critters.",
+    },
+    {
+      question: "What kind of music feeling fits Tiana's Bayou Adventure best?",
+      choices: ["New Orleans jazz", "Space techno", "Pirate chant", "Western yodeling"],
+      answer: "New Orleans jazz",
+      fact: "The ride leans into New Orleans-inspired music, matching Tiana's story and restaurant dreams.",
+    },
+    {
+      question: "What are Tiana and friends preparing for in the attraction's story?",
+      choices: ["A celebration", "A space launch", "A pirate battle", "A royal tournament"],
+      answer: "A celebration",
+      fact: "The ride follows Tiana and friends as they gather music and friends for a joyful celebration.",
+    },
+    {
+      question: "What should riders expect on Tiana's Bayou Adventure?",
+      choices: ["They may get wet", "They must stand up", "They wear 3D glasses", "They drive cars"],
+      answer: "They may get wet",
+      fact: "Because it is a flume-style water ride with drops and splashes, guests may get wet.",
+    },
+    {
+      question: "Where is Tiana's Bayou Adventure located?",
+      choices: ["Frontierland", "Tomorrowland", "Fantasyland", "Main Street"],
+      answer: "Frontierland",
+      fact: "Tiana's Bayou Adventure is in Frontierland, bringing bayou storytelling and water-ride thrills to that area.",
     },
   ],
 
@@ -333,6 +441,60 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "The skipper’s jokes",
       fact:
         "Okay, the official answer is probably not the jokes, but the skippers’ terrible puns are the whole charm.",
+    },
+    {
+      question: "Who tells jokes throughout Jungle Cruise?",
+      choices: ["The skipper", "The Ghost Host", "The mayor", "The mine boss"],
+      answer: "The skipper",
+      fact: "Jungle Cruise skippers are famous for playful jokes and puns during the boat ride.",
+    },
+    {
+      question: "What kind of vehicle do guests ride on Jungle Cruise?",
+      choices: ["River boat", "Mine train", "Rocket ship", "Flying elephant"],
+      answer: "River boat",
+      fact: "Jungle Cruise uses boat vehicles to take guests along a themed river adventure.",
+    },
+    {
+      question: "What kind of humor is Jungle Cruise best known for?",
+      choices: ["Puns", "Silent comedy", "Scary stories", "Sports chants"],
+      answer: "Puns",
+      fact: "The attraction is famous for silly wordplay and skipper jokes that make the cruise feel playful.",
+    },
+    {
+      question: "What do guests see along the Jungle Cruise river?",
+      choices: ["Animal scenes", "Space stations", "Castle rooms", "Toy boxes"],
+      answer: "Animal scenes",
+      fact: "Jungle Cruise passes themed animal scenes, jungle ruins, waterfalls, and river scenes.",
+    },
+    {
+      question: "What famous waterfall-style joke is part of Jungle Cruise?",
+      choices: ["The backside of water", "The top of fire", "The middle of snow", "The bottom of space"],
+      answer: "The backside of water",
+      fact: "The boat passes behind a waterfall, setting up one of the attraction's best-known skipper jokes.",
+    },
+    {
+      question: "What land is Jungle Cruise located in?",
+      choices: ["Adventureland", "Tomorrowland", "Fantasyland", "Liberty Square"],
+      answer: "Adventureland",
+      fact: "Jungle Cruise fits Adventureland because it is themed like a river expedition through faraway places.",
+    },
+    {
+      question: "What is the pace of Jungle Cruise?",
+      choices: ["Slow boat ride", "High-speed coaster", "Drop tower", "Spinning ride"],
+      answer: "Slow boat ride",
+      fact: "Jungle Cruise is a slow-moving boat ride, giving families time to enjoy the scenes and jokes.",
+    },
+    {
+      question: "What makes each Jungle Cruise ride feel a little different?",
+      choices: ["The skipper's delivery", "The track changes", "The boat flies", "The seats spin"],
+      answer: "The skipper's delivery",
+      fact: "Different skippers bring their own timing and personality to the jokes, so rides can feel different.",
+    },
+    {
+      question: "What kind of adventure does Jungle Cruise pretend to be?",
+      choices: ["A guided river expedition", "A royal dance", "A space battle", "A cooking lesson"],
+      answer: "A guided river expedition",
+      fact: "The ride is staged like a guided jungle river trip, with the skipper leading the expedition.",
     },
   ],
 
@@ -362,6 +524,48 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "Back row",
       fact:
         "The back tends to get pulled over drops and turns with more whip. This is also where brave family members suddenly become very quiet.",
+    },
+    {
+      question: "What kind of ride is Big Thunder Mountain Railroad?",
+      choices: ["Runaway mine train coaster", "Boat ride", "Flying theater", "Carousel"],
+      answer: "Runaway mine train coaster",
+      fact: "Big Thunder Mountain is themed as a wild mine train racing through a desert mountain town.",
+    },
+    {
+      question: "What land is Big Thunder Mountain Railroad in?",
+      choices: ["Frontierland", "Tomorrowland", "Fantasyland", "Adventureland"],
+      answer: "Frontierland",
+      fact: "Big Thunder Mountain fits Frontierland with its Old West mining town and desert mountain theme.",
+    },
+    {
+      question: "What are the ride vehicles themed as?",
+      choices: ["Mine trains", "Rocket bikes", "River rafts", "Pirate ships"],
+      answer: "Mine trains",
+      fact: "The coaster trains are styled like mine trains, matching the story of a runaway railroad.",
+    },
+    {
+      question: "What setting is Big Thunder Mountain known for?",
+      choices: ["Desert mining town", "Haunted mansion", "Frozen castle", "Outer space"],
+      answer: "Desert mining town",
+      fact: "The ride's scenery includes red rock, tunnels, mining equipment, and an Old West atmosphere.",
+    },
+    {
+      question: "What makes Big Thunder Mountain exciting?",
+      choices: ["Turns, dips, and tunnels", "A slow museum tour", "A 3D movie", "A spinning tea cup"],
+      answer: "Turns, dips, and tunnels",
+      fact: "Big Thunder Mountain uses quick turns, small drops, and tunnels to create a fun coaster adventure.",
+    },
+    {
+      question: "What animal is often associated with the Big Thunder Mountain setting?",
+      choices: ["Goat", "Penguin", "Giraffe", "Dolphin"],
+      answer: "Goat",
+      fact: "A goat scene is one of the memorable details riders may notice on Big Thunder Mountain.",
+    },
+    {
+      question: "What is the ride's story style?",
+      choices: ["A train racing through a haunted mining area", "A boat looking for pirates", "A tour of movie props", "A flight over Earth"],
+      answer: "A train racing through a haunted mining area",
+      fact: "The attraction tells the story of a mining railroad with a wild, almost supernatural energy.",
     },
   ],
 
