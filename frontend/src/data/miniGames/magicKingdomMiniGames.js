@@ -893,6 +893,24 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "Sometimes the best attraction is the one that quietly saves everyone’s mood.",
     },
+    {
+      question: "Which character causes musical chaos in Mickey's PhilharMagic?",
+      choices: ["Donald Duck", "Goofy", "Pluto", "Chip"],
+      answer: "Donald Duck",
+      fact: "Donald Duck gets swept into the show after putting on Mickey's sorcerer hat.",
+    },
+    {
+      question: "What kind of show is Mickey's PhilharMagic?",
+      choices: ["3D musical show", "Boat ride", "Roller coaster", "Parade"],
+      answer: "3D musical show",
+      fact: "Mickey's PhilharMagic combines 3D film effects, music, and classic Disney animated moments.",
+    },
+    {
+      question: "Which famous Mickey item appears in Mickey's PhilharMagic?",
+      choices: ["Sorcerer hat", "Pirate sword", "Space helmet", "Crystal slipper"],
+      answer: "Sorcerer hat",
+      fact: "Mickey's sorcerer hat helps kick off the magical trouble in the show.",
+    },
   ],
 
   "The Barnstormer": [
@@ -909,6 +927,24 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "First coaster confidence",
       fact:
         "For younger kids, this can be the “I did a coaster!” moment without going full Space Mountain.",
+    },
+    {
+      question: "What kind of ride is The Barnstormer?",
+      choices: ["Junior coaster", "Boat ride", "Dark ride", "Carousel"],
+      answer: "Junior coaster",
+      fact: "The Barnstormer is a small family coaster that is often a kid's first coaster experience.",
+    },
+    {
+      question: "Which Disney character is tied to The Barnstormer theme?",
+      choices: ["Goofy", "Mickey", "Ariel", "Buzz Lightyear"],
+      answer: "Goofy",
+      fact: "The Barnstormer is themed around Goofy and his playful stunt-flying style.",
+    },
+    {
+      question: "What area is The Barnstormer part of?",
+      choices: ["Storybook Circus", "Liberty Square", "Adventureland", "Frontierland"],
+      answer: "Storybook Circus",
+      fact: "The Barnstormer fits Storybook Circus with its playful flying-school and circus feel.",
     },
   ],
 
@@ -927,6 +963,24 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "It is a spinner with a little Adventureland chaos added in.",
     },
+    {
+      question: "What do guests ride on The Magic Carpets of Aladdin?",
+      choices: ["Flying carpets", "Pirate boats", "Mine trains", "Rocket bikes"],
+      answer: "Flying carpets",
+      fact: "The attraction lets guests ride carpet-shaped vehicles inspired by Aladdin.",
+    },
+    {
+      question: "Which Disney movie inspires The Magic Carpets of Aladdin?",
+      choices: ["Aladdin", "Frozen", "Cars", "The Lion King"],
+      answer: "Aladdin",
+      fact: "The ride is based on the magic carpet adventure feeling from Aladdin.",
+    },
+    {
+      question: "Which animal figure is known for surprising guests near the ride?",
+      choices: ["Camel", "Elephant", "Tiger", "Giraffe"],
+      answer: "Camel",
+      fact: "The camel near the attraction is known for playfully spitting water at passing guests.",
+    },
   ],
 
   "Walt Disney's Enchanted Tiki Room": [
@@ -944,6 +998,24 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "The Tiki Room is classic Disney weirdness, and that is exactly why it works.",
     },
+    {
+      question: "What kind of animals are the main performers in the Tiki Room?",
+      choices: ["Birds", "Bears", "Fish", "Dogs"],
+      answer: "Birds",
+      fact: "The Enchanted Tiki Room stars singing birds along with flowers and tiki figures.",
+    },
+    {
+      question: "What do guests mostly do during Walt Disney's Enchanted Tiki Room?",
+      choices: ["Sit and watch a musical show", "Drive cars", "Shoot targets", "Ride a coaster"],
+      answer: "Sit and watch a musical show",
+      fact: "The Tiki Room is a seated show with music, colorful characters, and tropical atmosphere.",
+    },
+    {
+      question: "What is the overall setting of the Tiki Room?",
+      choices: ["Tropical hideaway", "Space station", "Old mansion", "Snowy mountain"],
+      answer: "Tropical hideaway",
+      fact: "The show uses tropical birds, flowers, and tiki details to create an island-style setting.",
+    },
   ],
 
   "Astro Orbiter": [
@@ -953,6 +1025,30 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "It loads high above Tomorrowland",
       fact:
         "The height makes the view great and the ride feel more dramatic than it looks from the ground.",
+    },
+    {
+      question: "What do guests ride in on Astro Orbiter?",
+      choices: ["Rocket ships", "Teacups", "Log boats", "Honey pots"],
+      answer: "Rocket ships",
+      fact: "Astro Orbiter uses small rocket vehicles that circle high above Tomorrowland.",
+    },
+    {
+      question: "Where is Astro Orbiter located?",
+      choices: ["Tomorrowland", "Fantasyland", "Adventureland", "Frontierland"],
+      answer: "Tomorrowland",
+      fact: "Astro Orbiter fits Tomorrowland with its space-age rocket theme.",
+    },
+    {
+      question: "What makes Astro Orbiter feel different from many spinner rides?",
+      choices: ["It is elevated high above the land", "It goes underwater", "It moves through a dark mansion", "It has a big splash"],
+      answer: "It is elevated high above the land",
+      fact: "Astro Orbiter sits high above Tomorrowland, giving riders big views while they circle.",
+    },
+    {
+      question: "What can riders control on Astro Orbiter?",
+      choices: ["Moving the rocket higher or lower", "Changing the music", "Stopping the ride", "Choosing the track"],
+      answer: "Moving the rocket higher or lower",
+      fact: "Riders can adjust their rocket's height during the flight.",
     },
   ],
 
@@ -971,6 +1067,24 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "The guide rail is doing heroic work out there.",
     },
+    {
+      question: "What do guests drive on Tomorrowland Speedway?",
+      choices: ["Gas-powered race cars", "Pirate ships", "Rocket bikes", "Safari trucks"],
+      answer: "Gas-powered race cars",
+      fact: "Tomorrowland Speedway lets guests steer small race cars along a guided roadway.",
+    },
+    {
+      question: "What helps keep Tomorrowland Speedway cars on course?",
+      choices: ["A guide rail", "A boat rope", "A flying cable", "A train track"],
+      answer: "A guide rail",
+      fact: "The cars follow a guide rail, so younger drivers can steer while staying on the course.",
+    },
+    {
+      question: "What is the main activity on Tomorrowland Speedway?",
+      choices: ["Driving a car", "Watching a 3D movie", "Riding a boat", "Spinning in a cup"],
+      answer: "Driving a car",
+      fact: "The fun of Tomorrowland Speedway is getting to steer and drive around the track.",
+    },
   ],
 
   "Monsters Inc. Laugh Floor": [
@@ -980,6 +1094,30 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "Laughter",
       fact:
         "It is a great recovery show because the commitment is low, the seats are real, and the jokes are family-safe.",
+    },
+    {
+      question: "What do the monsters collect during Monsters Inc. Laugh Floor?",
+      choices: ["Laughs", "Gems", "Pixie dust", "Rocket fuel"],
+      answer: "Laughs",
+      fact: "The show is built around collecting laughter to power the monster world.",
+    },
+    {
+      question: "Which Monsters Inc. character is closely connected to the Laugh Floor?",
+      choices: ["Mike Wazowski", "Buzz Lightyear", "Simba", "Peter Pan"],
+      answer: "Mike Wazowski",
+      fact: "Mike Wazowski helps lead the comedy-club style show.",
+    },
+    {
+      question: "What kind of attraction is Monsters Inc. Laugh Floor?",
+      choices: ["Interactive comedy show", "Roller coaster", "Boat ride", "Carousel"],
+      answer: "Interactive comedy show",
+      fact: "The show uses live-style jokes and audience interaction to make each performance feel different.",
+    },
+    {
+      question: "What can sometimes happen to guests during the show?",
+      choices: ["They may appear on screen", "They ride a rocket", "They drive a car", "They get soaked"],
+      answer: "They may appear on screen",
+      fact: "Monsters Inc. Laugh Floor often includes audience members in the jokes using cameras and screens.",
     },
   ],
 
@@ -991,6 +1129,30 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "It is weird, musical, indoors, and exactly the kind of show that gives tired families a needed reset.",
     },
+    {
+      question: "What kind of performers star in Country Bear Musical Jamboree?",
+      choices: ["Singing bears", "Flying elephants", "Space aliens", "Pirates"],
+      answer: "Singing bears",
+      fact: "Country Bear Musical Jamboree features Audio-Animatronic bears performing musical numbers.",
+    },
+    {
+      question: "What kind of attraction is Country Bear Musical Jamboree?",
+      choices: ["Seated musical show", "Water ride", "Dark coaster", "Shooting game"],
+      answer: "Seated musical show",
+      fact: "Guests sit in a theater while the bear performers sing and joke from the stage.",
+    },
+    {
+      question: "What land is Country Bear Musical Jamboree located in?",
+      choices: ["Frontierland", "Tomorrowland", "Fantasyland", "Adventureland"],
+      answer: "Frontierland",
+      fact: "The show fits Frontierland with its country music style and rustic theater setting.",
+    },
+    {
+      question: "What makes the Country Bears unusual performers?",
+      choices: ["They are Audio-Animatronics", "They are live animals", "They are puppets on strings", "They are holograms only"],
+      answer: "They are Audio-Animatronics",
+      fact: "The bears are Audio-Animatronic figures, a classic Disney way to bring characters to life on stage.",
+    },
   ],
 
   "The Hall of Presidents": [
@@ -1000,6 +1162,30 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "A long seated AC break",
       fact:
         "Sometimes the smartest park move is not glamorous. It is sitting down in air conditioning before everyone melts.",
+    },
+    {
+      question: "What does The Hall of Presidents focus on?",
+      choices: ["United States presidents", "Pirates", "Space pilots", "Disney villains"],
+      answer: "United States presidents",
+      fact: "The attraction presents the history and office of the United States presidency.",
+    },
+    {
+      question: "What kind of attraction is The Hall of Presidents?",
+      choices: ["Seated theater show", "Roller coaster", "Spinner ride", "Water raft"],
+      answer: "Seated theater show",
+      fact: "Guests watch The Hall of Presidents from a theater, making it a calm indoor attraction.",
+    },
+    {
+      question: "What type of figures appear on stage in The Hall of Presidents?",
+      choices: ["Audio-Animatronics", "Cardboard cutouts", "Shadow puppets", "Toy cars"],
+      answer: "Audio-Animatronics",
+      fact: "The show uses Audio-Animatronic figures to represent U.S. presidents on stage.",
+    },
+    {
+      question: "Where is The Hall of Presidents located?",
+      choices: ["Liberty Square", "Tomorrowland", "Storybook Circus", "Adventureland"],
+      answer: "Liberty Square",
+      fact: "The Hall of Presidents is in Liberty Square, a land themed around American history.",
     },
   ],
 
