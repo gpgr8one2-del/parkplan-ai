@@ -1630,6 +1630,18 @@ const EPCOT_TRIVIA_BY_RIDE = {
       answer: "Omnimover",
       fact: "An Omnimover keeps vehicles moving continuously, which is why Spaceship Earth can move a lot of guests while staying calm.",
     },
+    {
+      question: "What is the giant EPCOT icon that Spaceship Earth is inside?",
+      choices: ["Geodesic sphere", "Castle tower", "Pirate fort", "Tree trunk"],
+      answer: "Geodesic sphere",
+      fact: "Spaceship Earth is housed inside EPCOT's giant geodesic sphere, one of the park's most recognizable icons.",
+    },
+    {
+      question: "What big idea does Spaceship Earth explore?",
+      choices: ["Human communication", "Car racing", "Toy battles", "Jungle exploration"],
+      answer: "Human communication",
+      fact: "Spaceship Earth follows how people have shared ideas through writing, printing, technology, and connection.",
+    },
   ],
 
   "Guardians of the Galaxy: Cosmic Rewind": [
@@ -1707,6 +1719,24 @@ const EPCOT_TRIVIA_BY_RIDE = {
       choices: ["Green", "Orange", "Blue", "Silver"],
       answer: "Orange",
       fact: "Orange is the more intense version. Green is the calmer orbit version and usually the better pick for nervous riders.",
+    },
+    {
+      question: "What kind of mission does Mission: SPACE simulate?",
+      choices: ["Space flight", "Pirate sailing", "Jungle cruising", "Car testing"],
+      answer: "Space flight",
+      fact: "Mission: SPACE is designed to make guests feel like they are part of a space-training mission.",
+    },
+    {
+      question: "What role do guests pretend to have on Mission: SPACE?",
+      choices: ["Crew members", "Jungle skippers", "Movie directors", "Toy collectors"],
+      answer: "Crew members",
+      fact: "The attraction gives guests a space-crew feeling as they prepare for launch and flight.",
+    },
+    {
+      question: "What is the main theme of Mission: SPACE?",
+      choices: ["Astronaut training", "Frozen music", "Cooking in Paris", "Mexican folklore"],
+      answer: "Astronaut training",
+      fact: "Mission: SPACE uses a training-center setup to make the space adventure feel like a real mission.",
     },
   ],
 
@@ -1855,6 +1885,18 @@ const EPCOT_TRIVIA_BY_RIDE = {
       answer: "LWTL",
       fact: "Living with the Land has a huge fanbase because it is calm, cool, weirdly fascinating, and peak EPCOT comfort.",
     },
+    {
+      question: "What kind of ride is Living with the Land?",
+      choices: ["Boat ride", "Roller coaster", "Drop tower", "Spinning ride"],
+      answer: "Boat ride",
+      fact: "Living with the Land is a gentle boat ride through scenes about farming, nature, and greenhouses.",
+    },
+    {
+      question: "What real growing area do guests pass through on Living with the Land?",
+      choices: ["Greenhouses", "Mine tunnels", "Castle rooms", "Movie sets"],
+      answer: "Greenhouses",
+      fact: "The ride passes through working greenhouse areas where plants are grown using different techniques.",
+    },
   ],
 
   "The Seas with Nemo & Friends": [
@@ -1869,6 +1911,24 @@ const EPCOT_TRIVIA_BY_RIDE = {
       choices: ["Clamobile", "Seashell spinner", "Submarine pod", "Turtle shell"],
       answer: "Clamobile",
       fact: "The Clamobiles move through the story before dropping you into the real aquarium area.",
+    },
+    {
+      question: "Which Pixar movie inspires The Seas with Nemo & Friends?",
+      choices: ["Finding Nemo", "Cars", "Ratatouille", "Toy Story"],
+      answer: "Finding Nemo",
+      fact: "The attraction follows Nemo and friends from the world of Finding Nemo.",
+    },
+    {
+      question: "What kind of ride vehicles do guests board on The Seas with Nemo & Friends?",
+      choices: ["Clamobiles", "Rocket ships", "Mine carts", "Race cars"],
+      answer: "Clamobiles",
+      fact: "Guests ride in shell-shaped vehicles often called Clamobiles as they travel through the Nemo scenes.",
+    },
+    {
+      question: "What kind of animals fit the theme of The Seas with Nemo & Friends?",
+      choices: ["Ocean animals", "Farm animals", "Jungle cats", "Desert camels"],
+      answer: "Ocean animals",
+      fact: "The attraction connects Nemo's story to EPCOT's larger ocean and aquarium theme.",
     },
   ],
 
@@ -1885,6 +1945,24 @@ const EPCOT_TRIVIA_BY_RIDE = {
       answer: "The water cycle",
       fact: "The trail turns the water cycle into something kids can touch, hear, and play with instead of just reading about it.",
     },
+    {
+      question: "Which Disney character inspires Journey of Water?",
+      choices: ["Moana", "Elsa", "Ariel", "Mulan"],
+      answer: "Moana",
+      fact: "Journey of Water is inspired by Moana and her connection to the ocean.",
+    },
+    {
+      question: "What natural element is the main focus of Journey of Water?",
+      choices: ["Water", "Fire", "Snow", "Lightning"],
+      answer: "Water",
+      fact: "The experience teaches how water moves, changes, and supports life in playful ways.",
+    },
+    {
+      question: "What kind of experience is Journey of Water?",
+      choices: ["Walk-through exploration trail", "Roller coaster", "Boat flume", "3D theater"],
+      answer: "Walk-through exploration trail",
+      fact: "Journey of Water is a walk-through experience where guests interact with water features at their own pace.",
+    },
   ],
 
   "Journey into Imagination with Figment": [
@@ -1900,6 +1978,24 @@ const EPCOT_TRIVIA_BY_RIDE = {
       answer: "Dreamfinder",
       fact: "Dreamfinder and Figment are sacred EPCOT nostalgia. Mention Dreamfinder around an EPCOT fan and watch what happens.",
     },
+    {
+      question: "Which purple dragon stars in Journey into Imagination?",
+      choices: ["Figment", "Spike", "Mushu", "Elliott"],
+      answer: "Figment",
+      fact: "Figment is EPCOT's playful purple dragon connected to imagination and creativity.",
+    },
+    {
+      question: "What is the main idea of Journey into Imagination?",
+      choices: ["Using imagination", "Testing cars", "Flying over Earth", "Cooking soup"],
+      answer: "Using imagination",
+      fact: "The ride is built around creativity, senses, and the fun of thinking differently.",
+    },
+    {
+      question: "What kind of mood does Figment bring to the attraction?",
+      choices: ["Silly and playful", "Scary and serious", "Quiet and formal", "Wild West"],
+      answer: "Silly and playful",
+      fact: "Figment adds humor and mischief as guests move through the imagination-themed scenes.",
+    },
   ],
 
   "Gran Fiesta Tour Starring The Three Caballeros": [
@@ -1914,6 +2010,24 @@ const EPCOT_TRIVIA_BY_RIDE = {
       choices: ["Mexico", "Norway", "Italy", "Morocco"],
       answer: "Mexico",
       fact: "The Mexico pavilion hides a twilight marketplace, a volcano backdrop, restaurants, shops, and a full boat ride.",
+    },
+    {
+      question: "Where is Gran Fiesta Tour located in EPCOT?",
+      choices: ["Mexico pavilion", "France pavilion", "Norway pavilion", "Canada pavilion"],
+      answer: "Mexico pavilion",
+      fact: "Gran Fiesta Tour is inside the Mexico pavilion in World Showcase.",
+    },
+    {
+      question: "What kind of ride is Gran Fiesta Tour?",
+      choices: ["Boat ride", "Coaster", "Flying theater", "Walking trail"],
+      answer: "Boat ride",
+      fact: "Gran Fiesta Tour is a gentle boat ride through colorful scenes inspired by Mexico and The Three Caballeros.",
+    },
+    {
+      question: "Which classic Disney duck appears in Gran Fiesta Tour?",
+      choices: ["Donald Duck", "Daisy Duck", "Scrooge McDuck", "Darkwing Duck"],
+      answer: "Donald Duck",
+      fact: "Donald Duck appears with José Carioca and Panchito as part of The Three Caballeros.",
     },
   ],
 
