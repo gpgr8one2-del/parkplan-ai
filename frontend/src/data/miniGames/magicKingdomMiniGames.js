@@ -2600,6 +2600,24 @@ const HOLLYWOOD_TRIVIA_BY_RIDE = {
       answer: "A spring-action shooter",
       fact: "This is where families discover who is secretly way too competitive.",
     },
+    {
+      question: "What kind of game does Toy Story Mania! feel like?",
+      choices: ["A 3D carnival midway game", "A haunted elevator ride", "A jungle boat tour", "A space coaster"],
+      answer: "A 3D carnival midway game",
+      fact: "Toy Story Mania! turns classic midway-style games into an interactive Toy Story attraction.",
+    },
+    {
+      question: "What do guests use to play Toy Story Mania!?",
+      choices: ["A pull-string shooter", "A steering wheel", "A magic wand", "A paintbrush"],
+      answer: "A pull-string shooter",
+      fact: "Guests aim and pull a string to launch virtual objects at targets during the games.",
+    },
+    {
+      question: "Which Toy Story character is closely tied to the ride's carnival game theme?",
+      choices: ["Mr. Potato Head", "Kylo Ren", "Figment", "Goofy"],
+      answer: "Mr. Potato Head",
+      fact: "Mr. Potato Head appears in the attraction's playful midway setting and helps sell the carnival-game feel.",
+    },
   ],
 
   "Alien Swirling Saucers": [
@@ -2614,6 +2632,24 @@ const HOLLYWOOD_TRIVIA_BY_RIDE = {
       choices: ["A whip-style spinner", "A drop tower", "A boat ride", "A flying theater"],
       answer: "A whip-style spinner",
       fact: "The little saucers swing you around just enough to make kids laugh and adults question their snack timing.",
+    },
+    {
+      question: "Which Toy Story characters are featured on Alien Swirling Saucers?",
+      choices: ["The little green aliens", "The Green Army Men", "Bo Peep's sheep", "Sid's toys"],
+      answer: "The little green aliens",
+      fact: "The ride is themed around the claw-loving green aliens from Toy Story.",
+    },
+    {
+      question: "What kind of motion does Alien Swirling Saucers use?",
+      choices: ["Whipping and spinning", "Straight vertical drops", "Slow boat floating", "High-speed launching"],
+      answer: "Whipping and spinning",
+      fact: "The saucers move in a swirling pattern that gently whips trailers around curves.",
+    },
+    {
+      question: "What toy-inspired setting does Alien Swirling Saucers belong to?",
+      choices: ["Toy Story Land", "Galaxy's Edge", "Sunset Boulevard", "Echo Lake"],
+      answer: "Toy Story Land",
+      fact: "Alien Swirling Saucers fits Toy Story Land's idea that guests have shrunk down into a toy-filled backyard.",
     },
   ],
 
@@ -2755,6 +2791,24 @@ const HOLLYWOOD_TRIVIA_BY_RIDE = {
       choices: ["Different scene combinations", "Guests vote on the ending", "It changes by weather", "The seats move randomly"],
       answer: "Different scene combinations",
       fact: "Different destinations and characters can appear, so your family might not get the same trip twice.",
+    },
+    {
+      question: "What kind of attraction is Star Tours?",
+      choices: ["Motion simulator", "Outdoor coaster", "Boat ride", "Carousel"],
+      answer: "Motion simulator",
+      fact: "Star Tours uses a simulator cabin to make guests feel like they are flying through Star Wars scenes.",
+    },
+    {
+      question: "Which droid is known for piloting guests on Star Tours?",
+      choices: ["C-3PO", "BB-8", "R2-D2 only", "K-2SO"],
+      answer: "C-3PO",
+      fact: "C-3PO often ends up in the pilot role, which adds humor to the chaotic Star Tours flight.",
+    },
+    {
+      question: "What makes Star Tours different on repeat rides?",
+      choices: ["It can use different scene combinations", "It always has the exact same route", "Guests walk instead of ride", "It has no Star Wars characters"],
+      answer: "It can use different scene combinations",
+      fact: "Star Tours can mix different planets, characters, and scenes, so repeat rides may feel different.",
     },
   ],
 
