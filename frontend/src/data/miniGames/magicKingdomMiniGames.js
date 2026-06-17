@@ -299,6 +299,24 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "It is a slow-moving boat ride, which is one reason it can move a lot of guests and works well as a heat break.",
     },
+    {
+      question: "What kind of ride vehicle do guests board on Pirates of the Caribbean?",
+      choices: ["Boats", "Mine carts", "Rocket bikes", "Doom Buggies"],
+      answer: "Boats",
+      fact: "Pirates of the Caribbean is a boat ride that carries guests through pirate scenes and waterfront towns.",
+    },
+    {
+      question: "Which famous pirate character can guests spot in the ride?",
+      choices: ["Captain Jack Sparrow", "Buzz Lightyear", "Peter Pan", "Figment"],
+      answer: "Captain Jack Sparrow",
+      fact: "Captain Jack Sparrow appears in multiple scenes, connecting the classic attraction to the Pirates films.",
+    },
+    {
+      question: "What song phrase is strongly connected to Pirates of the Caribbean?",
+      choices: ["Yo Ho", "Heigh-Ho", "Hakuna Matata", "Let It Go"],
+      answer: "Yo Ho",
+      fact: "The classic pirate song helps give the ride its playful swashbuckling mood.",
+    },
   ],
 
   "Haunted Mansion": [
@@ -601,6 +619,18 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "The ride is simple on purpose: kids from around the world singing together. Also yes, the song is now renting space in your brain.",
     },
+    {
+      question: "What kind of ride is it's a small world?",
+      choices: ["Boat ride", "Roller coaster", "Drop tower", "Shooting game"],
+      answer: "Boat ride",
+      fact: "it's a small world is a gentle boat ride through colorful scenes representing children around the world.",
+    },
+    {
+      question: "What is the main message of it's a small world?",
+      choices: ["People around the world are connected", "Pirates love treasure", "Space travel is fast", "Ghosts throw parties"],
+      answer: "People around the world are connected",
+      fact: "The attraction uses music, costumes, and scenery to celebrate global friendship and connection.",
+    },
   ],
 
   "Buzz Lightyear's Space Ranger Spin": [
@@ -617,6 +647,24 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "Triangles and diamonds",
       fact:
         "Not all targets are equal. Disney scoring games are where calm family members become terrifyingly competitive.",
+    },
+    {
+      question: "What do guests use to score points on Buzz Lightyear's Space Ranger Spin?",
+      choices: ["Laser cannons", "Fishing rods", "Paint brushes", "Magic wands"],
+      answer: "Laser cannons",
+      fact: "Guests use laser cannons to aim at targets and help Buzz defeat Emperor Zurg.",
+    },
+    {
+      question: "Which Toy Story character leads the mission?",
+      choices: ["Buzz Lightyear", "Woody", "Rex", "Jessie"],
+      answer: "Buzz Lightyear",
+      fact: "Buzz Lightyear recruits guests as Space Rangers for the attraction's interactive mission.",
+    },
+    {
+      question: "Who is the main villain in Buzz Lightyear's Space Ranger Spin?",
+      choices: ["Emperor Zurg", "Captain Hook", "Ursula", "Jafar"],
+      answer: "Emperor Zurg",
+      fact: "Emperor Zurg is the villain guests are trying to stop by hitting targets throughout the ride.",
     },
   ],
 
@@ -635,6 +683,24 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "The Progress City model connects back to Walt Disney’s original ideas that helped inspire EPCOT.",
     },
+    {
+      question: "What area does the PeopleMover travel around?",
+      choices: ["Tomorrowland", "Fantasyland", "Adventureland", "Frontierland"],
+      answer: "Tomorrowland",
+      fact: "The PeopleMover gives guests an elevated tour around Tomorrowland.",
+    },
+    {
+      question: "What is the pace of the PeopleMover?",
+      choices: ["Gentle and steady", "Fast and looping", "Wet and splashy", "Spinning nonstop"],
+      answer: "Gentle and steady",
+      fact: "The PeopleMover is known as a calm ride with steady movement and great views of Tomorrowland.",
+    },
+    {
+      question: "What makes the PeopleMover helpful during a busy park day?",
+      choices: ["It gives a relaxing break", "It requires running", "It sprays everyone", "It has a big drop"],
+      answer: "It gives a relaxing break",
+      fact: "Families often enjoy the PeopleMover because it is seated, breezy, and usually low-stress.",
+    },
   ],
 
   "Under the Sea - Journey of The Little Mermaid": [
@@ -651,6 +717,24 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "Ursula",
       fact:
         "Ursula is huge in this attraction. She is basically the definition of “do not sign paperwork underwater.”",
+    },
+    {
+      question: "What are the ride vehicles shaped like on Under the Sea?",
+      choices: ["Clamshells", "Rocket ships", "Mine carts", "Safari trucks"],
+      answer: "Clamshells",
+      fact: "Guests ride in clamshell vehicles that fit the underwater theme of Ariel's story.",
+    },
+    {
+      question: "Which Disney princess is the ride centered around?",
+      choices: ["Ariel", "Belle", "Tiana", "Mulan"],
+      answer: "Ariel",
+      fact: "Under the Sea follows Ariel's story from The Little Mermaid through music-filled scenes.",
+    },
+    {
+      question: "Which sea witch appears in the ride?",
+      choices: ["Ursula", "Maleficent", "Cruella", "Mother Gothel"],
+      answer: "Ursula",
+      fact: "Ursula appears during the darker part of Ariel's story before the happy ending.",
     },
   ],
 
@@ -669,6 +753,24 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "Tigger energy is fun until your group is hot, hungry, and someone says “let’s walk to the other side of the park.”",
     },
+    {
+      question: "What kind of vehicle do guests ride in on Winnie the Pooh?",
+      choices: ["Honey pots", "Pirate ships", "Rocket bikes", "Doom Buggies"],
+      answer: "Honey pots",
+      fact: "The ride vehicles are themed as honey pots, matching Pooh's love of honey.",
+    },
+    {
+      question: "What storybook place does the ride visit?",
+      choices: ["Hundred Acre Wood", "Never Land", "Arendelle", "Pandora"],
+      answer: "Hundred Acre Wood",
+      fact: "The attraction takes guests through the Hundred Acre Wood with Pooh and his friends.",
+    },
+    {
+      question: "Which bouncy character appears in the ride?",
+      choices: ["Tigger", "Goofy", "Baloo", "Stitch"],
+      answer: "Tigger",
+      fact: "Tigger brings a playful bouncing moment to the ride, matching his energetic personality.",
+    },
   ],
 
   "Dumbo the Flying Elephant": [
@@ -685,6 +787,24 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "An indoor play area",
       fact:
         "The circus tent play area is one of the better kid-energy pressure valves in the park.",
+    },
+    {
+      question: "What do guests ride on Dumbo the Flying Elephant?",
+      choices: ["Flying elephants", "Pirate boats", "Race cars", "Mine trains"],
+      answer: "Flying elephants",
+      fact: "Guests ride elephant-shaped vehicles inspired by Dumbo's ability to fly.",
+    },
+    {
+      question: "What can riders usually control during Dumbo?",
+      choices: ["How high they fly", "The music speed", "The track direction", "The castle lights"],
+      answer: "How high they fly",
+      fact: "Each Dumbo vehicle lets riders control whether they fly higher or lower during the ride.",
+    },
+    {
+      question: "What area of Magic Kingdom is Dumbo connected to?",
+      choices: ["Storybook Circus", "Liberty Square", "Frontierland", "Adventureland"],
+      answer: "Storybook Circus",
+      fact: "Dumbo sits in Storybook Circus, which matches the attraction's circus-inspired theme.",
     },
   ],
 
@@ -703,6 +823,24 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "Every family has one person who says “I won’t spin it too fast” and then immediately becomes the villain.",
     },
+    {
+      question: "What do guests spin in on Mad Tea Party?",
+      choices: ["Teacups", "Rocket ships", "Logs", "Doom Buggies"],
+      answer: "Teacups",
+      fact: "Mad Tea Party uses colorful teacup vehicles inspired by Alice in Wonderland.",
+    },
+    {
+      question: "Which story inspires Mad Tea Party?",
+      choices: ["Alice in Wonderland", "The Jungle Book", "Toy Story", "Moana"],
+      answer: "Alice in Wonderland",
+      fact: "The ride is based on the silly tea party scene from Alice in Wonderland.",
+    },
+    {
+      question: "What can guests control in the center of the teacup?",
+      choices: ["How much they spin", "The ride music", "The lights", "The roof"],
+      answer: "How much they spin",
+      fact: "The wheel in the center of each teacup lets riders make their cup spin more or less.",
+    },
   ],
 
   "Prince Charming Regal Carrousel": [
@@ -719,6 +857,24 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "A golden ribbon on the tail",
       fact:
         "Families love hunting for this one. Whether you find it or not, everyone will suddenly have strong horse opinions.",
+    },
+    {
+      question: "What animals do guests ride on Prince Charming Regal Carrousel?",
+      choices: ["Horses", "Elephants", "Camels", "Dragons"],
+      answer: "Horses",
+      fact: "The carousel features ornate horses that circle through the heart of Fantasyland.",
+    },
+    {
+      question: "Where is Prince Charming Regal Carrousel located?",
+      choices: ["Fantasyland", "Tomorrowland", "Adventureland", "Frontierland"],
+      answer: "Fantasyland",
+      fact: "The carousel is in Fantasyland near Cinderella Castle, adding to the classic fairytale setting.",
+    },
+    {
+      question: "What kind of classic attraction is Prince Charming Regal Carrousel?",
+      choices: ["Carousel", "Dark ride", "Water flume", "Shooting game"],
+      answer: "Carousel",
+      fact: "A carousel is one of the most classic amusement rides, with animals moving up and down as the platform turns.",
     },
   ],
 
