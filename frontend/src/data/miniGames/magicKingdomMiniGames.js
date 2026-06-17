@@ -3198,6 +3198,24 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "Sometimes the smartest family move is sitting down in air conditioning before everyone melts.",
     },
+    {
+      question: "Which Disney movie inspires Festival of the Lion King?",
+      choices: ["The Lion King", "Finding Nemo", "Zootopia", "Moana"],
+      answer: "The Lion King",
+      fact: "Festival of the Lion King uses music, characters, and energy from The Lion King.",
+    },
+    {
+      question: "What kind of entertainment is Festival of the Lion King?",
+      choices: ["Live stage show", "Roller coaster", "River raft ride", "Animal trail"],
+      answer: "Live stage show",
+      fact: "The show combines live performers, music, puppetry, and colorful staging.",
+    },
+    {
+      question: "Why can Festival of the Lion King be a smart family break?",
+      choices: ["It is seated and indoors", "It requires running", "It has no shade", "It is a long outdoor trail"],
+      answer: "It is seated and indoors",
+      fact: "The indoor theater gives families a chance to sit, cool off, and still enjoy a major Animal Kingdom experience.",
+    },
   ],
 
   "Expedition Everest - Legend of the Forbidden Mountain": [
@@ -3281,6 +3299,24 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "The ride moves through lush scenery and areas affected by logging to support its conservation theme.",
     },
+    {
+      question: "What kind of ride is Kali River Rapids?",
+      choices: ["River raft ride", "Safari truck tour", "Stage show", "Train ride"],
+      answer: "River raft ride",
+      fact: "Kali River Rapids sends guests through a churning river in a circular raft.",
+    },
+    {
+      question: "What is likely to happen on Kali River Rapids?",
+      choices: ["Guests may get wet", "Guests fly on a banshee", "Guests watch a parade", "Guests meet Mickey"],
+      answer: "Guests may get wet",
+      fact: "The ride is known for splashes, and some seats can get much wetter than others.",
+    },
+    {
+      question: "Which Animal Kingdom land is Kali River Rapids located in?",
+      choices: ["Asia", "Africa", "Pandora", "Discovery Island"],
+      answer: "Asia",
+      fact: "Kali River Rapids is located in the Asia section of Disney's Animal Kingdom.",
+    },
   ],
 
   "Zootopia: Better Zoogether!": [
@@ -3298,6 +3334,24 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "It can be useful when the family needs seats, AC, and something easy near the center of the park.",
     },
+    {
+      question: "Which Disney movie world inspires Zootopia: Better Zoogether!?",
+      choices: ["Zootopia", "The Lion King", "Avatar", "Finding Nemo"],
+      answer: "Zootopia",
+      fact: "The attraction is based on the animal city and characters from Zootopia.",
+    },
+    {
+      question: "Where is Zootopia: Better Zoogether! located?",
+      choices: ["Tree of Life theater", "Pandora", "Asia bridge", "Rafiki's Planet Watch"],
+      answer: "Tree of Life theater",
+      fact: "Zootopia: Better Zoogether! is associated with the theater inside the Tree of Life.",
+    },
+    {
+      question: "What type of attraction is Zootopia: Better Zoogether! expected to be?",
+      choices: ["Indoor show experience", "Outdoor raft ride", "Safari truck ride", "High-speed coaster"],
+      answer: "Indoor show experience",
+      fact: "The attraction is treated as an indoor show-style family stop, not a thrill ride.",
+    },
   ],
 
   "Finding Nemo: The Big Blue... and Beyond!": [
@@ -3314,6 +3368,24 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "Dory",
       fact:
         "Dory energy is basically the official strategy for surviving a hot park day with kids.",
+    },
+    {
+      question: "Which Disney-Pixar movie inspires Finding Nemo: The Big Blue... and Beyond!?",
+      choices: ["Finding Nemo", "Cars", "Toy Story", "Coco"],
+      answer: "Finding Nemo",
+      fact: "The show uses characters and songs inspired by Finding Nemo.",
+    },
+    {
+      question: "What kind of attraction is Finding Nemo: The Big Blue... and Beyond!?",
+      choices: ["Stage show", "Roller coaster", "Safari ride", "Spinning ride"],
+      answer: "Stage show",
+      fact: "The attraction is a seated theater show with performers, puppets, music, and underwater storytelling.",
+    },
+    {
+      question: "Why can Finding Nemo be useful during a long Animal Kingdom day?",
+      choices: ["It gives families a seated show break", "It makes everyone run", "It is a water raft ride", "It has no place to sit"],
+      answer: "It gives families a seated show break",
+      fact: "The show can give families a calmer window while still keeping kids engaged.",
     },
   ],
 
@@ -3339,6 +3411,18 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "A balloon in a theme park queue would create immediate family chaos. Fun chaos, but chaos.",
     },
+    {
+      question: "Which character family is Bluey's Wild World centered around?",
+      choices: ["Bluey's family", "The Incredibles", "The Muppets", "The Madrigals"],
+      answer: "Bluey's family",
+      fact: "The experience is built around Bluey and her playful family world.",
+    },
+    {
+      question: "Where do guests travel to reach Conservation Station?",
+      choices: ["Rafiki's Planet Watch", "Pandora", "Asia", "Discovery Island"],
+      answer: "Rafiki's Planet Watch",
+      fact: "Conservation Station is reached by taking the Wildlife Express Train to Rafiki's Planet Watch.",
+    },
   ],
 
   "Wildlife Express Train": [
@@ -3355,6 +3439,24 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "Rafiki’s Planet Watch",
       fact:
         "It is a great fit if your family wants Bluey, animal-care experiences, or a slower block away from the main park loop.",
+    },
+    {
+      question: "What type of transportation is Wildlife Express Train?",
+      choices: ["Train", "Boat", "Monorail", "Gondola"],
+      answer: "Train",
+      fact: "Wildlife Express Train carries guests between Africa and Rafiki's Planet Watch.",
+    },
+    {
+      question: "What area does Wildlife Express Train help guests reach?",
+      choices: ["Rafiki's Planet Watch", "Pandora", "Asia", "Dinoland U.S.A."],
+      answer: "Rafiki's Planet Watch",
+      fact: "The train is the main way for guests to reach Rafiki's Planet Watch and Conservation Station.",
+    },
+    {
+      question: "What should families remember before riding Wildlife Express Train?",
+      choices: ["It adds travel time both ways", "It is a quick coaster loop", "It ends at Magic Kingdom", "It skips Conservation Station"],
+      answer: "It adds travel time both ways",
+      fact: "Because families need to ride out and back, the train is best treated as a planned side trip.",
     },
   ],
 
