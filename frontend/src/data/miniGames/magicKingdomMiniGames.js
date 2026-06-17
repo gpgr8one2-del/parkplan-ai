@@ -3008,6 +3008,48 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "The ride vehicle helps create the feeling that the banshee is breathing beneath you. It is one of the coolest small touches in the attraction.",
     },
+    {
+      question: "What alien world is Avatar Flight of Passage set on?",
+      choices: ["Pandora", "Tatooine", "Arendelle", "Neverland"],
+      answer: "Pandora",
+      fact: "Flight of Passage is set in Pandora, the moon from the Avatar story world.",
+    },
+    {
+      question: "What is the ride meant to feel like guests are doing?",
+      choices: ["Flying on a banshee", "Driving a race car", "Sailing a pirate ship", "Riding a mine train"],
+      answer: "Flying on a banshee",
+      fact: "The attraction uses motion, wind, and huge visuals to create the feeling of flying over Pandora.",
+    },
+    {
+      question: "What kind of scenery do riders fly over on Flight of Passage?",
+      choices: ["Pandora's mountains and oceans", "A haunted hotel", "A toy backyard", "A snowy village"],
+      answer: "Pandora's mountains and oceans",
+      fact: "The ride takes guests over dramatic Pandora landscapes like cliffs, forests, caves, and water.",
+    },
+    {
+      question: "What does the ride's link chair help guests imagine?",
+      choices: ["Connecting to an avatar", "Boarding a safari truck", "Launching into space", "Entering a castle"],
+      answer: "Connecting to an avatar",
+      fact: "The story says guests link with an avatar so they can experience flying on a banshee.",
+    },
+    {
+      question: "What makes Flight of Passage feel more realistic?",
+      choices: ["Motion, wind, and sensory effects", "Only a still picture", "A silent room", "A flat map"],
+      answer: "Motion, wind, and sensory effects",
+      fact: "The attraction combines movement, wind, sound, and visuals to make the flight feel alive.",
+    },
+    {
+      question: "What is the overall mood of Avatar Flight of Passage?",
+      choices: ["Soaring and adventurous", "Spooky and haunted", "Silly and tiny", "Quiet and formal"],
+      answer: "Soaring and adventurous",
+      fact: "Flight of Passage is designed to feel like a big, emotional flight through Pandora.",
+    },
+    {
+      question: "Which land is Avatar Flight of Passage located in?",
+      choices: ["Pandora - The World of Avatar", "Africa", "Asia", "DinoLand U.S.A."],
+      answer: "Pandora - The World of Avatar",
+      fact: "Flight of Passage is the major thrill attraction inside Pandora - The World of Avatar.",
+    },
   ],
 
   "Na'vi River Journey": [
@@ -3024,6 +3066,54 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "The Shaman of Songs",
       fact:
         "The Shaman of Songs is known for extremely fluid facial and hand movement.",
+    },
+    {
+      question: "What kind of ride vehicle is used on Na'vi River Journey?",
+      choices: ["A boat", "A coaster train", "A safari truck", "A spinning saucer"],
+      answer: "A boat",
+      fact: "Na'vi River Journey is a gentle boat ride through Pandora's glowing rainforest.",
+    },
+    {
+      question: "What makes the forest on Na'vi River Journey look magical?",
+      choices: ["Bioluminescent plants", "Neon road signs", "Snow machines", "Fireworks only"],
+      answer: "Bioluminescent plants",
+      fact: "The ride uses glowing plants and colorful lighting to create Pandora's nighttime rainforest feel.",
+    },
+    {
+      question: "Which culture is featured throughout Na'vi River Journey?",
+      choices: ["The Na'vi", "The pirates", "The toys", "The Muppets"],
+      answer: "The Na'vi",
+      fact: "The attraction focuses on the Na'vi people and the natural world of Pandora.",
+    },
+    {
+      question: "What is the pace of Na'vi River Journey?",
+      choices: ["Slow and gentle", "Fast and looping", "Bumpy and wild", "Straight down"],
+      answer: "Slow and gentle",
+      fact: "Na'vi River Journey is a calm boat ride, making it a softer Pandora experience than Flight of Passage.",
+    },
+    {
+      question: "What can guests hear during Na'vi River Journey?",
+      choices: ["Pandora music and nature sounds", "Race car engines", "Elevator bells", "Carnival buzzers"],
+      answer: "Pandora music and nature sounds",
+      fact: "Music, water sounds, and creature noises help make the rainforest feel alive.",
+    },
+    {
+      question: "What does the Shaman of Songs do near the end of the ride?",
+      choices: ["Sings", "Drives a truck", "Launches a coaster", "Runs a game booth"],
+      answer: "Sings",
+      fact: "The Shaman of Songs is known for her detailed movement and musical performance.",
+    },
+    {
+      question: "What is Na'vi River Journey best for families wanting?",
+      choices: ["A calm scenic ride", "A huge drop", "A spinning challenge", "A loud coaster launch"],
+      answer: "A calm scenic ride",
+      fact: "The attraction is a peaceful way to experience Pandora without a thrill-ride feel.",
+    },
+    {
+      question: "Which Animal Kingdom land is Na'vi River Journey in?",
+      choices: ["Pandora - The World of Avatar", "Asia", "Africa", "Discovery Island"],
+      answer: "Pandora - The World of Avatar",
+      fact: "Na'vi River Journey is located in Pandora near Avatar Flight of Passage.",
     },
   ],
 
@@ -3048,6 +3138,48 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "It can be different each time",
       fact:
         "Because the animals are real, each safari can feel different depending on weather, time, and animal behavior.",
+    },
+    {
+      question: "What kind of vehicle do guests ride on Kilimanjaro Safaris?",
+      choices: ["Safari truck", "Boat", "Train coaster", "Flying banshee"],
+      answer: "Safari truck",
+      fact: "Kilimanjaro Safaris uses open-air safari trucks to take guests through animal habitats.",
+    },
+    {
+      question: "What Animal Kingdom land is Kilimanjaro Safaris located in?",
+      choices: ["Africa", "Asia", "Pandora", "Discovery Island"],
+      answer: "Africa",
+      fact: "Kilimanjaro Safaris is located in the Africa section of Disney's Animal Kingdom.",
+    },
+    {
+      question: "Why can Kilimanjaro Safaris feel different each time?",
+      choices: ["The animals may be in different places", "The track changes every day", "The trucks become boats", "The ride has no animals"],
+      answer: "The animals may be in different places",
+      fact: "Because the animals are living creatures, each safari can have different sightings and moments.",
+    },
+    {
+      question: "Which large animal might families see on Kilimanjaro Safaris?",
+      choices: ["Giraffe", "Polar bear", "Kangaroo", "Penguin"],
+      answer: "Giraffe",
+      fact: "Giraffes are among the animals guests may spot while riding through the savanna areas.",
+    },
+    {
+      question: "What type of habitat does part of Kilimanjaro Safaris recreate?",
+      choices: ["African savanna", "Arctic tundra", "Toy backyard", "Haunted mansion"],
+      answer: "African savanna",
+      fact: "The safari includes wide savanna-style spaces designed for animals like giraffes, antelope, and rhinos.",
+    },
+    {
+      question: "What should riders do to enjoy Kilimanjaro Safaris most?",
+      choices: ["Look around carefully", "Keep eyes closed", "Only watch the floor", "Ignore the guide"],
+      answer: "Look around carefully",
+      fact: "Animal sightings can happen on either side of the truck, so looking around helps families spot more.",
+    },
+    {
+      question: "What makes Kilimanjaro Safaris a good family attraction?",
+      choices: ["Real animals and a guided ride", "A high-speed launch", "A haunted drop", "A spinning carnival game"],
+      answer: "Real animals and a guided ride",
+      fact: "The ride mixes animal viewing with a guided safari story that families can enjoy together.",
     },
   ],
 
@@ -3089,6 +3221,48 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "Asia",
       fact:
         "Asia is one of Animal Kingdom’s most walking-heavy areas, so nearby timing matters.",
+    },
+    {
+      question: "What kind of ride is Expedition Everest?",
+      choices: ["Roller coaster", "Boat ride", "Safari truck tour", "Motion simulator"],
+      answer: "Roller coaster",
+      fact: "Expedition Everest is Animal Kingdom's large outdoor roller coaster.",
+    },
+    {
+      question: "Which Animal Kingdom land is Expedition Everest located in?",
+      choices: ["Asia", "Africa", "Pandora", "Discovery Island"],
+      answer: "Asia",
+      fact: "Expedition Everest stands in the Asia section of Disney's Animal Kingdom.",
+    },
+    {
+      question: "What mountain is the ride themed around?",
+      choices: ["Everest", "Space Mountain", "Big Thunder", "Mount Olympus"],
+      answer: "Everest",
+      fact: "The attraction uses the legend and look of Mount Everest as the center of its story.",
+    },
+    {
+      question: "What happens to the track during the ride story?",
+      choices: ["It appears broken", "It turns into water", "It becomes a road", "It disappears into space"],
+      answer: "It appears broken",
+      fact: "A broken track scene is one of the ride's signature story moments before the train changes direction.",
+    },
+    {
+      question: "What unusual coaster movement is Expedition Everest known for?",
+      choices: ["Going backward", "Floating slowly", "Spinning in circles only", "Stopping forever"],
+      answer: "Going backward",
+      fact: "The coaster includes a backward section that adds surprise to the mountain adventure.",
+    },
+    {
+      question: "What is the overall mood of Expedition Everest?",
+      choices: ["Mysterious mountain adventure", "Gentle garden tour", "Toy carnival game", "Peaceful river cruise"],
+      answer: "Mysterious mountain adventure",
+      fact: "The attraction combines a mountain expedition story with the legend of the Yeti.",
+    },
+    {
+      question: "What can guests see from parts of Expedition Everest?",
+      choices: ["Wide views of Animal Kingdom", "A castle parade route", "A space station", "A pirate harbor"],
+      answer: "Wide views of Animal Kingdom",
+      fact: "Because the coaster is tall and outdoors, some moments give riders big views across the park.",
     },
   ],
 
