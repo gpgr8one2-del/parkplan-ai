@@ -556,7 +556,7 @@ const MAGIC_KINGDOM_TRIVIA_BY_RIDE = {
       fact: "Big Thunder Mountain fits Frontierland with its Old West mining town and desert mountain theme.",
     },
     {
-      question: "What are the ride vehicles themed as?",
+      question: "What are Big Thunder Mountain’s ride vehicles themed as?",
       choices: ["Mine trains", "Rocket bikes", "River rafts", "Pirate ships"],
       answer: "Mine trains",
       fact: "The coaster trains are styled like mine trains, matching the story of a runaway railroad.",
