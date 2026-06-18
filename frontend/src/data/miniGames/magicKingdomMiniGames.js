@@ -3468,6 +3468,30 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "Animal trails work best when your family slows down and actually looks.",
     },
+    {
+      question: "What type of attraction is Gorilla Falls Exploration Trail?",
+      choices: ["Walking trail", "Roller coaster", "Stage show", "River raft ride"],
+      answer: "Walking trail",
+      fact: "Gorilla Falls is a self-paced walking trail where families can slow down and look for animals.",
+    },
+    {
+      question: "Which animals is Gorilla Falls especially known for?",
+      choices: ["Gorillas", "Penguins", "Kangaroos", "Polar bears"],
+      answer: "Gorillas",
+      fact: "The trail is named for gorillas, and the gorilla viewing areas are a major reason to visit.",
+    },
+    {
+      question: "Which Animal Kingdom land is Gorilla Falls Exploration Trail located in?",
+      choices: ["Africa", "Asia", "Pandora", "Discovery Island"],
+      answer: "Africa",
+      fact: "Gorilla Falls Exploration Trail is located near Kilimanjaro Safaris in the Africa section.",
+    },
+    {
+      question: "What is the best strategy for spotting animals on Gorilla Falls?",
+      choices: ["Move slowly and look carefully", "Rush straight through", "Only look at the ground", "Keep eyes closed"],
+      answer: "Move slowly and look carefully",
+      fact: "Animal trails reward families who take their time because animals may be resting, moving, or partly hidden.",
+    },
   ],
 
   "Maharajah Jungle Trek": [
@@ -3477,6 +3501,30 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "Asia",
       fact:
         "It pairs naturally with Everest, Kali, and Feathered Friends if the family still has walking energy.",
+    },
+    {
+      question: "What type of attraction is Maharajah Jungle Trek?",
+      choices: ["Walking trail", "Boat ride", "Coaster", "Motion simulator"],
+      answer: "Walking trail",
+      fact: "Maharajah Jungle Trek is a self-guided walking trail with animal viewing areas and detailed scenery.",
+    },
+    {
+      question: "Which big cats are associated with Maharajah Jungle Trek?",
+      choices: ["Tigers", "Lions", "Cheetahs", "Snow leopards"],
+      answer: "Tigers",
+      fact: "The trail is especially known for its tiger viewing areas and Asian-inspired setting.",
+    },
+    {
+      question: "What should families do on Maharajah Jungle Trek?",
+      choices: ["Take their time", "Expect a launch", "Prepare for a drop", "Skip every viewing area"],
+      answer: "Take their time",
+      fact: "The trail works best when families slow down and give themselves time to spot animals.",
+    },
+    {
+      question: "What kind of setting does Maharajah Jungle Trek use?",
+      choices: ["Asian ruins and animal habitats", "Toy backyard props", "Space station rooms", "Haunted hotel halls"],
+      answer: "Asian ruins and animal habitats",
+      fact: "The trail uses detailed ruins, paths, and habitats to create an immersive Asia-area animal walk.",
     },
   ],
 
@@ -3488,6 +3536,30 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "It uses trained bird behaviors, humor, and live demonstrations.",
     },
+    {
+      question: "What kind of show is Feathered Friends in Flight!?",
+      choices: ["Live bird show", "Roller coaster", "Boat ride", "3D movie"],
+      answer: "Live bird show",
+      fact: "Feathered Friends in Flight! is a live show focused on birds and their natural behaviors.",
+    },
+    {
+      question: "What do guests learn about during Feathered Friends in Flight!?",
+      choices: ["Bird behaviors", "Race car engines", "Toy design", "Mountain climbing"],
+      answer: "Bird behaviors",
+      fact: "The show highlights how different birds move, communicate, and use their natural abilities.",
+    },
+    {
+      question: "Why can Feathered Friends in Flight! be a good family stop?",
+      choices: ["It is seated and educational", "It is a high-speed launch", "It soaks every rider", "It requires a long hike"],
+      answer: "It is seated and educational",
+      fact: "The show gives families a seated break while still keeping the experience connected to animals.",
+    },
+    {
+      question: "What makes Feathered Friends in Flight! feel different from a trail?",
+      choices: ["Birds appear in a live presentation", "Guests ride safari trucks", "Guests board a train", "Guests spin in saucers"],
+      answer: "Birds appear in a live presentation",
+      fact: "Instead of walking through habitats, guests watch birds and presenters in a scheduled live show.",
+    },
   ],
 
   "Tree of Life": [
@@ -3497,6 +3569,30 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "Animals",
       fact:
         "There are hundreds of animal carvings built into the trunk and roots.",
+    },
+    {
+      question: "What is the Tree of Life at Animal Kingdom?",
+      choices: ["The park's central icon", "A roller coaster", "A hotel", "A monorail station"],
+      answer: "The park's central icon",
+      fact: "The Tree of Life is the visual centerpiece of Disney's Animal Kingdom.",
+    },
+    {
+      question: "What can families look for on the Tree of Life?",
+      choices: ["Animal carvings", "Hidden race cars", "Pirate flags", "Snowflakes"],
+      answer: "Animal carvings",
+      fact: "The Tree of Life is covered with many carved animals, making it fun to look closely.",
+    },
+    {
+      question: "Which area is the Tree of Life connected to?",
+      choices: ["Discovery Island", "Asia only", "Pandora only", "Rafiki's Planet Watch"],
+      answer: "Discovery Island",
+      fact: "The Tree of Life sits at the heart of Discovery Island near the center of the park.",
+    },
+    {
+      question: "Why is the Tree of Life useful as a family landmark?",
+      choices: ["It is easy to recognize", "It moves around the park", "It is hidden indoors", "It only appears at night"],
+      answer: "It is easy to recognize",
+      fact: "Because it is large and central, the Tree of Life helps families orient themselves in Animal Kingdom.",
     },
   ],
 
@@ -3508,6 +3604,30 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "For character-focused families, this can be more emotionally important than a short wait-time calculation suggests.",
     },
+    {
+      question: "Who can guests usually meet at Adventurers Outpost?",
+      choices: ["Mickey and Minnie", "Elsa and Anna", "Chewbacca and Rey", "Buzz and Woody"],
+      answer: "Mickey and Minnie",
+      fact: "Adventurers Outpost is known as a character greeting location for Mickey and Minnie.",
+    },
+    {
+      question: "What type of experience is Adventurers Outpost?",
+      choices: ["Character meet-and-greet", "River raft ride", "Walking animal trail", "Bird show"],
+      answer: "Character meet-and-greet",
+      fact: "Adventurers Outpost is mainly about meeting characters rather than riding a vehicle.",
+    },
+    {
+      question: "Why might families prioritize Adventurers Outpost?",
+      choices: ["They want a character photo", "They want a coaster launch", "They want to get soaked", "They want a long train ride"],
+      answer: "They want a character photo",
+      fact: "It can be a strong stop for families who care about photos and character moments.",
+    },
+    {
+      question: "What is the mood of Adventurers Outpost?",
+      choices: ["Friendly character greeting", "Spooky mystery", "High-speed adventure", "Quiet animal trail"],
+      answer: "Friendly character greeting",
+      fact: "The experience is built around a warm, simple character interaction.",
+    },
   ],
 
   "The Animation Experience at Conservation Station": [
@@ -3518,6 +3638,30 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       fact:
         "It is a calmer creative break, but remember it is part of the Rafiki’s Planet Watch train loop.",
     },
+    {
+      question: "What do guests learn to do at The Animation Experience?",
+      choices: ["Draw a Disney character", "Drive a safari truck", "Launch a coaster", "Steer a raft"],
+      answer: "Draw a Disney character",
+      fact: "The Animation Experience gives guests a guided drawing activity connected to Disney characters.",
+    },
+    {
+      question: "Where is The Animation Experience located?",
+      choices: ["Conservation Station", "Pandora", "Asia", "Sunset Boulevard"],
+      answer: "Conservation Station",
+      fact: "The experience is located at Conservation Station, reached by Wildlife Express Train.",
+    },
+    {
+      question: "What kind of pace does The Animation Experience offer?",
+      choices: ["Calm and creative", "Fast and soaking wet", "Loud and scary", "Bumpy and wild"],
+      answer: "Calm and creative",
+      fact: "The drawing class gives families a slower creative break from walking and ride lines.",
+    },
+    {
+      question: "What should families remember before choosing The Animation Experience?",
+      choices: ["It takes extra travel time", "It is next to Cinderella Castle", "It is a water ride", "It is inside Galaxy's Edge"],
+      answer: "It takes extra travel time",
+      fact: "Because it is at Conservation Station, families need to account for the train ride there and back.",
+    },
   ],
 
   "Affection Section": [
@@ -3527,6 +3671,30 @@ const ANIMAL_KINGDOM_TRIVIA_BY_RIDE = {
       answer: "Animal interaction area",
       fact:
         "It can be a sweet slower moment for animal-loving kids if the family already committed to Rafiki’s Planet Watch.",
+    },
+    {
+      question: "What kind of animals are found at Affection Section?",
+      choices: ["Gentle domestic animals", "Dinosaurs", "Ocean dolphins", "Polar animals"],
+      answer: "Gentle domestic animals",
+      fact: "Affection Section is a petting-area style experience with approachable animals.",
+    },
+    {
+      question: "Where is Affection Section located?",
+      choices: ["Rafiki's Planet Watch", "Pandora", "Asia", "Discovery Island"],
+      answer: "Rafiki's Planet Watch",
+      fact: "Affection Section is part of the Rafiki's Planet Watch area reached by Wildlife Express Train.",
+    },
+    {
+      question: "What type of family moment does Affection Section offer?",
+      choices: ["Hands-on animal interaction", "A coaster thrill", "A boat drop", "A nighttime fireworks show"],
+      answer: "Hands-on animal interaction",
+      fact: "Affection Section gives families a slower, hands-on animal experience instead of a ride.",
+    },
+    {
+      question: "What should families consider before visiting Affection Section?",
+      choices: ["The train trip adds time", "It has a height requirement", "It is a lightning-fast coaster", "It is only a parade route"],
+      answer: "The train trip adds time",
+      fact: "Like other Rafiki's Planet Watch stops, Affection Section works best when families have time for the round trip.",
     },
   ],
 };
