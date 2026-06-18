@@ -1292,6 +1292,39 @@ const LOOK_AROUND_BY_RIDE = {
     },
   ],
 
+  "Jungle Cruise": [
+    {
+      task: "Look for crates, maps, plants, or explorer-camp details while you wait.",
+      hint: "Adventureland queues love making everything feel like part of an expedition.",
+    },
+    {
+      task: "Everyone pick the jungle detail that looks most like it has a ridiculous backstory.",
+      hint: "Old signs, gear, barrels, boats, and props all count.",
+    },
+  ],
+
+  "Peter Pan's Flight": [
+    {
+      task: "Find one storybook, nursery, star, ship, or Never Land-style detail before boarding.",
+      hint: "This queue is all about tiny story touches.",
+    },
+    {
+      task: "Everyone quietly pick who in your group would be most excited to fly over London.",
+      hint: "No actual pixie dust required.",
+    },
+  ],
+
+  "TRON Lightcycle / Run": [
+    {
+      task: "Find a glowing grid, blue light, racing sign, or futuristic pattern nearby.",
+      hint: "TRON is all sharp lines, light, motion, and digital-world energy.",
+    },
+    {
+      task: "Everyone pick who would look the most serious in a Lightcycle race photo.",
+      hint: "The correct answer may be the person trying hardest not to look serious.",
+    },
+  ],
+
   "Seven Dwarfs Mine Train": [
     {
       task: "Find something that looks like a jewel, gem, or mining tool.",
