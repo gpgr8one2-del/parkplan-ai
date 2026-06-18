@@ -2812,22 +2812,6 @@ const HOLLYWOOD_TRIVIA_BY_RIDE = {
     },
   ],
 
-  "Rock 'n' Roller Coaster Starring Aerosmith": [
-    {
-      question: "Rock ’n’ Roller Coaster is famous for what kind of start?",
-      choices: ["A high-speed launch", "A backwards drop", "A water splash", "A slow lift hill"],
-      answer: "A high-speed launch",
-      fact:
-        "The launch is the star. It takes you from standing still to nearly 60 mph in just a few seconds.",
-    },
-    {
-      question: "What are you riding in on Rock ’n’ Roller Coaster?",
-      choices: ["A super-stretch limo", "A tour bus", "A rocket", "A taxi"],
-      answer: "A super-stretch limo",
-      fact:
-        "The whole story is that you are racing across town to make it to the concert.",
-    },
-  ],
 
 };
 
@@ -2931,16 +2915,6 @@ const HOLLYWOOD_LOOK_AROUND_BY_RIDE = {
     },
   ],
 
-  "Rock 'n' Roller Coaster Starring Aerosmith": [
-    {
-      task: "Look for recording studio details like guitars, posters, cables, and music gear.",
-      hint: "The queue wants you to feel like you wandered backstage.",
-    },
-    {
-      task: "Everyone invent a family band name before you board.",
-      hint: "The worse the pun, the better.",
-    },
-  ],
 
 };
 
@@ -4450,8 +4424,8 @@ function getRideNameAliases(value) {
   }
 
   if (normalized.includes("rock n roller") || normalized.includes("rock and roller")) {
+    aliases.add("rock n roller coaster the muppets");
     aliases.add("rock n roller coaster starring the muppets");
-    aliases.add("rock n roller coaster starring aerosmith");
     aliases.add("rock n roller coaster");
     aliases.add("rock and roller coaster");
   }
