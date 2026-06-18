@@ -4011,7 +4011,7 @@ const CONVERSATION_STARTERS_BY_PARK = {
     "If Figment followed us around all day, what would he make more chaotic?",
     "What is one thing at EPCOT that feels calmer than the rest of the trip?",
   ],
-  hollywood_studios: [
+  hollywood: [
     "If our family was cast in a movie, what kind of movie would it be?",
     "Who in our group would survive best in a Star Wars adventure?",
     "What Toy Story toy would fit our family personality best?",
@@ -4076,7 +4076,7 @@ const QUEUE_CLUES_BY_PARK = {
     ["Imagination", "Mission", "Land", "Seas", "Odyssey"],
     ["Fireworks", "Bridge", "Skyliner", "World", "Future"],
   ],
-  hollywood_studios: [
+  hollywood: [
     ["Camera", "Droid", "Toy", "Tower", "Star"],
     ["Alien", "Slinky", "Falcon", "Train", "Guitar"],
     ["Popcorn", "Poster", "Stage", "Robot", "Backlot"],
@@ -4141,7 +4141,7 @@ const PREDICTION_GAMES_BY_PARK = {
     "Predict the next color we see on a festival booth sign.",
     "Predict whether the next kid nearby is holding food, a bubble wand, or a plush.",
   ],
-  hollywood_studios: [
+  hollywood: [
     "Predict the next Star Wars, Toy Story, or movie shirt we see.",
     "Predict whether the next sound we notice is music, a ride vehicle, or a character voice.",
     "Predict who in our family would be the best actor in this park.",
@@ -4212,7 +4212,7 @@ const FAMILY_CHALLENGES_BY_PARK = {
     "Everyone vote: which pavilion would make the best movie setting?",
     "Create a family slogan for walking around World Showcase.",
   ],
-  hollywood_studios: [
+  hollywood: [
     "Everyone make a movie trailer voice for what our family is doing right now.",
     "Name five movie, Toy Story, or Star Wars characters before the line moves.",
     "Do your best silent robot, alien, or movie star pose.",
