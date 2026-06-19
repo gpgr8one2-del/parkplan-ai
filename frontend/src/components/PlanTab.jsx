@@ -1479,7 +1479,7 @@ function MustDoMomentsSection({
           for that park.
         </div>
       ) : (
-        <details style={{ marginTop: 12 }}>
+        <details open={selectedExperiences.length === 0} style={{ marginTop: 12 }}>
           <summary
             style={{
               cursor: "pointer",
