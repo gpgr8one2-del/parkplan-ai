@@ -272,3 +272,138 @@ Copy this row per scenario into a results file or sheet:
 
 Re-run only failed scenarios after a fix — no need to re-run the full pack
 each time. Keep total live calls per session under ~30.
+
+---
+
+## Resort Break Boundary Stress Tests
+
+These scenarios protect TOHI from over-recommending resort breaks. A resort break should feel intentional, not like the default answer whenever a family is tired.
+
+### RB-01 — Family just arrived, kids are mildly cranky
+**User:** We just got to Magic Kingdom and the kids are already a little cranky. What should we do next?
+
+**Context:**
+- Park: Magic Kingdom
+- Day phase: morning / just arrived
+- Resort: Port Orleans
+- Break preference: flexible or unknown
+- Family state: mildly cranky, not melting down
+- Current activity: not in line
+- Must-dos: pending in park
+
+**Expected TOHI behavior:**
+- Do not recommend going back to the resort.
+- Recommend an in-park reset first: water, snack, shade/AC, then a low-effort nearby attraction.
+- Keep the tone reassuring and practical.
+
+**Bad answer pattern:**
+- “Head back to Port Orleans now.”
+
+---
+
+### RB-02 — Planned resort break window, family fading
+**User:** We’re fading. Should we take our break now or do one more thing?
+
+**Context:**
+- Park: Magic Kingdom
+- Day phase: midday heat / afternoon crash window
+- Resort: Port Orleans
+- Break preference: planned resort break
+- Family state: fading
+- Current activity: between rides
+- Must-dos: no urgent nearby must-do window
+
+**Expected TOHI behavior:**
+- Recommend taking the planned resort break now.
+- Name the resort only because it is present in context.
+- Optionally give a short stay-in-park fallback if they are not ready to leave.
+
+**Good answer pattern:**
+- “I’d take the Port Orleans break now — this is the window where a reset helps the rest of the day. If you want to stay in the park, make the next stop indoor, seated, and low-wait.”
+
+---
+
+### RB-03 — No planned resort break, family tired but still functional
+**User:** The kids are tired but not melting down. What ride should we do next?
+
+**Context:**
+- Park: Magic Kingdom
+- Day phase: early afternoon
+- Resort: Port Orleans
+- Break preference: no planned resort break / prefers staying in park
+- Family state: tired but functional
+- Current activity: not in line
+- Must-dos: one nearby priority still pending
+
+**Expected TOHI behavior:**
+- Answer the ride question directly.
+- Recommend a nearby low-stress or indoor attraction, especially if it supports the family profile or must-dos.
+- Do not default to a resort break.
+
+**Bad answer pattern:**
+- “Go back to your resort.”
+
+---
+
+### RB-04 — In line, family fading, ride still valuable
+**User:** We’re in line and the little ones are starting to fade. What should we do?
+
+**Context:**
+- Park: Magic Kingdom
+- Current activity: in line
+- Posted wait when joined: reasonable for the ride
+- Elapsed line time: already invested
+- Ride value: high / must-do or strong fit
+- Family state: fading but not severe meltdown
+- Resort: Port Orleans
+- Break preference: planned or flexible break
+
+**Expected TOHI behavior:**
+- Respect that they are already in line.
+- Bias toward finishing if the line is moving and the family can realistically make it.
+- Recommend water/snack/AC or resort break immediately after the ride.
+- Ask one short clarifying question only if severity or line movement is missing.
+
+**Good answer pattern:**
+- “If the line is still moving and they can make it a few more minutes, I’d finish this one, then reset right after.”
+
+---
+
+### RB-05 — Severe family distress or overheating risk
+**User:** One kid is crying hard and says they feel too hot. We’re in line. What now?
+
+**Context:**
+- Park: Magic Kingdom
+- Current activity: in line
+- Weather: hot / heat mode
+- Family state: severe distress or overheating concern
+- Ride value: not more important than health/safety
+
+**Expected TOHI behavior:**
+- Prioritize safety and comfort.
+- It is acceptable to recommend leaving the line.
+- Recommend shade/AC/water first, then resort break if realistic.
+- Tone should be calm and non-alarming.
+
+**Good answer pattern:**
+- “I’d step out and cool them down now — shade, water, and AC matter more than finishing this line.”
+
+---
+
+### RB-06 — User explicitly wants to stay in park
+**User:** We do not want to leave the park yet, but everyone needs a reset. What should we do?
+
+**Context:**
+- Park: Magic Kingdom
+- Resort: Port Orleans
+- Family state: tired
+- User preference: stay in park
+- Weather: warm or hot
+
+**Expected TOHI behavior:**
+- Do not recommend a resort break.
+- Recommend a specific in-park reset: AC, seated show, snack, water, indoor low-wait ride, or shaded area.
+- Keep the response short and confident.
+
+**Bad answer pattern:**
+- “Head back to Port Orleans.”
