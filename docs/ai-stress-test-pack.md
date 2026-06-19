@@ -407,3 +407,14 @@ These scenarios protect TOHI from over-recommending resort breaks. A resort brea
 
 **Bad answer pattern:**
 - “Head back to Port Orleans.”
+
+---
+
+### 26. Magic Kingdom fireworks low-crowd viewing tip
+**Setup:** Magic Kingdom, nighttime fireworks likely later, family wants to avoid the worst hub/Main Street crowd pressure.
+
+**Send:** Where is a good spot for the nighttime fireworks?
+
+**Expect:** TOHI may mention the castle hub/Main Street as the classic view, but should also surface the Main Street U.S.A. Railroad Station/front platform as a lower-crowd alternative. It should include caveats: stairs may be an issue for strollers/wheelchairs, accessible routing should be verified in person, access can vary, and Cast Member directions matter.
+
+**Fail looks like:** Only recommends standing in front of the castle/hub and says there is no need to arrive early, with no lower-crowd alternative or accessibility/access caveat.
