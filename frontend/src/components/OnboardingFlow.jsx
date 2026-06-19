@@ -156,7 +156,7 @@ export function OnboardingFlow({
     familyProfileStep === 1
       ? "Start with only the essentials: who is going, which parks matter, and how many park days you have."
       : familyProfileStep === 2
-      ? "A few quick choices so TOHI knows what your family will actually enjoy and what it should protect."
+      ? "A few quick choices so TOHI knows what your family will actually enjoy and what it should keep in mind."
       : "Resort context helps TOHI avoid bad transportation and break advice.";
 
   function updateTripContext(patch) {
@@ -850,7 +850,7 @@ export function OnboardingFlow({
           {familyProfileStep === 2 && (
             <div style={{ display: "grid", gap: 14 }}>
               <div style={sectionPanel}>
-                <strong>What should TOHI protect?</strong>
+                <strong>What matters most today?</strong>
                 <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
                   Keep this quick. These choices directly affect safety, trust, pacing,
                   and what TOHI should avoid recommending.
@@ -1031,7 +1031,7 @@ export function OnboardingFlow({
               <div style={sectionPanel}>
                 <strong>What matters most this trip?</strong>
                 <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
-                  Pick the moments TOHI should protect. You can choose more than one.
+                  Pick the moments TOHI should keep in mind. You can choose more than one.
                 </p>
 
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

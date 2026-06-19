@@ -443,7 +443,7 @@ function getMustDoModifier({
     return {
       modifier: Math.min(baseModifier, 4),
       priority,
-      reason: `This is one of your ${label} picks, but the current conditions make it smarter to protect for later.`,
+      reason: `This is one of your ${label} picks, but the current conditions make it smarter to save for later.`,
       shouldProtectLater: true,
     };
   }
@@ -2256,7 +2256,7 @@ export function getNextBestRides({
             (ride.waitTime || 0) +
             getMustDoPlanAheadPriorityBoost(ride),
         planAheadReason: ride.shouldProtectLater
-          ? ride.mustDoReason || "This is important, but the current conditions make it smarter to protect for later."
+          ? ride.mustDoReason || "This is important, but the current conditions make it smarter to save for later."
           : buildPlanAheadReason(meta, ride, waitValueStatus),
       };
     })

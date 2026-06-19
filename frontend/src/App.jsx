@@ -916,7 +916,7 @@ function buildParkHopperContext({
       status: "primary_focus",
       label: "Primary park first",
       shouldConsiderSecondPark: false,
-      guidance: `Start by protecting the ${primaryParkLabel} plan. Do not let the second park pull the family away before the first park has had a fair chance to deliver. ${secondParkMustDoContext}`,
+      guidance: `Start by keeping the ${primaryParkLabel} plan steady. Do not let the second park pull the family away before the first park has had a fair chance to deliver. ${secondParkMustDoContext}`,
     };
   }
 
