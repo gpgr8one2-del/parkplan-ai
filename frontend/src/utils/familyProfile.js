@@ -69,7 +69,6 @@ export const FAMILY_PRIORITY_OPTIONS = [
   { value: "low_stress", label: "Low-stress family flow" },
   { value: "characters", label: "Characters" },
   { value: "shows_parades", label: "Shows / parades" },
-  { value: "food_snacks", label: "Food / snacks" },
   { value: "young_kid_moments", label: "Younger-kid moments" },
 ];
 

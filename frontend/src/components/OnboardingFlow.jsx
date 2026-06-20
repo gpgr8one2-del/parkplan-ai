@@ -234,6 +234,40 @@ export function OnboardingFlow({
     });
   }
 
+  function getScheduleParkSelectionIds(schedule = []) {
+    const ids = [];
+
+    schedule.forEach((day) => {
+      if (day?.primaryParkId && !ids.includes(day.primaryParkId)) {
+        ids.push(day.primaryParkId);
+      }
+
+      if (day?.secondaryParkId && !ids.includes(day.secondaryParkId)) {
+        ids.push(day.secondaryParkId);
+      }
+    });
+
+    return ids;
+  }
+
+  function updateParkDaySchedule(updatedSchedule = []) {
+    const nextParkSelectionIds = getScheduleParkSelectionIds(updatedSchedule);
+    const nextFirstParkId = updatedSchedule.find((day) => day?.primaryParkId)?.primaryParkId || nextParkSelectionIds[0] || "";
+    const nextMostImportantParkId = nextParkSelectionIds.includes(mostImportantParkId)
+      ? mostImportantParkId
+      : nextFirstParkId;
+
+    updateTripContext({
+      parkDaySchedule: updatedSchedule,
+      parkSelectionIds: nextParkSelectionIds,
+      selectedParks: nextParkSelectionIds,
+      firstParkId: nextFirstParkId,
+      firstPark: nextFirstParkId,
+      mostImportantParkId: nextMostImportantParkId,
+      priorityPark: nextMostImportantParkId,
+    });
+  }
+
   return (
     <main style={setupPage}>
       <div style={shell}>
@@ -638,75 +672,7 @@ export function OnboardingFlow({
                   </label>
                 </div>
 
-                <p style={{ margin: "12px 0 8px", color: colors.muted, fontSize: 13, fontWeight: 900 }}>
-                  Which parks are part of this trip?
-                </p>
-
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {selectableParkOptions.map((option) => {
-                    const selected = selectedParkIds.includes(option.value);
-                    const disabled = option.isDisabled;
-
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        disabled={disabled}
-                        aria-disabled={disabled}
-                        onClick={() => handleParkSelectionToggle(option.value)}
-                        style={{
-                          ...actionButton,
-                          background: selected ? "#0f172a" : disabled ? "#f8fafc" : "white",
-                          color: selected ? "white" : disabled ? "#94a3b8" : "#0f172a",
-                          borderColor: selected ? "#0f172a" : disabled ? "#e2e8f0" : "#cbd5e1",
-                          cursor: disabled ? "not-allowed" : "pointer",
-                          opacity: disabled ? 0.72 : 1,
-                        }}
-                      >
-                        {option.label}
-                        {disabled ? " · Coming soon" : ""}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {selectedParkIds.length > 0 && (
-                  <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-                    <label style={fieldLabelStyle}>
-                      Which park do you want to do first?
-                      <select
-                        value={firstParkId}
-                        onChange={(e) => setFirstPark(e.target.value)}
-                        style={inputStyle}
-                      >
-                        <option value="">Not sure yet</option>
-                        {selectedEnabledParkOptions.map((park) => (
-                          <option key={park.value} value={park.value}>
-                            {park.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label style={fieldLabelStyle}>
-                      Main priority park
-                      <select
-                        value={mostImportantParkId}
-                        onChange={(e) => setMostImportantPark(e.target.value)}
-                        style={inputStyle}
-                      >
-                        <option value="">Not sure yet</option>
-                        {selectedEnabledParkOptions.map((park) => (
-                          <option key={park.value} value={park.value}>
-                            {park.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                )}
-
-                {selectedParkIds.length > 0 && summary.tripContext.parkDaySchedule.length > 0 && (
+                {summary.tripContext.parkDaySchedule.length > 0 && (
                   <div
                     style={{
                       ...sectionPanel,
@@ -767,7 +733,7 @@ export function OnboardingFlow({
                                         : day
                                   );
 
-                                  updateTripContext({ parkDaySchedule: updatedSchedule });
+                                  updateParkDaySchedule(updatedSchedule);
                                 }}
                                 style={inputStyle}
                               >
@@ -794,7 +760,7 @@ export function OnboardingFlow({
                                         : day
                                   );
 
-                                  updateTripContext({ parkDaySchedule: updatedSchedule });
+                                  updateParkDaySchedule(updatedSchedule);
                                 }}
                                 style={inputStyle}
                               >
