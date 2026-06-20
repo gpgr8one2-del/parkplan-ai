@@ -83,7 +83,7 @@ Rules:
 - If mentioning Festival of Fantasy, treat it as a daytime/afternoon crowd-wave and princess/character moment, not an evening plan.
 - If mentioning Disney Starlight, treat it as a nighttime parade/evening entertainment option, but avoid exact times unless live schedule context provides them.
 - If mentioning parades, shows, or fireworks, avoid exact times unless live schedule context provides them and remind the guest to verify the official park schedule.
-- Magic Kingdom fireworks viewing tip: for a lower-crowd alternative to the castle hub, consider the Main Street U.S.A. Railroad Station/front platform area near the park entrance. It can give a strong elevated view with much less crowd pressure than the hub. Mention caveats: stairs may be an issue for strollers/wheelchairs, accessible routing should be verified in person, access/ropes can vary, and guests should follow Cast Member direction. If timing is relevant, frame 15–30 minutes before fireworks as a practical possibility, not a guarantee.
+- Magic Kingdom fireworks viewing tip: for a lower-crowd alternative to the castle hub, recommend the Main Street USA Railroad Station/front platform near the park entrance. Be warm and informative: tell the guest to go up the stairs to the railroad station/front platform area, explain that the elevated view can feel calmer and less shoulder-to-shoulder than the hub, and note that being near the front of the park can make the exit feel easier. Include caveats naturally: stairs may be an issue for strollers or wheelchairs, accessible routing should be verified in person, access/ropes can vary, and guests should follow Cast Member direction. If timing matters, suggest checking the area about 30–45 minutes before fireworks, but remind them that showtimes and access can vary by night.
 - Do not act like every guest is the same. Use children’s ages/heights, thrill tolerance, walking tolerance, heat sensitivity, park goals, trip dates, resort context, and planning preferences when available.
 - If a family profile is incomplete, keep guidance more general and encourage completing setup for personalized recommendations.
 - If the guest is currently in line for a ride, respect that choice. Do not tell them to skip it unless they say the ride is down, the line is unsafe, someone may be overheating/sick, there is true meltdown risk, or they ask whether to leave.
@@ -1221,6 +1221,22 @@ function isScheduleContextQuestion(message = "") {
   );
 }
 
+function isFireworksViewingQuestion(message = "") {
+  const text = String(message || "").toLowerCase();
+
+  return (
+    (text.includes("fireworks") || text.includes("firworks")) &&
+    (
+      text.includes("spot") ||
+      text.includes("view") ||
+      text.includes("watch") ||
+      text.includes("where") ||
+      text.includes("good place") ||
+      text.includes("best place")
+    )
+  );
+}
+
 function isGenericLivePreamble(sentence = "") {
   const value = String(sentence || "").trim().toLowerCase();
 
@@ -1244,7 +1260,11 @@ function isGenericLivePreamble(sentence = "") {
 }
 
 function getFirstSentences(text = "", maxSentences = 2) {
-  const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+  const cleaned = String(text || "")
+    .replace(/\bU\.\s*S\.\s*A\./gi, "USA")
+    .replace(/\bU\.\s*S\./gi, "US")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!cleaned) return "";
 
   const sentences = cleaned.match(/[^.!?]+[.!?]+/g);
@@ -1267,6 +1287,10 @@ function getFirstSentences(text = "", maxSentences = 2) {
 
 function finalizeAIReply(reply = "", message = "") {
   const cleaned = typeof stripMarkdown === "function" ? stripMarkdown(reply) : String(reply || "").trim();
+
+  if (getAnswerMode(message) === "live" && isFireworksViewingQuestion(message)) {
+    return getFirstSentences(cleaned, 5);
+  }
 
   if (getAnswerMode(message) === "live" && !isScheduleContextQuestion(message)) {
     return getFirstSentences(cleaned, 2);
@@ -1531,7 +1555,7 @@ async function getAIResponse(message, sessionData = {}) {
           role: "user",
           content: `User question: ${trimmedMessage}
 
-Answer mode: ${answerMode}. If answer mode is live, answer in 1–2 complete sentences with one recommendation only. Do not mention schedule fallback, missing schedule, or profile fallback unless the user asked why the plan changed. If answer mode is planning, you may give more detail but still avoid markdown.`,
+Answer mode: ${answerMode}. If answer mode is live, answer in 1–2 complete sentences with one recommendation only, except Magic Kingdom fireworks viewing-location questions may use 3–5 warm, practical sentences with reasons and caveats for stairs, strollers, wheelchairs, access changes, and Cast Member direction. Do not mention schedule fallback, missing schedule, or profile fallback unless the user asked why the plan changed. If answer mode is planning, you may give more detail but still avoid markdown.`,
         },
       ],
     }),

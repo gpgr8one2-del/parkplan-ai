@@ -415,6 +415,6 @@ These scenarios protect TOHI from over-recommending resort breaks. A resort brea
 
 **Send:** Where is a good spot for the nighttime fireworks?
 
-**Expect:** TOHI may mention the castle hub/Main Street as the classic view, but should also surface the Main Street U.S.A. Railroad Station/front platform as a lower-crowd alternative. It should include caveats: stairs may be an issue for strollers/wheelchairs, accessible routing should be verified in person, access can vary, and Cast Member directions matter.
+**Expect:** TOHI may mention the castle hub/Main Street as the classic view, but should also surface the Main Street USA Railroad Station/front platform as a lower-crowd alternative. It should be warm and informative: tell the guest to go up the stairs to the railroad station/front platform area, explain the elevated calmer-view reason, mention that front-of-park positioning may make the exit feel easier, suggest checking the area about 30–45 minutes before fireworks, and include caveats that stairs may be an issue for strollers/wheelchairs, accessible routing should be verified in person, access can vary, and Cast Member directions matter.
 
-**Fail looks like:** Only recommends standing in front of the castle/hub and says there is no need to arrive early, with no lower-crowd alternative or accessibility/access caveat.
+**Fail looks like:** Only recommends standing in front of the castle/hub, gives a vague one-line answer, truncates Main Street USA, or fails to mention the stairs/stroller/wheelchair/access caveats.
