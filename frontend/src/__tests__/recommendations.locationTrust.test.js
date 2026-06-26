@@ -20,8 +20,18 @@ import {
 } from "./fixtures/testHelpers";
 
 const PARK = "magic_kingdom";
+const STABLE_TEST_NOW = new Date("2026-01-15T15:00:00.000Z");
 
 describe("location trust", () => {
+  beforeEach(() => {
+    jest.useFakeTimers("modern");
+    jest.setSystemTime(STABLE_TEST_NOW);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   test("locationContext null: bestMove / backup / worthTheWalk return null", () => {
     const rides = [
       MK.peterPan({ waitTime: 25 }),

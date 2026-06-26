@@ -68,15 +68,25 @@ const LAND_LABELS = {
 const MAGIC_KINGDOM_ANCHORS = [
   { id: "wdwr", name: "Walt Disney World Railroad", landKey: "main_street", type: "Ride", lat: 28.4166, lng: -81.5813 },
   { id: "msv", name: "Main Street Vehicles", landKey: "main_street", type: "Ride", lat: 28.4174, lng: -81.5814 },
+  { id: "mk_entry_tunnels", name: "Main Street entry tunnels", landKey: "main_street", type: "Entrance", lat: 28.4163, lng: -81.5812 },
+  { id: "town_square", name: "Town Square / flagpole", landKey: "main_street", type: "Landmark", lat: 28.4169, lng: -81.5812 },
+  { id: "main_street_center", name: "Main Street USA center corridor", landKey: "main_street", type: "Pathway", lat: 28.4178, lng: -81.5812 },
+  { id: "main_street_castle_hub", name: "Main Street castle hub approach", landKey: "main_street", type: "Transition", lat: 28.4187, lng: -81.5810 },
 
   { id: "potc", name: "Pirates of the Caribbean", landKey: "adventureland", type: "Ride", lat: 28.4181, lng: -81.5833 },
+  { id: "pirates_queue", name: "Pirates of the Caribbean queue area", landKey: "adventureland", type: "Queue", lat: 28.4180, lng: -81.5837 },
+  { id: "pirates_exit_path", name: "Pirates exit / Adventureland west path", landKey: "adventureland", type: "Pathway", lat: 28.4178, lng: -81.5835 },
   { id: "jc", name: "Jungle Cruise", landKey: "adventureland", type: "Ride", lat: 28.4182, lng: -81.5822 },
   { id: "sft", name: "Swiss Family Treehouse", landKey: "adventureland", type: "Walk-Through", lat: 28.4184, lng: -81.5818 },
   { id: "mca", name: "The Magic Carpets of Aladdin", landKey: "adventureland", type: "Ride", lat: 28.418, lng: -81.5826 },
+  { id: "adventureland_bazaar", name: "Adventureland bazaar / Aladdin courtyard", landKey: "adventureland", type: "Shop", lat: 28.4178, lng: -81.5823 },
+  { id: "adventureland_bridge", name: "Adventureland entrance bridge", landKey: "adventureland", type: "Transition", lat: 28.4176, lng: -81.5818 },
   { id: "etr", name: "Walt Disney's Enchanted Tiki Room", landKey: "adventureland", type: "Show", lat: 28.418, lng: -81.5819 },
 
   { id: "btmr", name: "Big Thunder Mountain Railroad", landKey: "frontierland", type: "Ride", lat: 28.4193, lng: -81.5847 },
   { id: "tba", name: "Tiana's Bayou Adventure", landKey: "frontierland", type: "Ride", lat: 28.4184, lng: -81.5851 },
+  { id: "pecos_bill_area", name: "Pecos Bill / Frontierland dining area", landKey: "frontierland", type: "Dining", lat: 28.4185, lng: -81.5841 },
+  { id: "frontierland_boardwalk", name: "Frontierland river boardwalk", landKey: "frontierland", type: "Pathway", lat: 28.4190, lng: -81.5842 },
   { id: "cbmj", name: "Country Bear Musical Jamboree", landKey: "frontierland", type: "Show", lat: 28.4189, lng: -81.5839 },
   { id: "tsi", name: "Tom Sawyer Island", landKey: "frontierland", type: "Walk-Through", lat: 28.4194, lng: -81.5837 },
 
@@ -188,6 +198,8 @@ const HOLLYWOOD_ANCHORS = [
   { id: "villains_unfairly", name: "Disney Villains: Unfairly Ever After", landKey: "sunset_boulevard", type: "Show", lat: 28.35983, lng: -81.56061 },
 
   // Echo Lake
+  { id: "echo_lake_center", name: "Echo Lake center path", landKey: "echo_lake", type: "Pathway", lat: 28.3571, lng: -81.5609 },
+  { id: "backlot_express_area", name: "Backlot Express / Echo Lake dining area", landKey: "echo_lake", type: "Dining", lat: 28.3567, lng: -81.5618 },
   { id: "st", name: "Star Tours", landKey: "echo_lake", type: "Ride", lat: 28.3564, lng: -81.5622 },
   { id: "fsa", name: "Frozen Sing-Along", landKey: "echo_lake", type: "Show", lat: 28.3561, lng: -81.5613 },
   { id: "ble", name: "Backlot Express", landKey: "echo_lake", type: "Dining", lat: 28.3561, lng: -81.5619 },
@@ -201,12 +213,19 @@ const HOLLYWOOD_ANCHORS = [
 
   // Galaxy's Edge
   { id: "rotr", name: "Star Wars: Rise of the Resistance", landKey: "star_wars_galaxys_edge", type: "Ride", lat: 28.3540, lng: -81.5610 },
+  { id: "rise_queue_area", name: "Rise of the Resistance queue area", landKey: "star_wars_galaxys_edge", type: "Queue", lat: 28.3537, lng: -81.5612 },
+  { id: "batuu_resistance_forest", name: "Resistance forest / Batuu south path", landKey: "star_wars_galaxys_edge", type: "Pathway", lat: 28.3543, lng: -81.5614 },
   { id: "smr", name: "Millennium Falcon: Smugglers Run", landKey: "star_wars_galaxys_edge", type: "Ride", lat: 28.3553, lng: -81.5626 },
+  { id: "falcon_courtyard", name: "Millennium Falcon courtyard", landKey: "star_wars_galaxys_edge", type: "Landmark", lat: 28.3551, lng: -81.5625 },
   { id: "db7", name: "Docking Bay 7 Food and Cargo", landKey: "star_wars_galaxys_edge", type: "Dining", lat: 28.3556, lng: -81.5621 },
   { id: "bmp", name: "Batuu Marketplace", landKey: "star_wars_galaxys_edge", type: "Shop Hub", lat: 28.3558, lng: -81.5625 },
+  { id: "batuu_toy_story_transition", name: "Batuu to Toy Story Land transition", landKey: "star_wars_galaxys_edge", type: "Transition", lat: 28.3558, lng: -81.5612 },
 
   // Toy Story Land
+  { id: "toy_story_land_entrance", name: "Toy Story Land entrance / Woody sign", landKey: "toy_story_land", type: "Entrance", lat: 28.3560, lng: -81.5600 },
+  { id: "toy_story_land_center", name: "Toy Story Land central walkway", landKey: "toy_story_land", type: "Pathway", lat: 28.3558, lng: -81.5591 },
   { id: "sdd", name: "Slinky Dog Dash", landKey: "toy_story_land", type: "Ride", lat: 28.3554, lng: -81.5586 },
+  { id: "slinky_queue_area", name: "Slinky Dog Dash queue area", landKey: "toy_story_land", type: "Queue", lat: 28.3552, lng: -81.5589 },
   { id: "tsm", name: "Toy Story Mania", landKey: "toy_story_land", type: "Ride", lat: 28.3562, lng: -81.5591 },
   { id: "ass", name: "Alien Swirling Saucers", landKey: "toy_story_land", type: "Ride", lat: 28.3552, lng: -81.5578 },
   { id: "wlb", name: "Woody’s Lunch Box", landKey: "toy_story_land", type: "Dining", lat: 28.3561, lng: -81.5583 },
@@ -223,9 +242,13 @@ const HOLLYWOOD_ANCHORS = [
 const ANIMAL_KINGDOM_ANCHORS = [
   // Oasis / Entrance
   { id: "ak_entrance", name: "Animal Kingdom Entrance", landKey: "oasis", type: "Entrance", lat: 28.3578, lng: -81.5905 },
+  { id: "ak_entry_touchpoints", name: "Animal Kingdom entry touchpoints", landKey: "oasis", type: "Entrance", lat: 28.3574, lng: -81.5908 },
+  { id: "oasis_front_path", name: "Oasis front entry path", landKey: "oasis", type: "Pathway", lat: 28.3581, lng: -81.5906 },
   { id: "oasis_trails", name: "Oasis Trails / Oasis Exhibits", landKey: "oasis", type: "Area", lat: 28.3585, lng: -81.5904 },
+  { id: "oasis_discovery_transition", name: "Oasis to Discovery Island transition", landKey: "oasis", type: "Transition", lat: 28.3589, lng: -81.5902 },
 
   // Discovery Island
+  { id: "discovery_entry_bridge", name: "Discovery Island entry bridge", landKey: "discovery_island", type: "Transition", lat: 28.3592, lng: -81.5901 },
   { id: "tree_of_life", name: "Tree of Life", landKey: "discovery_island", type: "Landmark", lat: 28.3592, lng: -81.5900 },
   { id: "zootopia_better_zoogether", name: "Zootopia: Better Zoogether!", landKey: "discovery_island", type: "Show", lat: 28.3592, lng: -81.5900 },
   { id: "nemo_show", name: "Finding Nemo: The Big Blue... and Beyond!", landKey: "discovery_island", type: "Show", lat: 28.3578, lng: -81.5872 },
@@ -234,6 +257,8 @@ const ANIMAL_KINGDOM_ANCHORS = [
   { id: "flame_tree_area", name: "Flame Tree Barbecue / Discovery Island food area", landKey: "discovery_island", type: "Dining", lat: 28.3587, lng: -81.5888 },
 
   // Pandora
+  { id: "pandora_entry_bridge", name: "Pandora entry bridge", landKey: "pandora", type: "Transition", lat: 28.3570, lng: -81.5920 },
+  { id: "pandora_valley_path", name: "Pandora Valley of Mo'ara path", landKey: "pandora", type: "Pathway", lat: 28.3565, lng: -81.5925 },
   { id: "fop", name: "Avatar Flight of Passage", landKey: "pandora", type: "Ride", lat: 28.3563, lng: -81.5932 },
   { id: "navi", name: "Na'vi River Journey", landKey: "pandora", type: "Ride", lat: 28.3569, lng: -81.5923 },
   { id: "satuli", name: "Satu'li Canteen", landKey: "pandora", type: "Dining", lat: 28.3562, lng: -81.5925 },

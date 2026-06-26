@@ -23,6 +23,8 @@ const MEDIUM_CONFIDENCE_METERS = 180;
 const LOW_CONFIDENCE_METERS = 260;
 const CLUSTER_ANCHOR_COUNT = 5;
 const LAND_CLUSTER_RADIUS_METERS = 220;
+const CLOSEST_ANCHOR_SAFEGUARD_METERS = 45;
+const CLUSTER_STEAL_LEAD_REQUIRED = 95;
 
 export function getDistanceMeters(lat1, lng1, lat2, lng2) {
   const earthRadiusMeters = 6371000;
@@ -114,6 +116,44 @@ function getLandClusterScores(candidates) {
   return Array.from(scores.values()).sort((a, b) => b.score - a.score);
 }
 
+function getClusterDecisionWithClosestAnchorSafeguard({ bestAnchor, clusterScores }) {
+  const winningCluster = clusterScores[0];
+  const runnerUpCluster = clusterScores[1];
+
+  if (!bestAnchor || !winningCluster) {
+    return { clusterScores, winningCluster, runnerUpCluster };
+  }
+
+  const closestAnchorCluster = clusterScores.find(
+    (cluster) => cluster.landKey === bestAnchor.landKey
+  );
+
+  if (
+    !closestAnchorCluster ||
+    winningCluster.landKey === bestAnchor.landKey ||
+    bestAnchor.distanceMeters > CLOSEST_ANCHOR_SAFEGUARD_METERS
+  ) {
+    return { clusterScores, winningCluster, runnerUpCluster };
+  }
+
+  const stealLead = winningCluster.score - closestAnchorCluster.score;
+
+  if (stealLead >= CLUSTER_STEAL_LEAD_REQUIRED) {
+    return { clusterScores, winningCluster, runnerUpCluster };
+  }
+
+  const adjustedClusterScores = [
+    closestAnchorCluster,
+    ...clusterScores.filter((cluster) => cluster.landKey !== closestAnchorCluster.landKey),
+  ];
+
+  return {
+    clusterScores: adjustedClusterScores,
+    winningCluster: adjustedClusterScores[0],
+    runnerUpCluster: adjustedClusterScores[1],
+  };
+}
+
 function getConfidence({ bestAnchor, winningCluster, runnerUpCluster }) {
   if (!bestAnchor || !winningCluster) return "low";
 
@@ -153,9 +193,12 @@ export function detectNearestLocationZone({ parkId, lat, lng }) {
   if (!candidates.length) return null;
 
   const bestAnchor = candidates[0];
-  const clusterScores = getLandClusterScores(candidates);
-  const winningCluster = clusterScores[0];
-  const runnerUpCluster = clusterScores[1];
+  const rawClusterScores = getLandClusterScores(candidates);
+  const { clusterScores, winningCluster, runnerUpCluster } =
+    getClusterDecisionWithClosestAnchorSafeguard({
+      bestAnchor,
+      clusterScores: rawClusterScores,
+    });
 
   if (!winningCluster) return null;
 
