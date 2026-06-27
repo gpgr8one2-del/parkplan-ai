@@ -3013,6 +3013,15 @@ function App() {
     null;
 
   const hasAnyRecommendation = Boolean(primaryRecommendation);
+  const parkOpenStatus = recommendations.parkOpenStatus || {};
+  const isPreOpenRecommendationPause = Boolean(parkOpenStatus.shouldBlockGoNow);
+  const preOpenTimeLabel =
+    parkOpenStatus.openTime instanceof Date && Number.isFinite(parkOpenStatus.openTime.getTime())
+      ? parkOpenStatus.openTime.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : null;
 
   useEffect(() => {
     if (!hasPersonalizedAccess) return;
@@ -4533,6 +4542,90 @@ function App() {
                       {locationLoading ? "Finding you..." : "Use My Location"}
                     </button>
                   </div>
+                </div>
+              ) : isPreOpenRecommendationPause ? (
+                <div style={{ display: "grid", gap: 10 }}>
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    style={{
+                      padding: 16,
+                      borderRadius: 24,
+                      border: `1px solid ${colors.cardBorder}`,
+                      background:
+                        "linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.92))",
+                      boxShadow: "0 14px 34px rgba(28, 25, 23, 0.08)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: colors.purple,
+                        fontWeight: 950,
+                        letterSpacing: 0.6,
+                        marginBottom: 8,
+                      }}
+                    >
+                      BEFORE PARK OPEN
+                    </div>
+
+                    <h4
+                      style={{
+                        margin: "0 0 8px",
+                        fontSize: 20,
+                        lineHeight: 1.15,
+                        color: colors.text,
+                        letterSpacing: -0.25,
+                      }}
+                    >
+                      Hold the normal picks for now
+                    </h4>
+
+                    <p
+                      style={{
+                        margin: 0,
+                        color: colors.muted,
+                        fontSize: 14,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {`The park is not officially open yet${
+                        preOpenTimeLabel ? ` — opening is listed around ${preOpenTimeLabel}` : ""
+                      }. Use this time to get near your first target, confirm today's entry rules, and let the day go live before TOHI starts calling Best Move or Smart Backup.`}
+                    </p>
+
+                    <div
+                      style={{
+                        marginTop: 12,
+                        padding: "9px 11px",
+                        borderRadius: 16,
+                        border: "1px solid rgba(124, 58, 237, 0.18)",
+                        background: "rgba(255, 255, 255, 0.72)",
+                        color: colors.text,
+                        fontSize: 13,
+                        lineHeight: 1.35,
+                        fontWeight: 800,
+                      }}
+                    >
+                      Best Move, Smart Backup, Worth the Walk, and Wait On This will return once the park is open or Early Entry is active.
+                    </div>
+                  </div>
+
+                  {recommendations.planAhead && (
+                    <RecommendationCard
+                      title="PLAN AHEAD"
+                      ride={recommendations.planAhead}
+                      reason={
+                        recommendations.planAhead.planAheadReason ||
+                        "This is still worth planning around while you wait for the park to open."
+                      }
+                      color="#991b1b"
+                      borderColor="#fecaca"
+                      background="#fef2f2"
+                      renderShowtimeInfo={renderShowtimeInfo}
+                      renderRideActions={renderRideActions}
+                    />
+                  )}
                 </div>
               ) : hasAnyRecommendation ? (
                 <div style={{ display: "grid", gap: 10 }}>
