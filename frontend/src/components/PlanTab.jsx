@@ -1997,6 +1997,74 @@ function PackingPreviewSection({ card, packingChecklist = [] }) {
 }
 
 
+function PlanDetailsSection({ card, children }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <section
+      style={{
+        ...card,
+        padding: 15,
+        background:
+          "linear-gradient(145deg, rgba(255,255,255,0.96), rgba(248,250,252,0.92))",
+        border: `1px solid ${colors.cardBorder}`,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ minWidth: 220, flex: "1 1 300px" }}>
+          <SectionBadge background={colors.skySoft} color="#0369A1">
+            PLAN DETAILS
+          </SectionBadge>
+
+          <strong
+            style={{
+              display: "block",
+              color: colors.text,
+              fontSize: 16,
+              lineHeight: 1.25,
+            }}
+          >
+            Schedule, park context, and setup notes
+          </strong>
+
+          <p
+            style={{
+              margin: "6px 0 0",
+              color: colors.muted,
+              fontSize: 13,
+              lineHeight: 1.42,
+            }}
+          >
+            The action plan stays above. Open this when you want the supporting details behind it.
+          </p>
+        </div>
+
+        <CollapseButton
+          isOpen={isOpen}
+          openLabel="Show details"
+          closeLabel="Hide details"
+          onClick={() => setIsOpen((current) => !current)}
+        />
+      </div>
+
+      {isOpen && (
+        <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}
+
+
 export function PlanTab({
   card,
   button,
@@ -2096,52 +2164,18 @@ export function PlanTab({
         />
       )}
 
-      <PlanningStatusCard
+      <DayGamePlanSection
         card={card}
-        button={button}
+        dayGamePlan={dayGamePlan}
         timeContext={timeContext}
         planTabState={planTabState}
-        hasPersonalizedAccess={hasPersonalizedAccess}
-        profileCompletion={profileCompletion}
-        setActiveScreen={setActiveScreen}
       />
-
-      <TodayParkPlanCard
-        card={card}
-        scheduledParkForToday={scheduledParkForToday}
-        todayPlannedParkLabel={todayPlannedParkLabel}
-        planningParkLabel={planningParkLabel}
-        scheduledSecondaryParkLabel={scheduledSecondaryParkLabel}
-      />
-
-      <ParkDayScheduleStatusCard
-        card={card}
-        parkDayScheduleStatus={parkDayScheduleStatus}
-        planningParkLabel={planningParkLabel}
-      />
-
-      <LiveParkContextCard card={card} liveParkContext={liveParkContext} />
-
-      <ParkHopperTimingCard card={card} parkHopperContext={parkHopperContext} />
 
       <PlanFreshnessNotice
         card={card}
         button={button}
         planFreshness={tripPlanFreshness}
         onRefreshTripPlanContext={onRefreshTripPlanContext}
-      />
-
-      <MustDoMomentsSection
-        card={card}
-        activePark={activePark}
-        planningPark={planningPark}
-        planningParkLabel={planningParkLabel}
-        parkOptions={parkOptions}
-        onPlanningParkChange={onPlanningParkChange}
-        tripPlan={tripPlan}
-        mustDoExperienceOptions={mustDoExperienceOptions}
-        onToggleMustDoExperience={onToggleMustDoExperience}
-        isInParkView={isInParkView}
       />
 
       <PlanNudgesSection
@@ -2151,12 +2185,50 @@ export function PlanTab({
         onRefreshTripPlanContext={onRefreshTripPlanContext}
       />
 
-      <DayGamePlanSection
-        card={card}
-        dayGamePlan={dayGamePlan}
-        timeContext={timeContext}
-        planTabState={planTabState}
-      />
+      {!isInParkView && (
+        <MustDoMomentsSection
+          card={card}
+          activePark={activePark}
+          planningPark={planningPark}
+          planningParkLabel={planningParkLabel}
+          parkOptions={parkOptions}
+          onPlanningParkChange={onPlanningParkChange}
+          tripPlan={tripPlan}
+          mustDoExperienceOptions={mustDoExperienceOptions}
+          onToggleMustDoExperience={onToggleMustDoExperience}
+          isInParkView={isInParkView}
+        />
+      )}
+
+      <PlanDetailsSection card={card}>
+        <PlanningStatusCard
+          card={card}
+          button={button}
+          timeContext={timeContext}
+          planTabState={planTabState}
+          hasPersonalizedAccess={hasPersonalizedAccess}
+          profileCompletion={profileCompletion}
+          setActiveScreen={setActiveScreen}
+        />
+
+        <TodayParkPlanCard
+          card={card}
+          scheduledParkForToday={scheduledParkForToday}
+          todayPlannedParkLabel={todayPlannedParkLabel}
+          planningParkLabel={planningParkLabel}
+          scheduledSecondaryParkLabel={scheduledSecondaryParkLabel}
+        />
+
+        <ParkDayScheduleStatusCard
+          card={card}
+          parkDayScheduleStatus={parkDayScheduleStatus}
+          planningParkLabel={planningParkLabel}
+        />
+
+        <LiveParkContextCard card={card} liveParkContext={liveParkContext} />
+
+        <ParkHopperTimingCard card={card} parkHopperContext={parkHopperContext} />
+      </PlanDetailsSection>
 
       {!isInParkView && (
         <>
