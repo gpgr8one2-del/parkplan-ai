@@ -1456,6 +1456,7 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 45,
+      isScheduledShow: true,
       waitProfile: {
         averageWait: 15,
         goodDealUnder: 10,
@@ -1465,14 +1466,21 @@ export const RIDE_METADATA = {
         strategyNote:
           "Show-based attraction. Hollywood Studios relies on shows to absorb crowds, so use this as a seated break when showtime lines up.",
       },
-      planningProfile: {
-        category: "filler_or_recovery",
-        paidAccess: "LLMP_not_needed",
-        appStatus: "filler",
-        strategy:
-          "Good seated break on Sunset Boulevard when showtime lines up.",
+      showProfile: {
+        type: "scheduled_show",
+        showtimes: ["11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "4:00 PM", "5:00 PM"],
+        arrivalBufferMinutes: 15,
+        middayArrivalBufferMinutes: 20,
+        verifyDailySchedule: true,
       },
-      tags: ["show", "family", "seated", "filler"],
+      planningProfile: {
+        category: "scheduled_show",
+        paidAccess: "LLMP_not_needed",
+        appStatus: "plan_ahead",
+        strategy:
+          "Use as a seated Sunset Boulevard break when the next listed showtime lines up. Double-check the daily schedule before walking over.",
+      },
+      tags: ["show", "scheduled-show", "family", "seated", "filler"],
     },
 
     "Fantasmic!": {
@@ -1543,6 +1551,7 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 1,
       popularity: 48,
+      isScheduledShow: true,
       waitProfile: {
         averageWait: 15,
         goodDealUnder: 10,
@@ -1552,14 +1561,21 @@ export const RIDE_METADATA = {
         strategyNote:
           "Usually a next-show wait. Perfect for resting feet during peak heat.",
       },
-      planningProfile: {
-        category: "filler_or_recovery",
-        paidAccess: "LLMP_not_needed",
-        appStatus: "recovery",
-        strategy:
-          "Use as a seated AC break, especially with kids or during heat/rain.",
+      showProfile: {
+        type: "scheduled_show",
+        showtimes: ["10:30 AM", "11:30 AM", "12:30 PM", "1:30 PM", "2:30 PM", "3:30 PM", "4:30 PM", "5:30 PM"],
+        arrivalBufferMinutes: 15,
+        middayArrivalBufferMinutes: 20,
+        verifyDailySchedule: true,
       },
-      tags: ["show", "family", "indoor", "ac", "recovery"],
+      planningProfile: {
+        category: "scheduled_show",
+        paidAccess: "LLMP_not_needed",
+        appStatus: "plan_ahead",
+        strategy:
+          "Use as a seated AC break when the next listed showtime lines up, especially with kids or during heat/rain. Double-check the daily schedule before walking over.",
+      },
+      tags: ["show", "scheduled-show", "family", "indoor", "ac", "recovery"],
     },
 
     "Indiana Jones Epic Stunt Spectacular": {
@@ -1572,6 +1588,7 @@ export const RIDE_METADATA = {
       closesInRain: false,
       intensity: 2,
       popularity: 50,
+      isScheduledShow: true,
       waitProfile: {
         averageWait: 15,
         goodDealUnder: 10,
@@ -1581,14 +1598,21 @@ export const RIDE_METADATA = {
         strategyNote:
           "Large stunt show. Hollywood Studios uses shows to absorb crowds, so time this around showtime rather than treating it like a normal ride wait.",
       },
-      planningProfile: {
-        category: "filler_or_recovery",
-        paidAccess: "LLMP_not_needed",
-        appStatus: "filler",
-        strategy:
-          "Good seated break when showtime is close, but not a true AC reset.",
+      showProfile: {
+        type: "scheduled_show",
+        showtimes: ["10:45 AM", "12:00 PM", "1:15 PM", "3:15 PM", "4:30 PM"],
+        arrivalBufferMinutes: 20,
+        middayArrivalBufferMinutes: 25,
+        verifyDailySchedule: true,
       },
-      tags: ["show", "stunts", "covered", "seated", "filler"],
+      planningProfile: {
+        category: "scheduled_show",
+        paidAccess: "LLMP_not_needed",
+        appStatus: "plan_ahead",
+        strategy:
+          "Good seated break when the next listed showtime is close, but not a true AC reset. Double-check the daily schedule before walking over.",
+      },
+      tags: ["show", "scheduled-show", "stunts", "covered", "seated", "filler"],
     },
 
     "Star Wars: Rise of the Resistance": {

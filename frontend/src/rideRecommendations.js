@@ -2092,7 +2092,12 @@ export function getNextBestRides({
     return ride.closestAnchorOpportunityModifier >= STRONG_CLOSEST_ANCHOR_THRESHOLD;
   });
 
-  const goNowPositivePool = positivePool.filter((ride) => !ride.shouldProtectLater);
+  const goNowPositivePool = positivePool.filter((ride) => {
+    if (ride.shouldProtectLater) return false;
+
+    const meta = getMetaForRide(parkId, ride);
+    return !isScheduledShowMeta(meta);
+  });
 
   const sameAreaRides = goNowPositivePool.filter((ride) => {
     const meta = getMetaForRide(parkId, ride);
