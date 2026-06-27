@@ -137,6 +137,42 @@ function isAllowedDuringEarlyEntry(parkId, meta, date = new Date()) {
   return true;
 }
 
+function getParkOpenStatus(parkId, date = new Date()) {
+  const parkHours = getParkHoursForDate(parkId, date);
+  const openTime = parkHours?.open;
+
+  if (!(openTime instanceof Date) || !Number.isFinite(openTime.getTime())) {
+    return {
+      isPreOpen: false,
+      isEarlyEntryWindow: false,
+      shouldBlockGoNow: false,
+      openTime: null,
+    };
+  }
+
+  const nowMs = date instanceof Date ? date.getTime() : new Date(date).getTime();
+  const openMs = openTime.getTime();
+
+  if (!Number.isFinite(nowMs)) {
+    return {
+      isPreOpen: false,
+      isEarlyEntryWindow: false,
+      shouldBlockGoNow: false,
+      openTime,
+    };
+  }
+
+  const earlyEntryActive = isEarlyEntryWindow(parkId, date);
+  const isPreOpen = nowMs < openMs;
+
+  return {
+    isPreOpen,
+    isEarlyEntryWindow: earlyEntryActive,
+    shouldBlockGoNow: isPreOpen && !earlyEntryActive,
+    openTime,
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Weather helpers                                                            */
 /* -------------------------------------------------------------------------- */
@@ -1746,6 +1782,8 @@ export function getNextBestRides({
 
   const now = new Date();
   const closeTime = getParkCloseTime(parkId, now);
+  const parkOpenStatus = getParkOpenStatus(parkId, now);
+  const blockGoNowForPreOpen = parkOpenStatus.shouldBlockGoNow;
 
   const filterStats = {
     total: rides.length,
@@ -2148,13 +2186,13 @@ export function getNextBestRides({
     ? fallbackCandidate
     : null;
 
-  const bestMove = needsLocation
+  const bestMove = needsLocation || blockGoNowForPreOpen
     ? null
     : sameAreaPick || nearbyPick || fallbackPick;
 
   const usedAfterBest = getUsedRideIds(bestMove);
 
-  const backup = needsLocation
+  const backup = needsLocation || blockGoNowForPreOpen
     ? null
     : (
         primarySameAreaRides.find((ride) => !usedAfterBest.has(String(ride.id))) ||
@@ -2172,7 +2210,7 @@ export function getNextBestRides({
   /* Worth the Walk — V1.1: stricter score floor                              */
   /* ------------------------------------------------------------------------ */
 
-  const worthTheWalk = needsLocation
+  const worthTheWalk = needsLocation || blockGoNowForPreOpen
     ? null
     : (
         farRides.find((ride) => {
@@ -2319,7 +2357,7 @@ export function getNextBestRides({
     })
     .sort((a, b) => b.waitOnThisPriority - a.waitOnThisPriority);
 
-  const waitOnThis = waitOnThisCandidates[0] || null;
+  const waitOnThis = blockGoNowForPreOpen ? null : waitOnThisCandidates[0] || null;
 
   return {
     bestMove,
@@ -2328,5 +2366,6 @@ export function getNextBestRides({
     planAhead,
     waitOnThis,
     needsLocation, // V1.1: new envelope field
+    parkOpenStatus,
   };
 }
