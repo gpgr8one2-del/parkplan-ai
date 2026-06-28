@@ -1,46 +1,6 @@
 import React, { useState } from "react";
 import { colors } from "../theme";
 
-const START_STRATEGY_OPTIONS = [
-  { value: "rope_drop", label: "Rope drop", helper: "Arrive early and make room for the first big move." },
-  { value: "moderate_morning", label: "Moderate morning", helper: "Start steady without forcing a pre-dawn sprint." },
-  { value: "late_start", label: "Late start", helper: "Accept a slower start and keep energy in the day." },
-  { value: "evening_only", label: "Evening only", helper: "Build around a shorter, cooler park window." },
-];
-
-const BREAK_PREFERENCE_OPTIONS = [
-  { value: "no_break", label: "No formal break", helper: "Stay in the park and use smaller resets." },
-  { value: "resort_return", label: "Resort return", helper: "Plan a real mid-day escape when realistic." },
-  { value: "in_park_rest", label: "In-park rest", helper: "Use AC, shade, food, and seated shows." },
-  { value: "kids_nap_window", label: "Kids nap window", helper: "Make room for a real rest window for younger kids." },
-];
-
-const DINING_STYLE_OPTIONS = [
-  { value: "quick_service", label: "Quick service", helper: "Keep meals flexible and low friction." },
-  { value: "table_service_planned", label: "Table service planned", helper: "Anchor the day around a planned meal." },
-  { value: "mixed", label: "Mixed", helper: "Use one planned meal and flexible snacks." },
-  { value: "snack_through_day", label: "Snack through the day", helper: "Avoid heavy meal stops when possible." },
-];
-
-const SHOWS_IMPORTANCE_OPTIONS = [
-  { value: "low", label: "Low", helper: "Rides and flow matter more than shows." },
-  { value: "medium", label: "Medium", helper: "Use shows when they help the day." },
-  { value: "high", label: "High", helper: "Make room for parades, shows, and character moments." },
-];
-
-const NIGHTTIME_IMPORTANCE_OPTIONS = [
-  { value: "must_see_fireworks", label: "Must see nighttime show", helper: "Plan energy and exit strategy around it." },
-  { value: "if_we_re_still_here", label: "If we’re still here", helper: "Keep it optional based on family energy." },
-  { value: "kids_will_be_done", label: "Kids will be done", helper: "Do not build the day around a late finish." },
-];
-
-const PAID_QUEUE_OPTIONS = [
-  { value: "undecided", label: "Undecided", helper: "Keep options open for now." },
-  { value: "avoid_paid", label: "Avoid paid access", helper: "Only suggest free strategies unless the day is at risk." },
-  { value: "open_to_paid", label: "Open if it keeps the day easier", helper: "Use paid access when it keeps the day easier." },
-  { value: "use_paid", label: "Plan around paid access", helper: "Treat paid queue access as part of the strategy." },
-];
-
 const PRIORITY_STYLES = {
   must: { bg: colors.coralSoft, color: "#E11D48", label: "High priority" },
   should: { bg: colors.amberSoft, color: "#92400E", label: "Smart move" },
@@ -1154,9 +1114,6 @@ function DayGamePlanSection({ card, dayGamePlan = [], timeContext = {}, planTabS
 function PlanningParkSelector({
   planningPark,
   planningParkLabel,
-  activePark,
-  parkOptions = [],
-  onPlanningParkChange,
 }) {
   const activeParkLabel = parkOptions.find((park) => park.id === activePark)?.name || activePark;
   const hasSeparateLivePark = activePark && planningPark && activePark !== planningPark;
@@ -1217,326 +1174,6 @@ function PlanningParkSelector({
 }
 
 
-function MustDoMomentsSection({
-  card,
-  activePark,
-  planningPark,
-  planningParkLabel,
-  parkOptions = [],
-  onPlanningParkChange,
-  tripPlan,
-  isInParkView = false,
-  setActiveScreen,
-}) {
-  const selectedExperiences = Array.isArray(tripPlan?.mustDoExperiences)
-    ? tripPlan.mustDoExperiences
-    : [];
-  const selectedForPlanningPark = selectedExperiences.filter(
-    (experience) => experience.parkId === planningPark
-  );
-  const otherParkSelections = selectedExperiences.filter(
-    (experience) => experience.parkId !== planningPark
-  );
-  const visiblePriorities = selectedForPlanningPark.slice(0, 5);
-  const hiddenCount = Math.max(0, selectedForPlanningPark.length - visiblePriorities.length);
-  const hasPlanningParkPriorities = selectedForPlanningPark.length > 0;
-  const hasAnyPriorities = selectedExperiences.length > 0;
-  const activeParkLabel = parkOptions.find((park) => park.id === activePark)?.name || activePark;
-  const profileButtonLabel = hasAnyPriorities ? "Edit in Profile" : "Add in Profile";
-
-  return (
-    <section
-      style={{
-        ...card,
-        padding: isInParkView ? 13 : 16,
-        background:
-          "linear-gradient(145deg, rgba(255,255,255,0.98) 0%, #FFF1F2 100%)",
-        border: "1px solid rgba(251, 113, 133, 0.18)",
-        boxShadow: "0 10px 24px rgba(251, 113, 133, 0.06)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 12,
-          alignItems: "flex-start",
-          flexWrap: "wrap",
-        }}
-      >
-        <div style={{ minWidth: 220, flex: "1 1 300px" }}>
-          <SectionBadge background={colors.coralSoft} color="#E11D48">
-            MUST-DO WATCHLIST
-          </SectionBadge>
-
-          <h3
-            style={{
-              margin: 0,
-              color: colors.text,
-              fontSize: isInParkView ? 20 : 22,
-              letterSpacing: isInParkView ? -0.25 : -0.35,
-            }}
-          >
-            What still matters in {planningParkLabel || "this park"}
-          </h3>
-
-          <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
-            Plan uses this as a quick watchlist for today. Keep deeper adding, removing, and trip-wide priority cleanup in Profile.
-          </p>
-        </div>
-
-        <span
-          style={{
-            padding: "7px 10px",
-            borderRadius: 999,
-            background: "rgba(255,255,255,0.78)",
-            border: `1px solid ${colors.cardBorder}`,
-            color: colors.text,
-            fontSize: 12,
-            fontWeight: 900,
-          }}
-        >
-          {selectedForPlanningPark.length} here
-        </span>
-      </div>
-
-      {!isInParkView && (
-        <PlanningParkSelector
-          planningPark={planningPark}
-          planningParkLabel={planningParkLabel}
-          activePark={activePark}
-          parkOptions={parkOptions}
-          onPlanningParkChange={onPlanningParkChange}
-        />
-      )}
-
-      {hasPlanningParkPriorities ? (
-        <>
-          <div
-            style={{
-              display: "flex",
-              gap: 7,
-              flexWrap: "wrap",
-              marginTop: 12,
-            }}
-          >
-            {visiblePriorities.map((experience) => (
-              <span
-                key={getMustDoKey(experience)}
-                style={{
-                  border: "1px solid rgba(225, 29, 72, 0.24)",
-                  borderRadius: 999,
-                  background: colors.coralSoft,
-                  color: "#9F1239",
-                  padding: "7px 9px",
-                  fontSize: 12,
-                  fontWeight: 900,
-                }}
-              >
-                ✓ {experience.name}
-              </span>
-            ))}
-
-            {hiddenCount > 0 && (
-              <span
-                style={{
-                  borderRadius: 999,
-                  background: "rgba(255,255,255,0.78)",
-                  border: `1px solid ${colors.cardBorder}`,
-                  color: colors.muted,
-                  padding: "7px 9px",
-                  fontSize: 12,
-                  fontWeight: 900,
-                }}
-              >
-                +{hiddenCount} more
-              </span>
-            )}
-          </div>
-
-          <p style={{ margin: "10px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
-            TOHI should keep these visible while judging waits, weather, location, and family energy.
-            {isInParkView && activeParkLabel
-              ? ` Live waits are currently focused on ${activeParkLabel}.`
-              : ""}
-          </p>
-        </>
-      ) : (
-        <div
-          style={{
-            marginTop: 12,
-            padding: 12,
-            borderRadius: 18,
-            background: "rgba(255,255,255,0.82)",
-            border: `1px solid ${colors.cardBorder}`,
-          }}
-        >
-          <strong style={{ display: "block", color: colors.text, fontSize: 13 }}>
-            {otherParkSelections.length > 0
-              ? `No watchlist items are saved for ${planningParkLabel || "this park"} yet.`
-              : "No must-do watchlist items selected yet."}
-          </strong>
-
-          <p style={{ margin: "5px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
-            {otherParkSelections.length > 0
-              ? `You still have ${otherParkSelections.length} saved across other park days. Switch parks or adjust the trip-wide list in Profile.`
-              : "Add a few trip priorities in Profile so TOHI knows what would make the day feel like a win."}
-          </p>
-        </div>
-      )}
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 10,
-          alignItems: "center",
-          flexWrap: "wrap",
-          marginTop: 12,
-        }}
-      >
-        {(selectedForPlanningPark.length > 0 || otherParkSelections.length > 0) && (
-          <p style={{ margin: 0, color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
-            {selectedForPlanningPark.length} in {planningParkLabel || "this park"}
-            {otherParkSelections.length > 0
-              ? ` · ${otherParkSelections.length} across your other park days`
-              : ""}
-          </p>
-        )}
-
-        <button
-          type="button"
-          onClick={() => setActiveScreen?.("family_profile")}
-          style={{
-            ...buttonLikeLinkStyle(),
-            marginLeft: "auto",
-          }}
-        >
-          {profileButtonLabel}
-        </button>
-      </div>
-    </section>
-  );
-}
-
-
-
-function getPreferenceOptionLabel(options, value, fallback = "Use Profile setting") {
-  return options.find((option) => option.value === value)?.label || fallback;
-}
-
-function PlanTripStyleSnapshotSection({ card, preferences = {}, setActiveScreen }) {
-  const styleItems = [
-    {
-      label: "Start",
-      value: getPreferenceOptionLabel(START_STRATEGY_OPTIONS, preferences.startStrategy, "Balanced morning"),
-    },
-    {
-      label: "Breaks",
-      value: getPreferenceOptionLabel(BREAK_PREFERENCE_OPTIONS, preferences.breakPreference, "Flexible resets"),
-    },
-    {
-      label: "Food",
-      value: getPreferenceOptionLabel(DINING_STYLE_OPTIONS, preferences.diningStyle, "Flexible meals"),
-    },
-    {
-      label: "Shows",
-      value: getPreferenceOptionLabel(SHOWS_IMPORTANCE_OPTIONS, preferences.showsImportance, "If they fit"),
-    },
-    {
-      label: "Night",
-      value: getPreferenceOptionLabel(NIGHTTIME_IMPORTANCE_OPTIONS, preferences.nighttimeImportance, "Optional"),
-    },
-    {
-      label: "Paid queues",
-      value: getPreferenceOptionLabel(PAID_QUEUE_OPTIONS, preferences.paidQueueStrategy, "Use Profile setting"),
-    },
-  ];
-
-  return (
-    <section
-      style={{
-        ...card,
-        padding: 14,
-        background: "linear-gradient(145deg, #FFFFFF 0%, #F3E8FF 100%)",
-        border: "1px solid rgba(124, 58, 237, 0.16)",
-        boxShadow: "0 10px 24px rgba(124, 58, 237, 0.06)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 12,
-          alignItems: "flex-start",
-          flexWrap: "wrap",
-        }}
-      >
-        <div style={{ minWidth: 220, flex: "1 1 300px" }}>
-          <SectionBadge background="rgba(124, 58, 237, 0.10)" color={colors.purpleDeep}>
-            TRIP STYLE
-          </SectionBadge>
-
-          <h3 style={{ margin: 0, color: colors.text, fontSize: 20, letterSpacing: -0.25 }}>
-            Plan is using your Profile rhythm
-          </h3>
-          <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
-            These choices shape the day quietly. Keep deeper pace, food, show, and paid-access edits in Profile so Plan stays focused on what to do next.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setActiveScreen?.("family_profile")}
-          style={{
-            ...buttonLikeLinkStyle(),
-            marginTop: 2,
-          }}
-        >
-          Edit in Profile
-        </button>
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
-          gap: 8,
-          marginTop: 12,
-        }}
-      >
-        {styleItems.map((item) => (
-          <div
-            key={item.label}
-            style={{
-              padding: "9px 10px",
-              borderRadius: 16,
-              background: "rgba(255,255,255,0.72)",
-              border: "1px solid rgba(124, 58, 237, 0.12)",
-            }}
-          >
-            <div
-              style={{
-                color: colors.muted,
-                fontSize: 10.5,
-                fontWeight: 900,
-                letterSpacing: 0.65,
-                textTransform: "uppercase",
-              }}
-            >
-              {item.label}
-            </div>
-            <div style={{ marginTop: 3, color: colors.text, fontSize: 12.5, fontWeight: 800 }}>
-              {item.value}
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-
 function formatPlanFreshnessAge(ageMinutes) {
   if (ageMinutes == null) return "";
 
@@ -1548,121 +1185,6 @@ function formatPlanFreshnessAge(ageMinutes) {
   const minutes = ageMinutes % 60;
 
   return minutes ? `${hours}h ${minutes}m ago` : `${hours}h ago`;
-}
-
-
-function PlanNudgesSection({
-  card,
-  button,
-  planNudges = [],
-  onRefreshTripPlanContext,
-}) {
-  if (!Array.isArray(planNudges) || planNudges.length === 0) return null;
-
-  return (
-    <section
-      style={{
-        ...card,
-        padding: 15,
-        background:
-          "radial-gradient(circle at 95% 0%, rgba(245, 158, 11, 0.18) 0%, rgba(245, 158, 11, 0.04) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #FFF7ED 100%)",
-        border: "1px solid rgba(245, 158, 11, 0.24)",
-        boxShadow: "0 14px 30px rgba(245, 158, 11, 0.08)",
-      }}
-    >
-      <SectionBadge background={colors.amberSoft} color="#92400E">
-        WORTH NOTICING
-      </SectionBadge>
-
-      <h3 style={{ margin: 0, color: colors.text, fontSize: 19, letterSpacing: -0.25 }}>
-        Worth noticing right now
-      </h3>
-
-      <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
-        A few timely notes based on your setup, weather, and how fresh the plan is.
-      </p>
-
-      <div style={{ display: "grid", gap: 9, marginTop: 12 }}>
-        {planNudges.map((nudge) => (
-          <div
-            key={nudge.id}
-            style={{
-              padding: 12,
-              borderRadius: 17,
-              background: "rgba(255,255,255,0.82)",
-              border: `1px solid ${colors.cardBorder}`,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 10,
-                alignItems: "flex-start",
-                flexWrap: "wrap",
-              }}
-            >
-              <div style={{ minWidth: 220, flex: "1 1 260px" }}>
-                <div
-                  style={{
-                    color: colors.purpleDeep,
-                    fontSize: 10,
-                    fontWeight: 950,
-                    letterSpacing: 0.8,
-                    textTransform: "uppercase",
-                    marginBottom: 4,
-                  }}
-                >
-                  {nudge.eyebrow || "TOHI NUDGE"}
-                </div>
-
-                <div
-                  style={{
-                    color: colors.text,
-                    fontSize: 14,
-                    fontWeight: 950,
-                    lineHeight: 1.25,
-                  }}
-                >
-                  {nudge.title}
-                </div>
-
-                <p
-                  style={{
-                    margin: "5px 0 0",
-                    color: colors.muted,
-                    fontSize: 12.5,
-                    lineHeight: 1.38,
-                    fontWeight: 650,
-                  }}
-                >
-                  {nudge.body}
-                </p>
-              </div>
-
-              {nudge.action === "refresh_plan" && (
-                <button
-                  type="button"
-                  onClick={onRefreshTripPlanContext}
-                  style={{
-                    ...button,
-                    padding: "7px 10px",
-                    fontSize: 12,
-                    background: colors.purpleDeep,
-                    color: "white",
-                    borderColor: colors.purpleDeep,
-                    flexShrink: 0,
-                  }}
-                >
-                  {nudge.actionLabel || "Refresh plan"}
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
 }
 
 
@@ -1965,11 +1487,9 @@ export function PlanTab({
   weatherMode,
   packingChecklist,
   dayGamePlan = [],
-  planNudges = [],
   tripPlanFreshness,
   onRefreshTripPlanContext,
   tripPlan = { preferences: {}, mustDoExperiences: [] },
-  activePark,
   planningPark,
   planningParkLabel,
   scheduledParkForToday = null,
@@ -1978,66 +1498,13 @@ export function PlanTab({
   parkDayScheduleStatus = {},
   parkHopperContext = {},
   liveParkContext = {},
-  parkOptions = [],
-  onPlanningParkChange,
-  mustDoExperienceOptions = [],
-  onUpdateTripPreferences,
-  onToggleMustDoExperience,
   setActiveScreen,
 }) {
-  const preferences = tripPlan?.preferences || {};
   const isInParkView = planTabState?.mode === "in_park";
   const showMorningBriefing = planTabState?.mode === "morning_of";
 
   return (
     <>
-      {!isInParkView && (
-        <section
-          style={{
-          ...card,
-          padding: 16,
-          position: "relative",
-          overflow: "hidden",
-          background:
-            "radial-gradient(circle at 92% 0%, rgba(245, 158, 11, 0.18) 0%, rgba(245, 158, 11, 0.05) 34%, transparent 58%), linear-gradient(150deg, #FFFFFF 0%, #FFF7ED 48%, #FEF3C7 100%)",
-          border: "1px solid rgba(245, 158, 11, 0.20)",
-          borderRadius: 28,
-          boxShadow: "0 14px 34px rgba(245, 158, 11, 0.09)",
-        }}
-      >
-        <div style={{ position: "relative" }}>
-          <SectionBadge background="rgba(245, 158, 11, 0.14)" color="#92400E">
-            ✨ TRIP RHYTHM
-          </SectionBadge>
-
-          <h2
-            style={{
-              margin: 0,
-              color: colors.text,
-              fontSize: 27,
-              letterSpacing: -0.6,
-              lineHeight: 1.12,
-            }}
-          >
-            Your calm trip plan
-          </h2>
-
-          <p
-            style={{
-              margin: "8px 0 0",
-              color: colors.muted,
-              fontSize: 14,
-              lineHeight: 1.45,
-              maxWidth: 640,
-            }}
-          >
-            A simple strategy for making room for what matters without turning
-            the park day into a checklist.
-          </p>
-        </div>
-        </section>
-      )}
-
       {showMorningBriefing && (
         <MorningBriefingCard
           card={card}
@@ -2059,30 +1526,13 @@ export function PlanTab({
         planTabState={planTabState}
       />
 
+      {!isInParkView && <PackingPreviewSection card={card} packingChecklist={packingChecklist} />}
+
       <PlanFreshnessNotice
         card={card}
         button={button}
         planFreshness={tripPlanFreshness}
         onRefreshTripPlanContext={onRefreshTripPlanContext}
-      />
-
-      <PlanNudgesSection
-        card={card}
-        button={button}
-        planNudges={planNudges}
-        onRefreshTripPlanContext={onRefreshTripPlanContext}
-      />
-
-      <MustDoMomentsSection
-        card={card}
-        activePark={activePark}
-        planningPark={planningPark}
-        planningParkLabel={planningParkLabel}
-        parkOptions={parkOptions}
-        onPlanningParkChange={onPlanningParkChange}
-        tripPlan={tripPlan}
-        isInParkView={isInParkView}
-        setActiveScreen={setActiveScreen}
       />
 
       <PlanDetailsSection card={card}>
@@ -2115,17 +1565,6 @@ export function PlanTab({
         <ParkHopperTimingCard card={card} parkHopperContext={parkHopperContext} />
       </PlanDetailsSection>
 
-      {!isInParkView && (
-        <>
-          <PlanTripStyleSnapshotSection
-            card={card}
-            preferences={preferences}
-            setActiveScreen={setActiveScreen}
-          />
-
-          <PackingPreviewSection card={card} packingChecklist={packingChecklist} />
-        </>
-      )}
     </>
   );
 }
