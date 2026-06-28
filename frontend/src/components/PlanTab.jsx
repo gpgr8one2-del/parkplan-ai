@@ -972,10 +972,20 @@ function DayGamePlanItemCard({ item }) {
   );
 }
 
+function DayGamePlanRow({ item }) {
+  return (
+    <div>
+      <strong>{item.eyebrow}</strong> {item.title}
+    </div>
+  );
+}
+
 function DayGamePlanSection({ card, dayGamePlan = [], timeContext = {}, planTabState = {} }) {
   const [isOpen, setIsOpen] = useState(false);
   const rollingWindow = getRollingGamePlanWindow({ dayGamePlan, timeContext, planTabState });
   const visibleItems = rollingWindow.items.length ? rollingWindow.items : dayGamePlan.slice(0, 1);
+  const isInParkView = planTabState?.mode === "in_park";
+  const activeIds = new Set(visibleItems.map((item) => item.id));
   const preview = visibleItems[0]?.title
     ? `${rollingWindow.label}: ${visibleItems.map((item) => item.title).join(" · ")}`
     : "Tap to see the strategy behind the day.";
@@ -1046,12 +1056,14 @@ function DayGamePlanSection({ card, dayGamePlan = [], timeContext = {}, planTabS
             </p>
           </div>
 
+          {isInParkView && (
           <CollapseButton
             isOpen={isOpen}
             openLabel="See full plan"
             closeLabel="Hide full plan"
             onClick={() => setIsOpen((current) => !current)}
           />
+          )}
         </div>
 
         <div
@@ -1080,12 +1092,19 @@ function DayGamePlanSection({ card, dayGamePlan = [], timeContext = {}, planTabS
         </div>
 
         <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-          {visibleItems.map((item) => (
+          {isInParkView ? visibleItems.map((item) => (
             <DayGamePlanItemCard key={`rolling-${item.id}`} item={item} />
-          ))}
+          ))
+            : dayGamePlan.map((item) =>
+                activeIds.has(item.id) ? (
+                  <DayGamePlanItemCard key={`full-${item.id}`} item={item} />
+                ) : (
+                  <DayGamePlanRow key={`row-${item.id}`} item={item} />
+                )
+              )}
         </div>
 
-        {isOpen && (
+        {isInParkView && isOpen && (
           <div style={{ marginTop: 14 }}>
             <div
               style={{
