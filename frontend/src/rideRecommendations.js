@@ -226,6 +226,36 @@ function isRainSensitiveRide(meta) {
   );
 }
 
+function isRainRecoveryRide(meta) {
+  if (!meta) return false;
+  if (isRainSensitiveRide(meta)) return false;
+
+  return (
+    meta.environment === "indoor" ||
+    meta.hasAC === true ||
+    meta.tags?.includes("recovery")
+  );
+}
+
+function getLocalRainRecoveryModifier(meta, weather, currentLand, proximityModifier) {
+  const stormActive = isCurrentlyStorming(weather);
+  const rainActive = isRainActive(weather);
+
+  if (!stormActive && !rainActive) return 0;
+  if (!isRainRecoveryRide(meta)) return 0;
+
+  const local = isSameArea(meta, currentLand, proximityModifier);
+
+  if (stormActive) {
+    if (local) return 28;
+    return 8;
+  }
+
+  if (local) return 22;
+  return 4;
+}
+
+
 /* -------------------------------------------------------------------------- */
 /* Ride name / meta resolution                                                */
 /* -------------------------------------------------------------------------- */
@@ -1957,7 +1987,8 @@ export function getNextBestRides({
 
     const parkStrategyModifier =
       getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand) +
-      getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand);
+      getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand) +
+      getLocalRainRecoveryModifier(meta, weather, currentLand, proximityModifier);
 
     const crossParkRealityModifier = getCrossParkRealityModifier({
       parkId,
