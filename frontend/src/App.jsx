@@ -3396,6 +3396,10 @@ function App() {
         FAMILY_PRIORITY_OPTIONS={FAMILY_PRIORITY_OPTIONS}
         DEV_ALLOW_FULL_APP_WITHOUT_PROFILE={DEV_ALLOW_FULL_APP_WITHOUT_PROFILE}
         resortOptions={resortOptions}
+        tripPlan={tripPlanState}
+        mustDoExperienceOptions={mustDoExperienceOptions}
+        onUpdateTripPreferences={handleTripPreferenceChange}
+        onToggleMustDoExperience={handleTripMustDoToggle}
       />
     );
   }
@@ -4815,7 +4819,6 @@ function App() {
               weatherMode={weatherMode}
               packingChecklist={packingChecklist}
               dayGamePlan={dayGamePlan}
-              planNudges={planNudges}
               tripPlanFreshness={tripPlanFreshness}
               onRefreshTripPlanContext={handleRefreshTripPlanContext}
               tripPlan={tripPlanState}
@@ -4828,11 +4831,6 @@ function App() {
               parkDayScheduleStatus={parkDayScheduleStatus}
               parkHopperContext={parkHopperContext}
               liveParkContext={liveParkContext}
-              parkOptions={PARKS.filter((park) => park.selectable !== false)}
-              onPlanningParkChange={handlePlanningParkChange}
-              mustDoExperienceOptions={mustDoExperienceOptions}
-              onUpdateTripPreferences={handleTripPreferenceChange}
-              onToggleMustDoExperience={handleTripMustDoToggle}
               setActiveScreen={setActiveScreen}
             />
           )}
