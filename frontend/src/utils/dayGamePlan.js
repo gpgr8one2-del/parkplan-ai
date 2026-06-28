@@ -496,8 +496,8 @@ function buildMustDoPriorities({ preferences, familyProfile, activePark, tripPla
   if (activeParkMustDos.length > 0) {
     return {
       id: "must_do_priorities",
-      eyebrow: "MUST-DO WATCHLIST",
-      title: "Protect the must-do watchlist.",
+      eyebrow: "TRIP PRIORITIES",
+      title: "Keep the must-do watchlist in view.",
       body:
         `Your must-do watchlist in this park includes ${activeParkLabel}. TOHI treats those as success targets, not background nice-to-haves.`,
       priority: "must",
