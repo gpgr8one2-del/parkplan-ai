@@ -1607,6 +1607,14 @@ function shouldAskFrontendLiveStateQuestion(message = "", chatHistory = []) {
 }
 
 
+function normalizeTripParkId(parkId) {
+  if (parkId === "hollywood_studios" || parkId === "disney_hollywood_studios") {
+    return "hollywood";
+  }
+
+  return parkId;
+}
+
 function App() {
   const [activePark, setActivePark] = useState("magic_kingdom");
   const [parkData, setParkData] = useState(null);
@@ -2178,11 +2186,47 @@ function App() {
   ]);
 
   const mustDoExperienceOptions = useMemo(() => {
-    return buildMustDoExperienceOptions({
-      activePark: planningPark,
-      rides: planningParkLiveRides,
+    const tripContext = familyProfile?.tripContext || {};
+    const selectedParkIds = Array.isArray(tripContext.parkSelectionIds)
+      ? tripContext.parkSelectionIds
+      : Array.isArray(tripContext.selectedParks)
+      ? tripContext.selectedParks
+      : [];
+
+    const validParkIds = new Set(PARKS.map((park) => park.id));
+    const tripParkIds = selectedParkIds
+      .map((parkId) => normalizeTripParkId(parkId))
+      .filter(
+        (parkId, index, list) =>
+          typeof parkId === "string" &&
+          parkId.trim() &&
+          validParkIds.has(parkId) &&
+          list.indexOf(parkId) === index
+      );
+
+    const fallbackParkId =
+      normalizeTripParkId(planningPark) ||
+      normalizeTripParkId(tripContext.firstParkId) ||
+      normalizeTripParkId(tripContext.firstPark) ||
+      "magic_kingdom";
+
+    const optionParkIds = tripParkIds.length > 0 ? tripParkIds : [fallbackParkId].filter((parkId) => validParkIds.has(parkId));
+
+    return optionParkIds.flatMap((parkId) => {
+      const parkLabel = getParkLabel(parkId);
+
+      return getParkRides(parkId)
+        .map(([id, meta]) => ({
+          id,
+          name: meta?.displayName || meta?.name || id,
+          displayName: meta?.displayName || meta?.name || id,
+          parkId,
+          parkLabel,
+          type: meta?.type || meta?.category || "experience",
+        }))
+        .filter((experience) => shouldShowRideInWaitList(parkId, experience));
     });
-  }, [planningPark, planningParkLiveRides]);
+  }, [familyProfile?.tripContext, planningPark]);
 
   const recoverySuggestions = useMemo(() => {
     return getRecoverySuggestions({

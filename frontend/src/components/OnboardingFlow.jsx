@@ -139,6 +139,23 @@ export function OnboardingFlow({
   const selectedMustDoKeys = new Set(selectedMustDoExperiences.map((experience) => getExperienceKey(experience)));
   const profileMustDoOptions = Array.isArray(mustDoExperienceOptions) ? mustDoExperienceOptions : [];
   const selectedMustDoCount = selectedMustDoExperiences.length;
+  const profileMustDoOptionGroups = profileMustDoOptions.reduce((groups, experience) => {
+    const parkId = experience?.parkId || "unknown";
+    const existingGroup = groups.find((group) => group.parkId === parkId);
+
+    if (existingGroup) {
+      existingGroup.options.push(experience);
+      return groups;
+    }
+
+    groups.push({
+      parkId,
+      parkLabel: experience?.parkLabel || getParkLabel(parkId),
+      options: [experience],
+    });
+
+    return groups;
+  }, []);
 
 
   const setupPage = {
@@ -1124,49 +1141,62 @@ export function OnboardingFlow({
                   )}
 
                   {profileMustDoOptions.length > 0 ? (
-                    <div style={{ display: "grid", gap: 8 }}>
-                      {profileMustDoOptions.map((experience) => {
-                        const isSelected = selectedMustDoKeys.has(getExperienceKey(experience));
-                        const label = experience.displayName || experience.name || "Experience";
-                        const parkLabel = experience.parkLabel || getParkLabel(experience.parkId);
-
-                        return (
-                          <button
-                            key={getExperienceKey(experience)}
-                            type="button"
-                            onClick={() => onToggleMustDoExperience?.(experience)}
+                    <div style={{ display: "grid", gap: 12 }}>
+                      {profileMustDoOptionGroups.map((group) => (
+                        <div key={group.parkId} style={{ display: "grid", gap: 8 }}>
+                          <div
                             style={{
-                              ...button,
-                              justifyContent: "space-between",
-                              textAlign: "left",
-                              gap: 10,
-                              background: isSelected
-                                ? "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)"
-                                : "rgba(255,255,255,0.86)",
-                              color: isSelected ? "white" : colors.text,
-                              borderColor: isSelected ? colors.purpleDeep : colors.cardBorder,
+                              color: colors.purpleDeep,
+                              fontSize: 11,
+                              fontWeight: 950,
+                              letterSpacing: 0.7,
+                              textTransform: "uppercase",
                             }}
                           >
-                            <span>{isSelected ? `✓ ${label}` : label}</span>
-                            {parkLabel && (
-                              <span
+                            {group.parkLabel}
+                          </div>
+
+                          {group.options.map((experience) => {
+                            const isSelected = selectedMustDoKeys.has(getExperienceKey(experience));
+                            const label = experience.displayName || experience.name || "Experience";
+
+                            return (
+                              <button
+                                key={getExperienceKey(experience)}
+                                type="button"
+                                onClick={() => onToggleMustDoExperience?.(experience)}
                                 style={{
-                                  fontSize: 11,
-                                  fontWeight: 850,
-                                  opacity: isSelected ? 0.9 : 0.62,
-                                  whiteSpace: "nowrap",
+                                  ...button,
+                                  justifyContent: "space-between",
+                                  textAlign: "left",
+                                  gap: 10,
+                                  background: isSelected
+                                    ? "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)"
+                                    : "rgba(255,255,255,0.86)",
+                                  color: isSelected ? "white" : colors.text,
+                                  borderColor: isSelected ? colors.purpleDeep : colors.cardBorder,
                                 }}
                               >
-                                {parkLabel}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
+                                <span>{isSelected ? `✓ ${label}` : label}</span>
+                                <span
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: 850,
+                                    opacity: isSelected ? 0.9 : 0.62,
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {isSelected ? "Selected" : "Add"}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <p style={{ margin: 0, color: colors.muted, fontSize: 12.5 }}>
-                      Add your park days first, then TOHI can show matching must-do options here.
+                      Choose your park days first, then TOHI can show must-do options for each selected park here.
                     </p>
                   )}
                 </div>
