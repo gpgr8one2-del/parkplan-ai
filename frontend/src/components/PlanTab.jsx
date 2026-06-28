@@ -1421,8 +1421,37 @@ function MustDoMomentsSection({
 
 
 
-function PlanTuneSection({ card, preferences = {}, onUpdateTripPreferences }) {
-  const [isOpen, setIsOpen] = useState(false);
+function getPreferenceOptionLabel(options, value, fallback = "Use Profile setting") {
+  return options.find((option) => option.value === value)?.label || fallback;
+}
+
+function PlanTripStyleSnapshotSection({ card, preferences = {}, setActiveScreen }) {
+  const styleItems = [
+    {
+      label: "Start",
+      value: getPreferenceOptionLabel(START_STRATEGY_OPTIONS, preferences.startStrategy, "Balanced morning"),
+    },
+    {
+      label: "Breaks",
+      value: getPreferenceOptionLabel(BREAK_PREFERENCE_OPTIONS, preferences.breakPreference, "Flexible resets"),
+    },
+    {
+      label: "Food",
+      value: getPreferenceOptionLabel(DINING_STYLE_OPTIONS, preferences.diningStyle, "Flexible meals"),
+    },
+    {
+      label: "Shows",
+      value: getPreferenceOptionLabel(SHOWS_IMPORTANCE_OPTIONS, preferences.showsImportance, "If they fit"),
+    },
+    {
+      label: "Night",
+      value: getPreferenceOptionLabel(NIGHTTIME_IMPORTANCE_OPTIONS, preferences.nighttimeImportance, "Optional"),
+    },
+    {
+      label: "Paid queues",
+      value: getPreferenceOptionLabel(PAID_QUEUE_OPTIONS, preferences.paidQueueStrategy, "Use Profile setting"),
+    },
+  ];
 
   return (
     <section
@@ -1445,87 +1474,68 @@ function PlanTuneSection({ card, preferences = {}, onUpdateTripPreferences }) {
       >
         <div style={{ minWidth: 220, flex: "1 1 300px" }}>
           <SectionBadge background="rgba(124, 58, 237, 0.10)" color={colors.purpleDeep}>
-            PLAN TUNE
+            TRIP STYLE
           </SectionBadge>
 
-          <h3 style={{ margin: 0, color: colors.text, fontSize: 22, letterSpacing: -0.35 }}>
-            Fine-tune the day
+          <h3 style={{ margin: 0, color: colors.text, fontSize: 20, letterSpacing: -0.25 }}>
+            Plan is using your Profile rhythm
           </h3>
           <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
-            These are the controls behind the strategy. Open them only when the way you want
-            the day to feel changes.
+            These choices shape the day quietly. Keep deeper pace, food, show, and paid-access edits in Profile so Plan stays focused on what to do next.
           </p>
         </div>
 
-        <CollapseButton
-          isOpen={isOpen}
-          openLabel="Edit controls"
-          closeLabel="Hide controls"
-          onClick={() => setIsOpen((current) => !current)}
-        />
-      </div>
-
-      {isOpen && (
-        <div
+        <button
+          type="button"
+          onClick={() => setActiveScreen?.("family_profile")}
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-            gap: 9,
-            marginTop: 12,
+            ...buttonLikeLinkStyle(),
+            marginTop: 2,
           }}
         >
-          <PlanPreferenceSelect
-            id="start-strategy"
-            label="Start strategy"
-            value={preferences.startStrategy}
-            options={START_STRATEGY_OPTIONS}
-            onChange={(value) => onUpdateTripPreferences({ startStrategy: value })}
-          />
+          Edit in Profile
+        </button>
+      </div>
 
-          <PlanPreferenceSelect
-            id="break-preference"
-            label="Break style"
-            value={preferences.breakPreference}
-            options={BREAK_PREFERENCE_OPTIONS}
-            onChange={(value) => onUpdateTripPreferences({ breakPreference: value })}
-          />
-
-          <PlanPreferenceSelect
-            id="dining-style"
-            label="Food rhythm"
-            value={preferences.diningStyle}
-            options={DINING_STYLE_OPTIONS}
-            onChange={(value) => onUpdateTripPreferences({ diningStyle: value })}
-          />
-
-          <PlanPreferenceSelect
-            id="shows-importance"
-            label="Shows / parades"
-            value={preferences.showsImportance}
-            options={SHOWS_IMPORTANCE_OPTIONS}
-            onChange={(value) => onUpdateTripPreferences({ showsImportance: value })}
-          />
-
-          <PlanPreferenceSelect
-            id="nighttime-importance"
-            label="Nighttime plan"
-            value={preferences.nighttimeImportance}
-            options={NIGHTTIME_IMPORTANCE_OPTIONS}
-            onChange={(value) => onUpdateTripPreferences({ nighttimeImportance: value })}
-          />
-
-          <PlanPreferenceSelect
-            id="paid-queue-strategy"
-            label="Paid queue strategy"
-            value={preferences.paidQueueStrategy}
-            options={PAID_QUEUE_OPTIONS}
-            onChange={(value) => onUpdateTripPreferences({ paidQueueStrategy: value })}
-          />
-        </div>
-      )}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+          gap: 8,
+          marginTop: 12,
+        }}
+      >
+        {styleItems.map((item) => (
+          <div
+            key={item.label}
+            style={{
+              padding: "9px 10px",
+              borderRadius: 16,
+              background: "rgba(255,255,255,0.72)",
+              border: "1px solid rgba(124, 58, 237, 0.12)",
+            }}
+          >
+            <div
+              style={{
+                color: colors.muted,
+                fontSize: 10.5,
+                fontWeight: 900,
+                letterSpacing: 0.65,
+                textTransform: "uppercase",
+              }}
+            >
+              {item.label}
+            </div>
+            <div style={{ marginTop: 3, color: colors.text, fontSize: 12.5, fontWeight: 800 }}>
+              {item.value}
+            </div>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }
+
 
 function formatPlanFreshnessAge(ageMinutes) {
   if (ageMinutes == null) return "";
@@ -2107,10 +2117,10 @@ export function PlanTab({
 
       {!isInParkView && (
         <>
-          <PlanTuneSection
+          <PlanTripStyleSnapshotSection
             card={card}
             preferences={preferences}
-            onUpdateTripPreferences={onUpdateTripPreferences}
+            setActiveScreen={setActiveScreen}
           />
 
           <PackingPreviewSection card={card} packingChecklist={packingChecklist} />
