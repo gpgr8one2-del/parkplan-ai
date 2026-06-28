@@ -1222,80 +1222,96 @@ function MustDoMomentsSection({
   activePark,
   planningPark,
   planningParkLabel,
-  todayPlannedParkLabel,
-  scheduledParkForToday,
-  scheduledSecondaryParkLabel,
   parkOptions = [],
   onPlanningParkChange,
   tripPlan,
-  mustDoExperienceOptions = [],
-  onToggleMustDoExperience,
   isInParkView = false,
+  setActiveScreen,
 }) {
   const selectedExperiences = Array.isArray(tripPlan?.mustDoExperiences)
     ? tripPlan.mustDoExperiences
     : [];
-
-  const selectedKeys = new Set(selectedExperiences.map(getMustDoKey));
   const selectedForPlanningPark = selectedExperiences.filter(
     (experience) => experience.parkId === planningPark
   );
   const otherParkSelections = selectedExperiences.filter(
     (experience) => experience.parkId !== planningPark
   );
+  const visiblePriorities = selectedForPlanningPark.slice(0, 5);
+  const hiddenCount = Math.max(0, selectedForPlanningPark.length - visiblePriorities.length);
+  const hasPlanningParkPriorities = selectedForPlanningPark.length > 0;
+  const hasAnyPriorities = selectedExperiences.length > 0;
+  const activeParkLabel = parkOptions.find((park) => park.id === activePark)?.name || activePark;
+  const profileButtonLabel = hasAnyPriorities ? "Edit in Profile" : "Add in Profile";
 
-  if (isInParkView) {
-    const visiblePriorities = selectedForPlanningPark.slice(0, 5);
-    const hiddenCount = Math.max(0, selectedForPlanningPark.length - visiblePriorities.length);
-
-    return (
-      <section
+  return (
+    <section
+      style={{
+        ...card,
+        padding: isInParkView ? 13 : 16,
+        background:
+          "linear-gradient(145deg, rgba(255,255,255,0.98) 0%, #FFF1F2 100%)",
+        border: "1px solid rgba(251, 113, 133, 0.18)",
+        boxShadow: "0 10px 24px rgba(251, 113, 133, 0.06)",
+      }}
+    >
+      <div
         style={{
-          ...card,
-          padding: 13,
-          background:
-            "linear-gradient(145deg, rgba(255,255,255,0.98) 0%, #FFF1F2 100%)",
-          border: "1px solid rgba(251, 113, 133, 0.18)",
-          boxShadow: "0 10px 24px rgba(251, 113, 133, 0.06)",
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          alignItems: "flex-start",
+          flexWrap: "wrap",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "flex-start",
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ minWidth: 220, flex: "1 1 300px" }}>
-            <SectionBadge background={colors.coralSoft} color="#E11D48">
-              YOUR PRIORITIES
-            </SectionBadge>
-            <h3 style={{ margin: 0, color: colors.text, fontSize: 20, letterSpacing: -0.25 }}>
-              What still matters in {planningParkLabel || "this park"}
-            </h3>
-            <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12.5, lineHeight: 1.38 }}>
-              A quiet reminder of what TOHI is making room for today. You can adjust these later when you are not in the middle of the park.
-            </p>
-          </div>
+        <div style={{ minWidth: 220, flex: "1 1 300px" }}>
+          <SectionBadge background={colors.coralSoft} color="#E11D48">
+            MUST-DO WATCHLIST
+          </SectionBadge>
 
-          <span
+          <h3
             style={{
-              padding: "7px 10px",
-              borderRadius: 999,
-              background: "rgba(255,255,255,0.78)",
-              border: `1px solid ${colors.cardBorder}`,
+              margin: 0,
               color: colors.text,
-              fontSize: 12,
-              fontWeight: 900,
+              fontSize: isInParkView ? 20 : 22,
+              letterSpacing: isInParkView ? -0.25 : -0.35,
             }}
           >
-            {selectedForPlanningPark.length} here
-          </span>
+            What still matters in {planningParkLabel || "this park"}
+          </h3>
+
+          <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
+            Plan uses this as a quick watchlist for today. Keep deeper adding, removing, and trip-wide priority cleanup in Profile.
+          </p>
         </div>
 
-        {visiblePriorities.length > 0 ? (
+        <span
+          style={{
+            padding: "7px 10px",
+            borderRadius: 999,
+            background: "rgba(255,255,255,0.78)",
+            border: `1px solid ${colors.cardBorder}`,
+            color: colors.text,
+            fontSize: 12,
+            fontWeight: 900,
+          }}
+        >
+          {selectedForPlanningPark.length} here
+        </span>
+      </div>
+
+      {!isInParkView && (
+        <PlanningParkSelector
+          planningPark={planningPark}
+          planningParkLabel={planningParkLabel}
+          activePark={activePark}
+          parkOptions={parkOptions}
+          onPlanningParkChange={onPlanningParkChange}
+        />
+      )}
+
+      {hasPlanningParkPriorities ? (
+        <>
           <div
             style={{
               display: "flex",
@@ -1337,224 +1353,72 @@ function MustDoMomentsSection({
               </span>
             )}
           </div>
-        ) : (
-          <div
-            style={{
-              marginTop: 12,
-              padding: 12,
-              borderRadius: 16,
-              background: "rgba(255,255,255,0.82)",
-              border: `1px solid ${colors.cardBorder}`,
-              color: colors.muted,
-              fontSize: 13,
-              lineHeight: 1.4,
-            }}
-          >
-            {otherParkSelections.length > 0
-              ? `None of your priorities are in ${planningParkLabel || "this park"} today. You still have ${otherParkSelections.length} across your other park days.`
-              : "No priorities selected for this park day yet."}
-          </div>
-        )}
-      </section>
-    );
-  }
 
-  return (
-    <section
-      style={{
-        ...card,
-        padding: 14,
-        background:
-          "linear-gradient(145deg, rgba(255,255,255,0.98) 0%, #FFF1F2 100%)",
-        border: "1px solid rgba(251, 113, 133, 0.18)",
-        boxShadow: "0 10px 24px rgba(251, 113, 133, 0.06)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 12,
-          alignItems: "flex-start",
-          flexWrap: "wrap",
-        }}
-      >
-        <div>
-          <SectionBadge background={colors.coralSoft} color="#E11D48">
-            YOUR PRIORITIES
-          </SectionBadge>
-          <h3 style={{ margin: 0, color: colors.text, fontSize: 22, letterSpacing: -0.35 }}>
-            What should the day have room for?
-          </h3>
-          <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
-            Pick the rides, shows, and experiences that would make {planningParkLabel || "this park"} feel like a win.
+          <p style={{ margin: "10px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+            TOHI should keep these visible while judging waits, weather, location, and family energy.
+            {isInParkView && activeParkLabel
+              ? ` Live waits are currently focused on ${activeParkLabel}.`
+              : ""}
           </p>
-        </div>
-
-        <span
-          style={{
-            padding: "7px 10px",
-            borderRadius: 999,
-            background: "rgba(255,255,255,0.78)",
-            border: `1px solid ${colors.cardBorder}`,
-            color: colors.text,
-            fontSize: 12,
-            fontWeight: 900,
-          }}
-        >
-          {selectedExperiences.length} selected
-        </span>
-      </div>
-
-      <PlanningParkSelector
-        planningPark={planningPark}
-        planningParkLabel={planningParkLabel}
-        activePark={activePark}
-        parkOptions={parkOptions}
-        onPlanningParkChange={onPlanningParkChange}
-      />
-
-      {selectedExperiences.length > 0 && (
-        <div
-          style={{
-            display: "flex",
-            gap: 7,
-            flexWrap: "wrap",
-            marginTop: 12,
-          }}
-        >
-          {selectedExperiences.slice(0, 8).map((experience) => (
-            <button
-              key={getMustDoKey(experience)}
-              type="button"
-              onClick={() => onToggleMustDoExperience(experience)}
-              style={{
-                border: "1px solid rgba(225, 29, 72, 0.24)",
-                borderRadius: 999,
-                background: colors.coralSoft,
-                color: "#9F1239",
-                padding: "7px 9px",
-                fontSize: 12,
-                fontWeight: 900,
-                cursor: "pointer",
-              }}
-              title="Tap to remove"
-            >
-              ✓ {experience.name}
-            </button>
-          ))}
-
-          {selectedExperiences.length > 8 && (
-            <span
-              style={{
-                borderRadius: 999,
-                background: "rgba(255,255,255,0.78)",
-                border: `1px solid ${colors.cardBorder}`,
-                color: colors.muted,
-                padding: "7px 9px",
-                fontSize: 12,
-                fontWeight: 900,
-              }}
-            >
-              +{selectedExperiences.length - 8} more
-            </span>
-          )}
-        </div>
-      )}
-
-      {mustDoExperienceOptions.length === 0 ? (
+        </>
+      ) : (
         <div
           style={{
             marginTop: 12,
             padding: 12,
-            borderRadius: 16,
+            borderRadius: 18,
             background: "rgba(255,255,255,0.82)",
             border: `1px solid ${colors.cardBorder}`,
-            color: colors.muted,
-            fontSize: 13,
-            lineHeight: 1.4,
           }}
         >
-          Choose a planning park above, then TOHI can show available experiences
-          for that park.
+          <strong style={{ display: "block", color: colors.text, fontSize: 13 }}>
+            {otherParkSelections.length > 0
+              ? `No watchlist items are saved for ${planningParkLabel || "this park"} yet.`
+              : "No must-do watchlist items selected yet."}
+          </strong>
+
+          <p style={{ margin: "5px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+            {otherParkSelections.length > 0
+              ? `You still have ${otherParkSelections.length} saved across other park days. Switch parks or adjust the trip-wide list in Profile.`
+              : "Add a few trip priorities in Profile so TOHI knows what would make the day feel like a win."}
+          </p>
         </div>
-      ) : (
-        <details open={selectedExperiences.length === 0} style={{ marginTop: 12 }}>
-          <summary
-            style={{
-              cursor: "pointer",
-              color: colors.text,
-              fontSize: 13,
-              fontWeight: 950,
-              padding: "10px 12px",
-              borderRadius: 16,
-              background: "rgba(255,255,255,0.78)",
-              border: `1px solid ${colors.cardBorder}`,
-            }}
-          >
-            Add or edit priorities
-          </summary>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-              gap: 8,
-              marginTop: 10,
-              maxHeight: 360,
-              overflow: "auto",
-              paddingRight: 2,
-            }}
-          >
-            {mustDoExperienceOptions.map((experience) => {
-              const key = getMustDoKey(experience);
-              const selected = selectedKeys.has(key);
-
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => onToggleMustDoExperience(experience)}
-                  style={{
-                    display: "grid",
-                    gap: 5,
-                    textAlign: "left",
-                    padding: 10,
-                    borderRadius: 16,
-                    background: selected ? colors.coralSoft : "rgba(255,255,255,0.82)",
-                    border: selected
-                      ? "1px solid rgba(225, 29, 72, 0.28)"
-                      : `1px solid ${colors.cardBorder}`,
-                    color: colors.text,
-                    cursor: "pointer",
-                  }}
-                >
-                  <span style={{ fontWeight: 950, fontSize: 12 }}>
-                    {selected ? "✓ " : ""}
-                    {experience.name}
-                  </span>
-
-                  <span style={{ color: colors.muted, fontSize: 11 }}>
-                    {getMustDoTypeLabel(experience.type)}
-                    {experience.land ? ` · ${experience.land}` : ""}
-                    {experience.waitTime != null ? ` · ${experience.waitTime} min` : ""}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </details>
       )}
 
-      {(selectedForPlanningPark.length > 0 || otherParkSelections.length > 0) && (
-        <p style={{ margin: "10px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
-          {selectedForPlanningPark.length} in {planningParkLabel || "this park"}
-          {otherParkSelections.length > 0 ? ` · ${otherParkSelections.length} across your other park days` : ""}
-        </p>
-      )}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 10,
+          alignItems: "center",
+          flexWrap: "wrap",
+          marginTop: 12,
+        }}
+      >
+        {(selectedForPlanningPark.length > 0 || otherParkSelections.length > 0) && (
+          <p style={{ margin: 0, color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+            {selectedForPlanningPark.length} in {planningParkLabel || "this park"}
+            {otherParkSelections.length > 0
+              ? ` · ${otherParkSelections.length} across your other park days`
+              : ""}
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setActiveScreen?.("family_profile")}
+          style={{
+            ...buttonLikeLinkStyle(),
+            marginLeft: "auto",
+          }}
+        >
+          {profileButtonLabel}
+        </button>
+      </div>
     </section>
   );
 }
+
 
 
 function PlanTuneSection({ card, preferences = {}, onUpdateTripPreferences }) {
@@ -1997,6 +1861,20 @@ function PackingPreviewSection({ card, packingChecklist = [] }) {
 }
 
 
+function buttonLikeLinkStyle() {
+  return {
+    border: `1px solid ${colors.cardBorder}`,
+    borderRadius: 999,
+    background: "rgba(255,255,255,0.86)",
+    color: colors.text,
+    padding: "8px 11px",
+    fontSize: 12,
+    fontWeight: 950,
+    cursor: "pointer",
+  };
+}
+
+
 function PlanDetailsSection({ card, children }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -2185,20 +2063,17 @@ export function PlanTab({
         onRefreshTripPlanContext={onRefreshTripPlanContext}
       />
 
-      {!isInParkView && (
-        <MustDoMomentsSection
-          card={card}
-          activePark={activePark}
-          planningPark={planningPark}
-          planningParkLabel={planningParkLabel}
-          parkOptions={parkOptions}
-          onPlanningParkChange={onPlanningParkChange}
-          tripPlan={tripPlan}
-          mustDoExperienceOptions={mustDoExperienceOptions}
-          onToggleMustDoExperience={onToggleMustDoExperience}
-          isInParkView={isInParkView}
-        />
-      )}
+      <MustDoMomentsSection
+        card={card}
+        activePark={activePark}
+        planningPark={planningPark}
+        planningParkLabel={planningParkLabel}
+        parkOptions={parkOptions}
+        onPlanningParkChange={onPlanningParkChange}
+        tripPlan={tripPlan}
+        isInParkView={isInParkView}
+        setActiveScreen={setActiveScreen}
+      />
 
       <PlanDetailsSection card={card}>
         <PlanningStatusCard
