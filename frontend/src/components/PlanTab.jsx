@@ -974,8 +974,31 @@ function DayGamePlanItemCard({ item }) {
 
 function DayGamePlanRow({ item }) {
   return (
-    <div>
-      <strong>{item.eyebrow}</strong> {item.title}
+    <div
+      style={{
+        display: "flex",
+        alignItems: "baseline",
+        gap: 8,
+        padding: "7px 11px",
+        borderRadius: 12,
+        background: "rgba(255,255,255,0.55)",
+        border: "1px solid " + colors.cardBorder,
+      }}
+    >
+      <span
+        style={{
+          color: "#0369A1",
+          fontSize: 10,
+          fontWeight: 950,
+          letterSpacing: 0.5,
+          flexShrink: 0,
+        }}
+      >
+        {item.eyebrow}
+      </span>
+      <span style={{ color: colors.muted, fontSize: 12.5, lineHeight: 1.3 }}>
+        {item.title}
+      </span>
     </div>
   );
 }
