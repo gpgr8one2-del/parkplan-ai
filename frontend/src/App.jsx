@@ -1659,6 +1659,7 @@ function App() {
   const [skippedRideIds, setSkippedRideIds] = useState([]);
   const [reportedRideIssueIds, setReportedRideIssueIds] = useState([]);
   const [currentActivity, setCurrentActivity] = useState(null);
+  const [activityLog, setActivityLog] = useState([]);
   const [debugSnapshotEnabled, setDebugSnapshotEnabled] = useState(() =>
     readDebugSnapshotEnabled()
   );
@@ -1993,6 +1994,7 @@ function App() {
     setSkippedRideIds(saved.skippedRideIds || []);
     setReportedRideIssueIds(saved.reportedRideIssueIds || []);
     setCurrentActivity(saved.currentActivity || null);
+    setActivityLog(saved.activityLog || []);
     setLocationMessage("");
     setLocationError("");
     setLastLocationUpdateAt("");
@@ -2012,6 +2014,7 @@ function App() {
       skippedRideIds,
       reportedRideIssueIds,
       currentActivity,
+      activityLog,
     });
   }, [
     activePark,
@@ -2020,6 +2023,7 @@ function App() {
     skippedRideIds,
     reportedRideIssueIds,
     currentActivity,
+    activityLog,
   ]);
 
   const sortedRides = useMemo(() => {
@@ -2502,6 +2506,29 @@ function App() {
     });
 
     setCompletedRideIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+
+    const completedAt = new Date().toISOString();
+    const fromActivity =
+      currentActivity?.rideId != null &&
+      String(currentActivity.rideId) === id;
+
+    setActivityLog((prev) => [
+      ...prev,
+      {
+        rideId: id,
+        rideName: fromActivity
+          ? currentActivity.rideName
+          : recommendation?.name || null,
+        land: fromActivity ? currentActivity.land || "" : "",
+        startedAt: fromActivity ? currentActivity.startedAt || null : null,
+        postedWaitAtStart: fromActivity
+          ? currentActivity.postedWaitAtStart ?? null
+          : null,
+        type: "completed_ride",
+        completedAt,
+      },
+    ]);
+
     setSkippedRideIds((prev) => prev.filter((existingId) => existingId !== id));
     setReportedRideIssueIds((prev) => prev.filter((existingId) => existingId !== id));
 
@@ -3354,6 +3381,14 @@ function App() {
               <div style={{ paddingLeft: 8 }}>
                 {reportedRideIssueIds.map((id, i) => (
                   <div key={i} style={dbValStyle}>· {id}</div>
+                ))}
+              </div>
+            )}
+            {dbRow("activityLog", activityLog.length)}
+            {activityLog.length > 0 && (
+              <div style={{ paddingLeft: 8 }}>
+                {activityLog.map((entry, i) => (
+                  <div key={i} style={dbValStyle}>· {entry.rideName || entry.rideId}</div>
                 ))}
               </div>
             )}
