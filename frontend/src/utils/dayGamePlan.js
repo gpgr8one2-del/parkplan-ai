@@ -32,6 +32,14 @@ function getMustDosForPark(tripPlan = {}, activePark = "") {
   return getMustDoExperiences(tripPlan).filter((experience) => experience?.parkId === activePark);
 }
 
+function getCompletedRideIdSet(completedRideIds = []) {
+  return new Set(
+    (Array.isArray(completedRideIds) ? completedRideIds : [])
+      .filter((id) => id != null)
+      .map((id) => String(id))
+  );
+}
+
 function formatExperienceList(experiences = [], max = 3) {
   const names = experiences
     .map((experience) => experience?.name)
@@ -487,19 +495,51 @@ function buildEveningPivot({ preferences, familyProfile, activePark, tripPlan })
   };
 }
 
-function buildMustDoPriorities({ preferences, familyProfile, activePark, tripPlan }) {
+function buildMustDoPriorities({
+  preferences,
+  familyProfile,
+  activePark,
+  tripPlan,
+  completedRideIds = [],
+}) {
   const allMustDos = getMustDoExperiences(tripPlan);
   const activeParkMustDos = getMustDosForPark(tripPlan, activePark);
-  const activeParkLabel = formatExperienceList(activeParkMustDos, 4);
+  const completedRideIdSet = getCompletedRideIdSet(completedRideIds);
+  const pendingActiveParkMustDos = activeParkMustDos.filter(
+    (experience) => !completedRideIdSet.has(String(experience?.id))
+  );
+  const completedActiveParkMustDos = activeParkMustDos.filter((experience) =>
+    completedRideIdSet.has(String(experience?.id))
+  );
+  const activeParkLabel = formatExperienceList(pendingActiveParkMustDos, 4);
+  const completedActiveParkLabel = formatExperienceList(completedActiveParkMustDos, 4);
   const allMustDoLabel = formatExperienceList(allMustDos, 4);
 
-  if (activeParkMustDos.length > 0) {
+  if (activeParkMustDos.length > 0 && pendingActiveParkMustDos.length === 0) {
     return {
       id: "must_do_priorities",
-      eyebrow: "TRIP PRIORITIES",
-      title: "Keep the must-do watchlist in view.",
+      eyebrow: "YOUR PRIORITIES",
+      title: "Your selected priorities here are complete.",
+      body: completedActiveParkLabel
+        ? `You already completed ${completedActiveParkLabel} in this park today. Let the rest of the plan shift toward comfort, nearby wins, or anything the family still wants.`
+        : "You already completed the selected priorities for this park today. Let the rest of the plan shift toward comfort, nearby wins, or anything the family still wants.",
+      priority: "should",
+      detail:
+        "TOHI should stop treating completed priorities like unfinished business.",
+    };
+  }
+
+  if (pendingActiveParkMustDos.length > 0) {
+    const completedNote = completedActiveParkLabel
+      ? ` You already completed ${completedActiveParkLabel}, so the remaining focus is ${activeParkLabel}.`
+      : "";
+
+    return {
+      id: "must_do_priorities",
+      eyebrow: "YOUR PRIORITIES",
+      title: "Make room for what your family still has left.",
       body:
-        `Your must-do watchlist in this park includes ${activeParkLabel}. TOHI treats those as success targets, not background nice-to-haves.`,
+        `Your remaining priorities in this park include ${activeParkLabel}.${completedNote}`,
       priority: "must",
       detail:
         preferences.startStrategy === "rope_drop"
@@ -511,13 +551,13 @@ function buildMustDoPriorities({ preferences, familyProfile, activePark, tripPla
   if (allMustDos.length > 0) {
     return {
       id: "must_do_priorities",
-      eyebrow: "MUST-DO WATCHLIST",
-      title: "Keep selected must-dos visible across the trip.",
+      eyebrow: "TRIP PRIORITIES",
+      title: "Keep the full trip priorities in view.",
       body:
-        `Your priorities include ${allMustDoLabel}. They are not in the current park view, but they still define what a successful trip feels like.`,
+        `Across the trip, your selected priorities include ${allMustDoLabel}. Use this park day to support the bigger plan without forcing a bad fit.`,
       priority: "should",
       detail:
-        "When you switch parks, those targets should come back into view instead of every park day feeling generic.",
+        "If today's park is not where those priorities live, TOHI should keep them visible without turning the day into a forced march.",
     };
   }
 
@@ -570,6 +610,7 @@ function buildMustDoPriorities({ preferences, familyProfile, activePark, tripPla
     detail:
       "A good day needs an emotional anchor, not just efficient movement.",
   };
+
 }
 
 export function generateDayGamePlan({
@@ -580,6 +621,7 @@ export function generateDayGamePlan({
   weatherMode = {},
   timeContext = {},
   packingChecklist = [],
+  completedRideIds = [],
 } = {}) {
   const preferences = getPreferences(tripPlan);
   const mustDoExperiences = getMustDoExperiences(tripPlan);
@@ -590,7 +632,13 @@ export function generateDayGamePlan({
     buildMiddayReset({ preferences, familyProfile, activePark, weather }),
     buildWeatherStrategy({ weather, weatherMode, familyProfile }),
     buildEveningPivot({ preferences, familyProfile, activePark, tripPlan }),
-    buildMustDoPriorities({ preferences, familyProfile, activePark, tripPlan }),
+    buildMustDoPriorities({
+      preferences,
+      familyProfile,
+      activePark,
+      tripPlan,
+      completedRideIds,
+    }),
   ];
 
   return plan.map((item, index) => ({
