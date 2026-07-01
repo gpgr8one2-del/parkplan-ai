@@ -355,6 +355,72 @@ function sanitizeDayGamePlan(dayGamePlan = []) {
   return dayGamePlan.slice(0, 10).map(sanitizeDayGamePlanItem).filter(Boolean);
 }
 
+const MAX_CHAT_ACTIVITY_LOG_ENTRIES = 12;
+
+function isSameLocalCalendarDay(value, referenceDate = new Date()) {
+  if (!value) return false;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+
+  return (
+    date.getFullYear() === referenceDate.getFullYear() &&
+    date.getMonth() === referenceDate.getMonth() &&
+    date.getDate() === referenceDate.getDate()
+  );
+}
+
+function cleanChatActivityText(value) {
+  if (typeof value !== "string") return undefined;
+
+  const cleaned = value.trim();
+  return cleaned || undefined;
+}
+
+function formatChatActivityTime(value) {
+  if (!value) return undefined;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date);
+  } catch {
+    return undefined;
+  }
+}
+
+function sanitizeChatActivityLog(activityLog = []) {
+  if (!Array.isArray(activityLog)) return [];
+
+  return activityLog
+    .filter((entry) => entry?.type === "completed_ride")
+    .filter((entry) => isSameLocalCalendarDay(entry?.completedAt))
+    .slice(-MAX_CHAT_ACTIVITY_LOG_ENTRIES)
+    .map((entry) => {
+      const postedWaitAtStart = Number(entry?.postedWaitAtStart);
+      const cleaned = {
+        type: "completed_ride",
+        rideId: entry?.rideId != null ? String(entry.rideId) : undefined,
+        rideName: cleanChatActivityText(entry?.rideName),
+        land: cleanChatActivityText(entry?.land),
+        startedAt: cleanChatActivityText(entry?.startedAt),
+        completedAt: cleanChatActivityText(entry?.completedAt),
+        completedAtDisplay: formatChatActivityTime(entry?.completedAt),
+      };
+
+      if (Number.isFinite(postedWaitAtStart)) {
+        cleaned.postedWaitAtStart = postedWaitAtStart;
+      }
+
+      return cleaned;
+    })
+    .filter((entry) => entry.rideName && entry.completedAt);
+}
+
 function sanitizeChatSessionData(sessionData = {}) {
   if (!sessionData || typeof sessionData !== "object" || Array.isArray(sessionData)) {
     return {};
@@ -371,6 +437,7 @@ function sanitizeChatSessionData(sessionData = {}) {
 
   return removeEmptyFields({
     ...sessionData,
+    activityLog: sanitizeChatActivityLog(sessionData.activityLog),
 
     // These are optional strings in the backend route. The app legitimately
     // starts with no selected land, but sending null fails Zod validation.
