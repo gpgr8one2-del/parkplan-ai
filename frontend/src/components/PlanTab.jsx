@@ -1003,6 +1003,62 @@ function DayGamePlanRow({ item }) {
   );
 }
 
+function ActivityRecapSection({ card, activityLog = [] }) {
+  if (!activityLog.length) return null;
+
+  const count = activityLog.length;
+  const recent = [...activityLog].reverse().slice(0, 5);
+  const extra = count - recent.length;
+  const countLabel =
+    count === 1 ? "1 attraction so far" : count + " attractions so far";
+
+  return (
+    <section style={{ ...card, padding: 16 }}>
+      <SectionBadge background={colors.skySoft} color="#0369A1">
+        TODAY SO FAR
+      </SectionBadge>
+
+      <p
+        style={{
+          margin: "0 0 10px",
+          color: colors.text,
+          fontSize: 15,
+          fontWeight: 800,
+        }}
+      >
+        {countLabel}
+      </p>
+
+      <div style={{ display: "grid", gap: 6 }}>
+        {recent.map((entry, i) => (
+          <div
+            key={i}
+            style={{
+              color: colors.muted,
+              fontSize: 13,
+              lineHeight: 1.3,
+            }}
+          >
+            · {entry.rideName || entry.rideId}
+          </div>
+        ))}
+
+        {extra > 0 && (
+          <div
+            style={{
+              color: colors.muted,
+              fontSize: 12,
+              fontWeight: 800,
+            }}
+          >
+            +{extra} more
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function DayGamePlanSection({ card, dayGamePlan = [], timeContext = {}, planTabState = {} }) {
   const [isOpen, setIsOpen] = useState(false);
   const rollingWindow = getRollingGamePlanWindow({ dayGamePlan, timeContext, planTabState });
@@ -1524,6 +1580,7 @@ export function PlanTab({
   profileCompletion,
   timeContext,
   planTabState,
+  activityLog = [],
   preferredName,
   familyProfile,
   weatherMode,
@@ -1567,6 +1624,9 @@ export function PlanTab({
         timeContext={timeContext}
         planTabState={planTabState}
       />
+      {isInParkView && (
+        <ActivityRecapSection card={card} activityLog={activityLog} />
+      )}
 
       {!isInParkView && <PackingPreviewSection card={card} packingChecklist={packingChecklist} />}
 

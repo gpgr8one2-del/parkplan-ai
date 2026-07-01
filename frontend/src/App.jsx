@@ -4893,6 +4893,7 @@ function App() {
               profileCompletion={profileCompletion}
               timeContext={planningTimeContext}
               planTabState={planTabState}
+              activityLog={activityLog}
               preferredName={familyProfileSummary?.preferredName}
               familyProfile={familyProfileSummary}
               weatherMode={weatherMode}
