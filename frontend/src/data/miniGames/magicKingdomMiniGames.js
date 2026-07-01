@@ -1746,6 +1746,126 @@ const FAMILY_VOTE_PROMPTS = [
     prompt: "Which ending would make today feel complete?",
     options: ["Fireworks", "One last ride", "Favorite snack", "Easy exit"],
   },
+  {
+    prompt: "Which Magic Kingdom choice would make everyone smile fastest?",
+    options: ["Classic ride", "Cold snack", "Character moment", "Photo stop"],
+  },
+  {
+    prompt: "Which Main Street plan gets the vote?",
+    options: ["Castle photo", "Sweet treat", "Window shopping", "Slow walk"],
+  },
+  {
+    prompt: "Which Magic Kingdom ride would be best for a family victory lap?",
+    options: ["Pirates", "PeopleMover", "Haunted Mansion", "Buzz Lightyear"],
+  },
+  {
+    prompt: "Which family member would survive best as a pirate captain?",
+    options: ["Best storyteller", "Loudest person", "Snack hoarder", "Person with the map"],
+  },
+  {
+    prompt: "Which Magic Kingdom break would reset the group best?",
+    options: ["Indoor show", "Boat ride", "Shady bench", "Mobile order pickup"],
+  },
+  {
+    prompt: "Which castle-area choice wins?",
+    options: ["Walk through the castle", "Take a hub photo", "Watch a cavalcade", "Find a snack nearby"],
+  },
+  {
+    prompt: "Which ride would be most fun with a totally empty queue?",
+    options: ["Peter Pan", "Mine Train", "Pirates", "Space Mountain"],
+  },
+  {
+    prompt: "Which family rule should apply for the next ride?",
+    options: ["Closest wins", "Shortest wait wins", "Must-do wins", "Air conditioning wins"],
+  },
+  {
+    prompt: "Which Magic Kingdom seat would your family want?",
+    options: ["Front of the boat", "Back of the coaster", "Middle of the theater", "Nearest the exit"],
+  },
+  {
+    prompt: "Which silly family award fits today?",
+    options: ["Best snack finder", "Fastest walker", "Most dramatic rider", "Best line entertainer"],
+  },
+  {
+    prompt: "Which Magic Kingdom weather move wins?",
+    options: ["Indoor classic", "Poncho ride", "Shop break", "Covered snack stop"],
+  },
+  {
+    prompt: "Which character world should the family visit next?",
+    options: ["Pirates", "Princesses", "Monsters", "Toy space rangers"],
+  },
+  {
+    prompt: "Which Magic Kingdom ride would be best as a bedtime story?",
+    options: ["Peter Pan", "Pooh", "Small World", "Dumbo"],
+  },
+  {
+    prompt: "Which family choice should TOHI favor next?",
+    options: ["Less walking", "Lower wait", "More excitement", "More calm"],
+  },
+  {
+    prompt: "Which Tomorrowland vibe wins?",
+    options: ["Neon lights", "Space adventure", "Silly monsters", "Relaxed PeopleMover"],
+  },
+  {
+    prompt: "Which Frontierland choice wins?",
+    options: ["Big Thunder", "Tiana's Bayou Adventure", "Tom Sawyer Island", "River views"],
+  },
+  {
+    prompt: "Which Fantasyland choice feels most magical?",
+    options: ["Castle views", "Storybook ride", "Carousel music", "Princess moment"],
+  },
+  {
+    prompt: "Which Adventureland choice feels most fun?",
+    options: ["Pirates", "Jungle Cruise", "Magic Carpets", "Dole Whip stop"],
+  },
+  {
+    prompt: "Which Magic Kingdom meal move wins?",
+    options: ["Quick service now", "Snack first", "Wait for dinner", "Share something small"],
+  },
+  {
+    prompt: "Which family photo pose wins?",
+    options: ["Normal smiles", "Ride faces", "Point at the castle", "Everyone exhausted"],
+  },
+  {
+    prompt: "Which classic detail should the family look for?",
+    options: ["Hidden Mickey", "Ride poster", "Queue sign", "Cast costume"],
+  },
+  {
+    prompt: "Which Magic Kingdom sound would make the best ringtone?",
+    options: ["Train whistle", "Fireworks boom", "Pirates cannon", "Carousel music"],
+  },
+  {
+    prompt: "Which group mood should decide the next move?",
+    options: ["Hungry", "Hot", "Excited", "Tired"],
+  },
+  {
+    prompt: "Which Magic Kingdom win should count double?",
+    options: ["Short wait", "Great photo", "No meltdown", "Everyone agrees"],
+  },
+  {
+    prompt: "Which ride would be funniest if your family narrated it?",
+    options: ["Jungle Cruise", "PeopleMover", "Small World", "Haunted Mansion"],
+  },
+  {
+    prompt: "Which souvenir category wins for Magic Kingdom?",
+    options: ["Castle item", "Pirate item", "Space item", "Snack-themed item"],
+  },
+  {
+    prompt: "Which family challenge sounds best?",
+    options: ["Find three Hidden Mickeys", "Compliment a Cast Member", "Take a silly photo", "Try a new snack"],
+  },
+  {
+    prompt: "Which Magic Kingdom route sounds best?",
+    options: ["Stay nearby", "Cross to a must-do", "Circle slowly", "Let TOHI choose"],
+  },
+  {
+    prompt: "Which evening Magic Kingdom move feels right?",
+    options: ["Find fireworks space", "Ride while crowds wait", "Grab dessert", "Head out calmly"],
+  },
+  {
+    prompt: "Which perfect ending would your family vote for?",
+    options: ["Castle glow", "Favorite ride", "Favorite snack", "Easy walk out"],
+  },
 ];
 
 const WOULD_YOU_RATHER_PROMPTS = [
@@ -2690,6 +2810,126 @@ const EPCOT_FAMILY_VOTE_PROMPTS = [
     prompt: "Which EPCOT memory would be the best one?",
     options: ["A huge laugh", "A new favorite snack", "A perfect ride", "A peaceful break"],
   },
+  {
+    prompt: "Which EPCOT plan would make the next hour easiest?",
+    options: ["Indoor ride", "Snack stop", "Slow country stroll", "Quiet seat"],
+  },
+  {
+    prompt: "Which World Showcase debate wins?",
+    options: ["Best dessert", "Best building", "Best music", "Best shop"],
+  },
+  {
+    prompt: "Which EPCOT ride would be best with no wait right now?",
+    options: ["Soarin'", "Remy", "Frozen", "Spaceship Earth"],
+  },
+  {
+    prompt: "Which pavilion should get the family photo?",
+    options: ["Mexico", "Japan", "France", "Canada"],
+  },
+  {
+    prompt: "Which EPCOT snack style wins?",
+    options: ["Bakery treat", "Festival plate", "Frozen drink", "Shareable savory item"],
+  },
+  {
+    prompt: "Which EPCOT reset would help most?",
+    options: ["The Seas aquarium", "The Land seating", "Cool shop", "Longer meal break"],
+  },
+  {
+    prompt: "Which family member should pick the next festival booth?",
+    options: ["Most adventurous eater", "Sweet tooth", "Best budgeter", "Whoever is hungriest"],
+  },
+  {
+    prompt: "Which EPCOT ride song or sound wins?",
+    options: ["Guardians mixtape", "Figment tune", "Spaceship Earth narration", "Frozen music"],
+  },
+  {
+    prompt: "Which country should the family explore without rushing?",
+    options: ["Morocco", "Japan", "United Kingdom", "Mexico"],
+  },
+  {
+    prompt: "Which EPCOT choice would make the best memory?",
+    options: ["New snack", "Unexpected short wait", "Perfect lagoon photo", "Funny family vote"],
+  },
+  {
+    prompt: "Which EPCOT hidden-detail hunt sounds best?",
+    options: ["Pavilion signs", "Garden details", "Ride murals", "Shop displays"],
+  },
+  {
+    prompt: "Which EPCOT weather move wins?",
+    options: ["Spaceship Earth", "The Seas", "Pavilion shopping", "Festival booth under cover"],
+  },
+  {
+    prompt: "Which World Nature choice wins?",
+    options: ["Soarin'", "Living with the Land", "Nemo", "Aquarium time"],
+  },
+  {
+    prompt: "Which World Discovery choice wins?",
+    options: ["Guardians", "Test Track", "Mission Space", "Cool-down break"],
+  },
+  {
+    prompt: "Which World Celebration choice wins?",
+    options: ["Spaceship Earth", "Dreamers Point", "Connections break", "Creations shopping"],
+  },
+  {
+    prompt: "Which family EPCOT pace should TOHI honor?",
+    options: ["Slow and scenic", "Headliner focused", "Snack focused", "Shade focused"],
+  },
+  {
+    prompt: "Which EPCOT seat would your family want?",
+    options: ["Middle of Soarin'", "Back of Frozen", "Quiet lagoon bench", "Indoor table"],
+  },
+  {
+    prompt: "Which country would win a family souvenir vote?",
+    options: ["Japan", "Mexico", "Germany", "France"],
+  },
+  {
+    prompt: "Which EPCOT photo style wins?",
+    options: ["Pretty view", "Silly snack photo", "Ride entrance", "Family selfie"],
+  },
+  {
+    prompt: "Which festival booth strategy gets the vote?",
+    options: ["One item each", "Share everything", "Only favorites", "Try the weirdest thing"],
+  },
+  {
+    prompt: "Which EPCOT family title fits today?",
+    options: ["Snack explorers", "Pavilion wanderers", "Ride hunters", "Shade experts"],
+  },
+  {
+    prompt: "Which EPCOT character choice wins?",
+    options: ["Figment", "Remy", "Frozen friends", "Mickey and friends"],
+  },
+  {
+    prompt: "Which EPCOT nighttime choice feels best?",
+    options: ["Lagoon view", "Spaceship Earth glow", "Final snack", "Easy exit"],
+  },
+  {
+    prompt: "Which pavilion sound would the family vote for?",
+    options: ["Mexico music", "Japan drums", "United Kingdom band", "Canada waterfall"],
+  },
+  {
+    prompt: "Which low-wait EPCOT attraction deserves a chance?",
+    options: ["Figment", "Gran Fiesta Tour", "The Seas", "Living with the Land"],
+  },
+  {
+    prompt: "Which EPCOT food rule should apply?",
+    options: ["Share first", "Dessert counts", "Try something new", "Cold drink required"],
+  },
+  {
+    prompt: "Which EPCOT walking plan wins?",
+    options: ["Shortest route", "Scenic route", "Snack route", "Shady route"],
+  },
+  {
+    prompt: "Which EPCOT family job matters most?",
+    options: ["Napkin holder", "Photo taker", "Snack splitter", "Wait checker"],
+  },
+  {
+    prompt: "Which EPCOT finish would feel complete?",
+    options: ["Fireworks", "Spaceship Earth", "Favorite pavilion", "One last booth"],
+  },
+  {
+    prompt: "Which EPCOT surprise would your family want most?",
+    options: ["Low Guardians wait", "Perfect table", "Cool breeze", "Great character moment"],
+  },
 ];
 
 const EPCOT_WOULD_YOU_RATHER_PROMPTS = [
@@ -3535,6 +3775,126 @@ const HOLLYWOOD_FAMILY_VOTE_PROMPTS = [
   {
     prompt: "Which Hollywood memory would be the keeper?",
     options: ["A big scream", "A huge laugh", "A perfect show", "A Star Wars moment"],
+  },
+  {
+    prompt: "Which Hollywood Studios choice would create the biggest reaction?",
+    options: ["Tower drop", "Rise escape", "Slinky launch", "Fantasmic finale"],
+  },
+  {
+    prompt: "Which land should get the family spotlight next?",
+    options: ["Galaxy's Edge", "Toy Story Land", "Sunset Boulevard", "Echo Lake"],
+  },
+  {
+    prompt: "Which Hollywood Studios break would help most?",
+    options: ["Indoor show", "Cold drink", "Shaded table", "Slow shop walk"],
+  },
+  {
+    prompt: "Which family member would be the best Falcon pilot?",
+    options: ["Fastest gamer", "Calmest person", "Loudest director", "Most chaotic person"],
+  },
+  {
+    prompt: "Which Toy Story Land choice wins?",
+    options: ["Slinky Dog", "Toy Story Mania", "Alien Saucers", "Silly photos"],
+  },
+  {
+    prompt: "Which Galaxy's Edge choice wins?",
+    options: ["Falcon photo", "Marketplace walk", "Rise mission", "Snack stop"],
+  },
+  {
+    prompt: "Which Sunset Boulevard choice feels right?",
+    options: ["Tower of Terror", "Rock 'n' Roller Coaster", "Beauty show", "Snack and shade"],
+  },
+  {
+    prompt: "Which Hollywood show would reset the group?",
+    options: ["Frozen Sing-Along", "Indiana Jones", "Beauty and the Beast", "MuppetVision"],
+  },
+  {
+    prompt: "Which Hollywood snack style wins?",
+    options: ["Star Wars snack", "Classic popcorn", "Frozen drink", "Shareable pretzel"],
+  },
+  {
+    prompt: "Which ride photo should be framed?",
+    options: ["Tower screams", "Slinky smiles", "Runaway Railway faces", "Rock coaster chaos"],
+  },
+  {
+    prompt: "Which Hollywood route should TOHI favor?",
+    options: ["Stay in one land", "Go to shortest wait", "Prioritize headliner", "Find air conditioning"],
+  },
+  {
+    prompt: "Which Star Wars role fits the family best?",
+    options: ["Rebels", "Smugglers", "Droids", "Chaotic tourists"],
+  },
+  {
+    prompt: "Which Hollywood family award fits today?",
+    options: ["Best scream", "Best quote", "Best snack choice", "Best patient waiting"],
+  },
+  {
+    prompt: "Which queue would entertain your family most?",
+    options: ["Rise", "Smugglers Run", "Toy Story Mania", "Runaway Railway"],
+  },
+  {
+    prompt: "Which Hollywood photo background wins?",
+    options: ["Falcon", "Tower", "Chinese Theater", "Toy Story toys"],
+  },
+  {
+    prompt: "Which family member should pick the next show?",
+    options: ["Movie fan", "Most tired person", "Youngest person", "Person needing AC"],
+  },
+  {
+    prompt: "Which Hollywood sound wins the family vote?",
+    options: ["Tower scream", "Star Wars ships", "Slinky music", "Fantasmic finale"],
+  },
+  {
+    prompt: "Which Hollywood goal matters most?",
+    options: ["One big ride", "Good show seat", "Short walks", "Keep everyone happy"],
+  },
+  {
+    prompt: "Which Hollywood character group wins?",
+    options: ["Toy Story friends", "Star Wars characters", "Mickey and Minnie", "Frozen friends"],
+  },
+  {
+    prompt: "Which family strategy is smartest here?",
+    options: ["Shows in heat", "Rides at night", "Snacks between lands", "One area at a time"],
+  },
+  {
+    prompt: "Which Hollywood detail should the family look for?",
+    options: ["Movie posters", "Droid tracks", "Toy labels", "Old Hollywood signs"],
+  },
+  {
+    prompt: "Which Batuu snack or drink wins?",
+    options: ["Blue milk", "Ronto Wrap", "Popcorn", "Cold water"],
+  },
+  {
+    prompt: "Which Toy Story family job fits best?",
+    options: ["Prize winner", "Alien rescuer", "Slinky rider", "Toy photographer"],
+  },
+  {
+    prompt: "Which Hollywood memory would be funniest later?",
+    options: ["Bad Falcon driving", "Tower scream face", "Wrong lyrics", "Snack spill recovery"],
+  },
+  {
+    prompt: "Which wait-time tradeoff wins?",
+    options: ["Longer headliner", "Shorter easy ride", "Show instead", "Snack and wait"],
+  },
+  {
+    prompt: "Which Hollywood evening plan wins?",
+    options: ["Fantasmic", "Galaxy's Edge at night", "Last thrill ride", "Calm exit"],
+  },
+  {
+    prompt: "Which Hollywood souvenir category wins?",
+    options: ["Star Wars", "Toy Story", "Mickey", "Tower of Terror"],
+  },
+  {
+    prompt: "Which family movie mood fits right now?",
+    options: ["Adventure", "Comedy", "Sci-fi", "Musical"],
+  },
+  {
+    prompt: "Which Hollywood win should TOHI chase?",
+    options: ["Low wait", "Nearby ride", "Showtime", "Food break"],
+  },
+  {
+    prompt: "Which final Hollywood Studios moment would feel best?",
+    options: ["Fantasmic music", "Falcon lights", "Tower view", "Hollywood Boulevard glow"],
   },
 ];
 
@@ -4772,6 +5132,126 @@ const ANIMAL_KINGDOM_FAMILY_VOTE_PROMPTS = [
   {
     prompt: "Which Animal Kingdom memory would be the keeper?",
     options: ["A rare animal moment", "A huge laugh", "A peaceful trail", "A big ride win"],
+  },
+  {
+    prompt: "Which Animal Kingdom choice would calm the family fastest?",
+    options: ["Animal trail", "Shaded bench", "Indoor show", "Cold drink"],
+  },
+  {
+    prompt: "Which animal moment would win the day?",
+    options: ["Giraffe close-up", "Tiger moving", "Gorilla watching", "Elephant sighting"],
+  },
+  {
+    prompt: "Which Animal Kingdom ride should get priority?",
+    options: ["Flight of Passage", "Everest", "Safari", "Na'vi River Journey"],
+  },
+  {
+    prompt: "Which land should get extra time?",
+    options: ["Pandora", "Africa", "Asia", "Discovery Island"],
+  },
+  {
+    prompt: "Which family member would be the best animal spotter?",
+    options: ["Best eyesight", "Most patient", "Biggest animal fan", "Person with the camera"],
+  },
+  {
+    prompt: "Which Animal Kingdom weather move wins?",
+    options: ["Covered trail", "Indoor show", "Poncho ride", "Shop break"],
+  },
+  {
+    prompt: "Which Pandora choice feels most special?",
+    options: ["Floating mountains", "Flight of Passage", "Nighttime glow", "Night Blossom"],
+  },
+  {
+    prompt: "Which Africa choice feels most fun?",
+    options: ["Safari", "Harambe music", "Lion King show", "Snack stop"],
+  },
+  {
+    prompt: "Which Asia choice gets the vote?",
+    options: ["Everest", "Kali", "Tiger trail", "Anandapur photos"],
+  },
+  {
+    prompt: "Which Discovery Island path should the family explore next?",
+    options: ["Tree trails", "Animal carvings", "Quiet route", "Photo path"],
+  },
+  {
+    prompt: "Which Animal Kingdom show would reset everyone?",
+    options: ["Festival of the Lion King", "Finding Nemo", "Feathered Friends", "Any cool theater"],
+  },
+  {
+    prompt: "Which family strategy fits Animal Kingdom best?",
+    options: ["Animals early", "Shows in heat", "Rides by wait", "Shade first"],
+  },
+  {
+    prompt: "Which safari seat would your family want?",
+    options: ["Best photo angle", "Smoothest ride", "Close to guide", "Anywhere with shade"],
+  },
+  {
+    prompt: "Which trail goal sounds best?",
+    options: ["Find a tiger", "Watch gorillas", "Read animal signs", "Take quiet photos"],
+  },
+  {
+    prompt: "Which Animal Kingdom snack vote wins?",
+    options: ["Night Blossom", "Popcorn", "Pretzel", "Ice cream"],
+  },
+  {
+    prompt: "Which family badge fits today?",
+    options: ["Animal spotters", "Ride bravehearts", "Shade hunters", "Snack sharers"],
+  },
+  {
+    prompt: "Which Animal Kingdom sound wins?",
+    options: ["Safari radio", "Harambe drums", "Waterfalls", "Bird calls"],
+  },
+  {
+    prompt: "Which animal group should your family look for next?",
+    options: ["Big cats", "Birds", "Primates", "Savanna animals"],
+  },
+  {
+    prompt: "Which Animal Kingdom photo wins?",
+    options: ["Tree of Life", "Pandora", "Everest", "Safari animal"],
+  },
+  {
+    prompt: "Which calm ride would help most?",
+    options: ["Na'vi River Journey", "Safari", "Train to Rafiki", "Slow trail walk"],
+  },
+  {
+    prompt: "Which thrill choice wins?",
+    options: ["Everest", "Flight of Passage", "Dinosaur", "Kali River Rapids"],
+  },
+  {
+    prompt: "Which family role matters most here?",
+    options: ["Water reminder", "Shade finder", "Animal spotter", "Snack chooser"],
+  },
+  {
+    prompt: "Which conservation-style moment sounds best?",
+    options: ["Keeper talk", "Animal fact", "Trail sign", "Rafiki visit"],
+  },
+  {
+    prompt: "Which Animal Kingdom route should TOHI prefer?",
+    options: ["Less sun", "Less walking", "More animals", "More rides"],
+  },
+  {
+    prompt: "Which Tree of Life detail should the family search for?",
+    options: ["Bird", "Turtle", "Elephant", "Hidden face"],
+  },
+  {
+    prompt: "Which family memory would be the best one?",
+    options: ["Animal surprise", "Perfect ride", "Peaceful path", "Big laugh"],
+  },
+  {
+    prompt: "Which Animal Kingdom lunch move wins?",
+    options: ["Satu'li Canteen", "Harambe food", "Quick snack", "Wait until later"],
+  },
+  {
+    prompt: "Which afternoon reset sounds best?",
+    options: ["Lion King show", "Nemo show", "Trail in shade", "Cold drink break"],
+  },
+  {
+    prompt: "Which final Animal Kingdom choice feels right?",
+    options: ["Pandora glow", "Tree photo", "One last safari thought", "Easy exit"],
+  },
+  {
+    prompt: "Which Animal Kingdom surprise would your family want?",
+    options: ["Low Flight wait", "Active animals", "Cool breeze", "Quiet pathway"],
   },
 ];
 
