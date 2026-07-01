@@ -1,5 +1,5 @@
 import React from "react";
-import { MINI_GAME_TYPES } from "../data/miniGames/magicKingdomMiniGames";
+import { CORE_GAME_TYPES } from "../data/miniGames/magicKingdomMiniGames";
 import { colors } from "../theme";
 
 function LineTimeCompanion({
@@ -98,7 +98,7 @@ function LineTimeCompanion({
             marginBottom: 13,
           }}
         >
-          {MINI_GAME_TYPES.map((game) => {
+          {CORE_GAME_TYPES.map((game) => {
             const isActive = activeMiniGameType === game.key;
 
             return (

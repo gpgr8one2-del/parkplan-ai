@@ -4747,13 +4747,9 @@ export function getMiniGameForContext({
   // giving up.
   const fallbackOrder = [
     "trivia",
-    "look_around",
-    "family_vote",
-    "would_you_rather",
-    "conversation_starter",
     "queue_clues",
-    "prediction_game",
-    "family_challenge",
+    "would_you_rather",
+    "family_vote",
   ].filter((type) => type !== gameType);
 
   for (const fallbackType of fallbackOrder) {
@@ -4818,3 +4814,7 @@ export const MINI_GAME_TYPES = [
     description: "A quick no-pressure group challenge.",
   },
 ];
+
+export const CORE_GAME_TYPES = MINI_GAME_TYPES.filter((game) =>
+  ["trivia", "queue_clues", "would_you_rather", "family_vote"].includes(game.key)
+);
