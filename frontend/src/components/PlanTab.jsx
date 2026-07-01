@@ -1006,8 +1006,28 @@ function DayGamePlanRow({ item }) {
 function ActivityRecapSection({ card, activityLog = [] }) {
   if (!activityLog.length) return null;
 
-  const count = activityLog.length;
-  const recent = [...activityLog].reverse().slice(0, 5);
+  const now = new Date();
+  const isSameLocalDay = (value) => {
+    if (!value) return false;
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return false;
+
+    return (
+      date.getFullYear() === now.getFullYear() &&
+      date.getMonth() === now.getMonth() &&
+      date.getDate() === now.getDate()
+    );
+  };
+
+  const todayEntries = activityLog.filter((entry) =>
+    isSameLocalDay(entry.completedAt)
+  );
+
+  if (!todayEntries.length) return null;
+
+  const count = todayEntries.length;
+  const recent = [...todayEntries].reverse().slice(0, 5);
   const extra = count - recent.length;
   const countLabel =
     count === 1 ? "1 attraction so far" : count + " attractions so far";
