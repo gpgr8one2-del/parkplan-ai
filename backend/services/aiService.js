@@ -1018,6 +1018,37 @@ function buildLiveFamilyStateContext(liveFamilyState = {}) {
   return lines.filter(Boolean).join("\n");
 }
 
+function formatCompletedActivityLogForContext(activityLog = []) {
+  if (!Array.isArray(activityLog)) return "";
+
+  const entries = activityLog
+    .filter((entry) => entry?.type === "completed_ride")
+    .filter((entry) => typeof entry?.rideName === "string" && entry.rideName.trim())
+    .slice(-8);
+
+  if (entries.length === 0) return "";
+
+  return entries
+    .map((entry) => {
+      const rideName = entry.rideName.trim();
+      const land =
+        typeof entry.land === "string" && entry.land.trim()
+          ? ` (${entry.land.trim()})`
+          : "";
+      const completedTime =
+        typeof entry.completedAtDisplay === "string" && entry.completedAtDisplay.trim()
+          ? entry.completedAtDisplay.trim()
+          : entry.completedAt || "time unknown";
+      const postedWaitAtStart = Number(entry.postedWaitAtStart);
+      const waitText = Number.isFinite(postedWaitAtStart)
+        ? `; posted wait when line started: ${postedWaitAtStart} min`
+        : "";
+
+      return `${rideName}${land} completed at ${completedTime}${waitText}`;
+    })
+    .join(" | ");
+}
+
 function buildDynamicContext(sessionData = {}) {
   const {
     activePark,
@@ -1051,6 +1082,7 @@ function buildDynamicContext(sessionData = {}) {
     chatFieldTestIntent,
     activeLandLabel,
     completedRideIds = [],
+    activityLog = [],
     skippedRideIds = [],
     reportedRideIssueIds = [],
     message = "",
@@ -1061,6 +1093,8 @@ function buildDynamicContext(sessionData = {}) {
     normalizeLiveFamilyStatePayload(sessionData.latestFamilyState || sessionData.liveFamilyState) ||
     detectLiveFamilyState(message, conversationHistory);
   const liveFamilyStateContext = buildLiveFamilyStateContext(liveFamilyState);
+
+  const completedActivityContext = formatCompletedActivityLogForContext(activityLog);
 
   return [
     `Active park: ${activePark || "unknown"}`,
@@ -1106,6 +1140,7 @@ function buildDynamicContext(sessionData = {}) {
     formatRideCard("Wait On This", recommendations.waitOnThis),
     "",
     `Completed ride IDs: ${completedRideIds.slice(0, 25).join(", ") || "none"}`,
+    completedActivityContext ? `Completed activity today: ${completedActivityContext}` : null,
     `Skipped ride IDs: ${skippedRideIds.slice(0, 25).join(", ") || "none"}`,
     `Reported ride issue IDs: ${reportedRideIssueIds.slice(0, 25).join(", ") || "none"}`,
   ]

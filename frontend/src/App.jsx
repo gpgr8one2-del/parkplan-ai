@@ -3030,6 +3030,7 @@ function App() {
         conversationHistory: nextChat.slice(-6),
         liveStateClarificationPending: isAwaitingLiveStateAnswer(chat),
         completedRideIds,
+        activityLog,
         skippedRideIds,
         reportedRideIssueIds,
         currentLand,
