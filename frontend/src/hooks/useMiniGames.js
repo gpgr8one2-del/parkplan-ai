@@ -1,6 +1,50 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getMiniGameForContext } from "../data/miniGames/magicKingdomMiniGames";
 
+function getMiniGameSeedPart(value) {
+  if (!value) return "";
+
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+
+  return (
+    value.id ||
+    value.rideId ||
+    value.parkId ||
+    value.name ||
+    value.title ||
+    ""
+  );
+}
+
+function getStableMiniGameSeed(value = "") {
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) | 0;
+  }
+
+  return Math.abs(hash);
+}
+
+function buildMiniGameContextSeed({ activePark, currentActivity, currentLand }) {
+  const now = new Date();
+  const dayKey = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+
+  return getStableMiniGameSeed(
+    [
+      dayKey,
+      getMiniGameSeedPart(activePark),
+      getMiniGameSeedPart(currentActivity),
+      getMiniGameSeedPart(currentLand),
+    ]
+      .filter(Boolean)
+      .join("|"),
+  );
+}
+
+
 export function useMiniGames({
   activePark,
   currentLand,
@@ -8,7 +52,12 @@ export function useMiniGames({
   trackAppEvent,
 }) {
   const [activeMiniGameType, setActiveMiniGameType] = useState("trivia");
-  const [miniGameSeed, setMiniGameSeed] = useState(0);
+  const [miniGameSeedsByType, setMiniGameSeedsByType] = useState({});
+  const miniGameSeed = miniGameSeedsByType[activeMiniGameType] ?? 0;
+  const miniGameContextSeed = useMemo(
+    () => buildMiniGameContextSeed({ activePark, currentActivity, currentLand }),
+    [activePark, currentActivity, currentLand],
+  );
   const [revealedTriviaAnswer, setRevealedTriviaAnswer] = useState(false);
   const [selectedTriviaChoice, setSelectedTriviaChoice] = useState("");
   const [selectedFamilyVoteOption, setSelectedFamilyVoteOption] = useState("");
@@ -23,13 +72,14 @@ export function useMiniGames({
       land: currentActivity.land || currentLand,
       rideName: currentActivity.rideName,
       gameType: activeMiniGameType,
-      seed: miniGameSeed,
+      seed: miniGameContextSeed + miniGameSeed,
     });
   }, [
     activePark,
     activeMiniGameType,
     currentActivity,
     currentLand,
+    miniGameContextSeed,
     miniGameSeed,
   ]);
 
@@ -150,16 +200,18 @@ export function useMiniGames({
   const handleMiniGameTypeChange = useCallback(
     (type) => {
       setActiveMiniGameType(type);
-      setMiniGameSeed(0);
       resetMiniGameInteractionState();
     },
     [resetMiniGameInteractionState]
   );
 
   const handleNextMiniGame = useCallback(() => {
-    setMiniGameSeed((prev) => prev + 1);
+    setMiniGameSeedsByType((prev) => ({
+      ...prev,
+      [activeMiniGameType]: (prev[activeMiniGameType] ?? 0) + 1,
+    }));
     resetMiniGameInteractionState();
-  }, [resetMiniGameInteractionState]);
+  }, [activeMiniGameType, resetMiniGameInteractionState]);
 
   const showTriviaAnswer = useCallback(() => {
     setRevealedTriviaAnswer(true);
