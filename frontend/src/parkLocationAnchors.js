@@ -162,7 +162,7 @@ const EPCOT_ANCHORS = [
   { id: "soarin", name: "Soarin'", landKey: "world_nature", type: "Ride", lat: 28.3729, lng: -81.5526 },
   { id: "lwtl", name: "Living with the Land", landKey: "world_nature", type: "Ride", lat: 28.3730, lng: -81.5524 },
   { id: "tswnf", name: "The Seas with Nemo & Friends", landKey: "world_nature", type: "Ride", lat: 28.3741, lng: -81.5518 },
-  { id: "jiif", name: "Journey into Imagination with Figment", landKey: "world_nature", type: "Ride", lat: 28.3727, lng: -81.5512 },
+  { id: "jiif", name: "Journey Into Imagination With Figment", landKey: "world_nature", type: "Ride", lat: 28.3727, lng: -81.5512 },
 
   // World Showcase West
   { id: "rra", name: "Remy’s Ratatouille Adventure", landKey: "world_showcase_west", type: "Ride", lat: 28.3682, lng: -81.5530 },

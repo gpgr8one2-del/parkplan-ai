@@ -2338,7 +2338,7 @@ const EPCOT_TRIVIA_BY_RIDE = {
     },
   ],
 
-  "Journey into Imagination with Figment": [
+  "Journey Into Imagination With Figment": [
     {
       question: "What exactly is Figment?",
       choices: ["A purple dragon made from imagination", "A tiny dinosaur", "A Norway troll", "A science robot"],
@@ -2620,7 +2620,7 @@ const EPCOT_LOOK_AROUND_BY_RIDE = {
     },
   ],
 
-  "Journey into Imagination with Figment": [
+  "Journey Into Imagination With Figment": [
     {
       task: "In the queue, look for the Sight Lab door and read the funny eye chart.",
       hint: "Figment’s whole thing is making normal stuff weird.",
@@ -2998,7 +2998,7 @@ const EPCOT_WOULD_YOU_RATHER_PROMPTS = [
   "Would you rather ride Guardians twice or eat around World Showcase twice?",
   "Would you rather spend the whole day in World Showcase or the whole day in the front of EPCOT?",
   "Would you rather have unlimited festival snacks or unlimited festival drinks?",
-  "Would you rather ride Soarin with a perfect middle seat or Test Track with the fastest car design?",
+  "Would you rather ride Soarin' with a perfect middle seat or Test Track with the fastest car design?",
   "Would you rather get stuck inside Spaceship Earth or Living with the Land?",
   "Would you rather watch fireworks from Japan or from Mexico?",
   "Would you rather pick snacks only from France or only from Germany?",
@@ -3041,7 +3041,7 @@ const EPCOT_WOULD_YOU_RATHER_PROMPTS = [
   "Would you rather spend an extra hour before opening or an extra hour after closing?",
   "Would you rather eat only from Norway or only from Italy for the day?",
   "Would you rather have a perfect EPCOT photo album or a perfect EPCOT food day?",
-  "Would you rather ride Guardians with your favorite song or Soarin with no motion sickness?",
+  "Would you rather ride Guardians with your favorite song or Soarin' with no motion sickness?",
   "Would you rather take a midday resort break or do a slow lap around World Showcase?",
   "Would you rather find the coolest shop item or the best snack under ten dollars?",
   "Would you rather end EPCOT with fireworks or Spaceship Earth glowing at night?",
