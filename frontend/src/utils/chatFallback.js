@@ -1,3 +1,15 @@
+const formatElapsedInLineContext = (elapsedMinutes) => {
+  if (elapsedMinutes == null) {
+    return "unknown";
+  }
+
+  if (elapsedMinutes <= 0) {
+    return "less than 1 minute";
+  }
+
+  return `about ${elapsedMinutes} minute${elapsedMinutes === 1 ? "" : "s"}`;
+};
+
 export function buildLocalChatFallback({
   activePark,
   weatherMode,
@@ -37,7 +49,7 @@ export function buildLocalChatFallback({
       "",
       `Current status: You are marked in line for ${currentActivityContext.rideName || "a ride"}${
         posted != null ? `, with a ${posted}-minute posted wait when you joined` : ""
-      }${elapsed != null ? `, and about ${elapsed} minutes elapsed` : ""}.`
+      }${elapsed != null ? `, and ${formatElapsedInLineContext(elapsed)} elapsed` : ""}.`
     );
   }
 

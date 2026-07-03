@@ -275,6 +275,31 @@ function getElapsedMinutesSince(isoString) {
   return Math.max(0, Math.round(elapsedMs / 60000));
 }
 
+const formatElapsedInLineBadge = (elapsedMinutes) => {
+  if (elapsedMinutes == null) {
+    return "";
+  }
+
+  if (elapsedMinutes <= 0) {
+    return " · Just joined the line";
+  }
+
+  return ` · About ${elapsedMinutes} min in line`;
+};
+
+const formatElapsedInLineContext = (elapsedMinutes) => {
+  if (elapsedMinutes == null) {
+    return "unknown";
+  }
+
+  if (elapsedMinutes <= 0) {
+    return "less than 1 minute";
+  }
+
+  return `about ${elapsedMinutes} minute${elapsedMinutes === 1 ? "" : "s"}`;
+};
+
+
 function buildCurrentActivityContext(currentActivity) {
   if (!currentActivity) return null;
 
@@ -290,9 +315,7 @@ function buildCurrentActivityContext(currentActivity) {
       currentActivity.type === "in_line"
         ? `User is currently in line for ${currentActivity.rideName}. Posted wait when joined: ${
             currentActivity.postedWaitAtStart ?? "unknown"
-          } minutes. Elapsed time in line: ${
-            elapsedMinutes ?? "unknown"
-          } minutes.`
+          } minutes. Elapsed time in line: ${formatElapsedInLineContext(elapsedMinutes)}.`
         : null,
   };
 }
@@ -336,7 +359,7 @@ function buildLocalChatFallback({
       "",
       `Current status: You are marked in line for ${currentActivityContext.rideName || "a ride"}${
         posted != null ? `, with a ${posted}-minute posted wait when you joined` : ""
-      }${elapsed != null ? `, and about ${elapsed} minutes elapsed` : ""}.`
+      }${elapsed != null ? `, and ${formatElapsedInLineContext(elapsed)} elapsed` : ""}.`
     );
   }
 
@@ -4268,9 +4291,7 @@ function App() {
               {currentActivity.startedAt
                 ? ` · Started around ${formatActivityStartTime(currentActivity.startedAt)}`
                 : ""}
-              {currentActivityContext?.elapsedMinutesInLine != null
-                ? ` · About ${currentActivityContext.elapsedMinutesInLine} min in line`
-                : ""}
+              {formatElapsedInLineBadge(currentActivityContext?.elapsedMinutesInLine)}
             </p>
 
             <p style={{ margin: "0 0 12px", color: colors.text }}>
