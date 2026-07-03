@@ -840,8 +840,29 @@ function previousAssistantWasLiveStateQuestion(conversationHistory = []) {
   );
 }
 
+function escapeRegExp(value = "") {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function textIncludesAny(text = "", patterns = []) {
-  return patterns.some((pattern) => text.includes(pattern));
+  if (!text || !Array.isArray(patterns) || patterns.length === 0) {
+    return false;
+  }
+
+  const normalizedText = String(text).toLowerCase();
+
+  return patterns.some((pattern) => {
+    const normalizedPattern = String(pattern || "").trim().toLowerCase();
+
+    if (!normalizedPattern) {
+      return false;
+    }
+
+    const phrasePattern = escapeRegExp(normalizedPattern).replace(/\s+/g, "\\s+");
+    const matcher = new RegExp(`(^|[^a-z0-9])${phrasePattern}([^a-z0-9]|$)`, "i");
+
+    return matcher.test(normalizedText);
+  });
 }
 
 function normalizeLiveFamilyStatePayload(payload) {
@@ -889,7 +910,6 @@ function detectLiveFamilyState(message = "", conversationHistory = []) {
     "tired",
     "exhausted",
     "wiped",
-    "beat",
     "drained",
     "fading",
     "starting to fade",
@@ -944,9 +964,11 @@ function detectLiveFamilyState(message = "", conversationHistory = []) {
   const isWindingDown = textIncludesAny(text, [
     "wind down",
     "winding down",
-    "done",
-    "leave",
     "head out",
+    "done for the day",
+    "ready to leave",
+    "leaving the park",
+    "leave the park",
     "back to hotel",
     "back to resort",
     "call it a day",
