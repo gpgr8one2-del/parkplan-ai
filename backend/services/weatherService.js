@@ -104,7 +104,8 @@ function estimateRainRisk(summary, json) {
   const hasStorm =
     normalizedSummary.includes("thunder") ||
     normalizedSummary.includes("storm") ||
-    normalizedSummary.includes("lightning");
+    normalizedSummary.includes("lightning") ||
+    normalizedSummary.includes("heavy rain");
 
   if (hasStorm) return 0.8;
 
@@ -133,7 +134,8 @@ function buildDisplaySummary(rawSummary, json) {
   const hasStormWord =
     normalizedSummary.includes("thunder") ||
     normalizedSummary.includes("storm") ||
-    normalizedSummary.includes("lightning");
+    normalizedSummary.includes("lightning") ||
+    normalizedSummary.includes("heavy rain");
 
   if (hasStormWord) return rawSummary;
   if (hasRainWord && !hasMeasuredPrecipitation) {
