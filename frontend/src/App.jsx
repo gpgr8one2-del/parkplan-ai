@@ -55,6 +55,11 @@ import { useMiniGames } from "./hooks/useMiniGames";
 
 const STORAGE_KEY = "parkplan.state";
 const AUTO_REFRESH_MS = 3 * 60 * 1000;
+const LOCATION_WATCH_OPTIONS = {
+  enableHighAccuracy: true,
+  timeout: 10000,
+  maximumAge: 5000,
+};
 
 // Testing safety valve: while building, Gabe can still preview and test the full app.
 // This must never appear in production because it makes the onboarding gate meaningless.
@@ -2008,6 +2013,74 @@ function App() {
   }, [loadData, locationAutoEnabled, updateUserLocation]);
 
   useEffect(() => {
+    if (!locationAutoEnabled) return undefined;
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.geolocation ||
+      !navigator.geolocation.watchPosition
+    ) {
+      return undefined;
+    }
+
+    let isActive = true;
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        if (!isActive) return;
+        if (document.visibilityState !== "visible") return;
+
+        const detectedZone = detectNearestLocationZone({
+          parkId: activePark,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+
+        if (!detectedZone) return;
+
+        const structuredLocation = {
+          source: "gps_watch",
+          parkId: activePark,
+          landKey: detectedZone.landKey,
+          landLabel: detectedZone.landLabel,
+          nearestAnchorName: detectedZone.anchorName,
+          nearestAnchorId: detectedZone.anchorId,
+          nearestAnchorType: detectedZone.anchorType,
+          distanceMeters: detectedZone.distanceMeters,
+          confidence: detectedZone.confidence,
+          updatedAt: new Date().toISOString(),
+        };
+
+        setDetectedLocationContext(structuredLocation);
+        setLastLocationUpdateAt(structuredLocation.updatedAt);
+        setLocationError("");
+
+        if (detectedZone.confidence !== "low") {
+          setCurrentLand(getSafeLandForPark(activePark, detectedZone.landKey));
+          setLocationMessage(
+            `${detectedZone.message} Not right? Pick another area manually.`
+          );
+        }
+      },
+      (err) => {
+        const denied =
+          err?.code === 1 ||
+          String(err?.message || "").toLowerCase().includes("denied");
+
+        if (denied) {
+          setLocationAutoEnabled(false);
+          setDetectedLocationContext(null);
+        }
+      },
+      LOCATION_WATCH_OPTIONS
+    );
+
+    return () => {
+      isActive = false;
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [activePark, locationAutoEnabled]);
+
+  useEffect(() => {
     isRestoringParkState.current = true;
 
     const saved = readStoredParkState(activePark);
@@ -2075,7 +2148,10 @@ function App() {
 
   const locationContextForDecisions = useMemo(() => {
     const safeDetectedLocation =
-      detectedLocationContext?.parkId === activePark ? detectedLocationContext : null;
+      detectedLocationContext?.parkId === activePark &&
+      detectedLocationContext.confidence !== "low"
+        ? detectedLocationContext
+        : null;
 
     if (!safeDetectedLocation && !currentLand) {
       return null;
