@@ -1114,6 +1114,27 @@ function getUsedRideIds(...rides) {
   );
 }
 
+function uniqueRidesById(...pools) {
+  const seen = new Set();
+  const unique = [];
+
+  for (const pool of pools) {
+    for (const ride of pool || []) {
+      const id = String(ride?.id || "");
+      if (!id || seen.has(id)) continue;
+
+      seen.add(id);
+      unique.push(ride);
+    }
+  }
+
+  return unique;
+}
+
+function getFirstUnusedRide(pool, usedIds) {
+  return (pool || []).find((ride) => !usedIds.has(String(ride.id))) || null;
+}
+
 function isFillerOrRecovery(ride) {
   return ride?.planningProfile?.category === "filler_or_recovery";
 }
@@ -2199,43 +2220,66 @@ export function getNextBestRides({
     return !isSoftRecoveryOnlyCandidate(parkId, ride, weather);
   });
 
-  /* ------------------------------------------------------------------------ */
-  /* Best Move selection — V1.1: with cross-park fallback quality gate        */
-  /* ------------------------------------------------------------------------ */
+      /* --------------------------------------------------------------------*/
+      /* Best Move selection — 56B: primary ride trust before soft recovery   */
+      /* --------------------------------------------------------------------*/
 
-  const sameAreaPick = primarySameAreaRides[0] || sameAreaRides[0] || null;
-  const nearbyPick =
-    primaryNearbyRides.find((ride) => ride !== sameAreaPick) ||
-    nearbyRides.find((ride) => ride !== sameAreaPick) ||
-    null;
+      const sameAreaSoftRecoveryRides = sameAreaRides.filter((ride) => {
+        return isSoftRecoveryOnlyCandidate(parkId, ride, weather);
+      });
 
-  // The cross-park fallback: only allowed if the candidate clears the quality
-  // gate. Otherwise bestMove returns null and the UI can show a take-a-break
-  // state instead of "walk to Peter Pan from across the park."
-  const fallbackCandidate = primaryPositivePool[0] || positivePool[0] || null;
-  const fallbackPick = isQualifiedFallbackBestMove(fallbackCandidate, parkId)
-    ? fallbackCandidate
-    : null;
+      const nearbySoftRecoveryRides = nearbyRides.filter((ride) => {
+        return isSoftRecoveryOnlyCandidate(parkId, ride, weather);
+      });
 
-  const bestMove = needsLocation || blockGoNowForPreOpen
-    ? null
-    : sameAreaPick || nearbyPick || fallbackPick;
-
-  const usedAfterBest = getUsedRideIds(bestMove);
-
-  const backup = needsLocation || blockGoNowForPreOpen
-    ? null
-    : (
-        primarySameAreaRides.find((ride) => !usedAfterBest.has(String(ride.id))) ||
-        primaryNearbyRides.find((ride) => !usedAfterBest.has(String(ride.id))) ||
-        primaryPositivePool.find((ride) => !usedAfterBest.has(String(ride.id))) ||
-        sameAreaRides.find((ride) => !usedAfterBest.has(String(ride.id))) ||
-        nearbyRides.find((ride) => !usedAfterBest.has(String(ride.id))) ||
-        positivePool.find((ride) => !usedAfterBest.has(String(ride.id))) ||
-        null
+      const localSoftRecoveryRides = uniqueRidesById(
+        sameAreaSoftRecoveryRides,
+        nearbySoftRecoveryRides
       );
 
-  const usedAfterBackup = getUsedRideIds(bestMove, backup);
+      const sameAreaPick = primarySameAreaRides[0] || null;
+
+      const nearbyPick =
+        primaryNearbyRides.find((ride) => ride !== sameAreaPick) || null;
+
+      const usedBeforeSoftRecovery = getUsedRideIds(sameAreaPick, nearbyPick);
+      const localSoftRecoveryPick = getFirstUnusedRide(
+        localSoftRecoveryRides,
+        usedBeforeSoftRecovery
+      );
+
+      // Cross-park fallback is limited to primary ride-like candidates that
+      // clear the quality gate. Soft recovery items should not become a global
+      // Best Move just because they have a short posted wait.
+      const fallbackCandidate =
+        primaryPositivePool.find(
+          (ride) =>
+            ride !== sameAreaPick &&
+            ride !== nearbyPick &&
+            ride !== localSoftRecoveryPick
+        ) || null;
+
+      const fallbackPick = isQualifiedFallbackBestMove(fallbackCandidate, parkId)
+        ? fallbackCandidate
+        : null;
+
+      const bestMove = needsLocation || blockGoNowForPreOpen
+        ? null
+        : sameAreaPick || nearbyPick || localSoftRecoveryPick || fallbackPick;
+
+      const usedAfterBest = getUsedRideIds(bestMove);
+
+      const backup = needsLocation || blockGoNowForPreOpen
+        ? null
+        : (
+            getFirstUnusedRide(primarySameAreaRides, usedAfterBest) ||
+            getFirstUnusedRide(primaryNearbyRides, usedAfterBest) ||
+            getFirstUnusedRide(localSoftRecoveryRides, usedAfterBest) ||
+            getFirstUnusedRide(primaryPositivePool, usedAfterBest) ||
+            null
+          );
+
+      const usedAfterBackup = getUsedRideIds(bestMove, backup);
 
   /* ------------------------------------------------------------------------ */
   /* Worth the Walk — V1.1: stricter score floor                              */
