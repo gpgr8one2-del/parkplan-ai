@@ -55,6 +55,7 @@ import { useMiniGames } from "./hooks/useMiniGames";
 
 const STORAGE_KEY = "parkplan.state";
 const AUTO_REFRESH_MS = 3 * 60 * 1000;
+const IN_LINE_TIMER_TICK_MS = 30 * 1000;
 const LOCATION_WATCH_OPTIONS = {
   enableHighAccuracy: true,
   timeout: 10000,
@@ -262,7 +263,7 @@ function formatAutoUpdateTime(isoString) {
   }
 }
 
-function getElapsedMinutesSince(isoString) {
+function getElapsedMinutesSince(isoString, nowMs = Date.now()) {
   if (!isoString) return null;
 
   const startedAtMs = new Date(isoString).getTime();
@@ -271,7 +272,8 @@ function getElapsedMinutesSince(isoString) {
     return null;
   }
 
-  const elapsedMs = Date.now() - startedAtMs;
+  const safeNowMs = Number.isFinite(nowMs) ? nowMs : Date.now();
+  const elapsedMs = safeNowMs - startedAtMs;
 
   if (elapsedMs < 0) {
     return 0;
@@ -305,12 +307,12 @@ const formatElapsedInLineContext = (elapsedMinutes) => {
 };
 
 
-function buildCurrentActivityContext(currentActivity) {
+function buildCurrentActivityContext(currentActivity, nowMs = Date.now()) {
   if (!currentActivity) return null;
 
   const elapsedMinutes =
     currentActivity.type === "in_line"
-      ? getElapsedMinutesSince(currentActivity.startedAt)
+      ? getElapsedMinutesSince(currentActivity.startedAt, nowMs)
       : null;
 
   return {
@@ -1687,6 +1689,7 @@ function App() {
   const [skippedRideIds, setSkippedRideIds] = useState([]);
   const [reportedRideIssueIds, setReportedRideIssueIds] = useState([]);
   const [currentActivity, setCurrentActivity] = useState(null);
+  const [activityTimerNow, setActivityTimerNow] = useState(() => Date.now());
   const [activityLog, setActivityLog] = useState([]);
   const [debugSnapshotEnabled, setDebugSnapshotEnabled] = useState(() =>
     readDebugSnapshotEnabled()
@@ -2352,8 +2355,22 @@ function App() {
   }, [activePark, currentActivity]);
 
   const currentActivityContext = useMemo(() => {
-    return buildCurrentActivityContext(currentActivity);
-  }, [currentActivity]);
+    return buildCurrentActivityContext(currentActivity, activityTimerNow);
+  }, [currentActivity, activityTimerNow]);
+
+  useEffect(() => {
+    if (currentActivity?.type !== "in_line") return undefined;
+
+    setActivityTimerNow(Date.now());
+
+    const intervalId = setInterval(() => {
+      setActivityTimerNow(Date.now());
+    }, IN_LINE_TIMER_TICK_MS);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [currentActivity?.type, currentActivity?.startedAt]);
 
   const trackAppEvent = useCallback(
     (eventType, payload = {}) => {
