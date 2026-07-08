@@ -42,11 +42,73 @@ function isCurrentlyStorming(weather) {
   );
 }
 
+function getUpcomingPrecipitationWindow(weather) {
+  const rainWindow = weather?.nextPrecipitationWindow;
+
+  if (!weather?.upcomingPrecipitation && !rainWindow) {
+    return null;
+  }
+
+  if (!rainWindow || typeof rainWindow !== "object") {
+    return weather?.upcomingPrecipitation ? {} : null;
+  }
+
+  const summary = String(rainWindow.summary || "").toLowerCase();
+  const rainRisk = Number(rainWindow.rainRisk || 0);
+  const probability = Number(rainWindow.precipitationProbability || 0);
+  const intensity = Number(rainWindow.precipitationIntensityInPerHr || 0);
+
+  if (
+    weather?.upcomingPrecipitation === true ||
+    intensity > 0 ||
+    probability >= 40 ||
+    rainRisk >= 0.4 ||
+    summary.includes("rain") ||
+    summary.includes("drizzle") ||
+    summary.includes("shower") ||
+    summary.includes("storm") ||
+    summary.includes("thunder") ||
+    summary.includes("lightning")
+  ) {
+    return rainWindow;
+  }
+
+  return null;
+}
+
+function isUpcomingStorming(rainWindow) {
+  const summary = String(rainWindow?.summary || "").toLowerCase();
+  const rainRisk = Number(rainWindow?.rainRisk || 0);
+
+  return (
+    rainRisk >= 0.75 ||
+    summary.includes("thunderstorm") ||
+    summary.includes("storm") ||
+    summary.includes("thunder") ||
+    summary.includes("lightning") ||
+    summary.includes("heavy rain")
+  );
+}
+
+function buildUpcomingPrecipitationMessage(rainWindow, upcomingStorm) {
+  const probability = Number(rainWindow?.precipitationProbability || 0);
+  const probabilityText =
+    probability >= 40 ? ` Forecast chance is around ${probability}%.` : "";
+
+  if (upcomingStorm) {
+    return `Storm risk may be building near the park soon.${probabilityText} Favor indoor or covered options nearby, avoid long exposed walks, and wait for the signal to clear before committing to outdoor rides.`;
+  }
+
+  return `Rain may move near the park soon.${probabilityText} Keep your plan flexible, favor indoor or covered options nearby, and be careful before walking across the park for outdoor rides.`;
+}
+
 export function getWeatherMode(weather) {
   const effectiveTempF = getEffectiveTempF(weather);
   const rainRisk = weather?.rainRisk ?? 0;
   const stormMode = isCurrentlyStorming(weather);
   const currentlyRaining = isCurrentlyRaining(weather);
+  const upcomingRainWindow = getUpcomingPrecipitationWindow(weather);
+  const upcomingStorm = isUpcomingStorming(upcomingRainWindow);
 
   if (stormMode) {
     return {
@@ -63,6 +125,14 @@ export function getWeatherMode(weather) {
       label: "Rain Watch",
       message:
         "Rain is being reported at the park right now. Keep your plan flexible, lean on indoor options nearby, and be careful before walking across the park for outdoor rides.",
+    };
+  }
+
+  if (upcomingRainWindow) {
+    return {
+      mode: "rain",
+      label: upcomingStorm ? "Storm Watch" : "Rain Watch",
+      message: buildUpcomingPrecipitationMessage(upcomingRainWindow, upcomingStorm),
     };
   }
 
