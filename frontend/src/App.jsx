@@ -3454,6 +3454,32 @@ function App() {
             {dbRow("humidity", weather?.humidity)}
             {dbRow("summary", weather?.summary)}
             {dbRow("rainRisk", weather?.rainRisk)}
+            {dbRow("weather.provider", weather?.provider)}
+            {dbRow("weather.providerLabel", weather?.providerLabel)}
+            {dbRow("weather.source", weather?.source)}
+            {dbRow("weather.ageMs", weather?.ageMs)}
+            {dbRow("weather.fetchedAt", weather?.fetchedAt)}
+            {dbRow("weather.forecastSource", weather?.forecastSource)}
+            {dbRow("weather.forecastHoursChecked", weather?.forecastHoursChecked)}
+            {dbRow("weather.upcomingPrecipitation", weather?.upcomingPrecipitation)}
+            {dbRow("weather.nextPrecipitationWindow.time", weather?.nextPrecipitationWindow?.time)}
+            {dbRow("weather.nextPrecipitationWindow.summary", weather?.nextPrecipitationWindow?.summary)}
+            {dbRow("weather.nextPrecipitationWindow.rainRisk", weather?.nextPrecipitationWindow?.rainRisk)}
+            {dbRow(
+              "weather.nextPrecipitationWindow.precipitationProbability",
+              weather?.nextPrecipitationWindow?.precipitationProbability
+            )}
+            {dbRow(
+              "weather.nextPrecipitationWindow.precipitationIntensityInPerHr",
+              weather?.nextPrecipitationWindow?.precipitationIntensityInPerHr
+            )}
+            {dbRow("weather.precipitationProbability", weather?.precipitationProbability)}
+            {dbRow("weather.precipitationIntensityInPerHr", weather?.precipitationIntensityInPerHr)}
+            {dbRow("weather.weatherCode", weather?.weatherCode)}
+            {dbRow("weather.weatherTarget.parkId", weather?.weatherTarget?.parkId)}
+            {dbRow("weather.weatherTarget.label", weather?.weatherTarget?.label)}
+            {dbRow("weather.weatherTarget.lat", weather?.weatherTarget?.lat)}
+            {dbRow("weather.weatherTarget.lon", weather?.weatherTarget?.lon)}
             {dbRow("stormMode", weather?.stormMode)}
             {dbRow("freshness.status", tripPlanFreshness?.status)}
             {dbRow("freshness.isStale", tripPlanFreshness?.isStale)}
