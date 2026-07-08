@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "start": "react-scripts start",
-   "build": "CI=false DISABLE_ESLINT_PLUGIN=true react-scripts build",    
-    "test": "react-scripts test --watchAll=false"
+    "build": "CI=false DISABLE_ESLINT_PLUGIN=true react-scripts build",
+    "test": "react-scripts test --watchAll=false",
+    "weather:harness": "node scripts/weatherModeHarness.cjs"
   },
   "dependencies": {
     "lucide-react": "latest",
