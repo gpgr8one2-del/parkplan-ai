@@ -41,6 +41,41 @@ const PARK_WEATHER_COORDS = {
 };
 
 const DEFAULT_PARK_ID = "magic_kingdom";
+const DEFAULT_WEATHER_PROVIDER = "openweather";
+
+const WEATHER_PROVIDER_CONFIGS = {
+  openweather: {
+    id: "openweather",
+    label: "OpenWeather",
+    coordinateSource: "park_center",
+  },
+};
+
+function getWeatherProviderConfig(providerId = process.env.WEATHER_PROVIDER) {
+  const normalizedProviderId = String(providerId || DEFAULT_WEATHER_PROVIDER)
+    .trim()
+    .toLowerCase();
+
+  return (
+    WEATHER_PROVIDER_CONFIGS[normalizedProviderId] ||
+    WEATHER_PROVIDER_CONFIGS[DEFAULT_WEATHER_PROVIDER]
+  );
+}
+
+function buildWeatherTargetMetadata(target, providerConfig = getWeatherProviderConfig()) {
+  return {
+    provider: providerConfig.id,
+    providerLabel: providerConfig.label,
+    coordinateSource: providerConfig.coordinateSource,
+    weatherTarget: {
+      parkId: target.parkId,
+      label: target.label,
+      lat: target.lat,
+      lon: target.lon,
+    },
+  };
+}
+
 
 function getWeatherTarget(parkId = DEFAULT_PARK_ID) {
   const safeParkId = PARK_WEATHER_COORDS[parkId] ? parkId : DEFAULT_PARK_ID;
@@ -51,10 +86,11 @@ function getWeatherTarget(parkId = DEFAULT_PARK_ID) {
   };
 }
 
-function buildMockWeather(parkId = DEFAULT_PARK_ID) {
+function buildMockWeather(parkId = DEFAULT_PARK_ID, providerConfig = getWeatherProviderConfig()) {
   const target = getWeatherTarget(parkId);
 
   return {
+    ...buildWeatherTargetMetadata(target, providerConfig),
     parkId: target.parkId,
     location: target.label,
     summary: "Weather unavailable",
@@ -145,12 +181,12 @@ function buildDisplaySummary(rawSummary, json) {
   return rawSummary || "Weather available";
 }
 
-async function fetchLiveWeather(parkId = DEFAULT_PARK_ID) {
+async function fetchLiveWeather(parkId = DEFAULT_PARK_ID, providerConfig = getWeatherProviderConfig()) {
   const key = process.env.OPENWEATHER_API_KEY;
   const target = getWeatherTarget(parkId);
 
   if (!key) {
-    return buildMockWeather(target.parkId);
+    return buildMockWeather(target.parkId, providerConfig);
   }
 
   const url = `https://api.openweathermap.org/data/2.5/weather?lat=${target.lat}&lon=${target.lon}&appid=${key}&units=imperial`;
@@ -173,6 +209,7 @@ async function fetchLiveWeather(parkId = DEFAULT_PARK_ID) {
   const rainVolume = getRainVolume(json);
 
   return {
+    ...buildWeatherTargetMetadata(target, providerConfig),
     parkId: target.parkId,
     location: target.label,
     summary,
@@ -199,6 +236,7 @@ function withFreshMetadata(data, source = "live") {
 async function getWeather(options = {}) {
   const { force = false, parkId = DEFAULT_PARK_ID } = options;
   const target = getWeatherTarget(parkId);
+  const providerConfig = getWeatherProviderConfig();
 
   /**
    * Manual/auto force refresh path:
@@ -207,13 +245,17 @@ async function getWeather(options = {}) {
    */
   if (force) {
     try {
-      const freshWeather = await fetchLiveWeather(target.parkId);
+      const freshWeather = await fetchLiveWeather(target.parkId, providerConfig);
       const result = withFreshMetadata(freshWeather, "live");
 
       logger.info(
         {
           parkId: target.parkId,
           location: result.location,
+      provider: result.provider,
+      providerLabel: result.providerLabel,
+      coordinateSource: result.coordinateSource,
+      weatherTarget: result.weatherTarget,
           force: true,
           source: result.source,
           ageMs: result.ageMs,
@@ -241,13 +283,13 @@ async function getWeather(options = {}) {
   }
 
   const result = await fetchWithResiliency(
-    `weather:${target.parkId}`,
-    () => fetchLiveWeather(target.parkId),
+    `weather:${providerConfig.id}:${target.parkId}`,
+    () => fetchLiveWeather(target.parkId, providerConfig),
     {
       ttlMs: 5 * 60 * 1000,
       staleWhileRevalidate: true,
       timeoutMs: 8000,
-      fallbackFn: () => buildMockWeather(target.parkId),
+      fallbackFn: () => buildMockWeather(target.parkId, providerConfig),
     }
   );
 
@@ -255,6 +297,10 @@ async function getWeather(options = {}) {
     {
       parkId: target.parkId,
       location: result.location,
+      provider: result.provider,
+      providerLabel: result.providerLabel,
+      coordinateSource: result.coordinateSource,
+      weatherTarget: result.weatherTarget,
       force,
       source: result.source,
       ageMs: result.ageMs || 0,
