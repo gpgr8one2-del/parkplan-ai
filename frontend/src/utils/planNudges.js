@@ -128,7 +128,6 @@ function isRainOrStormMode(weatherMode = {}, weather = {}) {
   return (
     mode === "rain" ||
     mode === "storm" ||
-    weather?.stormMode === true ||
     summary.includes("rain") ||
     summary.includes("storm") ||
     summary.includes("lightning")

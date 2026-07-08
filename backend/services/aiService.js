@@ -305,14 +305,16 @@ function buildWeatherContext(weather, weatherMode) {
     weather?.rainRisk !== undefined && weather?.rainRisk !== null
       ? `rain risk: ${weather.rainRisk}`
       : "rain risk unavailable";
-  const stormMode = weather?.stormMode ? "storm mode active" : "storm mode inactive";
-
   const mode = weatherMode?.mode || "unknown";
   const label = weatherMode?.label || "unknown";
   const message = weatherMode?.message || "";
+  const providerStormSignal = weather?.stormMode
+    ? "provider storm signal: yes"
+    : "provider storm signal: no";
+  const activeStormMode = mode === "storm" ? "active storm mode: yes" : "active storm mode: no";
 
   return [
-    `Weather: ${temp} · ${feelsLike} · ${humidity} · ${summary} · ${rainRisk} · ${stormMode}`,
+    `Weather: ${temp} · ${feelsLike} · ${humidity} · ${summary} · ${rainRisk} · ${providerStormSignal} · ${activeStormMode}`,
     `Weather mode: ${label} (${mode})`,
     message ? `Weather advice: ${message}` : null,
   ]

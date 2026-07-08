@@ -204,6 +204,10 @@ function isCurrentlyRaining(weather) {
 function isCurrentlyStorming(weather) {
   const summary = getWeatherSummary(weather);
 
+  if (weather?.currentPrecipitation === false) {
+    return false;
+  }
+
   return (
     weather?.stormMode === true ||
     summary.includes("thunderstorm") ||
@@ -211,7 +215,6 @@ function isCurrentlyStorming(weather) {
     summary.includes("lightning")
   );
 }
-
 function isRainActive(weather) {
   return isCurrentlyRaining(weather) || (weather?.rainRisk ?? 0) >= 0.45;
 }
