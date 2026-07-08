@@ -48,8 +48,7 @@ function isStormOrRainMode(weather = {}, weatherMode = {}) {
   const summary = getWeatherSummary(weather, weatherMode);
 
   return Boolean(
-    weather?.stormMode ||
-      mode === "storm" ||
+    mode === "storm" ||
       mode === "rain" ||
       summary.includes("storm") ||
       summary.includes("rain") ||
@@ -284,7 +283,10 @@ export function generatePackingChecklist({
         rainChance >= 0.35
           ? `Rain risk is high enough (${Math.round(rainChance * 100)}%) that buying ponchos in the park would be the expensive version of the same fix.`
           : "Weather mode suggests rain or storms may affect the day.",
-      priority: stormTolerance === "indoor_only" || weather?.stormMode ? "must" : "should",
+      priority:
+        stormTolerance === "indoor_only" || normalizeString(weatherMode?.mode) === "storm"
+          ? "must"
+          : "should",
     });
   }
 
@@ -304,7 +306,10 @@ export function generatePackingChecklist({
       category: "kids",
       label: "Stroller rain cover",
       reason: "A wet stroller can make naps, comfort, and the rest of the day harder fast.",
-      priority: weather?.stormMode || rainChance >= 0.55 ? "must" : "should",
+      priority:
+        normalizeString(weatherMode?.mode) === "storm" || rainChance >= 0.55
+          ? "must"
+          : "should",
     });
   }
 

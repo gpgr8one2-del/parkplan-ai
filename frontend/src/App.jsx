@@ -437,7 +437,7 @@ function getTimeOfDayGreeting(preferredName, date = new Date()) {
   return name ? `Good ${dayPart}, ${name}.` : `Good ${dayPart}.`;
 }
 
-function buildWeatherDisplay(weather) {
+function buildWeatherDisplay(weather, weatherMode = null) {
   if (!weather) return "Loading weather...";
 
   const parts = [];
@@ -462,8 +462,10 @@ function buildWeatherDisplay(weather) {
     parts.push(weather.summary);
   }
 
-  if (weather.stormMode) {
-    parts.push("Storm Mode active");
+  const displayWeatherMode = weatherMode || getWeatherMode(weather);
+
+  if (displayWeatherMode?.mode && displayWeatherMode.mode !== "normal") {
+    parts.push(displayWeatherMode.label || "Weather watch");
   }
 
   return parts.length ? parts.join(" · ") : "Loading weather...";
@@ -4158,7 +4160,7 @@ function App() {
                   </span>
                 )}
 
-                {weather?.stormMode && (
+                {weatherMode?.mode && weatherMode.mode !== "normal" && (
                   <span
                     style={{
                       padding: "5px 8px",
@@ -4169,7 +4171,7 @@ function App() {
                       fontWeight: 950,
                     }}
                   >
-                    Storm watch
+                    {weatherMode.label || "Weather watch"}
                   </span>
                 )}
               </div>
