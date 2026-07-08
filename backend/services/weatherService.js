@@ -49,6 +49,11 @@ const WEATHER_PROVIDER_CONFIGS = {
     label: "OpenWeather",
     coordinateSource: "park_center",
   },
+  tomorrow: {
+    id: "tomorrow",
+    label: "Tomorrow.io",
+    coordinateSource: "park_center",
+  },
 };
 
 function getWeatherProviderConfig(providerId = process.env.WEATHER_PROVIDER) {
@@ -181,7 +186,7 @@ function buildDisplaySummary(rawSummary, json) {
   return rawSummary || "Weather available";
 }
 
-async function fetchLiveWeather(parkId = DEFAULT_PARK_ID, providerConfig = getWeatherProviderConfig()) {
+async function fetchOpenWeather(parkId = DEFAULT_PARK_ID, providerConfig = getWeatherProviderConfig()) {
   const key = process.env.OPENWEATHER_API_KEY;
   const target = getWeatherTarget(parkId);
 
@@ -222,6 +227,134 @@ async function fetchLiveWeather(parkId = DEFAULT_PARK_ID, providerConfig = getWe
     currentPrecipitation: rainVolume.hasMeasuredPrecipitation,
     precipitationLastHourIn: rainVolume.rain1h || rainVolume.snow1h || 0,
   };
+}
+
+
+const TOMORROW_WEATHER_CODE_SUMMARIES = {
+  1000: "Clear",
+  1001: "Cloudy",
+  1100: "Mostly clear",
+  1101: "Partly cloudy",
+  1102: "Mostly cloudy",
+  2000: "Fog",
+  2100: "Light fog",
+  4000: "Drizzle",
+  4001: "Rain",
+  4200: "Light rain",
+  4201: "Heavy rain",
+  5000: "Snow",
+  5001: "Flurries",
+  5100: "Light snow",
+  5101: "Heavy snow",
+  6000: "Freezing drizzle",
+  6001: "Freezing rain",
+  6200: "Light freezing rain",
+  6201: "Heavy freezing rain",
+  7000: "Ice pellets",
+  7101: "Heavy ice pellets",
+  7102: "Light ice pellets",
+  8000: "Thunderstorm",
+};
+
+function getTomorrowWeatherSummary(values = {}) {
+  const code = Number(values.weatherCode);
+  return TOMORROW_WEATHER_CODE_SUMMARIES[code] || "Weather available";
+}
+
+function getTomorrowPrecipitationIntensity(values = {}) {
+  const intensity = Number(values.precipitationIntensity || 0);
+  return Number.isFinite(intensity) && intensity > 0 ? intensity : 0;
+}
+
+function estimateTomorrowRainRisk(values = {}) {
+  const summary = getTomorrowWeatherSummary(values).toLowerCase();
+  const intensity = getTomorrowPrecipitationIntensity(values);
+  const probability = Number(values.precipitationProbability || 0);
+
+  if (summary.includes("thunder") || summary.includes("heavy rain")) return 0.8;
+  if (intensity > 0) return 0.65;
+  if (summary.includes("rain") || summary.includes("drizzle") || summary.includes("shower")) {
+    return probability >= 50 ? 0.55 : 0.4;
+  }
+  if (probability >= 70) return 0.6;
+  if (probability >= 40) return 0.4;
+
+  return 0.2;
+}
+
+function buildTomorrowDisplaySummary(values = {}) {
+  const rawSummary = getTomorrowWeatherSummary(values);
+  const normalizedSummary = rawSummary.toLowerCase();
+  const intensity = getTomorrowPrecipitationIntensity(values);
+  const probability = Number(values.precipitationProbability || 0);
+
+  if (normalizedSummary.includes("thunder") || normalizedSummary.includes("heavy rain")) {
+    return rawSummary;
+  }
+
+  if (
+    intensity <= 0 &&
+    probability >= 40 &&
+    (normalizedSummary.includes("rain") ||
+      normalizedSummary.includes("drizzle") ||
+      normalizedSummary.includes("shower"))
+  ) {
+    return "Rain possible nearby";
+  }
+
+  return rawSummary;
+}
+
+async function fetchTomorrowWeather(parkId = DEFAULT_PARK_ID, providerConfig = getWeatherProviderConfig()) {
+  const key = process.env.TOMORROW_API_KEY;
+  const target = getWeatherTarget(parkId);
+
+  if (!key) {
+    return buildMockWeather(target.parkId, providerConfig);
+  }
+
+  const location = encodeURIComponent(`${target.lat},${target.lon}`);
+  const url = `https://api.tomorrow.io/v4/weather/realtime?location=${location}&apikey=${key}&units=imperial`;
+
+  const res = await fetch(url);
+
+  if (!res.ok) {
+    throw new Error(`Tomorrow.io ${res.status}`);
+  }
+
+  const json = await res.json();
+  const values = json?.data?.values || {};
+  const rawSummary = getTomorrowWeatherSummary(values);
+  const summary = buildTomorrowDisplaySummary(values);
+  const precipitationIntensity = getTomorrowPrecipitationIntensity(values);
+  const rainRisk = estimateTomorrowRainRisk(values);
+  const stormMode = /thunder|storm|heavy rain|lightning/i.test(rawSummary);
+
+  return {
+    ...buildWeatherTargetMetadata(target, providerConfig),
+    parkId: target.parkId,
+    location: target.label,
+    summary,
+    rawSummary,
+    tempF: roundNullable(values.temperature),
+    feelsLikeF: roundNullable(values.temperatureApparent),
+    humidity: roundNullable(values.humidity),
+    rainRisk,
+    stormMode,
+    currentPrecipitation: precipitationIntensity > 0,
+    precipitationLastHourIn: precipitationIntensity,
+    precipitationIntensityInPerHr: precipitationIntensity,
+    precipitationProbability: roundNullable(values.precipitationProbability),
+    weatherCode: values.weatherCode ?? null,
+  };
+}
+
+async function fetchLiveWeather(parkId = DEFAULT_PARK_ID, providerConfig = getWeatherProviderConfig()) {
+  if (providerConfig.id === "tomorrow") {
+    return fetchTomorrowWeather(parkId, providerConfig);
+  }
+
+  return fetchOpenWeather(parkId, providerConfig);
 }
 
 function withFreshMetadata(data, source = "live") {
