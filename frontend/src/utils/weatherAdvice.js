@@ -107,10 +107,12 @@ export function getWeatherMode(weather) {
   const rainRisk = weather?.rainRisk ?? 0;
   const stormMode = isCurrentlyStorming(weather);
   const currentlyRaining = isCurrentlyRaining(weather);
+  const activeStormMode = stormMode && currentlyRaining;
+  const nearbyStormMode = stormMode && !currentlyRaining;
   const upcomingRainWindow = getUpcomingPrecipitationWindow(weather);
-  const upcomingStorm = isUpcomingStorming(upcomingRainWindow);
+  const upcomingStorm = nearbyStormMode || isUpcomingStorming(upcomingRainWindow);
 
-  if (stormMode) {
+  if (activeStormMode) {
     return {
       mode: "storm",
       label: "Storm Smart Mode",
@@ -128,7 +130,7 @@ export function getWeatherMode(weather) {
     };
   }
 
-  if (upcomingRainWindow) {
+  if (upcomingRainWindow || nearbyStormMode) {
     return {
       mode: "rain",
       label: upcomingStorm ? "Storm Watch" : "Rain Watch",
