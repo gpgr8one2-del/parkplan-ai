@@ -305,6 +305,108 @@ function buildTomorrowDisplaySummary(values = {}) {
   return rawSummary;
 }
 
+const TOMORROW_FORECAST_RAIN_WINDOW_HOURS = 3;
+
+function getTomorrowForecastHours(json = {}) {
+  if (Array.isArray(json?.timelines?.hourly)) {
+    return json.timelines.hourly;
+  }
+
+  if (Array.isArray(json?.data?.timelines)) {
+    const hourlyTimeline = json.data.timelines.find(
+      (timeline) => timeline?.timestep === "1h" || timeline?.timestep === "hourly"
+    );
+    return hourlyTimeline?.intervals || [];
+  }
+
+  if (Array.isArray(json?.timelines)) {
+    const hourlyTimeline = json.timelines.find(
+      (timeline) => timeline?.timestep === "1h" || timeline?.timestep === "hourly"
+    );
+    return hourlyTimeline?.intervals || [];
+  }
+
+  return [];
+}
+
+function getTomorrowForecastValues(hour = {}) {
+  return hour?.values || hour?.data?.values || {};
+}
+
+function getTomorrowForecastTime(hour = {}) {
+  return hour?.time || hour?.startTime || null;
+}
+
+function getTomorrowForecastRainWindow(hours = []) {
+  const forecastHours = hours.slice(0, TOMORROW_FORECAST_RAIN_WINDOW_HOURS);
+  let strongest = null;
+
+  for (const hour of forecastHours) {
+    const values = getTomorrowForecastValues(hour);
+    const probability = Number(values.precipitationProbability || 0);
+    const intensity = getTomorrowPrecipitationIntensity(values);
+    const summary = getTomorrowWeatherSummary(values);
+    const rainRisk = estimateTomorrowRainRisk(values);
+
+    const isRainSignal =
+      intensity > 0 ||
+      probability >= 40 ||
+      rainRisk >= 0.4 ||
+      /thunder|storm|rain|drizzle|shower/i.test(summary);
+
+    if (!isRainSignal) continue;
+
+    const candidate = {
+      time: getTomorrowForecastTime(hour),
+      summary,
+      rainRisk,
+      precipitationProbability: roundNullable(probability),
+      precipitationIntensityInPerHr: intensity,
+      weatherCode: values.weatherCode ?? null,
+    };
+
+    const strength = rainRisk * 100 + probability + intensity * 100;
+
+    if (!strongest || strength > strongest.strength) {
+      strongest = {
+        ...candidate,
+        strength,
+      };
+    }
+  }
+
+  if (!strongest) return null;
+
+  const { strength, ...window } = strongest;
+  return window;
+}
+
+function buildTomorrowForecastDisplaySummary(values = {}, rainWindow = null) {
+  const currentSummary = buildTomorrowDisplaySummary(values);
+  const currentNormalized = currentSummary.toLowerCase();
+  const currentIntensity = getTomorrowPrecipitationIntensity(values);
+
+  if (currentNormalized.includes("thunder") || currentNormalized.includes("heavy rain")) {
+    return currentSummary;
+  }
+
+  if (
+    rainWindow &&
+    currentIntensity <= 0 &&
+    !currentNormalized.includes("rain") &&
+    !currentNormalized.includes("drizzle") &&
+    !currentNormalized.includes("shower")
+  ) {
+    if (/thunder|storm|heavy rain/i.test(rainWindow.summary || "")) {
+      return rainWindow.summary;
+    }
+
+    return "Rain possible soon";
+  }
+
+  return currentSummary;
+}
+
 async function fetchTomorrowWeather(parkId = DEFAULT_PARK_ID, providerConfig = getWeatherProviderConfig()) {
   const key = process.env.TOMORROW_API_KEY;
   const target = getWeatherTarget(parkId);
@@ -314,7 +416,7 @@ async function fetchTomorrowWeather(parkId = DEFAULT_PARK_ID, providerConfig = g
   }
 
   const location = encodeURIComponent(`${target.lat},${target.lon}`);
-  const url = `https://api.tomorrow.io/v4/weather/realtime?location=${location}&apikey=${key}&units=imperial`;
+  const url = `https://api.tomorrow.io/v4/weather/forecast?location=${location}&apikey=${key}&units=imperial&timesteps=1h`;
 
   const res = await fetch(url);
 
@@ -323,12 +425,19 @@ async function fetchTomorrowWeather(parkId = DEFAULT_PARK_ID, providerConfig = g
   }
 
   const json = await res.json();
-  const values = json?.data?.values || {};
+  const forecastHours = getTomorrowForecastHours(json);
+  const primaryValues = getTomorrowForecastValues(forecastHours[0]);
+  const values = Object.keys(primaryValues).length > 0 ? primaryValues : json?.data?.values || {};
+  const rainWindow = getTomorrowForecastRainWindow(forecastHours);
+
   const rawSummary = getTomorrowWeatherSummary(values);
-  const summary = buildTomorrowDisplaySummary(values);
+  const summary = buildTomorrowForecastDisplaySummary(values, rainWindow);
   const precipitationIntensity = getTomorrowPrecipitationIntensity(values);
-  const rainRisk = estimateTomorrowRainRisk(values);
-  const stormMode = /thunder|storm|heavy rain|lightning/i.test(rawSummary);
+  const currentRainRisk = estimateTomorrowRainRisk(values);
+  const rainRisk = Math.max(currentRainRisk, rainWindow?.rainRisk || 0.2);
+  const stormMode =
+    /thunder|storm|heavy rain|lightning/i.test(rawSummary) ||
+    /thunder|storm|heavy rain|lightning/i.test(rainWindow?.summary || "");
 
   return {
     ...buildWeatherTargetMetadata(target, providerConfig),
@@ -342,10 +451,14 @@ async function fetchTomorrowWeather(parkId = DEFAULT_PARK_ID, providerConfig = g
     rainRisk,
     stormMode,
     currentPrecipitation: precipitationIntensity > 0,
+    upcomingPrecipitation: Boolean(rainWindow),
     precipitationLastHourIn: precipitationIntensity,
     precipitationIntensityInPerHr: precipitationIntensity,
     precipitationProbability: roundNullable(values.precipitationProbability),
     weatherCode: values.weatherCode ?? null,
+    forecastSource: "forecast",
+    forecastHoursChecked: Math.min(forecastHours.length, TOMORROW_FORECAST_RAIN_WINDOW_HOURS),
+    nextPrecipitationWindow: rainWindow,
   };
 }
 
