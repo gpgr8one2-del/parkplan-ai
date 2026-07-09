@@ -219,6 +219,64 @@ function isRainActive(weather) {
   return isCurrentlyRaining(weather) || (weather?.rainRisk ?? 0) >= 0.45;
 }
 
+function getPrecipitationWindow(weather = {}) {
+  const window = weather?.nextPrecipitationWindow;
+
+  if (window && typeof window === "object") {
+    return window;
+  }
+
+  return weather?.upcomingPrecipitation === true ? {} : null;
+}
+
+function isStormyPrecipitationWindow(window = {}) {
+  const summary = getWeatherSummary(window);
+  const weatherCode = Number(window?.weatherCode);
+  const rainRisk = Number(window?.rainRisk);
+
+  return Boolean(
+    summary.includes("thunderstorm") ||
+      summary.includes("storm") ||
+      summary.includes("lightning") ||
+      summary.includes("heavy rain") ||
+      weatherCode === 8000 ||
+      weatherCode === 4201 ||
+      (Number.isFinite(rainRisk) && rainRisk >= 0.7)
+  );
+}
+
+export function getRecommendationWeatherState(weather = {}) {
+  const currentlyRaining = isCurrentlyRaining(weather);
+  const currentlyStorming = isCurrentlyStorming(weather);
+  const activePrecipitation = weather?.currentPrecipitation === true || currentlyRaining;
+  const activeStorm = currentlyStorming && activePrecipitation;
+  const activeRain = activePrecipitation;
+  const precipitationWindow = getPrecipitationWindow(weather);
+  const forecastStormWatch =
+    !activeStorm && !activeRain && Boolean(precipitationWindow) && isStormyPrecipitationWindow(precipitationWindow);
+  const forecastRainWatch =
+    !activeStorm && !activeRain && Boolean(precipitationWindow) && !forecastStormWatch;
+  const legacyRainActive = isRainActive(weather);
+
+  return {
+    activeStorm,
+    activeRain,
+    forecastStormWatch,
+    forecastRainWatch,
+    legacyRainActive,
+    hasUpcomingPrecipitation: Boolean(precipitationWindow),
+    label: activeStorm
+      ? "Storm Smart Mode"
+      : forecastStormWatch
+        ? "Storm Watch"
+        : forecastRainWatch
+          ? "Rain Watch"
+          : activeRain
+            ? "Rain Active"
+            : "Normal",
+  };
+}
+
 function isRainSensitiveRide(meta) {
   if (!meta) return false;
 

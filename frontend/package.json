@@ -6,7 +6,8 @@
     "start": "react-scripts start",
     "build": "CI=false DISABLE_ESLINT_PLUGIN=true react-scripts build",
     "test": "react-scripts test --watchAll=false",
-    "weather:harness": "node scripts/weatherModeHarness.cjs"
+    "weather:harness": "node scripts/weatherModeHarness.cjs",
+    "recommendations:weather-harness": "node scripts/recommendationWeatherHarness.cjs"
   },
   "dependencies": {
     "lucide-react": "latest",
