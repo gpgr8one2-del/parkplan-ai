@@ -151,6 +151,7 @@ const {
   getRecommendationWeatherState,
   getRecommendationWeatherModifier,
   getRecommendationWetRideWeatherModifier,
+  isRecommendationActiveWeather,
 } = loadModule(recommendationsPath);
 
 if (typeof getRecommendationWeatherState !== "function") {
@@ -163,6 +164,10 @@ if (typeof getRecommendationWeatherModifier !== "function") {
 
 if (typeof getRecommendationWetRideWeatherModifier !== "function") {
   throw new Error("Could not load getRecommendationWetRideWeatherModifier from rideRecommendations.js");
+}
+
+if (typeof isRecommendationActiveWeather !== "function") {
+  throw new Error("Could not load isRecommendationActiveWeather from rideRecommendations.js");
 }
 
 const baseWeather = {
@@ -385,6 +390,46 @@ for (const scenario of contextModifierScenarios) {
     failures += 1;
     console.error(`FAIL: ${scenario.name}`);
     console.error(`  modifier expected ${scenario.expected}, got ${result}`);
+  } else {
+    console.log(`PASS: ${scenario.name} -> ${result}`);
+  }
+}
+
+const hardGateScenarios = [
+  {
+    name: "active storm can hard-block rain-sensitive recommendation gates",
+    weather: weatherByScenario["active storm overhead"],
+    expected: true,
+  },
+  {
+    name: "active rain can hard-block rain-sensitive recommendation gates",
+    weather: weatherByScenario["active rain remains active rain"],
+    expected: true,
+  },
+  {
+    name: "forecast-only heavy rain stays eligible for gates",
+    weather: weatherByScenario["forecast-only heavy rain becomes storm watch, not active storm"],
+    expected: false,
+  },
+  {
+    name: "forecast-only light rain stays eligible for gates",
+    weather: weatherByScenario["forecast-only light rain becomes rain watch"],
+    expected: false,
+  },
+  {
+    name: "clear weather stays eligible for gates",
+    weather: weatherByScenario["clear weather stays normal"],
+    expected: false,
+  },
+];
+
+for (const scenario of hardGateScenarios) {
+  const result = isRecommendationActiveWeather(scenario.weather);
+
+  if (result !== scenario.expected) {
+    failures += 1;
+    console.error(`FAIL: ${scenario.name}`);
+    console.error(`  hard gate expected ${scenario.expected}, got ${result}`);
   } else {
     console.log(`PASS: ${scenario.name} -> ${result}`);
   }

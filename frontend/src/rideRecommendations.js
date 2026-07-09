@@ -277,6 +277,11 @@ export function getRecommendationWeatherState(weather = {}) {
   };
 }
 
+export function isRecommendationActiveWeather(weather = {}) {
+  const weatherState = getRecommendationWeatherState(weather);
+  return weatherState.activeStorm || weatherState.activeRain;
+}
+
 export function getRecommendationWeatherModifier(meta, weather = {}) {
   if (!meta || !weather) return 0;
 
@@ -1773,11 +1778,9 @@ function isWeatherBlockedFromPositiveCards(parkId, ride, weather) {
   const meta = getMetaForRide(parkId, ride);
   if (!meta) return true;
 
-  const stormActive = isCurrentlyStorming(weather);
-  const rainActive = isRainActive(weather);
+  const activeWeatherBlock = isRecommendationActiveWeather(weather);
 
-  if (stormActive && isRainSensitiveRide(meta)) return true;
-  if (rainActive && isRainSensitiveRide(meta)) return true;
+  if (activeWeatherBlock && isRainSensitiveRide(meta)) return true;
 
   return false;
 }
@@ -1921,8 +1924,9 @@ export function getNextBestRides({
   const completed = new Set(completedRideIds.map(String));
   const skipped = new Set(skippedRideIds.map(String));
 
-  const stormActive = isCurrentlyStorming(weather);
-  const rainActive = isRainActive(weather);
+  const recommendationWeatherState = getRecommendationWeatherState(weather);
+  const stormActive = recommendationWeatherState.activeStorm;
+  const rainActive = recommendationWeatherState.activeRain;
 
   const now = new Date();
   const closeTime = getParkCloseTime(parkId, now);
