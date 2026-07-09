@@ -147,10 +147,22 @@ ${code}
 }
 
 const recommendationsPath = path.join(frontendRoot, "src", "rideRecommendations.js");
-const { getRecommendationWeatherState } = loadModule(recommendationsPath);
+const {
+  getRecommendationWeatherState,
+  getRecommendationWeatherModifier,
+  getRecommendationWetRideWeatherModifier,
+} = loadModule(recommendationsPath);
 
 if (typeof getRecommendationWeatherState !== "function") {
   throw new Error("Could not load getRecommendationWeatherState from rideRecommendations.js");
+}
+
+if (typeof getRecommendationWeatherModifier !== "function") {
+  throw new Error("Could not load getRecommendationWeatherModifier from rideRecommendations.js");
+}
+
+if (typeof getRecommendationWetRideWeatherModifier !== "function") {
+  throw new Error("Could not load getRecommendationWetRideWeatherModifier from rideRecommendations.js");
 }
 
 const baseWeather = {
@@ -305,6 +317,111 @@ for (const scenario of scenarios) {
     console.error(`  result=${JSON.stringify(result)}`);
   } else {
     console.log(`PASS: ${scenario.name} -> ${result.label}`);
+  }
+}
+
+const weatherByScenario = Object.fromEntries(
+  scenarios.map((scenario) => [scenario.name, scenario.weather])
+);
+
+const outdoorClosingMeta = {
+  environment: "outdoor",
+  closesInRain: true,
+};
+
+const outdoorOpenMeta = {
+  environment: "outdoor",
+  closesInRain: false,
+};
+
+const indoorAcMeta = {
+  environment: "indoor",
+  hasAC: true,
+};
+
+const contextModifierScenarios = [
+  {
+    name: "active storm strongly suppresses rain-closing outdoor rides",
+    meta: outdoorClosingMeta,
+    weather: weatherByScenario["active storm overhead"],
+    expected: -125,
+  },
+  {
+    name: "forecast-only heavy rain uses Storm Watch scoring, not active-rain scoring",
+    meta: outdoorClosingMeta,
+    weather: weatherByScenario["forecast-only heavy rain becomes storm watch, not active storm"],
+    expected: -23,
+  },
+  {
+    name: "forecast-only light rain uses gentle Rain Watch scoring",
+    meta: outdoorClosingMeta,
+    weather: weatherByScenario["forecast-only light rain becomes rain watch"],
+    expected: -10,
+  },
+  {
+    name: "active rain still favors indoor AC",
+    meta: indoorAcMeta,
+    weather: weatherByScenario["active rain remains active rain"],
+    expected: 16,
+  },
+  {
+    name: "Storm Watch gently favors indoor AC",
+    meta: indoorAcMeta,
+    weather: weatherByScenario["forecast-only heavy rain becomes storm watch, not active storm"],
+    expected: 11,
+  },
+  {
+    name: "Rain Watch only lightly suppresses open outdoor rides",
+    meta: outdoorOpenMeta,
+    weather: weatherByScenario["forecast-only light rain becomes rain watch"],
+    expected: -4,
+  },
+];
+
+for (const scenario of contextModifierScenarios) {
+  const result = getRecommendationWeatherModifier(scenario.meta, scenario.weather);
+
+  if (result !== scenario.expected) {
+    failures += 1;
+    console.error(`FAIL: ${scenario.name}`);
+    console.error(`  modifier expected ${scenario.expected}, got ${result}`);
+  } else {
+    console.log(`PASS: ${scenario.name} -> ${result}`);
+  }
+}
+
+const wetRideModifierScenarios = [
+  {
+    name: "active storm strongly suppresses wet rides",
+    weather: weatherByScenario["active storm overhead"],
+    expected: -60,
+  },
+  {
+    name: "active rain suppresses wet rides",
+    weather: weatherByScenario["active rain remains active rain"],
+    expected: -20,
+  },
+  {
+    name: "Storm Watch gently suppresses wet rides",
+    weather: weatherByScenario["forecast-only heavy rain becomes storm watch, not active storm"],
+    expected: -8,
+  },
+  {
+    name: "Rain Watch barely suppresses wet rides",
+    weather: weatherByScenario["forecast-only light rain becomes rain watch"],
+    expected: -3,
+  },
+];
+
+for (const scenario of wetRideModifierScenarios) {
+  const result = getRecommendationWetRideWeatherModifier(scenario.weather);
+
+  if (result !== scenario.expected) {
+    failures += 1;
+    console.error(`FAIL: ${scenario.name}`);
+    console.error(`  wet ride modifier expected ${scenario.expected}, got ${result}`);
+  } else {
+    console.log(`PASS: ${scenario.name} -> ${result}`);
   }
 }
 
