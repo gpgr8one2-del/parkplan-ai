@@ -361,8 +361,9 @@ function isRainRecoveryRide(meta) {
 }
 
 function getLocalRainRecoveryModifier(meta, weather, currentLand, proximityModifier) {
-  const stormActive = isCurrentlyStorming(weather);
-  const rainActive = isRainActive(weather);
+  const recommendationWeatherState = getRecommendationWeatherState(weather);
+  const stormActive = recommendationWeatherState.activeStorm;
+  const rainActive = recommendationWeatherState.activeRain;
 
   if (!stormActive && !rainActive) return 0;
   if (!isRainRecoveryRide(meta)) return 0;
@@ -1107,8 +1108,9 @@ function getScheduledShowScoreModifier(meta, weather, proximityModifier) {
   if (!isScheduledShowMeta(meta)) return 0;
 
   const effectiveTempF = getEffectiveTempF(weather);
-  const stormActive = isCurrentlyStorming(weather);
-  const rainActive = isRainActive(weather);
+  const recommendationWeatherState = getRecommendationWeatherState(weather);
+  const stormActive = recommendationWeatherState.activeStorm;
+  const rainActive = recommendationWeatherState.activeRain;
   const nextShow = getNextShowtimeInfo(meta);
   const arrivalBuffer =
     effectiveTempF != null && effectiveTempF >= 87
@@ -1246,8 +1248,7 @@ function isSoftRecoveryOnlyCandidate(parkId, ride, weather) {
   const category = meta?.planningProfile?.category;
   const effectiveTempF = getEffectiveTempF(weather);
   const badWeatherOrHeat =
-    isCurrentlyStorming(weather) ||
-    isRainActive(weather) ||
+    isRecommendationActiveWeather(weather) ||
     (effectiveTempF != null && effectiveTempF >= 87);
 
   if (isScheduledShowMeta(meta)) return true;
@@ -1272,8 +1273,9 @@ function getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStat
 
   let mod = 0;
   const effectiveTempF = getEffectiveTempF(weather);
-  const rainActive = isRainActive(weather);
-  const stormActive = isCurrentlyStorming(weather);
+  const recommendationWeatherState = getRecommendationWeatherState(weather);
+  const stormActive = recommendationWeatherState.activeStorm;
+  const rainActive = recommendationWeatherState.activeRain;
   const tags = meta.tags || [];
   const category = meta?.planningProfile?.category;
 
@@ -1364,8 +1366,9 @@ function getNearbyHeadlinerOpportunityModifier({
 
   if (!isPlanAheadCategory) return 0;
 
-  const stormActive = isCurrentlyStorming(weather);
-  const rainActive = isRainActive(weather);
+  const recommendationWeatherState = getRecommendationWeatherState(weather);
+  const stormActive = recommendationWeatherState.activeStorm;
+  const rainActive = recommendationWeatherState.activeRain;
 
   if ((stormActive || rainActive) && isRainSensitiveRide(meta)) return 0;
 
@@ -1443,8 +1446,9 @@ function getClosestAnchorOpportunityModifier({
   if (distanceMeters != null && distanceMeters > 160) return 0;
   if (!isSameRideAsNearestAnchor(ride, meta, locationContext)) return 0;
 
-  const stormActive = isCurrentlyStorming(weather);
-  const rainActive = isRainActive(weather);
+  const recommendationWeatherState = getRecommendationWeatherState(weather);
+  const stormActive = recommendationWeatherState.activeStorm;
+  const rainActive = recommendationWeatherState.activeRain;
 
   if ((stormActive || rainActive) && isRainSensitiveRide(meta)) return 0;
 
@@ -1594,8 +1598,9 @@ function getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueS
 
   let mod = 0;
   const effectiveTempF = getEffectiveTempF(weather);
-  const rainActive = isRainActive(weather);
-  const stormActive = isCurrentlyStorming(weather);
+  const recommendationWeatherState = getRecommendationWeatherState(weather);
+  const stormActive = recommendationWeatherState.activeStorm;
+  const rainActive = recommendationWeatherState.activeRain;
   const tags = meta.tags || [];
   const category = meta?.planningProfile?.category;
   const { totalMinutes } = getOrlandoTimeParts();
