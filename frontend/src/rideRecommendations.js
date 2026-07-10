@@ -277,68 +277,6 @@ export function getRecommendationWeatherState(weather = {}) {
   };
 }
 
-export function isRecommendationActiveWeather(weather = {}) {
-  const weatherState = getRecommendationWeatherState(weather);
-  return weatherState.activeStorm || weatherState.activeRain;
-}
-
-export function getRecommendationWeatherModifier(meta, weather = {}) {
-  if (!meta || !weather) return 0;
-
-  const weatherState = getRecommendationWeatherState(weather);
-  const { rainRisk = 0 } = weather;
-  let mod = 0;
-
-  if (weatherState.activeStorm) {
-    if (meta.closesInRain) mod -= 90;
-    if (meta.environment === "indoor") mod += 18;
-    else if (meta.environment === "outdoor") mod -= 35;
-    else if (meta.environment === "mixed") mod -= 25;
-  } else if (weatherState.activeRain) {
-    if (meta.environment === "indoor") mod += 12;
-    if (meta.hasAC) mod += 4;
-    if (meta.closesInRain) mod -= 45;
-    if (meta.environment === "outdoor") mod -= 30;
-    if (meta.environment === "mixed") mod -= 18;
-    if (meta.getsWet) mod -= 10;
-  } else if (weatherState.forecastStormWatch) {
-    if (meta.environment === "indoor") mod += 8;
-    if (meta.hasAC) mod += 3;
-    if (meta.closesInRain) mod -= 15;
-    if (meta.environment === "outdoor") mod -= 8;
-    if (meta.environment === "mixed") mod -= 5;
-    if (meta.getsWet) mod -= 4;
-  } else if (weatherState.forecastRainWatch) {
-    if (meta.environment === "indoor") mod += 4;
-    if (meta.hasAC) mod += 2;
-    if (meta.closesInRain) mod -= 6;
-    if (meta.environment === "outdoor") mod -= 4;
-    if (meta.environment === "mixed") mod -= 2;
-    if (meta.getsWet) mod -= 2;
-  } else if (rainRisk >= 0.7) {
-    if (meta.closesInRain) mod -= 15;
-    if (meta.environment === "indoor") mod += 8;
-    if (meta.getsWet) mod -= 3;
-  } else if (rainRisk >= 0.4) {
-    if (meta.environment === "indoor") mod += 4;
-    if (meta.closesInRain) mod -= 3;
-  }
-
-  return mod;
-}
-
-export function getRecommendationWetRideWeatherModifier(weather = {}) {
-  const weatherState = getRecommendationWeatherState(weather);
-
-  if (weatherState.activeStorm) return -60;
-  if (weatherState.activeRain) return -20;
-  if (weatherState.forecastStormWatch) return -8;
-  if (weatherState.forecastRainWatch) return -3;
-  if ((weather?.rainRisk ?? 0) >= 0.6) return -6;
-
-  return 0;
-}
-
 function isRainSensitiveRide(meta) {
   if (!meta) return false;
 
@@ -361,9 +299,8 @@ function isRainRecoveryRide(meta) {
 }
 
 function getLocalRainRecoveryModifier(meta, weather, currentLand, proximityModifier) {
-  const recommendationWeatherState = getRecommendationWeatherState(weather);
-  const stormActive = recommendationWeatherState.activeStorm;
-  const rainActive = recommendationWeatherState.activeRain;
+  const stormActive = isCurrentlyStorming(weather);
+  const rainActive = isRainActive(weather);
 
   if (!stormActive && !rainActive) return 0;
   if (!isRainRecoveryRide(meta)) return 0;
@@ -948,10 +885,31 @@ function getContextModifier(meta, weather, mode = "default") {
   if (!meta || !weather) return 0;
 
   const effectiveTempF = getEffectiveTempF(weather);
-  const weatherState = getRecommendationWeatherState(weather);
-  const stormActive = weatherState.activeStorm;
-  const rainActive = weatherState.activeRain;
-  let mod = getRecommendationWeatherModifier(meta, weather);
+  const { rainRisk = 0 } = weather;
+  const stormActive = isCurrentlyStorming(weather);
+  const rainActive = isRainActive(weather);
+  let mod = 0;
+
+  if (stormActive) {
+    if (meta.closesInRain) mod -= 90;
+    if (meta.environment === "indoor") mod += 18;
+    else if (meta.environment === "outdoor") mod -= 35;
+    else if (meta.environment === "mixed") mod -= 25;
+  } else if (rainActive) {
+    if (meta.environment === "indoor") mod += 12;
+    if (meta.hasAC) mod += 4;
+    if (meta.closesInRain) mod -= 45;
+    if (meta.environment === "outdoor") mod -= 30;
+    if (meta.environment === "mixed") mod -= 18;
+    if (meta.getsWet) mod -= 10;
+  } else if (rainRisk >= 0.7) {
+    if (meta.closesInRain) mod -= 15;
+    if (meta.environment === "indoor") mod += 8;
+    if (meta.getsWet) mod -= 3;
+  } else if (rainRisk >= 0.4) {
+    if (meta.environment === "indoor") mod += 4;
+    if (meta.closesInRain) mod -= 3;
+  }
 
   if (effectiveTempF != null) {
     if (effectiveTempF >= 98) {
@@ -984,6 +942,8 @@ function getWetRideTimingModifier(meta, weather, waitValueStatus) {
 
   const effectiveTempF = getEffectiveTempF(weather);
   const { hour } = getOrlandoTimeParts();
+  const stormActive = isCurrentlyStorming(weather);
+  const rainActive = isRainActive(weather);
 
   let mod = 0;
 
@@ -1000,7 +960,9 @@ function getWetRideTimingModifier(meta, weather, waitValueStatus) {
     else if (effectiveTempF <= 80) mod -= 5;
   }
 
-  mod += getRecommendationWetRideWeatherModifier(weather);
+  if (stormActive) mod -= 60;
+  else if (rainActive) mod -= 20;
+  else if ((weather?.rainRisk ?? 0) >= 0.6) mod -= 6;
 
   if (
     waitValueStatus?.status === "above_normal" ||
@@ -1108,9 +1070,8 @@ function getScheduledShowScoreModifier(meta, weather, proximityModifier) {
   if (!isScheduledShowMeta(meta)) return 0;
 
   const effectiveTempF = getEffectiveTempF(weather);
-  const recommendationWeatherState = getRecommendationWeatherState(weather);
-  const stormActive = recommendationWeatherState.activeStorm;
-  const rainActive = recommendationWeatherState.activeRain;
+  const stormActive = isCurrentlyStorming(weather);
+  const rainActive = isRainActive(weather);
   const nextShow = getNextShowtimeInfo(meta);
   const arrivalBuffer =
     effectiveTempF != null && effectiveTempF >= 87
@@ -1248,7 +1209,8 @@ function isSoftRecoveryOnlyCandidate(parkId, ride, weather) {
   const category = meta?.planningProfile?.category;
   const effectiveTempF = getEffectiveTempF(weather);
   const badWeatherOrHeat =
-    isRecommendationActiveWeather(weather) ||
+    isCurrentlyStorming(weather) ||
+    isRainActive(weather) ||
     (effectiveTempF != null && effectiveTempF >= 87);
 
   if (isScheduledShowMeta(meta)) return true;
@@ -1273,9 +1235,8 @@ function getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStat
 
   let mod = 0;
   const effectiveTempF = getEffectiveTempF(weather);
-  const recommendationWeatherState = getRecommendationWeatherState(weather);
-  const stormActive = recommendationWeatherState.activeStorm;
-  const rainActive = recommendationWeatherState.activeRain;
+  const rainActive = isRainActive(weather);
+  const stormActive = isCurrentlyStorming(weather);
   const tags = meta.tags || [];
   const category = meta?.planningProfile?.category;
 
@@ -1366,9 +1327,8 @@ function getNearbyHeadlinerOpportunityModifier({
 
   if (!isPlanAheadCategory) return 0;
 
-  const recommendationWeatherState = getRecommendationWeatherState(weather);
-  const stormActive = recommendationWeatherState.activeStorm;
-  const rainActive = recommendationWeatherState.activeRain;
+  const stormActive = isCurrentlyStorming(weather);
+  const rainActive = isRainActive(weather);
 
   if ((stormActive || rainActive) && isRainSensitiveRide(meta)) return 0;
 
@@ -1446,9 +1406,8 @@ function getClosestAnchorOpportunityModifier({
   if (distanceMeters != null && distanceMeters > 160) return 0;
   if (!isSameRideAsNearestAnchor(ride, meta, locationContext)) return 0;
 
-  const recommendationWeatherState = getRecommendationWeatherState(weather);
-  const stormActive = recommendationWeatherState.activeStorm;
-  const rainActive = recommendationWeatherState.activeRain;
+  const stormActive = isCurrentlyStorming(weather);
+  const rainActive = isRainActive(weather);
 
   if ((stormActive || rainActive) && isRainSensitiveRide(meta)) return 0;
 
@@ -1598,9 +1557,8 @@ function getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueS
 
   let mod = 0;
   const effectiveTempF = getEffectiveTempF(weather);
-  const recommendationWeatherState = getRecommendationWeatherState(weather);
-  const stormActive = recommendationWeatherState.activeStorm;
-  const rainActive = recommendationWeatherState.activeRain;
+  const rainActive = isRainActive(weather);
+  const stormActive = isCurrentlyStorming(weather);
   const tags = meta.tags || [];
   const category = meta?.planningProfile?.category;
   const { totalMinutes } = getOrlandoTimeParts();
@@ -1783,9 +1741,11 @@ function isWeatherBlockedFromPositiveCards(parkId, ride, weather) {
   const meta = getMetaForRide(parkId, ride);
   if (!meta) return true;
 
-  const activeWeatherBlock = isRecommendationActiveWeather(weather);
+  const stormActive = isCurrentlyStorming(weather);
+  const rainActive = isRainActive(weather);
 
-  if (activeWeatherBlock && isRainSensitiveRide(meta)) return true;
+  if (stormActive && isRainSensitiveRide(meta)) return true;
+  if (rainActive && isRainSensitiveRide(meta)) return true;
 
   return false;
 }
@@ -1929,9 +1889,8 @@ export function getNextBestRides({
   const completed = new Set(completedRideIds.map(String));
   const skipped = new Set(skippedRideIds.map(String));
 
-  const recommendationWeatherState = getRecommendationWeatherState(weather);
-  const stormActive = recommendationWeatherState.activeStorm;
-  const rainActive = recommendationWeatherState.activeRain;
+  const stormActive = isCurrentlyStorming(weather);
+  const rainActive = isRainActive(weather);
 
   const now = new Date();
   const closeTime = getParkCloseTime(parkId, now);
