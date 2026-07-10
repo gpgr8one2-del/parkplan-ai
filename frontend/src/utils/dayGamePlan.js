@@ -32,12 +32,48 @@ function getMustDosForPark(tripPlan = {}, activePark = "") {
   return getMustDoExperiences(tripPlan).filter((experience) => experience?.parkId === activePark);
 }
 
-function getCompletedRideIdSet(completedRideIds = []) {
-  return new Set(
+function isSameLocalDay(value, comparisonDate = new Date()) {
+  if (!value) return false;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+
+  return (
+    date.getFullYear() === comparisonDate.getFullYear() &&
+    date.getMonth() === comparisonDate.getMonth() &&
+    date.getDate() === comparisonDate.getDate()
+  );
+}
+
+function getActivityLogCompletedRideId(entry = {}) {
+  return (
+    entry.rideId ||
+    entry.attractionId ||
+    entry.experienceId ||
+    entry.id ||
+    entry.ride?.id ||
+    entry.attraction?.id ||
+    entry.experience?.id ||
+    null
+  );
+}
+
+function getCompletedRideIdSet(completedRideIds = [], activityLog = []) {
+  const completedIds = new Set(
     (Array.isArray(completedRideIds) ? completedRideIds : [])
       .filter((id) => id != null)
       .map((id) => String(id))
   );
+
+  for (const entry of Array.isArray(activityLog) ? activityLog : []) {
+    if (entry?.type !== "completed_ride") continue;
+    if (entry?.completedAt && !isSameLocalDay(entry.completedAt)) continue;
+
+    const id = getActivityLogCompletedRideId(entry);
+    if (id != null) completedIds.add(String(id));
+  }
+
+  return completedIds;
 }
 
 function formatExperienceList(experiences = [], max = 3) {
@@ -501,10 +537,11 @@ function buildMustDoPriorities({
   activePark,
   tripPlan,
   completedRideIds = [],
+  activityLog = [],
 }) {
   const allMustDos = getMustDoExperiences(tripPlan);
   const activeParkMustDos = getMustDosForPark(tripPlan, activePark);
-  const completedRideIdSet = getCompletedRideIdSet(completedRideIds);
+  const completedRideIdSet = getCompletedRideIdSet(completedRideIds, activityLog);
   const pendingActiveParkMustDos = activeParkMustDos.filter(
     (experience) => !completedRideIdSet.has(String(experience?.id))
   );
@@ -622,6 +659,7 @@ export function generateDayGamePlan({
   timeContext = {},
   packingChecklist = [],
   completedRideIds = [],
+  activityLog = [],
 } = {}) {
   const preferences = getPreferences(tripPlan);
   const mustDoExperiences = getMustDoExperiences(tripPlan);
@@ -638,6 +676,7 @@ export function generateDayGamePlan({
       activePark,
       tripPlan,
       completedRideIds,
+      activityLog,
     }),
   ];
 

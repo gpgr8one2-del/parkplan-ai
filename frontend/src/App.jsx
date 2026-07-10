@@ -2241,6 +2241,7 @@ function App() {
       timeContext: planningTimeContext,
       packingChecklist,
       completedRideIds,
+      activityLog,
     });
   }, [
     familyProfileSummary,
@@ -2251,6 +2252,7 @@ function App() {
     planningTimeContext,
     packingChecklist,
     completedRideIds,
+    activityLog,
   ]);
 
   const tripPlanFreshnessContext = useMemo(() => {
