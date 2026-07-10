@@ -233,6 +233,366 @@ function getBlockingCandidateReasons(candidates = []) {
   return usableCandidates.length ? [] : ["no_usable_candidates"];
 }
 
+
+const TOHI_PICK_SLOT_DEFINITIONS = [
+  { key: "bestMove", label: "Best Move", aliases: ["bestMove", "best"] },
+  { key: "backup", label: "Smart Backup", aliases: ["backup", "smartBackup"] },
+  { key: "worthTheWalk", label: "Worth the Walk", aliases: ["worthTheWalk"] },
+  { key: "planAhead", label: "Plan Ahead", aliases: ["planAhead"] },
+  { key: "waitOnThis", label: "Wait On This", aliases: ["waitOnThis"] },
+];
+
+function getSlotLabel(slotKey) {
+  const slot = TOHI_PICK_SLOT_DEFINITIONS.find((definition) => {
+    return definition.key === slotKey || definition.aliases.includes(slotKey);
+  });
+
+  return slot?.label || "Candidate";
+}
+
+function normalizeSlotKey(slotKey) {
+  const slot = TOHI_PICK_SLOT_DEFINITIONS.find((definition) => {
+    return definition.key === slotKey || definition.aliases.includes(slotKey);
+  });
+
+  return slot?.key || slotKey || "candidate";
+}
+
+function getRecommendationCandidateEntries(input = {}) {
+  const directCandidates = asArray(input.candidates || input.tohiPickCandidates).filter(Boolean);
+
+  if (directCandidates.length > 0) {
+    return directCandidates.map((candidate, index) => {
+      const slotKey = normalizeSlotKey(candidate.sourceSlot || candidate.slot || `candidate_${index + 1}`);
+
+      return {
+        candidate,
+        sourceSlot: slotKey,
+        sourceLabel: candidate.sourceLabel || candidate.sourceSlotLabel || getSlotLabel(slotKey),
+        sourceIndex: index,
+      };
+    });
+  }
+
+  const recommendations = input.recommendations || input.recommendationSlots || {};
+
+  if (Array.isArray(recommendations)) {
+    return recommendations.filter(Boolean).map((candidate, index) => {
+      const slotKey = normalizeSlotKey(candidate.sourceSlot || candidate.slot || `candidate_${index + 1}`);
+
+      return {
+        candidate,
+        sourceSlot: slotKey,
+        sourceLabel: candidate.sourceLabel || candidate.sourceSlotLabel || getSlotLabel(slotKey),
+        sourceIndex: index,
+      };
+    });
+  }
+
+  return TOHI_PICK_SLOT_DEFINITIONS.flatMap((slot, index) => {
+    const candidate = slot.aliases.map((alias) => recommendations[alias]).find(Boolean);
+
+    if (!candidate) return [];
+
+    return {
+      candidate,
+      sourceSlot: slot.key,
+      sourceLabel: slot.label,
+      sourceIndex: index,
+    };
+  });
+}
+
+function getCandidateId(candidate = {}) {
+  return getNestedValue(candidate, ["rideId", "id", "attractionId", "experienceId", "slug"]);
+}
+
+function getCandidateName(candidate = {}) {
+  return getNestedValue(candidate, ["name", "rideName", "title", "displayName"]) || "Unknown attraction";
+}
+
+function getCandidateParkId(candidate = {}, input = {}) {
+  return getNestedValue(candidate, ["parkId", "park", "activePark"]) || getActivePark(input) || null;
+}
+
+function getCandidateArea(candidate = {}) {
+  return getNestedValue(candidate, ["area", "land", "landName", "currentArea", "locationArea"]) || null;
+}
+
+function getCandidateWait(candidate = {}) {
+  const wait = getNestedValue(candidate, ["waitTime", "postedWait", "wait", "minutes"]);
+
+  if (wait === null || wait === undefined || wait === "") return null;
+
+  const numericWait = Number(wait);
+  return Number.isFinite(numericWait) ? numericWait : null;
+}
+
+function getCandidateReason(candidate = {}, sourceSlot = "") {
+  if (sourceSlot === "planAhead" && candidate.planAheadReason) return candidate.planAheadReason;
+  if (sourceSlot === "waitOnThis" && candidate.waitOnThisReason) return candidate.waitOnThisReason;
+
+  return (
+    candidate.reason ||
+    candidate.recommendationReason ||
+    candidate.engineReason ||
+    candidate.why ||
+    null
+  );
+}
+
+function getCandidateCaution(candidate = {}) {
+  return (
+    candidate.caution ||
+    candidate.warning ||
+    candidate.heightWarning ||
+    candidate.weatherCaution ||
+    candidate.planAheadCaution ||
+    candidate.waitOnThisReason ||
+    null
+  );
+}
+
+function getCandidateStatus(candidate = {}) {
+  const rawStatus = getNestedValue(candidate, ["status", "operatingStatus", "availability", "state"]);
+
+  if (!rawStatus) return null;
+
+  return String(rawStatus).trim().toLowerCase();
+}
+
+function isCandidateUnavailable(candidate = {}) {
+  const status = getCandidateStatus(candidate);
+
+  if (candidate.closed === true) return true;
+  if (candidate.unavailable === true) return true;
+  if (candidate.available === false) return true;
+  if (candidate.isOpen === false) return true;
+
+  return Boolean(
+    status &&
+      ["closed", "down", "refurbishment", "refurb", "unavailable", "temporarily closed"].some((word) =>
+        status.includes(word)
+      )
+  );
+}
+
+function makeStringSet(values) {
+  return new Set(asArray(values).map((value) => String(value)).filter(Boolean));
+}
+
+function activityLogHasRide(activityLog = [], candidateId, candidateName, types = []) {
+  const typeSet = makeStringSet(types);
+  const normalizedName = String(candidateName || "").trim().toLowerCase();
+
+  return asArray(activityLog).some((entry) => {
+    const entryType = String(entry?.type || entry?.action || "").trim();
+    const entryRideId = String(entry?.rideId || entry?.id || "").trim();
+    const entryRideName = String(entry?.rideName || entry?.name || "").trim().toLowerCase();
+
+    if (typeSet.size && !typeSet.has(entryType)) return false;
+    if (candidateId && entryRideId && String(candidateId) === entryRideId) return true;
+    if (normalizedName && entryRideName && normalizedName === entryRideName) return true;
+
+    return false;
+  });
+}
+
+function getCandidateActivityState(candidate = {}, input = {}) {
+  const candidateId = getCandidateId(candidate);
+  const candidateName = getCandidateName(candidate);
+  const completedIds = makeStringSet(input.completedRideIds || input.completedIds);
+  const skippedIds = makeStringSet(input.skippedRideIds || input.skippedIds);
+  const reportedIds = makeStringSet(input.reportedRideIds || input.reportedIds);
+  const activityLog = input.activityLog || [];
+
+  const completed =
+    candidate.completed === true ||
+    completedIds.has(String(candidateId)) ||
+    activityLogHasRide(activityLog, candidateId, candidateName, ["completed_ride", "done", "completed"]);
+
+  const skipped =
+    candidate.skipped === true ||
+    skippedIds.has(String(candidateId)) ||
+    activityLogHasRide(activityLog, candidateId, candidateName, ["skipped_ride", "skip", "skipped"]);
+
+  const reported =
+    candidate.reported === true ||
+    candidate.reportedIssue === true ||
+    reportedIds.has(String(candidateId)) ||
+    activityLogHasRide(activityLog, candidateId, candidateName, ["reported_ride", "reported_issue", "issue"]);
+
+  return { completed, skipped, reported };
+}
+
+function getCandidateMustDoState(candidate = {}, input = {}) {
+  const candidateId = getCandidateId(candidate);
+  const candidateName = String(getCandidateName(candidate)).trim().toLowerCase();
+  const mustDos = asArray(input.mustDos || input.mustDoExperiences || input.mustDoRides);
+
+  const matchedMustDo = mustDos.find((mustDo) => {
+    const mustDoId = String(mustDo?.id || mustDo?.rideId || mustDo?.experienceId || "").trim();
+    const mustDoName = String(mustDo?.name || mustDo?.rideName || mustDo?.displayName || "").trim().toLowerCase();
+
+    if (candidateId && mustDoId && String(candidateId) === mustDoId) return true;
+    if (candidateName && mustDoName && candidateName === mustDoName) return true;
+
+    return false;
+  });
+
+  return {
+    isMustDo: candidate.isMustDo === true || candidate.mustDo === true || Boolean(matchedMustDo),
+    reason: candidate.mustDoReason || matchedMustDo?.reason || null,
+  };
+}
+
+function getCandidateWeatherState(candidate = {}) {
+  return {
+    indoor:
+      candidate.indoor === true ||
+      candidate.isIndoor === true ||
+      candidate.covered === true ||
+      candidate.weatherProtected === true,
+    outdoor: candidate.outdoor === true || candidate.isOutdoor === true,
+    weatherSensitive:
+      candidate.weatherSensitive === true ||
+      candidate.outdoor === true ||
+      candidate.isOutdoor === true ||
+      candidate.rainSensitive === true,
+    caution: candidate.weatherCaution || candidate.weatherReason || null,
+  };
+}
+
+function buildCandidateTags(candidate = {}, input = {}, normalized = {}) {
+  const tags = [];
+  const currentArea = getCurrentArea(input);
+  const candidateArea = normalized.area;
+  const wait = normalized.wait;
+  const weather = normalized.weather || {};
+
+  if (wait !== null && wait !== undefined) tags.push(`${wait} min`);
+
+  if (
+    currentArea &&
+    candidateArea &&
+    String(currentArea).trim().toLowerCase() === String(candidateArea).trim().toLowerCase()
+  ) {
+    tags.push("Nearby");
+  } else if (Number(candidate.proximityDistance) <= 0.35) {
+    tags.push("Nearby");
+  }
+
+  if (normalized.mustDo?.isMustDo) tags.push("Must-do");
+  if (weather.indoor) tags.push("Indoor");
+  if (weather.outdoor && !weather.indoor) tags.push("Outdoor");
+  if (weather.weatherSensitive) tags.push("Weather-sensitive");
+  if (candidate.heightWarning) tags.push("Height check");
+  if (candidate.waitValueStatus?.status === "great_value") tags.push("Great value");
+  if (candidate.waitValueStatus?.status === "good_value") tags.push("Good value");
+
+  return compactList(tags);
+}
+
+export function buildTohiPickCandidate(entry = {}, input = {}) {
+  const candidate = entry.candidate || entry;
+  const sourceSlot = normalizeSlotKey(entry.sourceSlot || candidate.sourceSlot || candidate.slot);
+  const sourceLabel = entry.sourceLabel || candidate.sourceLabel || getSlotLabel(sourceSlot);
+  const rideId = getCandidateId(candidate);
+  const name = getCandidateName(candidate);
+  const wait = getCandidateWait(candidate);
+  const area = getCandidateArea(candidate);
+  const activityState = getCandidateActivityState(candidate, input);
+  const mustDo = getCandidateMustDoState(candidate, input);
+  const weather = getCandidateWeatherState(candidate);
+  const unavailable = isCandidateUnavailable(candidate);
+  const explicitlyBlocked = candidate.blocked === true || candidate.eligible === false;
+  const heightBlocked = candidate.heightEligible === false || candidate.accessEligible === false;
+
+  const exclusionReasons = compactList([
+    unavailable ? "unavailable" : null,
+    explicitlyBlocked ? "blocked" : null,
+    heightBlocked ? "constraint_blocked" : null,
+    activityState.completed ? "completed" : null,
+    activityState.skipped ? "skipped" : null,
+    activityState.reported ? "reported_issue" : null,
+  ]);
+
+  const normalized = {
+    rideId: rideId || null,
+    name,
+    parkId: getCandidateParkId(candidate, input),
+    area,
+    wait,
+    sourceSlot,
+    sourceLabel,
+    sourceIndex: Number.isFinite(Number(entry.sourceIndex)) ? Number(entry.sourceIndex) : null,
+    engineReason: getCandidateReason(candidate, sourceSlot),
+    engineCaution: getCandidateCaution(candidate),
+    status: getCandidateStatus(candidate),
+    mustDo,
+    weather,
+    activityState,
+    constraints: {
+      heightWarning: candidate.heightWarning || null,
+      heightEligible: candidate.heightEligible !== false,
+      accessEligible: candidate.accessEligible !== false,
+    },
+    confidenceHints: {
+      fromRecommendationSlot: Boolean(sourceSlot),
+      sameArea:
+        Boolean(getCurrentArea(input)) &&
+        Boolean(area) &&
+        String(getCurrentArea(input)).trim().toLowerCase() === String(area).trim().toLowerCase(),
+      waitKnown: wait !== null,
+      mustDo: mustDo.isMustDo,
+      indoorRelief: weather.indoor,
+    },
+    raw: candidate,
+  };
+
+  return {
+    ...normalized,
+    tags: buildCandidateTags(candidate, input, normalized),
+    eligibleForTohiPick: exclusionReasons.length === 0,
+    exclusionReasons,
+  };
+}
+
+export function buildTohiPickCandidates(input = {}) {
+  const entries = getRecommendationCandidateEntries(input);
+  const seen = new Set();
+  const allCandidates = [];
+
+  entries.forEach((entry) => {
+    const normalized = buildTohiPickCandidate(entry, input);
+    const key = String(normalized.rideId || normalized.name || `${normalized.sourceSlot}-${allCandidates.length}`);
+
+    if (seen.has(key)) return;
+
+    seen.add(key);
+    allCandidates.push(normalized);
+  });
+
+  const candidates = allCandidates.filter((candidate) => candidate.eligibleForTohiPick);
+  const excludedCandidates = allCandidates.filter((candidate) => !candidate.eligibleForTohiPick);
+
+  return {
+    candidates,
+    excludedCandidates,
+    topCandidate: candidates[0] || null,
+    sourceCount: entries.length,
+    usableCount: candidates.length,
+  };
+}
+
+export function getTopTohiPickCandidates(input = {}, limit = 3) {
+  const result = buildTohiPickCandidates(input);
+  const safeLimit = Math.max(1, Number(limit) || 3);
+
+  return result.candidates.slice(0, safeLimit);
+}
+
+
 function chooseMode(reasons = []) {
   if (reasons.includes("profile_incomplete") || reasons.includes("family_constraints_missing")) {
     return BLOCKING_MODES.NEEDS_SETUP;
