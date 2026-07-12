@@ -7,6 +7,7 @@ import { getNextBestRides } from "./rideRecommendations";
 import { getWeatherMode, getRecoverySuggestions } from "./utils/weatherAdvice";
 import { generatePackingChecklist } from "./utils/packingChecklist";
 import { generateDayGamePlan } from "./utils/dayGamePlan";
+import { buildTohiPickCandidates, evaluateTohiPickEligibility } from "./utils/tohiPick";
 import { generatePlanNudges } from "./utils/planNudges";
 import {
   readStoredTripPlan,
@@ -3195,6 +3196,67 @@ function App() {
     reportedRideIssueIds.length +
     (currentActivity ? 1 : 0);
 
+  const tohiPickDebugPreview = useMemo(() => {
+    const input = {
+      recommendations,
+      familyProfile,
+      profile: familyProfile,
+      activePark,
+      currentArea: currentLand,
+      locationRequired: Boolean(activePark),
+      locationConfidence: detectedLocationContext?.confidence || null,
+      location: detectedLocationContext || null,
+      waits: rides,
+      waitDataFresh:
+        tripPlanFreshness?.isFresh !== false &&
+        tripPlanFreshness?.status !== "stale",
+      weather,
+      weatherState: weather,
+      weatherContext: weather,
+      weatherUsable: Boolean(weather),
+      activityLog,
+      completedRideIds,
+      mustDos: tripPlan?.mustDoExperiences || [],
+    };
+
+    const eligibility = evaluateTohiPickEligibility(input);
+    const candidateResult = buildTohiPickCandidates(input);
+
+    let finalDecision = "no_pick";
+    let reasonNoPick = null;
+
+    if (!eligibility.eligible) {
+      reasonNoPick = eligibility.reasons.join(", ") || "not eligible";
+    } else if (!candidateResult.topCandidate) {
+      reasonNoPick = "no eligible candidate";
+    } else {
+      finalDecision = "debug_candidate_ready";
+    }
+
+    return {
+      eligibility,
+      candidates: candidateResult.candidates,
+      excludedCandidates: candidateResult.excludedCandidates,
+      topCandidate: candidateResult.topCandidate,
+      sourceCount: candidateResult.sourceCount,
+      usableCount: candidateResult.usableCount,
+      finalDecision,
+      reasonNoPick,
+    };
+  }, [
+    recommendations,
+    familyProfile,
+    activePark,
+    currentLand,
+    detectedLocationContext,
+    rides,
+    tripPlanFreshness,
+    weather,
+    activityLog,
+    completedRideIds,
+    tripPlan,
+  ]);
+
   const primaryRecommendation =
     recommendations.bestMove ||
     recommendations.backup ||
@@ -3579,6 +3641,70 @@ function App() {
         <details style={dbSectionStyle}>
           <summary style={dbSummaryStyle}>Recommendation Slots</summary>
           <div style={{ paddingTop: 6 }}>
+            <div style={{ marginTop: 12 }}>
+              <div style={dbSectionTitleStyle}>TOHI Pick debug preview</div>
+              {dbRow("eligible", tohiPickDebugPreview.eligibility.eligible ? "yes" : "no")}
+              {dbRow("mode", tohiPickDebugPreview.eligibility.mode)}
+              {dbRow(
+                "reasons",
+                tohiPickDebugPreview.eligibility.reasons.length
+                  ? tohiPickDebugPreview.eligibility.reasons.join(", ")
+                  : "none"
+              )}
+              {dbRow(
+                "missing",
+                tohiPickDebugPreview.eligibility.missing.length
+                  ? tohiPickDebugPreview.eligibility.missing.join(", ")
+                  : "none"
+              )}
+              {dbRow(
+                "warnings",
+                tohiPickDebugPreview.eligibility.warnings.length
+                  ? tohiPickDebugPreview.eligibility.warnings.join(", ")
+                  : "none"
+              )}
+              {dbRow("finalDecision", tohiPickDebugPreview.finalDecision)}
+              {tohiPickDebugPreview.reasonNoPick &&
+                dbRow("reasonNoPick", tohiPickDebugPreview.reasonNoPick)}
+              {dbRow("sourceCount", tohiPickDebugPreview.sourceCount)}
+              {dbRow("usableCount", tohiPickDebugPreview.usableCount)}
+              {tohiPickDebugPreview.topCandidate &&
+                dbRow(
+                  "topCandidate",
+                  `${tohiPickDebugPreview.topCandidate.name} (${tohiPickDebugPreview.topCandidate.sourceLabel})`
+                )}
+              <div style={{ marginTop: 8 }}>
+                <span style={dbLabelStyle}>candidates</span>
+                {tohiPickDebugPreview.candidates.length ? (
+                  tohiPickDebugPreview.candidates.map((candidate, index) => (
+                    <div key={`${candidate.rideId || candidate.name}-${candidate.sourceSlot}-${index}`} style={dbValStyle}>
+                      · {candidate.sourceLabel}: {candidate.name}
+                      {candidate.wait != null ? ` (${candidate.wait}m)` : " (wait n/a)"}
+                      {candidate.area ? ` · ${candidate.area}` : ""}
+                      {candidate.tags?.length ? ` · ${candidate.tags.join(", ")}` : ""}
+                    </div>
+                  ))
+                ) : (
+                  <div style={dbValStyle}>none</div>
+                )}
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <span style={dbLabelStyle}>excluded</span>
+                {tohiPickDebugPreview.excludedCandidates.length ? (
+                  tohiPickDebugPreview.excludedCandidates.map((candidate, index) => (
+                    <div key={`excluded-${candidate.rideId || candidate.name}-${candidate.sourceSlot}-${index}`} style={dbValStyle}>
+                      · {candidate.sourceLabel}: {candidate.name}
+                      {candidate.exclusionReasons?.length
+                        ? ` — ${candidate.exclusionReasons.join(", ")}`
+                        : ""}
+                    </div>
+                  ))
+                ) : (
+                  <div style={dbValStyle}>none</div>
+                )}
+              </div>
+            </div>
+
             {renderSlot("bestMove", recommendations?.bestMove)}
             {renderSlot("backup", recommendations?.backup)}
             {renderSlot("worthTheWalk", recommendations?.worthTheWalk)}
