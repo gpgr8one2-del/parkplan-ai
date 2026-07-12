@@ -3206,7 +3206,7 @@ function App() {
       locationRequired: Boolean(activePark),
       locationConfidence: detectedLocationContext?.confidence || null,
       location: detectedLocationContext || null,
-      waits: rides,
+      waits: parkData?.rides || [],
       waitDataFresh:
         tripPlanFreshness?.isFresh !== false &&
         tripPlanFreshness?.status !== "stale",
@@ -3249,7 +3249,7 @@ function App() {
     activePark,
     currentLand,
     detectedLocationContext,
-    rides,
+    parkData?.rides,
     tripPlanFreshness,
     weather,
     activityLog,
