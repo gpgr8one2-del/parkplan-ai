@@ -3216,7 +3216,7 @@ function App() {
       weatherUsable: Boolean(weather),
       activityLog,
       completedRideIds,
-      mustDos: [],
+      mustDos: tripPlanState?.mustDoExperiences || [],
     };
 
     const eligibility = evaluateTohiPickEligibility(input);
@@ -3254,6 +3254,7 @@ function App() {
     weather,
     activityLog,
     completedRideIds,
+    tripPlanState,
   ]);
 
   const tohiPickMvpCandidate =
