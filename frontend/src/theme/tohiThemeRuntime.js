@@ -2,7 +2,7 @@ import {
   TOHI_DAY_THEME,
   TOHI_NIGHT_THEME,
   TOHI_PREMIUM_THEME,
-} from "./tohiTheme";
+} from "./tohiTheme.js";
 
 export const TOHI_THEME_MODES = {
   DAY: "day",
