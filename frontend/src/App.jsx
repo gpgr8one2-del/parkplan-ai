@@ -3257,6 +3257,11 @@ function App() {
     tripPlan,
   ]);
 
+  const tohiPickMvpCandidate =
+    tohiPickDebugPreview.eligibility.eligible && tohiPickDebugPreview.topCandidate
+      ? tohiPickDebugPreview.topCandidate
+      : null;
+
   const primaryRecommendation =
     recommendations.bestMove ||
     recommendations.backup ||
@@ -4985,6 +4990,131 @@ function App() {
                 </div>
               ) : hasAnyRecommendation ? (
                 <div style={{ display: "grid", gap: 10 }}>
+                  {tohiPickMvpCandidate && (
+                    <div
+                      aria-label="TOHI Pick"
+                      style={{
+                        borderRadius: 24,
+                        padding: 18,
+                        marginBottom: 4,
+                        border: "1px solid rgba(124, 58, 237, 0.22)",
+                        background:
+                          "linear-gradient(145deg, rgba(124, 58, 237, 0.96) 0%, rgba(91, 33, 182, 0.96) 58%, rgba(245, 158, 11, 0.9) 100%)",
+                        color: "#FFFFFF",
+                        boxShadow: "0 18px 42px rgba(91, 33, 182, 0.24)",
+                        overflow: "hidden",
+                        position: "relative",
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          right: -30,
+                          top: -42,
+                          width: 130,
+                          height: 130,
+                          borderRadius: 999,
+                          background: "rgba(255,255,255,0.12)",
+                        }}
+                      />
+
+                      <div style={{ position: "relative" }}>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 950,
+                            letterSpacing: 0.9,
+                            textTransform: "uppercase",
+                            opacity: 0.9,
+                            marginBottom: 5,
+                          }}
+                        >
+                          TOHI Pick
+                        </div>
+
+                        <div
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 800,
+                            opacity: 0.86,
+                            marginBottom: 10,
+                          }}
+                        >
+                          Best move for your family right now
+                        </div>
+
+                        <h3
+                          style={{
+                            margin: "0 0 8px",
+                            fontSize: 25,
+                            lineHeight: 1.05,
+                            letterSpacing: -0.4,
+                          }}
+                        >
+                          {tohiPickMvpCandidate.name}
+                        </h3>
+
+                        <p
+                          style={{
+                            margin: "0 0 13px",
+                            fontSize: 14,
+                            lineHeight: 1.45,
+                            fontWeight: 700,
+                            color: "rgba(255,255,255,0.92)",
+                          }}
+                        >
+                          {tohiPickMvpCandidate.engineReason ||
+                            "This looks like the clearest fit right now based on your family, location, waits, and the flow of your day."}
+                        </p>
+
+                        {tohiPickMvpCandidate.tags?.length > 0 && (
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: 8,
+                              marginBottom: tohiPickMvpCandidate.engineCaution ? 12 : 0,
+                            }}
+                          >
+                            {tohiPickMvpCandidate.tags.slice(0, 6).map((tag) => (
+                              <span
+                                key={tag}
+                                style={{
+                                  borderRadius: 999,
+                                  padding: "7px 10px",
+                                  background: "rgba(255,255,255,0.18)",
+                                  border: "1px solid rgba(255,255,255,0.22)",
+                                  color: "#FFFFFF",
+                                  fontSize: 12,
+                                  fontWeight: 900,
+                                }}
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {tohiPickMvpCandidate.engineCaution && (
+                          <div
+                            style={{
+                              borderRadius: 16,
+                              padding: "10px 12px",
+                              background: "rgba(255,255,255,0.14)",
+                              border: "1px solid rgba(255,255,255,0.18)",
+                              fontSize: 13,
+                              lineHeight: 1.4,
+                              fontWeight: 750,
+                              color: "rgba(255,255,255,0.94)",
+                            }}
+                          >
+                            Heads up: {tohiPickMvpCandidate.engineCaution}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <RecommendationCard
                     title={
                       primarySlot === "backup" ? "SMART BACKUP" :
