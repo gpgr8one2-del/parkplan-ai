@@ -51,7 +51,7 @@ import { WaitTimesList } from "./components/WaitTimesList";
 import { WhileYouWaitCard } from "./components/WhileYouWaitCard";
 import { PlanTab } from "./components/PlanTab";
 import BottomTabs from "./components/BottomTabs";
-import { colors } from "./theme";
+import { colors, getTohiAppShellTheme } from "./theme";
 import { useMiniGames } from "./hooks/useMiniGames";
 
 const STORAGE_KEY = "parkplan.state";
@@ -118,10 +118,14 @@ function dbFmt(v) {
 }
 
 
+const appShellTheme = getTohiAppShellTheme();
+
 const page = {
   minHeight: "100vh",
-  background:
-    "radial-gradient(circle at 18% 0%, rgba(124, 58, 237, 0.11) 0%, rgba(124, 58, 237, 0.03) 28%, transparent 48%), radial-gradient(circle at 88% 8%, rgba(245, 158, 11, 0.20) 0%, rgba(245, 158, 11, 0.05) 30%, transparent 52%), linear-gradient(180deg, #FFF4E6 0%, #FFF9F1 52%, #F3E8FF 100%)",
+  background: appShellTheme.appBackgroundGradient || colors.background,
+  backgroundColor: appShellTheme.appBackground || colors.background,
+  position: "relative",
+  overflowX: "hidden",
   fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
   color: colors.text,
 };
@@ -3410,6 +3414,16 @@ function App() {
         }`,
       };
     });
+
+    const dbSectionTitleStyle = {
+      marginTop: 12,
+      marginBottom: 8,
+      fontSize: 12,
+      fontWeight: 900,
+      letterSpacing: 0.3,
+      textTransform: "uppercase",
+      color: colors.purpleDeep,
+    };
 
     return (
       <section
