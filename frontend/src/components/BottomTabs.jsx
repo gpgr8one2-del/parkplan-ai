@@ -8,6 +8,8 @@ import {
   UserCircle,
 } from "lucide-react";
 
+import { getTohiAppShellTheme } from "../theme";
+
 const TABS = [
   {
     key: "home",
@@ -36,7 +38,7 @@ const TABS = [
   },
 ];
 
-const NAV_BASE_HEIGHT_PX = 78;
+const NAV_BASE_HEIGHT_PX = 82;
 
 function getVisualViewportStyle() {
   if (typeof window === "undefined" || !window.visualViewport) {
@@ -57,7 +59,7 @@ function getVisualViewportStyle() {
   };
 }
 
-function useVisualViewportPosition() {
+function useVisualViewportStyle() {
   const [viewportStyle, setViewportStyle] = useState(() => getVisualViewportStyle());
 
   useEffect(() => {
@@ -96,11 +98,14 @@ function useVisualViewportPosition() {
 }
 
 function BottomTabsContent({ activeTab = "home", onTabChange }) {
-  const viewportStyle = useVisualViewportPosition();
+  const viewportStyle = useVisualViewportStyle();
+  const shellTheme = getTohiAppShellTheme();
+  const navBackground =
+    shellTheme.bottomNavBackground || "rgba(255, 249, 241, 0.98)";
 
   return (
     <nav
-      aria-label="Primary app navigation"
+      aria-label="Primary"
       style={{
         position: "fixed",
         left: 0,
@@ -110,11 +115,11 @@ function BottomTabsContent({ activeTab = "home", onTabChange }) {
         width: "100vw",
         zIndex: 2147483647,
         padding: "8px 10px calc(8px + env(safe-area-inset-bottom, 0px))",
-        background: "rgba(255, 252, 247, 0.985)",
-        borderTop: "1px solid #EFE7DA",
+        background: navBackground,
+        borderTop: `1px solid ${shellTheme.border}`,
         backdropFilter: "blur(18px)",
         WebkitBackdropFilter: "blur(18px)",
-        boxShadow: "0 -10px 30px rgba(28, 25, 23, 0.10)",
+        boxShadow: shellTheme.shadows?.premium || "0 -12px 32px rgba(36, 28, 21, 0.12)",
         boxSizing: "border-box",
       }}
     >
@@ -122,9 +127,14 @@ function BottomTabsContent({ activeTab = "home", onTabChange }) {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-          gap: 4,
+          gap: 5,
           maxWidth: 720,
           margin: "0 auto",
+          padding: 4,
+          borderRadius: 24,
+          background: "rgba(255, 255, 255, 0.52)",
+          border: "1px solid rgba(234, 220, 200, 0.55)",
+          boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.76)",
         }}
       >
         {TABS.map((tab) => {
@@ -140,30 +150,38 @@ function BottomTabsContent({ activeTab = "home", onTabChange }) {
               style={{
                 appearance: "none",
                 WebkitAppearance: "none",
-                border: "none",
+                border: isActive
+                  ? "1px solid rgba(124, 58, 237, 0.24)"
+                  : "1px solid transparent",
                 background: isActive
-                  ? "rgba(124, 58, 237, 0.10)"
+                  ? "linear-gradient(145deg, rgba(255,255,255,0.96), rgba(243,232,255,0.94))"
                   : "transparent",
-                color: isActive ? "#7C3AED" : "#78716C",
-                borderRadius: 16,
-                padding: "8px 4px 7px",
-                minHeight: 54,
+                color: isActive ? shellTheme.colors.purpleDeep : shellTheme.muted,
+                borderRadius: 18,
+                padding: "7px 4px 8px",
+                minHeight: 56,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 4,
                 fontSize: 11,
-                fontWeight: isActive ? 800 : 700,
+                fontWeight: isActive ? 900 : 800,
                 letterSpacing: 0.1,
                 cursor: "pointer",
                 WebkitTapHighlightColor: "transparent",
                 touchAction: "manipulation",
+                boxShadow: isActive
+                  ? "0 10px 22px rgba(124, 58, 237, 0.16)"
+                  : "none",
+                transform: isActive ? "translateY(-1px)" : "none",
+                transition:
+                  "background 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease",
               }}
             >
               <Icon
                 size={22}
-                strokeWidth={isActive ? 2.7 : 2.3}
+                strokeWidth={isActive ? 2.8 : 2.3}
                 aria-hidden="true"
               />
               <span>{tab.label}</span>
