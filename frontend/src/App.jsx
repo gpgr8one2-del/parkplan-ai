@@ -5006,125 +5006,232 @@ function App() {
                 <div style={{ display: "grid", gap: 10 }}>
                   {tohiPickMvpCandidate && (
                     <div
-                      aria-label="TOHI Pick"
+                      aria-label="TOHI Pick recommendation"
                       style={{
-                        borderRadius: 24,
-                        padding: 18,
-                        marginBottom: 4,
-                        border: "1px solid rgba(124, 58, 237, 0.22)",
                         background:
-                          "linear-gradient(145deg, rgba(124, 58, 237, 0.96) 0%, rgba(91, 33, 182, 0.96) 58%, rgba(245, 158, 11, 0.9) 100%)",
-                        color: "#FFFFFF",
-                        boxShadow: "0 18px 42px rgba(91, 33, 182, 0.24)",
+                          "linear-gradient(145deg, rgba(255,255,255,0.98) 0%, #FFF7ED 100%)",
+                        border: "1px solid rgba(124, 58, 237, 0.16)",
+                        borderRadius: 28,
+                        padding: 14,
+                        marginBottom: 4,
+                        color: colors.text,
+                        boxShadow: "0 16px 34px rgba(36, 28, 21, 0.10)",
                         overflow: "hidden",
                         position: "relative",
                       }}
                     >
                       <div
                         style={{
-                          position: "absolute",
-                          right: -30,
-                          top: -42,
-                          width: 130,
-                          height: 130,
-                          borderRadius: 999,
-                          background: "rgba(255,255,255,0.12)",
+                          display: "grid",
+                          gridTemplateColumns: "minmax(0, 1fr) 116px",
+                          gap: 14,
+                          alignItems: "stretch",
                         }}
-                      />
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                              width: "fit-content",
+                              padding: "6px 10px",
+                              borderRadius: 999,
+                              border: "1px solid rgba(124, 58, 237, 0.18)",
+                              background: "rgba(243, 232, 255, 0.78)",
+                              color: colors.purpleDeep,
+                              fontSize: 11,
+                              fontWeight: 950,
+                              letterSpacing: 0.6,
+                              textTransform: "uppercase",
+                              marginBottom: 10,
+                            }}
+                          >
+                            ✨ TOHI Pick
+                          </div>
 
-                      <div style={{ position: "relative" }}>
-                        <div
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 950,
-                            letterSpacing: 0.9,
-                            textTransform: "uppercase",
-                            opacity: 0.9,
-                            marginBottom: 5,
-                          }}
-                        >
-                          TOHI Pick
-                        </div>
-
-                        <div
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 800,
-                            opacity: 0.86,
-                            marginBottom: 10,
-                          }}
-                        >
-                          Best move for your family right now
-                        </div>
-
-                        <h3
-                          style={{
-                            margin: "0 0 8px",
-                            fontSize: 25,
-                            lineHeight: 1.05,
-                            letterSpacing: -0.4,
-                          }}
-                        >
-                          {tohiPickMvpCandidate.name}
-                        </h3>
-
-                        <p
-                          style={{
-                            margin: "0 0 13px",
-                            fontSize: 14,
-                            lineHeight: 1.45,
-                            fontWeight: 700,
-                            color: "rgba(255,255,255,0.92)",
-                          }}
-                        >
-                          {tohiPickMvpCandidate.engineReason ||
-                            "This looks like the clearest fit right now based on your family, location, waits, and the flow of your day."}
-                        </p>
-
-                        {tohiPickMvpCandidate.tags?.length > 0 && (
                           <div
                             style={{
                               display: "flex",
-                              flexWrap: "wrap",
+                              alignItems: "center",
                               gap: 8,
-                              marginBottom: tohiPickMvpCandidate.engineCaution ? 12 : 0,
+                              flexWrap: "wrap",
+                              marginBottom: 7,
                             }}
                           >
-                            {tohiPickMvpCandidate.tags.slice(0, 6).map((tag) => (
-                              <span
-                                key={tag}
-                                style={{
-                                  borderRadius: 999,
-                                  padding: "7px 10px",
-                                  background: "rgba(255,255,255,0.18)",
-                                  border: "1px solid rgba(255,255,255,0.22)",
-                                  color: "#FFFFFF",
-                                  fontSize: 12,
-                                  fontWeight: 900,
-                                }}
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                minHeight: 26,
+                                padding: "5px 9px",
+                                borderRadius: 999,
+                                background: colors.purpleSoft,
+                                color: colors.purpleDeep,
+                                border: "1px solid rgba(124, 58, 237, 0.14)",
+                                fontSize: 12,
+                                fontWeight: 900,
+                              }}
+                            >
+                              Best move right now
+                            </span>
 
-                        {tohiPickMvpCandidate.engineCaution && (
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                minHeight: 26,
+                                padding: "5px 9px",
+                                borderRadius: 999,
+                                background: "rgba(255,255,255,0.82)",
+                                color: colors.text,
+                                border: `1px solid ${colors.cardBorder}`,
+                                fontSize: 12,
+                                fontWeight: 900,
+                              }}
+                            >
+                              {Number.isFinite(Number(tohiPickMvpCandidate.wait))
+                                ? `${tohiPickMvpCandidate.wait} min`
+                                : "Check wait"}
+                            </span>
+                          </div>
+
+                          <h3
+                            style={{
+                              margin: "0 0 8px",
+                              fontSize: 24,
+                              lineHeight: 1.08,
+                              fontWeight: 950,
+                              letterSpacing: -0.45,
+                              color: colors.text,
+                            }}
+                          >
+                            {tohiPickMvpCandidate.name}
+                          </h3>
+
+                          <p
+                            style={{
+                              margin: "0 0 12px",
+                              fontSize: 14,
+                              lineHeight: 1.45,
+                              color: colors.muted,
+                              fontWeight: 650,
+                            }}
+                          >
+                            {tohiPickMvpCandidate.engineReason ||
+                              "This looks like the clearest fit right now based on your family, location, waits, and the day around you."}
+                          </p>
+
+                          {tohiPickMvpCandidate.tags?.length > 0 && (
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: 7,
+                                marginBottom: tohiPickMvpCandidate.engineCaution ? 12 : 0,
+                              }}
+                            >
+                              {tohiPickMvpCandidate.tags.slice(0, 6).map((tag) => (
+                                <span
+                                  key={tag}
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    minHeight: 24,
+                                    padding: "5px 8px",
+                                    borderRadius: 999,
+                                    border: "1px solid rgba(234, 220, 200, 0.9)",
+                                    background: "rgba(255,255,255,0.72)",
+                                    color: colors.muted,
+                                    fontSize: 11,
+                                    fontWeight: 850,
+                                  }}
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {tohiPickMvpCandidate.engineCaution && (
+                            <div
+                              style={{
+                                marginTop: 10,
+                                padding: "10px 11px",
+                                borderRadius: 16,
+                                border: "1px solid rgba(245, 158, 11, 0.22)",
+                                background: colors.amberSoft,
+                                color: "#7C2D12",
+                                fontSize: 12.5,
+                                lineHeight: 1.35,
+                                fontWeight: 750,
+                              }}
+                            >
+                              {tohiPickMvpCandidate.engineCaution}
+                            </div>
+                          )}
+                        </div>
+
+                        <div
+                          aria-hidden="true"
+                          style={{
+                            position: "relative",
+                            overflow: "hidden",
+                            minHeight: 132,
+                            borderRadius: 24,
+                            border: "1px solid rgba(124, 58, 237, 0.14)",
+                            background:
+                              "linear-gradient(160deg, #F3E8FF 0%, #E0F2FE 54%, #FFF7ED 100%)",
+                            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
+                          }}
+                        >
                           <div
                             style={{
-                              borderRadius: 16,
-                              padding: "10px 12px",
-                              background: "rgba(255,255,255,0.14)",
-                              border: "1px solid rgba(255,255,255,0.18)",
-                              fontSize: 13,
-                              lineHeight: 1.4,
-                              fontWeight: 750,
-                              color: "rgba(255,255,255,0.94)",
+                              position: "absolute",
+                              inset: 12,
+                              borderRadius: 20,
+                              border: "1px solid rgba(255,255,255,0.55)",
+                            }}
+                          />
+                          <div
+                            style={{
+                              position: "absolute",
+                              right: -16,
+                              bottom: -18,
+                              width: 88,
+                              height: 88,
+                              borderRadius: 999,
+                              background: "rgba(124, 58, 237, 0.14)",
+                            }}
+                          />
+                          <div
+                            style={{
+                              position: "absolute",
+                              left: 14,
+                              top: 14,
+                              color: colors.purpleDeep,
+                              fontSize: 28,
+                              filter: "drop-shadow(0 8px 14px rgba(91, 33, 182, 0.14))",
                             }}
                           >
-                            Heads up: {tohiPickMvpCandidate.engineCaution}
+                            ✨
                           </div>
-                        )}
+                          <div
+                            style={{
+                              position: "absolute",
+                              left: 14,
+                              right: 14,
+                              bottom: 14,
+                              color: colors.purpleDeep,
+                              fontSize: 12,
+                              fontWeight: 950,
+                              lineHeight: 1.15,
+                              letterSpacing: -0.1,
+                            }}
+                          >
+                            Calmest clear move
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
