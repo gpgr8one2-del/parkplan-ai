@@ -52,7 +52,6 @@ import { WhileYouWaitCard } from "./components/WhileYouWaitCard";
 import { PlanTab } from "./components/PlanTab";
 import BottomTabs from "./components/BottomTabs";
 import { colors, getTohiAppShellTheme } from "./theme";
-import { getArtworkAccent, getTohiArtwork } from "./data/parkArtwork";
 import { useMiniGames } from "./hooks/useMiniGames";
 
 const STORAGE_KEY = "parkplan.state";
@@ -3736,16 +3735,6 @@ function App() {
     );
   }
 
-  const homeHeroArtwork = getTohiArtwork({
-    rideName: tohiPickMvpCandidate?.name,
-    areaId: currentLand,
-    areaName: formatLandLabel(activePark, currentLand),
-    parkId: activePark,
-    parkName: parkData?.parkName,
-  });
-  const homeHeroAccent = getArtworkAccent(homeHeroArtwork);
-  const homeHeroAccentColor = homeHeroAccent.accentColor || colors.purple;
-
   if (activeScreen === "family_profile") {
     return (
       <OnboardingFlow
@@ -3836,12 +3825,13 @@ function App() {
           style={{
             position: "relative",
             overflow: "hidden",
-            background: homeHeroAccent.heroGradient || appShellTheme.heroGradient,
-                        border: `1px solid ${homeHeroAccentColor}33`,
+            background:
+              "radial-gradient(circle at 88% 8%, rgba(124, 58, 237, 0.34) 0%, rgba(124, 58, 237, 0.12) 24%, transparent 46%), radial-gradient(circle at 8% 0%, rgba(245, 158, 11, 0.30) 0%, rgba(245, 158, 11, 0.10) 32%, transparent 58%), linear-gradient(150deg, #FFFFFF 0%, #FFF4D8 45%, #F3E8FF 100%)",
+            border: "1px solid rgba(124, 58, 237, 0.16)",
             borderRadius: 32,
             padding: "26px 22px 20px",
             marginBottom: 14,
-            boxShadow: `0 22px 58px ${homeHeroAccentColor}26`,
+            boxShadow: "0 22px 58px rgba(91, 33, 182, 0.16)",
           }}
         >
           <div
