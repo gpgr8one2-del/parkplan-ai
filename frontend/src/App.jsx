@@ -4392,6 +4392,110 @@ function App() {
           />
         )}
 
+        <section style={card}>
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+            {PARKS.map((park) => (
+              <button
+                key={park.id}
+                onClick={() => {
+                  trackAppEvent("park_selected", {
+                    source: "park_tabs",
+                    activePark: park.id,
+                    metadata: {
+                      previousPark: activePark,
+                      nextPark: park.id,
+                    },
+                  });
+
+                  setActivePark(park.id);
+                }}
+                style={{
+                  ...button,
+                  background: activePark === park.id ? colors.purple : colors.card,
+                  color: activePark === park.id ? "white" : colors.text,
+                  borderColor: activePark === park.id ? colors.purple : colors.cardBorder,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {park.name}
+              </button>
+            ))}
+          </div>
+        </section>
+
+            </>
+          )}
+
+          {activeTab === "waits" && (
+            <>
+              <section style={card}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 12,
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 900,
+                        color: "#7C3AED",
+                      }}
+                    >
+                      WAITS
+                    </div>
+                    <h2 style={{ margin: "6px 0 4px", color: "#1C1917" }}>
+                      Live Wait Times
+                    </h2>
+                    <p
+                      style={{
+                        margin: 0,
+                        color: colors.muted,
+                        fontSize: 13,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      Browse all visible attractions, refresh live data, and use ride actions
+                      without cluttering the Home dashboard.
+                    </p>
+                  </div>
+
+                  <button style={button} onClick={() => loadData(true)} disabled={loading}>
+                    <RefreshCw size={14} /> {loading ? "Loading" : "Refresh"}
+                  </button>
+                </div>
+
+                <p
+                  style={{
+                    margin: "10px 0 0",
+                    color: colors.muted,
+                    fontSize: 12,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  Live wait data can lag the official park app during reopenings or
+                  weather delays. Verify headliner status before walking across the park.
+                </p>
+              </section>
+
+              <WaitTimesList
+                rides={sortedRides}
+                activeRideId={activeRideId}
+                activePark={activePark}
+                card={card}
+                formatLandLabel={formatLandLabel}
+                renderShowtimeInfo={renderShowtimeInfo}
+                renderRideActions={renderRideActions}
+              />
+            </>
+          )}
+
+          {activeTab === "plan" && (
+            <>
+
         {hasPersonalizedAccess ? (
           <section
             style={{
@@ -5125,37 +5229,6 @@ function App() {
           })
         )}
 
-        <section style={card}>
-          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
-            {PARKS.map((park) => (
-              <button
-                key={park.id}
-                onClick={() => {
-                  trackAppEvent("park_selected", {
-                    source: "park_tabs",
-                    activePark: park.id,
-                    metadata: {
-                      previousPark: activePark,
-                      nextPark: park.id,
-                    },
-                  });
-
-                  setActivePark(park.id);
-                }}
-                style={{
-                  ...button,
-                  background: activePark === park.id ? colors.purple : colors.card,
-                  color: activePark === park.id ? "white" : colors.text,
-                  borderColor: activePark === park.id ? colors.purple : colors.cardBorder,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {park.name}
-              </button>
-            ))}
-          </div>
-        </section>
-
         <section
           style={{
             ...card,
@@ -5339,77 +5412,6 @@ function App() {
           </section>
         )}
 
-            </>
-          )}
-
-          {activeTab === "waits" && (
-            <>
-              <section style={card}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: 12,
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 900,
-                        color: "#7C3AED",
-                      }}
-                    >
-                      WAITS
-                    </div>
-                    <h2 style={{ margin: "6px 0 4px", color: "#1C1917" }}>
-                      Live Wait Times
-                    </h2>
-                    <p
-                      style={{
-                        margin: 0,
-                        color: colors.muted,
-                        fontSize: 13,
-                        lineHeight: 1.45,
-                      }}
-                    >
-                      Browse all visible attractions, refresh live data, and use ride actions
-                      without cluttering the Home dashboard.
-                    </p>
-                  </div>
-
-                  <button style={button} onClick={() => loadData(true)} disabled={loading}>
-                    <RefreshCw size={14} /> {loading ? "Loading" : "Refresh"}
-                  </button>
-                </div>
-
-                <p
-                  style={{
-                    margin: "10px 0 0",
-                    color: colors.muted,
-                    fontSize: 12,
-                    lineHeight: 1.4,
-                  }}
-                >
-                  Live wait data can lag the official park app during reopenings or
-                  weather delays. Verify headliner status before walking across the park.
-                </p>
-              </section>
-
-              <WaitTimesList
-                rides={sortedRides}
-                activeRideId={activeRideId}
-                activePark={activePark}
-                card={card}
-                formatLandLabel={formatLandLabel}
-                renderShowtimeInfo={renderShowtimeInfo}
-                renderRideActions={renderRideActions}
-              />
-            </>
-          )}
-
-          {activeTab === "plan" && (
             <PlanTab
               card={card}
               button={button}
@@ -5437,6 +5439,7 @@ function App() {
               liveParkContext={liveParkContext}
               setActiveScreen={setActiveScreen}
             />
+            </>
           )}
 
           {activeTab === "tohi" &&
