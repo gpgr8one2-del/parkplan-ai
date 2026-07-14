@@ -692,6 +692,149 @@ export function evaluateTohiPickEligibility(input = {}) {
   };
 }
 
+const FINAL_DECISION_STATUSES = {
+  PICK_CONFIRMED: "pick_confirmed",
+  NO_PICK_INELIGIBLE: "no_pick_ineligible",
+  NO_PICK_NO_CANDIDATE: "no_pick_no_candidate",
+  NO_PICK_NOT_STRONG: "no_pick_not_strong",
+  NO_PICK_LOCATION_UNCERTAIN: "no_pick_location_uncertain",
+  NO_PICK_INSUFFICIENT_EVIDENCE: "no_pick_insufficient_evidence",
+};
+
+function getCandidateWaitValueStatusKey(candidate = {}) {
+  const status =
+    candidate.waitValueStatus?.status ||
+    candidate.raw?.waitValueStatus?.status ||
+    null;
+
+  return status ? String(status).trim().toLowerCase() : null;
+}
+
+function isActiveWeatherMode(weatherMode) {
+  const mode = String(weatherMode?.mode ?? weatherMode ?? "").trim().toLowerCase();
+
+  return Boolean(mode) && mode !== "normal" && mode !== "unknown";
+}
+
+// Score-gap comparison is intentionally excluded: the scoring scale documents
+// floors and caps (85/75) but no threshold for a meaningful gap between the
+// top two candidates, so any gap rule here would be a guess.
+export function evaluateTohiPickFinalDecision(input = {}) {
+  const eligibility = input.eligibility || {};
+  const candidates = asArray(input.candidates).filter(Boolean);
+
+  if (eligibility.eligible !== true) {
+    return {
+      showPick: false,
+      status: FINAL_DECISION_STATUSES.NO_PICK_INELIGIBLE,
+      candidate: null,
+      reasonCodes: compactList(["not_eligible", ...asArray(eligibility.reasons)]),
+      supportingSignals: [],
+      blockingSignals: ["eligibility_failed"],
+    };
+  }
+
+  // The final decision only ever evaluates the deterministic top candidate.
+  // It confirms or suppresses; it never promotes a later shortlist entry.
+  const candidate = candidates[0] || null;
+
+  if (!candidate) {
+    return {
+      showPick: false,
+      status: FINAL_DECISION_STATUSES.NO_PICK_NO_CANDIDATE,
+      candidate: null,
+      reasonCodes: ["no_candidate"],
+      supportingSignals: [],
+      blockingSignals: ["empty_shortlist"],
+    };
+  }
+
+  const warnings = asArray(eligibility.warnings).map(String);
+
+  if (warnings.includes("location_not_confirmed") || warnings.includes("location_unclear")) {
+    return {
+      showPick: false,
+      status: FINAL_DECISION_STATUSES.NO_PICK_LOCATION_UNCERTAIN,
+      candidate: null,
+      reasonCodes: ["location_not_confirmed"],
+      supportingSignals: [],
+      blockingSignals: ["location_uncertain"],
+    };
+  }
+
+  const hints = candidate.confidenceHints || {};
+  const isMustDo = candidate.mustDo?.isMustDo === true || hints.mustDo === true;
+  const sameArea = hints.sameArea === true;
+  const waitKnown = hints.waitKnown === true;
+  const waitValueStatus = getCandidateWaitValueStatusKey(candidate);
+  const favorableWaitValue = waitValueStatus === "great_value" || waitValueStatus === "good_value";
+  const bestMoveSlot = candidate.sourceSlot === "bestMove";
+  const indoorReliefActive = hints.indoorRelief === true && isActiveWeatherMode(input.weatherMode);
+
+  const supportingSignals = compactList([
+    isMustDo ? "must_do" : null,
+    sameArea ? "same_area" : null,
+    waitKnown ? "wait_known" : null,
+    favorableWaitValue ? "favorable_wait_value" : null,
+    bestMoveSlot ? "best_move_slot" : null,
+    indoorReliefActive ? "indoor_relief_active_weather" : null,
+  ]);
+
+  const worthTheWalkSlot = candidate.sourceSlot === "worthTheWalk";
+
+  // Every confirmation rule requires a known wait. Same-area rules may lean on
+  // weather relief as the extra signal; cross-area rules never may — they
+  // require both must-do and favorable wait value.
+  const matchedRules = compactList([
+    isMustDo && sameArea && waitKnown ? "must_do_same_area_known_wait" : null,
+    sameArea && waitKnown && favorableWaitValue ? "same_area_known_wait_favorable_value" : null,
+    bestMoveSlot && sameArea && waitKnown && (isMustDo || favorableWaitValue || indoorReliefActive)
+      ? "best_move_same_area_known_wait_with_support"
+      : null,
+    bestMoveSlot && isMustDo && waitKnown && favorableWaitValue
+      ? "best_move_must_do_known_wait_favorable_value"
+      : null,
+    worthTheWalkSlot && isMustDo && waitKnown && favorableWaitValue
+      ? "worth_the_walk_must_do_known_wait_favorable_value"
+      : null,
+  ]);
+
+  if (matchedRules.length > 0) {
+    return {
+      showPick: true,
+      status: FINAL_DECISION_STATUSES.PICK_CONFIRMED,
+      candidate,
+      reasonCodes: matchedRules,
+      supportingSignals,
+      blockingSignals: [],
+    };
+  }
+
+  const weatherSupportOnly =
+    supportingSignals.length > 0 &&
+    supportingSignals.every((signal) => signal === "indoor_relief_active_weather");
+  const insufficientEvidence = supportingSignals.length <= 1 || weatherSupportOnly;
+
+  const blockingSignals = compactList([
+    waitKnown ? null : "wait_unknown",
+    weatherSupportOnly ? "weather_support_only" : null,
+    insufficientEvidence ? "insufficient_supporting_signals" : "no_strong_combination",
+  ]);
+
+  return {
+    showPick: false,
+    status: insufficientEvidence
+      ? FINAL_DECISION_STATUSES.NO_PICK_INSUFFICIENT_EVIDENCE
+      : FINAL_DECISION_STATUSES.NO_PICK_NOT_STRONG,
+    candidate: null,
+    reasonCodes: [insufficientEvidence ? "insufficient_evidence" : "no_strong_rule_matched"],
+    supportingSignals,
+    blockingSignals,
+  };
+}
+
+export const TOHI_PICK_FINAL_DECISION_STATUSES = { ...FINAL_DECISION_STATUSES };
+
 export const TOHI_PICK_HEAT_RULE =
   "Florida heat is baseline context; heat may break ties or protect against poor outdoor walking, but should not override a nearby high-value manageable indoor option.";
 

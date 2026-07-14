@@ -7,7 +7,11 @@ import { getNextBestRides } from "./rideRecommendations";
 import { getWeatherMode, getRecoverySuggestions } from "./utils/weatherAdvice";
 import { generatePackingChecklist } from "./utils/packingChecklist";
 import { generateDayGamePlan } from "./utils/dayGamePlan";
-import { buildTohiPickCandidates, evaluateTohiPickEligibility } from "./utils/tohiPick";
+import {
+  buildTohiPickCandidates,
+  evaluateTohiPickEligibility,
+  evaluateTohiPickFinalDecision,
+} from "./utils/tohiPick";
 import { generatePlanNudges } from "./utils/planNudges";
 import {
   readStoredTripPlan,
@@ -3225,17 +3229,15 @@ function App() {
 
     const eligibility = evaluateTohiPickEligibility(input);
     const candidateResult = buildTohiPickCandidates(input);
+    const decision = evaluateTohiPickFinalDecision({
+      eligibility,
+      candidates: candidateResult.candidates,
+      weatherMode,
+    });
 
-    let finalDecision = "no_pick";
-    let reasonNoPick = null;
-
-    if (!eligibility.eligible) {
-      reasonNoPick = eligibility.reasons.join(", ") || "not eligible";
-    } else if (!candidateResult.topCandidate) {
-      reasonNoPick = "no eligible candidate";
-    } else {
-      finalDecision = "debug_candidate_ready";
-    }
+    const reasonNoPick = decision.showPick
+      ? null
+      : decision.reasonCodes.join(", ") || "no pick";
 
     return {
       eligibility,
@@ -3244,7 +3246,8 @@ function App() {
       topCandidate: candidateResult.topCandidate,
       sourceCount: candidateResult.sourceCount,
       usableCount: candidateResult.usableCount,
-      finalDecision,
+      finalDecision: decision.status,
+      decision,
       reasonNoPick,
     };
   }, [
@@ -3256,15 +3259,15 @@ function App() {
     parkData?.rides,
     tripPlanFreshness,
     weather,
+    weatherMode,
     activityLog,
     completedRideIds,
     tripPlanState,
   ]);
 
-  const tohiPickMvpCandidate =
-    tohiPickDebugPreview.eligibility.eligible && tohiPickDebugPreview.topCandidate
-      ? tohiPickDebugPreview.topCandidate
-      : null;
+  const tohiPickMvpCandidate = tohiPickDebugPreview.decision.showPick
+    ? tohiPickDebugPreview.decision.candidate
+    : null;
 
   const primaryRecommendation =
     recommendations.bestMove ||
@@ -3683,6 +3686,18 @@ function App() {
                   : "none"
               )}
               {dbRow("finalDecision", tohiPickDebugPreview.finalDecision)}
+              {dbRow(
+                "supportingSignals",
+                tohiPickDebugPreview.decision.supportingSignals.length
+                  ? tohiPickDebugPreview.decision.supportingSignals.join(", ")
+                  : "none"
+              )}
+              {dbRow(
+                "blockingSignals",
+                tohiPickDebugPreview.decision.blockingSignals.length
+                  ? tohiPickDebugPreview.decision.blockingSignals.join(", ")
+                  : "none"
+              )}
               {tohiPickDebugPreview.reasonNoPick &&
                 dbRow("reasonNoPick", tohiPickDebugPreview.reasonNoPick)}
               {dbRow("sourceCount", tohiPickDebugPreview.sourceCount)}
