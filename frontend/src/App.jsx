@@ -4005,177 +4005,6 @@ function App() {
           )}
         </section>
 
-        {liveParkContext?.showNotice && (
-          <section
-            style={{
-              ...card,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-              flexWrap: "wrap",
-              background:
-                "linear-gradient(145deg, rgba(255,255,255,0.97) 0%, #FFF7ED 52%, #F5F3FF 100%)",
-              border: "1px solid rgba(245, 158, 11, 0.24)",
-              boxShadow: "0 12px 28px rgba(245, 158, 11, 0.08)",
-            }}
-          >
-            <div style={{ minWidth: 220, flex: "1 1 340px" }}>
-              <div
-                style={{
-                  color: "#92400E",
-                  fontSize: 11,
-                  fontWeight: 950,
-                  letterSpacing: 0.65,
-                  marginBottom: 5,
-                }}
-              >
-                RIGHT NOW VIEW
-              </div>
-
-              <strong
-                style={{
-                  display: "block",
-                  color: colors.text,
-                  fontSize: 15,
-                  lineHeight: 1.35,
-                }}
-              >
-                {liveParkContext.label || `Viewing ${getParkNameById(activePark)} live waits`}
-              </strong>
-
-              <p
-                style={{
-                  margin: "5px 0 0",
-                  color: colors.text,
-                  fontSize: 12.5,
-                  lineHeight: 1.4,
-                }}
-              >
-                {liveParkContext.guidance ||
-                  `You’re viewing ${getParkNameById(activePark)} live waits right now. Right Now moves are using ${getParkNameById(activePark)}.`}
-              </p>
-
-              {liveParkContext?.status === "viewing_second_park" &&
-                Number(parkHopperContext?.secondParkMustDos?.count || 0) > 0 && (
-                  <div
-                    style={{
-                      marginTop: 9,
-                      padding: 10,
-                      borderRadius: 16,
-                      background: "rgba(255,255,255,0.72)",
-                      border: `1px solid ${colors.cardBorder}`,
-                    }}
-                  >
-                    <strong
-                      style={{
-                        display: "block",
-                        color: colors.text,
-                        fontSize: 12.5,
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      Second-park priorities are loaded.
-                    </strong>
-
-                    <p
-                      style={{
-                        margin: "5px 0 0",
-                        color: colors.muted,
-                        fontSize: 12,
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      Saved must-dos: {parkHopperContext.secondParkMustDos.label}. TOHI should use this as
-                      context, not pressure to rush.
-                    </p>
-                  </div>
-                )}
-
-              {liveParkContext?.status === "viewing_different_park" && (
-                <p
-                  style={{
-                    margin: "7px 0 0",
-                    color: colors.muted,
-                    fontSize: 12,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  The Plan tab is still anchored to {todayPlannedParkLabel || planningParkLabel}.
-                </p>
-              )}
-            </div>
-
-            {planningPark && activePark !== planningPark && (
-              <button
-                type="button"
-                onClick={() => {
-                  trackAppEvent("live_park_switched_from_planned_park_notice", {
-                    source: "right_now_live_park_context_notice",
-                    activePark: planningPark,
-                    metadata: {
-                      previousActivePark: activePark,
-                      nextActivePark: planningPark,
-                      planningPark,
-                      planningParkSource,
-                      scheduledParkForToday: scheduledParkForToday?.parkId || "",
-                      scheduledSecondaryParkForToday: scheduledParkForToday?.secondaryParkId || "",
-                      scheduledParkPlanLabel: todayPlannedParkLabel,
-                      hopperContextStatus: parkHopperContext?.status || "",
-                      shouldConsiderSecondPark: Boolean(parkHopperContext?.shouldConsiderSecondPark),
-                      liveParkContextStatus: liveParkContext?.status || "",
-                      isLiveParkMismatch: Boolean(liveParkContext?.isLiveParkMismatch),
-                      scheduledParkDayNumber: scheduledParkForToday?.dayNumber || "",
-                    },
-                  });
-
-                  setActivePark(planningPark);
-                }}
-                style={{
-                  ...button,
-                  background: colors.purpleDeep,
-                  borderColor: colors.purpleDeep,
-                  color: "white",
-                  flexShrink: 0,
-                }}
-              >
-                Use {planningParkLabel} waits
-              </button>
-            )}
-          </section>
-        )}
-
-        <section style={card}>
-          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
-            {PARKS.map((park) => (
-              <button
-                key={park.id}
-                onClick={() => {
-                  trackAppEvent("park_selected", {
-                    source: "park_tabs",
-                    activePark: park.id,
-                    metadata: {
-                      previousPark: activePark,
-                      nextPark: park.id,
-                    },
-                  });
-
-                  setActivePark(park.id);
-                }}
-                style={{
-                  ...button,
-                  background: activePark === park.id ? colors.purple : colors.card,
-                  color: activePark === park.id ? "white" : colors.text,
-                  borderColor: activePark === park.id ? colors.purple : colors.cardBorder,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {park.name}
-              </button>
-            ))}
-          </div>
-        </section>
-
         <section
           style={{
             ...card,
@@ -4353,185 +4182,142 @@ function App() {
           </div>
         </section>
 
-        <section
-          style={{
-            ...card,
-            position: "relative",
-            overflow: "hidden",
-            background:
-              "radial-gradient(circle at 92% 0%, rgba(245, 158, 11, 0.20) 0%, rgba(245, 158, 11, 0.06) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #FFF7ED 100%)",
-            border: "1px solid rgba(245, 158, 11, 0.22)",
-            borderRadius: 28,
-            boxShadow: "0 16px 38px rgba(245, 158, 11, 0.10)",
-          }}
-        >
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              width: 96,
-              height: 96,
-              borderRadius: "999px",
-              right: -38,
-              top: -44,
-              background: "rgba(124, 58, 237, 0.10)",
-            }}
-          />
-
-          <div style={{ position: "relative" }}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "5px 9px",
-                borderRadius: 999,
-                background: colors.amberSoft,
-                color: "#92400E",
-                fontSize: 11,
-                fontWeight: 950,
-                letterSpacing: 0.7,
-                marginBottom: 8,
-              }}
-            >
-              TRIP TIMING
-            </div>
-
-            <h3
-              style={{
-                margin: 0,
-                color: colors.text,
-                fontSize: 23,
-                letterSpacing: -0.4,
-                lineHeight: 1.15,
-              }}
-            >
-              Day mode
-            </h3>
-
-            <p
-              style={{
-                margin: "9px 0 0",
-                color: colors.text,
-                fontSize: 15,
-                fontWeight: 850,
-                lineHeight: 1.45,
-              }}
-            >
-              {timeContext.summary}
-            </p>
-
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-                marginTop: 12,
-              }}
-            >
-              <span
-                style={{
-                  padding: "6px 9px",
-                  borderRadius: 999,
-                  background: colors.purpleSoft,
-                  color: colors.purpleDeep,
-                  fontSize: 12,
-                  fontWeight: 900,
-                }}
-              >
-                Mode: {timeContext.planningMode.replace(/_/g, " ")}
-              </span>
-
-              <span
-                style={{
-                  padding: "6px 9px",
-                  borderRadius: 999,
-                  background: hasPersonalizedAccess
-                    ? colors.successSoft
-                    : colors.coralSoft,
-                  color: hasPersonalizedAccess ? colors.success : "#E11D48",
-                  fontSize: 12,
-                  fontWeight: 900,
-                }}
-              >
-                Personalization: {hasPersonalizedAccess ? "active" : "setup needed"}
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {weatherMode.mode !== "normal" && (
+        {liveParkContext?.showNotice && (
           <section
             style={{
               ...card,
-              position: "relative",
-              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
               background:
-                "linear-gradient(145deg, #FFFFFF 0%, #FEF3C7 100%)",
-              border: "1px solid rgba(245, 158, 11, 0.28)",
-              borderRadius: 28,
-              boxShadow: "0 16px 38px rgba(245, 158, 11, 0.12)",
+                "linear-gradient(145deg, rgba(255,255,255,0.97) 0%, #FFF7ED 52%, #F5F3FF 100%)",
+              border: "1px solid rgba(245, 158, 11, 0.24)",
+              boxShadow: "0 12px 28px rgba(245, 158, 11, 0.08)",
             }}
           >
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "5px 9px",
-                borderRadius: 999,
-                background: colors.amberSoft,
-                color: "#92400E",
-                fontSize: 11,
-                fontWeight: 950,
-                letterSpacing: 0.7,
-                marginBottom: 8,
-              }}
-            >
-              WEATHER STRATEGY
-            </div>
+            <div style={{ minWidth: 220, flex: "1 1 340px" }}>
+              <div
+                style={{
+                  color: "#92400E",
+                  fontSize: 11,
+                  fontWeight: 950,
+                  letterSpacing: 0.65,
+                  marginBottom: 5,
+                }}
+              >
+                RIGHT NOW VIEW
+              </div>
 
-            <h3
-              style={{
-                margin: 0,
-                color: colors.text,
-                fontSize: 22,
-                letterSpacing: -0.3,
-              }}
-            >
-              {weatherMode.label}
-            </h3>
+              <strong
+                style={{
+                  display: "block",
+                  color: colors.text,
+                  fontSize: 15,
+                  lineHeight: 1.35,
+                }}
+              >
+                {liveParkContext.label || `Viewing ${getParkNameById(activePark)} live waits`}
+              </strong>
 
-            <p
-              style={{
-                color: colors.muted,
-                margin: "8px 0 0",
-                lineHeight: 1.45,
-              }}
-            >
-              {weatherMode.message}
-            </p>
+              <p
+                style={{
+                  margin: "5px 0 0",
+                  color: colors.text,
+                  fontSize: 12.5,
+                  lineHeight: 1.4,
+                }}
+              >
+                {liveParkContext.guidance ||
+                  `You’re viewing ${getParkNameById(activePark)} live waits right now. Right Now moves are using ${getParkNameById(activePark)}.`}
+              </p>
 
-            {recoverySuggestions.length > 0 && (
-              <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-                {recoverySuggestions.map((item, idx) => (
+              {liveParkContext?.status === "viewing_second_park" &&
+                Number(parkHopperContext?.secondParkMustDos?.count || 0) > 0 && (
                   <div
-                    key={idx}
                     style={{
-                      padding: 12,
-                      borderRadius: 18,
+                      marginTop: 9,
+                      padding: 10,
+                      borderRadius: 16,
+                      background: "rgba(255,255,255,0.72)",
                       border: `1px solid ${colors.cardBorder}`,
-                      background: "rgba(255,255,255,0.78)",
-                      boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
                     }}
                   >
-                    <strong style={{ color: colors.text }}>{item.title}</strong>
-                    <p style={{ margin: "6px 0 0", color: colors.muted }}>
-                      {item.text}
+                    <strong
+                      style={{
+                        display: "block",
+                        color: colors.text,
+                        fontSize: 12.5,
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      Second-park priorities are loaded.
+                    </strong>
+
+                    <p
+                      style={{
+                        margin: "5px 0 0",
+                        color: colors.muted,
+                        fontSize: 12,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      Saved must-dos: {parkHopperContext.secondParkMustDos.label}. TOHI should use this as
+                      context, not pressure to rush.
                     </p>
                   </div>
-                ))}
-              </div>
+                )}
+
+              {liveParkContext?.status === "viewing_different_park" && (
+                <p
+                  style={{
+                    margin: "7px 0 0",
+                    color: colors.muted,
+                    fontSize: 12,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  The Plan tab is still anchored to {todayPlannedParkLabel || planningParkLabel}.
+                </p>
+              )}
+            </div>
+
+            {planningPark && activePark !== planningPark && (
+              <button
+                type="button"
+                onClick={() => {
+                  trackAppEvent("live_park_switched_from_planned_park_notice", {
+                    source: "right_now_live_park_context_notice",
+                    activePark: planningPark,
+                    metadata: {
+                      previousActivePark: activePark,
+                      nextActivePark: planningPark,
+                      planningPark,
+                      planningParkSource,
+                      scheduledParkForToday: scheduledParkForToday?.parkId || "",
+                      scheduledSecondaryParkForToday: scheduledParkForToday?.secondaryParkId || "",
+                      scheduledParkPlanLabel: todayPlannedParkLabel,
+                      hopperContextStatus: parkHopperContext?.status || "",
+                      shouldConsiderSecondPark: Boolean(parkHopperContext?.shouldConsiderSecondPark),
+                      liveParkContextStatus: liveParkContext?.status || "",
+                      isLiveParkMismatch: Boolean(liveParkContext?.isLiveParkMismatch),
+                      scheduledParkDayNumber: scheduledParkForToday?.dayNumber || "",
+                    },
+                  });
+
+                  setActivePark(planningPark);
+                }}
+                style={{
+                  ...button,
+                  background: colors.purpleDeep,
+                  borderColor: colors.purpleDeep,
+                  color: "white",
+                  flexShrink: 0,
+                }}
+              >
+                Use {planningParkLabel} waits
+              </button>
             )}
           </section>
         )}
@@ -5337,6 +5123,220 @@ function App() {
             body:
               "Without your family profile, TOHI cannot safely know height limits, thrill comfort, heat sensitivity, resort-break realism, or what kind of day you want.",
           })
+        )}
+
+        <section style={card}>
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+            {PARKS.map((park) => (
+              <button
+                key={park.id}
+                onClick={() => {
+                  trackAppEvent("park_selected", {
+                    source: "park_tabs",
+                    activePark: park.id,
+                    metadata: {
+                      previousPark: activePark,
+                      nextPark: park.id,
+                    },
+                  });
+
+                  setActivePark(park.id);
+                }}
+                style={{
+                  ...button,
+                  background: activePark === park.id ? colors.purple : colors.card,
+                  color: activePark === park.id ? "white" : colors.text,
+                  borderColor: activePark === park.id ? colors.purple : colors.cardBorder,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {park.name}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section
+          style={{
+            ...card,
+            position: "relative",
+            overflow: "hidden",
+            background:
+              "radial-gradient(circle at 92% 0%, rgba(245, 158, 11, 0.20) 0%, rgba(245, 158, 11, 0.06) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #FFF7ED 100%)",
+            border: "1px solid rgba(245, 158, 11, 0.22)",
+            borderRadius: 28,
+            boxShadow: "0 16px 38px rgba(245, 158, 11, 0.10)",
+          }}
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              width: 96,
+              height: 96,
+              borderRadius: "999px",
+              right: -38,
+              top: -44,
+              background: "rgba(124, 58, 237, 0.10)",
+            }}
+          />
+
+          <div style={{ position: "relative" }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "5px 9px",
+                borderRadius: 999,
+                background: colors.amberSoft,
+                color: "#92400E",
+                fontSize: 11,
+                fontWeight: 950,
+                letterSpacing: 0.7,
+                marginBottom: 8,
+              }}
+            >
+              TRIP TIMING
+            </div>
+
+            <h3
+              style={{
+                margin: 0,
+                color: colors.text,
+                fontSize: 23,
+                letterSpacing: -0.4,
+                lineHeight: 1.15,
+              }}
+            >
+              Day mode
+            </h3>
+
+            <p
+              style={{
+                margin: "9px 0 0",
+                color: colors.text,
+                fontSize: 15,
+                fontWeight: 850,
+                lineHeight: 1.45,
+              }}
+            >
+              {timeContext.summary}
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                marginTop: 12,
+              }}
+            >
+              <span
+                style={{
+                  padding: "6px 9px",
+                  borderRadius: 999,
+                  background: colors.purpleSoft,
+                  color: colors.purpleDeep,
+                  fontSize: 12,
+                  fontWeight: 900,
+                }}
+              >
+                Mode: {timeContext.planningMode.replace(/_/g, " ")}
+              </span>
+
+              <span
+                style={{
+                  padding: "6px 9px",
+                  borderRadius: 999,
+                  background: hasPersonalizedAccess
+                    ? colors.successSoft
+                    : colors.coralSoft,
+                  color: hasPersonalizedAccess ? colors.success : "#E11D48",
+                  fontSize: 12,
+                  fontWeight: 900,
+                }}
+              >
+                Personalization: {hasPersonalizedAccess ? "active" : "setup needed"}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        {weatherMode.mode !== "normal" && (
+          <section
+            style={{
+              ...card,
+              position: "relative",
+              overflow: "hidden",
+              background:
+                "linear-gradient(145deg, #FFFFFF 0%, #FEF3C7 100%)",
+              border: "1px solid rgba(245, 158, 11, 0.28)",
+              borderRadius: 28,
+              boxShadow: "0 16px 38px rgba(245, 158, 11, 0.12)",
+            }}
+          >
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "5px 9px",
+                borderRadius: 999,
+                background: colors.amberSoft,
+                color: "#92400E",
+                fontSize: 11,
+                fontWeight: 950,
+                letterSpacing: 0.7,
+                marginBottom: 8,
+              }}
+            >
+              WEATHER STRATEGY
+            </div>
+
+            <h3
+              style={{
+                margin: 0,
+                color: colors.text,
+                fontSize: 22,
+                letterSpacing: -0.3,
+              }}
+            >
+              {weatherMode.label}
+            </h3>
+
+            <p
+              style={{
+                color: colors.muted,
+                margin: "8px 0 0",
+                lineHeight: 1.45,
+              }}
+            >
+              {weatherMode.message}
+            </p>
+
+            {recoverySuggestions.length > 0 && (
+              <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                {recoverySuggestions.map((item, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      padding: 12,
+                      borderRadius: 18,
+                      border: `1px solid ${colors.cardBorder}`,
+                      background: "rgba(255,255,255,0.78)",
+                      boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
+                    }}
+                  >
+                    <strong style={{ color: colors.text }}>{item.title}</strong>
+                    <p style={{ margin: "6px 0 0", color: colors.muted }}>
+                      {item.text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         )}
 
             </>
