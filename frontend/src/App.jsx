@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CloudSun, MapPin, MessageCircle, RefreshCw, Send } from "lucide-react";
-import { fetchParkData, fetchWeather, sendChatMessage, trackEvent } from "./api";
+import { fetchParkData, fetchWeather, sendChatMessage, sendTohiPickReview, trackEvent } from "./api";
 import { FreshnessBadge } from "./components/FreshnessBadge";
 import { DataStatusBanner } from "./components/DataStatusBanner";
 import { getNextBestRides } from "./rideRecommendations";
@@ -12,6 +12,15 @@ import {
   evaluateTohiPickEligibility,
   evaluateTohiPickFinalDecision,
 } from "./utils/tohiPick";
+import {
+  buildTohiPickReviewSignature,
+  resolveTohiPickAgreementDecision,
+  sanitizeTohiPickReviewRequest,
+  selectTohiPickReviewForSignature,
+  shouldRequestTohiPickReview,
+  storeTohiPickReviewResult,
+  validateTohiPickReviewResponse,
+} from "./utils/tohiPickAgreement";
 import { generatePlanNudges } from "./utils/planNudges";
 import {
   readStoredTripPlan,
@@ -3265,9 +3274,166 @@ function App() {
     tripPlanState,
   ]);
 
-  const tohiPickMvpCandidate = tohiPickDebugPreview.decision.showPick
-    ? tohiPickDebugPreview.decision.candidate
-    : null;
+  const tohiPickReviewSignature = useMemo(() => {
+    if (activeTab !== "plan") return null;
+    if (!tohiPickDebugPreview.decision.showPick || !tohiPickDebugPreview.decision.candidate) {
+      return null;
+    }
+
+    return buildTohiPickReviewSignature({
+      candidate: tohiPickDebugPreview.decision.candidate,
+      candidates: tohiPickDebugPreview.candidates,
+      activePark,
+      currentLand,
+      weatherMode,
+      dayPhase: timeContext?.dayPhase || null,
+      waitAgeMinutes: Number.isFinite(Number(parkData?.ageMs))
+        ? Number(parkData.ageMs) / 60000
+        : null,
+      currentActivity,
+      familyContext: familyProfileSummary,
+    });
+  }, [
+    activeTab,
+    tohiPickDebugPreview,
+    activePark,
+    currentLand,
+    weatherMode,
+    timeContext,
+    parkData,
+    currentActivity,
+    familyProfileSummary,
+  ]);
+
+  const [tohiPickAiReview, setTohiPickAiReview] = useState({
+    status: "idle",
+    signature: null,
+    validation: null,
+    unavailableReason: null,
+  });
+  const tohiPickReviewInFlightRef = useRef(new Set());
+  const tohiPickReviewCacheRef = useRef(new Map());
+  const tohiPickReviewContextRef = useRef(null);
+
+  tohiPickReviewContextRef.current = {
+    decision: tohiPickDebugPreview.decision,
+    candidates: tohiPickDebugPreview.candidates,
+    activePark,
+    currentLand,
+    weatherMode,
+    dayPhase: timeContext?.dayPhase || null,
+    waitAgeMinutes: Number.isFinite(Number(parkData?.ageMs))
+      ? Number(parkData.ageMs) / 60000
+      : null,
+    currentActivity,
+    familyContext: familyProfileSummary,
+  };
+
+  useEffect(() => {
+    const signature = tohiPickReviewSignature;
+    const context = tohiPickReviewContextRef.current;
+
+    const wantsReview = shouldRequestTohiPickReview({
+      isPlanTabActive: activeTab === "plan",
+      decision: context?.decision,
+      signature,
+      requestedSignatures: tohiPickReviewInFlightRef.current,
+      cache: tohiPickReviewCacheRef.current,
+    });
+
+    if (!wantsReview) return undefined;
+
+    // Debounce so rapid wait/location churn settles before the AI is asked.
+    // Clearing the timer also abandons a request whose signature became
+    // obsolete before it ever fired.
+    const timer = setTimeout(() => {
+      const fireContext = tohiPickReviewContextRef.current;
+      const candidate = fireContext?.decision?.candidate;
+
+      if (!candidate) return;
+      if (tohiPickReviewInFlightRef.current.has(signature)) return;
+      if (tohiPickReviewCacheRef.current.has(signature)) return;
+
+      tohiPickReviewInFlightRef.current.add(signature);
+      setTohiPickAiReview({
+        status: "pending",
+        signature,
+        validation: null,
+        unavailableReason: null,
+      });
+
+      const reviewRequest = sanitizeTohiPickReviewRequest({
+        candidate,
+        candidates: fireContext.candidates,
+        activePark: fireContext.activePark,
+        currentLand: fireContext.currentLand,
+        weatherMode: fireContext.weatherMode,
+        dayPhase: fireContext.dayPhase,
+        waitAgeMinutes: fireContext.waitAgeMinutes,
+        currentActivity: fireContext.currentActivity,
+        familyContext: fireContext.familyContext,
+      });
+
+      // Every terminal outcome is cached under the signature it was requested
+      // for, so returning to that exact situation reuses the verdict instead
+      // of asking again. The setState guard keeps a response for a superseded
+      // signature from overwriting the visible state of the current one.
+      const settleReview = (terminalResult) => {
+        storeTohiPickReviewResult(tohiPickReviewCacheRef.current, signature, terminalResult);
+        tohiPickReviewInFlightRef.current.delete(signature);
+        setTohiPickAiReview((current) =>
+          current.signature !== signature ? current : terminalResult
+        );
+      };
+
+      sendTohiPickReview(reviewRequest)
+        .then((result) => {
+          if (!result || result.unavailable || !result.reviewText) {
+            settleReview({
+              status: "unavailable",
+              signature,
+              validation: null,
+              unavailableReason: result?.reason || "unavailable",
+            });
+            return;
+          }
+
+          settleReview({
+            status: "complete",
+            signature,
+            validation: validateTohiPickReviewResponse(result.reviewText, candidate.rideId),
+            unavailableReason: null,
+          });
+        })
+        .catch(() => {
+          settleReview({
+            status: "unavailable",
+            signature,
+            validation: null,
+            unavailableReason: "request_failed",
+          });
+        });
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [tohiPickReviewSignature, activeTab]);
+
+  const tohiPickSelectedReview = useMemo(() => {
+    return selectTohiPickReviewForSignature({
+      signature: tohiPickReviewSignature,
+      cache: tohiPickReviewCacheRef.current,
+      liveReview: tohiPickAiReview,
+    });
+  }, [tohiPickReviewSignature, tohiPickAiReview]);
+
+  const tohiPickAgreement = useMemo(() => {
+    return resolveTohiPickAgreementDecision({
+      decision: tohiPickDebugPreview.decision,
+      review: tohiPickSelectedReview,
+    });
+  }, [tohiPickDebugPreview.decision, tohiPickSelectedReview]);
+
+  const tohiPickMvpCandidate = tohiPickAgreement.showPick ? tohiPickAgreement.candidate : null;
 
   const primaryRecommendation =
     recommendations.bestMove ||
@@ -3700,6 +3866,28 @@ function App() {
               )}
               {tohiPickDebugPreview.reasonNoPick &&
                 dbRow("reasonNoPick", tohiPickDebugPreview.reasonNoPick)}
+              {dbRow("aiReviewStatus", tohiPickAgreement.status)}
+              {dbRow("aiReviewVerdict", tohiPickAgreement.verdict || "none")}
+              {dbRow("aiReviewReasonCode", tohiPickAgreement.reasonCode || "none")}
+              {dbRow("aiReviewReason", tohiPickAgreement.reason || "none")}
+              {dbRow(
+                "aiReviewInvalidReason",
+                tohiPickAgreement.invalidReason ||
+                  tohiPickSelectedReview.unavailableReason ||
+                  "none"
+              )}
+              {dbRow(
+                "aiReviewSignature",
+                tohiPickReviewSignature
+                  ? `${tohiPickReviewSignature.slice(0, 140)}${
+                      tohiPickReviewSignature.length > 140 ? "…" : ""
+                    }`
+                  : "none"
+              )}
+              {dbRow(
+                "aiDeterministicFallback",
+                tohiPickAgreement.usedDeterministicFallback ? "yes" : "no"
+              )}
               {dbRow("sourceCount", tohiPickDebugPreview.sourceCount)}
               {dbRow("usableCount", tohiPickDebugPreview.usableCount)}
               {tohiPickDebugPreview.topCandidate &&
