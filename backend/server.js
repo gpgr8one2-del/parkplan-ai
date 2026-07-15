@@ -249,6 +249,7 @@ app.post("/api/events", eventLimiter, (req, res) => {
 app.use("/api/park-data", generalApiLimiter);
 app.use("/api/weather", generalApiLimiter);
 app.use("/api/ai-chat", aiLimiter);
+app.use("/api/tohi-pick-review", aiLimiter);
 
 app.use("/api", parkRoutes);
 app.use("/api", weatherRoutes);

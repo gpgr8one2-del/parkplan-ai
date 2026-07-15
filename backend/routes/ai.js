@@ -1,8 +1,23 @@
 const express = require("express");
 const logger = require("../logger");
 const { getAIResponse } = require("../services/aiService");
+const { getTohiPickReview } = require("../services/tohiPickReviewService");
 
 const router = express.Router();
+
+router.post("/tohi-pick-review", async (req, res) => {
+  try {
+    const result = await getTohiPickReview(req.body || {});
+    return res.json(result);
+  } catch (err) {
+    req.log?.error?.({ err: err?.message || err }, "TOHI Pick review error");
+    logger.error({ err }, "TOHI Pick review error");
+
+    // A failed review must never suppress the deterministic pick, so the
+    // route always answers with a clean unavailable result instead of a 500.
+    return res.json({ unavailable: true, reason: "review_failed" });
+  }
+});
 
 router.post("/ai-chat", async (req, res) => {
   const message = String(req.body?.message || "").trim();

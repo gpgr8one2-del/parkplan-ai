@@ -723,6 +723,19 @@ export async function fetchWeather(options = {}) {
   );
 }
 
+export async function sendTohiPickReview(reviewRequest) {
+  // Veto review is advisory: no retries, and a frontend timeout slightly above
+  // the backend's 8s review timeout so the backend can answer cleanly first.
+  return apiFetch(
+    "/api/tohi-pick-review",
+    {
+      method: "POST",
+      body: JSON.stringify(reviewRequest || {}),
+    },
+    { retries: 0, timeoutMs: 10000, dedupe: false }
+  );
+}
+
 export async function sendChatMessage(message, sessionData) {
   const safeMessage = String(message || "").trim();
   const safeSessionData = sanitizeChatSessionData(sessionData);
