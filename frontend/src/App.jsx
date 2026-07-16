@@ -21,6 +21,15 @@ import {
   storeTohiPickReviewResult,
   validateTohiPickReviewResponse,
 } from "./utils/tohiPickAgreement";
+import {
+  canConfirmParkPresence,
+  confirmActivePark,
+  deriveBrowsedPark,
+  dismissParkPresencePrompt,
+  isBrowsingAnotherPark,
+  restoreParkPresence,
+  selectBrowsedPark,
+} from "./utils/parkPresence";
 import { generatePlanNudges } from "./utils/planNudges";
 import {
   readStoredTripPlan,
@@ -252,6 +261,25 @@ function writeStoredParkState(parkId, parkState) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
   } catch (err) {
     console.warn("TOHI: could not save state", err);
+  }
+}
+
+const PARK_PRESENCE_STORAGE_KEY = "parkplan.parkPresence";
+
+function readStoredParkPresence() {
+  try {
+    const raw = localStorage.getItem(PARK_PRESENCE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredParkPresence(presence) {
+  try {
+    localStorage.setItem(PARK_PRESENCE_STORAGE_KEY, JSON.stringify(presence));
+  } catch (err) {
+    console.warn("TOHI: could not save park presence", err);
   }
 }
 
@@ -2145,11 +2173,137 @@ function App() {
     activityLog,
   ]);
 
+  const [parkPresence, setParkPresence] = useState(null);
+  const [browsedParkData, setBrowsedParkData] = useState(null);
+
+  useEffect(() => {
+    if (!timeContext?.orlandoDate) return;
+
+    setParkPresence((current) => {
+      const presenceContext = {
+        scheduledParkForToday,
+        planningPark,
+        dateString: timeContext.orlandoDate,
+      };
+
+      // In-session presence that is still valid for today's plan keeps its
+      // live browsing/prompt state; only invalid presence is rebuilt.
+      if (current) {
+        const revalidated = restoreParkPresence(current, presenceContext);
+        const stillValid =
+          revalidated.dateString === current.dateString &&
+          revalidated.confirmedActivePark === current.confirmedActivePark &&
+          revalidated.plannedParkIds.join("|") ===
+            (current.plannedParkIds || []).join("|");
+
+        return stillValid ? current : revalidated;
+      }
+
+      return restoreParkPresence(readStoredParkPresence(), presenceContext);
+    });
+  }, [timeContext?.orlandoDate, scheduledParkForToday, planningPark]);
+
+  // The confirmed active park is the only thing allowed to move activePark,
+  // which keeps every personalized subsystem (waits data for recommendations,
+  // weather, time context, land detection, chat context) anchored to it.
+  useEffect(() => {
+    const confirmedPark = parkPresence?.confirmedActivePark;
+
+    if (confirmedPark && activePark !== confirmedPark) {
+      setActivePark(confirmedPark);
+    }
+  }, [parkPresence?.confirmedActivePark, activePark]);
+
+  useEffect(() => {
+    if (parkPresence) writeStoredParkPresence(parkPresence);
+  }, [parkPresence]);
+
+  const parkPresenceTheme = getTohiAppShellTheme();
+  const browsedParkId = deriveBrowsedPark(parkPresence, activePark);
+  const browsingAnotherPark = isBrowsingAnotherPark(parkPresence, browsedParkId);
+  const confirmedActiveParkId = parkPresence?.confirmedActivePark || activePark;
+  const confirmedActiveParkLabel = getParkNameById(confirmedActiveParkId);
+  const browsedParkLabel = getParkNameById(browsedParkId);
+  const parkPresencePrompt = parkPresence?.prompt?.parkId ? parkPresence.prompt : null;
+
+  // Browsed-park waits are informational only. They are fetched separately so
+  // the confirmed park's data (recommendations, weather, TOHI Pick) is never
+  // replaced by a park the family is merely looking at. Refetches ride along
+  // with the confirmed park's own refresh cycle via the parkData dependency.
+  useEffect(() => {
+    if (!browsingAnotherPark || !browsedParkId) {
+      setBrowsedParkData(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    fetchParkData(browsedParkId)
+      .then((data) => {
+        if (!cancelled) setBrowsedParkData(data);
+      })
+      .catch(() => {
+        if (!cancelled) setBrowsedParkData(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [browsingAnotherPark, browsedParkId, parkData]);
+
+  const waitListParkId = browsingAnotherPark ? browsedParkId : activePark;
+  const waitListParkData = browsingAnotherPark ? browsedParkData : parkData;
+
+  function handleSelectPark(parkId) {
+    trackAppEvent("park_selected", {
+      source: "park_tabs",
+      activePark: parkId,
+      metadata: {
+        previousPark: browsedParkId,
+        nextPark: parkId,
+        confirmedActivePark: parkPresence?.confirmedActivePark || "",
+      },
+    });
+
+    if (!parkPresence) {
+      setActivePark(parkId);
+      return;
+    }
+
+    setParkPresence((current) => (current ? selectBrowsedPark(current, parkId) : current));
+  }
+
+  function handleConfirmParkPresence(parkId) {
+    trackAppEvent("park_presence_confirmed", {
+      source: "park_presence_prompt",
+      activePark: parkId,
+      metadata: {
+        previousConfirmedPark: parkPresence?.confirmedActivePark || "",
+        promptType: parkPresence?.prompt?.type || "",
+      },
+    });
+
+    setParkPresence((current) => confirmActivePark(current, parkId));
+  }
+
+  function handleDismissParkPresencePrompt() {
+    trackAppEvent("park_presence_prompt_dismissed", {
+      source: "park_presence_prompt",
+      activePark,
+      metadata: {
+        promptType: parkPresence?.prompt?.type || "",
+        promptParkId: parkPresence?.prompt?.parkId || "",
+      },
+    });
+
+    setParkPresence((current) => dismissParkPresencePrompt(current));
+  }
+
   const sortedRides = useMemo(() => {
-    return [...(parkData?.rides || [])]
-      .filter((ride) => shouldShowRideInWaitList(activePark, ride))
+    return [...(waitListParkData?.rides || [])]
+      .filter((ride) => shouldShowRideInWaitList(waitListParkId, ride))
       .sort((a, b) => (b.waitTime || 0) - (a.waitTime || 0));
-  }, [parkData, activePark]);
+  }, [waitListParkData, waitListParkId]);
 
   const activeRideId =
     currentActivity?.type === "in_line" && currentActivity?.rideId != null
@@ -3234,6 +3388,9 @@ function App() {
       activityLog,
       completedRideIds,
       mustDos: tripPlanState?.mustDoExperiences || [],
+      // Browsing a park without confirming presence there is a live-context
+      // ambiguity: TOHI Pick must stay anchored to the confirmed active park.
+      blockingAmbiguity: browsingAnotherPark,
     };
 
     const eligibility = evaluateTohiPickEligibility(input);
@@ -3272,6 +3429,7 @@ function App() {
     activityLog,
     completedRideIds,
     tripPlanState,
+    browsingAnotherPark,
   ]);
 
   const tohiPickReviewSignature = useMemo(() => {
@@ -3887,6 +4045,23 @@ function App() {
               {dbRow(
                 "aiDeterministicFallback",
                 tohiPickAgreement.usedDeterministicFallback ? "yes" : "no"
+              )}
+              {dbRow("presenceConfirmedPark", parkPresence?.confirmedActivePark || "unset")}
+              {dbRow("presenceBrowsedPark", browsedParkId)}
+              {dbRow(
+                "presencePlannedParks",
+                (parkPresence?.plannedParkIds || []).join(", ") || "none"
+              )}
+              {dbRow("presenceBrowsingOtherPark", browsingAnotherPark ? "yes" : "no")}
+              {dbRow(
+                "presencePrompt",
+                parkPresencePrompt
+                  ? `${parkPresencePrompt.type}:${parkPresencePrompt.parkId}`
+                  : "none"
+              )}
+              {dbRow(
+                "presenceDismissed",
+                (parkPresence?.dismissedPrompts || []).join(", ") || "none"
               )}
               {dbRow("sourceCount", tohiPickDebugPreview.sourceCount)}
               {dbRow("usableCount", tohiPickDebugPreview.usableCount)}
@@ -4509,7 +4684,15 @@ function App() {
                     },
                   });
 
-                  setActivePark(planningPark);
+                  if (canConfirmParkPresence(parkPresence, planningPark)) {
+                    handleConfirmParkPresence(planningPark);
+                  } else if (parkPresence) {
+                    setParkPresence((current) =>
+                      current ? selectBrowsedPark(current, planningPark) : current
+                    );
+                  } else {
+                    setActivePark(planningPark);
+                  }
                 }}
                 style={{
                   ...button,
@@ -4595,28 +4778,108 @@ function App() {
           />
         )}
 
+        {parkPresencePrompt && (
+          <section
+            style={{
+              ...card,
+              position: "relative",
+              overflow: "hidden",
+              background: parkPresenceTheme.isNight
+                ? "linear-gradient(150deg, #0F172A 0%, #1E1B4B 100%)"
+                : "linear-gradient(150deg, #FFFFFF 0%, #FFF9F1 55%, #F3E8FF 100%)",
+              border: parkPresenceTheme.isNight
+                ? "1px solid rgba(139, 92, 246, 0.45)"
+                : "1px solid rgba(124, 58, 237, 0.20)",
+              boxShadow: parkPresenceTheme.isNight
+                ? "0 14px 34px rgba(76, 29, 149, 0.35)"
+                : "0 14px 34px rgba(91, 33, 182, 0.10)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 950,
+                letterSpacing: 0.7,
+                marginBottom: 6,
+                color: parkPresenceTheme.isNight ? "#C4B5FD" : colors.purpleDeep,
+              }}
+            >
+              PARK CHECK
+            </div>
+
+            <h3
+              style={{
+                margin: "0 0 6px",
+                fontSize: 20,
+                letterSpacing: -0.3,
+                color: parkPresenceTheme.isNight ? "#F5F3FF" : colors.text,
+              }}
+            >
+              {parkPresencePrompt.type === "detected_arrival"
+                ? `Looks like you’ve arrived at ${getParkNameById(parkPresencePrompt.parkId)}`
+                : `Are you at ${getParkNameById(parkPresencePrompt.parkId)} now?`}
+            </h3>
+
+            <p
+              style={{
+                margin: "0 0 12px",
+                fontSize: 13,
+                lineHeight: 1.45,
+                color: parkPresenceTheme.isNight ? "#C7D2FE" : colors.muted,
+              }}
+            >
+              {parkPresencePrompt.type === "detected_arrival"
+                ? `Start using ${getParkNameById(parkPresencePrompt.parkId)} waits and recommendations?`
+                : `TOHI can start using ${getParkNameById(parkPresencePrompt.parkId)} waits, weather, and recommendations.`}
+            </p>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => handleConfirmParkPresence(parkPresencePrompt.parkId)}
+                style={{
+                  ...button,
+                  background: colors.purpleDeep,
+                  borderColor: colors.purpleDeep,
+                  color: "white",
+                }}
+              >
+                {parkPresencePrompt.type === "detected_arrival"
+                  ? `I’m at ${getParkNameById(parkPresencePrompt.parkId)} now`
+                  : "I’m here now"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDismissParkPresencePrompt}
+                style={{
+                  ...button,
+                  ...(parkPresenceTheme.isNight
+                    ? {
+                        background: "rgba(30, 27, 75, 0.6)",
+                        color: "#C7D2FE",
+                        borderColor: "rgba(139, 92, 246, 0.4)",
+                      }
+                    : { color: colors.muted }),
+                }}
+              >
+                {parkPresencePrompt.type === "detected_arrival" ? "Not yet" : "Just checking"}
+              </button>
+            </div>
+          </section>
+        )}
+
         <section style={card}>
           <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
             {PARKS.map((park) => (
               <button
                 key={park.id}
-                onClick={() => {
-                  trackAppEvent("park_selected", {
-                    source: "park_tabs",
-                    activePark: park.id,
-                    metadata: {
-                      previousPark: activePark,
-                      nextPark: park.id,
-                    },
-                  });
-
-                  setActivePark(park.id);
-                }}
+                onClick={() => handleSelectPark(park.id)}
                 style={{
                   ...button,
-                  background: activePark === park.id ? colors.purple : colors.card,
-                  color: activePark === park.id ? "white" : colors.text,
-                  borderColor: activePark === park.id ? colors.purple : colors.cardBorder,
+                  background: browsedParkId === park.id ? colors.purple : colors.card,
+                  color: browsedParkId === park.id ? "white" : colors.text,
+                  borderColor: browsedParkId === park.id ? colors.purple : colors.cardBorder,
                   whiteSpace: "nowrap",
                 }}
               >
@@ -4682,16 +4945,31 @@ function App() {
                   Live wait data can lag the official park app during reopenings or
                   weather delays. Verify headliner status before walking across the park.
                 </p>
+
+                {browsingAnotherPark && (
+                  <p
+                    style={{
+                      margin: "8px 0 0",
+                      color: colors.purpleDeep,
+                      fontSize: 12,
+                      fontWeight: 750,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    Browsing {browsedParkLabel}. Your day stays anchored at{" "}
+                    {confirmedActiveParkLabel}.
+                  </p>
+                )}
               </section>
 
               <WaitTimesList
                 rides={sortedRides}
                 activeRideId={activeRideId}
-                activePark={activePark}
+                activePark={waitListParkId}
                 card={card}
                 formatLandLabel={formatLandLabel}
-                renderShowtimeInfo={renderShowtimeInfo}
-                renderRideActions={renderRideActions}
+                renderShowtimeInfo={browsingAnotherPark ? () => null : renderShowtimeInfo}
+                renderRideActions={browsingAnotherPark ? () => null : renderRideActions}
               />
             </>
           )}
@@ -4964,6 +5242,24 @@ function App() {
                       Reset hidden rides ({hiddenRideCount})
                     </button>
                   )}
+                </div>
+              )}
+
+              {browsingAnotherPark && (
+                <div
+                  style={{
+                    padding: 15,
+                    marginBottom: 12,
+                    borderRadius: 22,
+                    border: `1px solid ${colors.cardBorder}`,
+                    background: "linear-gradient(145deg, #FFFFFF 0%, #F8F5FF 100%)",
+                  }}
+                >
+                  <strong>You’re browsing {browsedParkLabel} waits right now.</strong>
+                  <p style={{ margin: "7px 0 0", color: colors.muted, lineHeight: 1.45 }}>
+                    These picks are still for {confirmedActiveParkLabel}, where your day
+                    is anchored.
+                  </p>
                 </div>
               )}
 
