@@ -147,6 +147,24 @@ export function dismissParkPresencePrompt(presence) {
   };
 }
 
+// A "Not yet" suppression lasts for one continuous presence episode. When
+// trusted evidence shows the guest left that park, the detected-arrival
+// dismissal is cleared so a genuine later return may prompt again.
+export function clearDetectedParkDismissal(presence, parkId) {
+  const safeParkId = cleanParkId(parkId);
+
+  if (!presence || !safeParkId) return presence;
+
+  const key = promptKey(PROMPT_TYPES.DETECTED_ARRIVAL, safeParkId);
+
+  if (!(presence.dismissedPrompts || []).includes(key)) return presence;
+
+  return {
+    ...presence,
+    dismissedPrompts: presence.dismissedPrompts.filter((entry) => entry !== key),
+  };
+}
+
 export function deriveRecommendationPark(presence, fallbackParkId = "") {
   return presence?.confirmedActivePark || cleanParkId(fallbackParkId);
 }
