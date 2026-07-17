@@ -23,13 +23,22 @@ import {
 } from "./utils/tohiPickAgreement";
 import {
   canConfirmParkPresence,
+  clearDetectedParkDismissal,
   confirmActivePark,
   deriveBrowsedPark,
   dismissParkPresencePrompt,
   isBrowsingAnotherPark,
+  registerDetectedPark,
   restoreParkPresence,
   selectBrowsedPark,
 } from "./utils/parkPresence";
+import {
+  acknowledgeParkArrivalDeparture,
+  createParkArrivalTracker,
+  hasStableParkArrivalEvidence,
+  suppressParkArrivalPrompt,
+  updateParkArrivalTracker,
+} from "./utils/parkArrivalDetection";
 import { generatePlanNudges } from "./utils/planNudges";
 import {
   readStoredTripPlan,
@@ -1915,6 +1924,9 @@ function App() {
 
       try {
         const position = await getCurrentPosition();
+
+        ingestParkArrivalSample(position);
+
         const detectedZone = detectNearestLocationZone({
           parkId: activePark,
           lat: position.coords.latitude,
@@ -2080,6 +2092,10 @@ function App() {
         if (!isActive) return;
         if (document.visibilityState !== "visible") return;
 
+        // Park-level arrival evidence rides along with the existing watch;
+        // it must run even when no in-park land zone matches this sample.
+        ingestParkArrivalSample(position);
+
         const detectedZone = detectNearestLocationZone({
           parkId: activePark,
           lat: position.coords.latitude,
@@ -2218,6 +2234,69 @@ function App() {
     if (parkPresence) writeStoredParkPresence(parkPresence);
   }, [parkPresence]);
 
+  const [parkArrivalTracker, setParkArrivalTracker] = useState(() =>
+    createParkArrivalTracker()
+  );
+  const parkArrivalContextRef = useRef(null);
+
+  parkArrivalContextRef.current = {
+    confirmedActivePark: parkPresence?.confirmedActivePark || "",
+    plannedParkIds: parkPresence?.plannedParkIds || [],
+  };
+
+  const ingestParkArrivalSample = useCallback((position) => {
+    const arrivalContext = parkArrivalContextRef.current;
+
+    if (!arrivalContext?.confirmedActivePark || !position?.coords) return;
+
+    setParkArrivalTracker((current) =>
+      updateParkArrivalTracker(current, {
+        position: {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracyMeters: position.coords.accuracy,
+          timestamp: position.timestamp,
+        },
+        confirmedActivePark: arrivalContext.confirmedActivePark,
+        plannedParkIds: arrivalContext.plannedParkIds,
+      })
+    );
+  }, []);
+
+  // GPS is evidence only: stable arrival evidence registers the existing
+  // detected_arrival prompt through 60C. Nothing here calls setActivePark or
+  // confirmActivePark — only the guest's confirmation moves the park.
+  useEffect(() => {
+    if (hasStableParkArrivalEvidence(parkArrivalTracker)) {
+      const detectedParkId = parkArrivalTracker.candidateParkId;
+
+      setParkPresence((current) =>
+        current
+          ? registerDetectedPark(current, { parkId: detectedParkId, confidence: "high" })
+          : current
+      );
+      setParkArrivalTracker((current) => suppressParkArrivalPrompt(current, detectedParkId));
+      return;
+    }
+
+    if (parkArrivalTracker?.departedParkId) {
+      const departedParkId = parkArrivalTracker.departedParkId;
+
+      setParkPresence((current) =>
+        current ? clearDetectedParkDismissal(current, departedParkId) : current
+      );
+      setParkArrivalTracker((current) => acknowledgeParkArrivalDeparture(current));
+    }
+  }, [parkArrivalTracker]);
+
+  const parkArrivalPlanKey = `${parkPresence?.dateString || ""}|${(
+    parkPresence?.plannedParkIds || []
+  ).join(",")}`;
+
+  useEffect(() => {
+    setParkArrivalTracker(createParkArrivalTracker());
+  }, [parkArrivalPlanKey]);
+
   const parkPresenceTheme = getTohiAppShellTheme();
   const browsedParkId = deriveBrowsedPark(parkPresence, activePark);
   const browsingAnotherPark = isBrowsingAnotherPark(parkPresence, browsedParkId);
@@ -2284,6 +2363,7 @@ function App() {
     });
 
     setParkPresence((current) => confirmActivePark(current, parkId));
+    setParkArrivalTracker(createParkArrivalTracker());
   }
 
   function handleDismissParkPresencePrompt() {
@@ -4062,6 +4142,35 @@ function App() {
               {dbRow(
                 "presenceDismissed",
                 (parkPresence?.dismissedPrompts || []).join(", ") || "none"
+              )}
+              {dbRow(
+                "arrivalGpsAccuracy",
+                parkArrivalTracker.lastSample?.accuracyMeters != null
+                  ? `${parkArrivalTracker.lastSample.accuracyMeters} m`
+                  : "none"
+              )}
+              {dbRow(
+                "arrivalClassification",
+                parkArrivalTracker.lastSample
+                  ? parkArrivalTracker.lastSample.parkId || "no_park"
+                  : "none"
+              )}
+              {dbRow(
+                "arrivalCandidatePark",
+                parkArrivalTracker.candidateParkId || "none"
+              )}
+              {dbRow("arrivalQualifyingCount", parkArrivalTracker.qualifyingCount)}
+              {dbRow(
+                "arrivalStable",
+                hasStableParkArrivalEvidence(parkArrivalTracker) ? "yes" : "no"
+              )}
+              {dbRow(
+                "arrivalSuppressedPark",
+                parkArrivalTracker.suppressedParkId || "none"
+              )}
+              {dbRow(
+                "arrivalLastRejection",
+                parkArrivalTracker.lastSample?.rejectionReason || "none"
               )}
               {dbRow("sourceCount", tohiPickDebugPreview.sourceCount)}
               {dbRow("usableCount", tohiPickDebugPreview.usableCount)}
