@@ -39,6 +39,14 @@ import {
   suppressParkArrivalPrompt,
   updateParkArrivalTracker,
 } from "./utils/parkArrivalDetection";
+import {
+  TOHI_PICK_CLARIFICATION_ANSWERS,
+  TOHI_PICK_CLARIFICATION_STATUSES,
+  evaluateTohiPickClarification,
+  resolveTohiPickClarificationAnswer,
+  selectTohiPickClarificationForSignature,
+  storeTohiPickClarificationResult,
+} from "./utils/tohiPickClarification";
 import { generatePlanNudges } from "./utils/planNudges";
 import {
   readStoredTripPlan,
@@ -3673,6 +3681,82 @@ function App() {
 
   const tohiPickMvpCandidate = tohiPickAgreement.showPick ? tohiPickAgreement.candidate : null;
 
+  // 60E — bounded clarification. Session-only cache, no timers, no network.
+  const tohiPickClarificationCacheRef = useRef(new Map());
+  const [tohiPickClarificationVersion, setTohiPickClarificationVersion] = useState(0);
+
+  const tohiPickClarificationEvaluation = useMemo(() => {
+    return evaluateTohiPickClarification({
+      decision: tohiPickDebugPreview.decision,
+      candidates: tohiPickDebugPreview.candidates,
+      isPlanTabActive: activeTab === "plan",
+      browsingAnotherPark,
+      presencePromptActive: Boolean(parkPresencePrompt),
+      confirmedActivePark: parkPresence?.confirmedActivePark || activePark,
+      currentLand,
+      currentActivity,
+      dateString: parkPresence?.dateString || "",
+    });
+  }, [
+    tohiPickDebugPreview,
+    activeTab,
+    browsingAnotherPark,
+    parkPresencePrompt,
+    parkPresence,
+    activePark,
+    currentLand,
+    currentActivity,
+  ]);
+
+  const tohiPickClarification = useMemo(() => {
+    return selectTohiPickClarificationForSignature({
+      evaluation: tohiPickClarificationEvaluation,
+      cache: tohiPickClarificationCacheRef.current,
+    });
+    // tohiPickClarificationVersion re-selects after an answer/dismissal write.
+  }, [tohiPickClarificationEvaluation, tohiPickClarificationVersion]);
+
+  const clarifiedTohiPickCandidate =
+    !tohiPickMvpCandidate &&
+    (tohiPickClarification.status === TOHI_PICK_CLARIFICATION_STATUSES.NEARBY_CONFIRMED ||
+      tohiPickClarification.status === TOHI_PICK_CLARIFICATION_STATUSES.MUST_DO_CONFIRMED)
+      ? tohiPickClarification.candidate
+      : null;
+
+  const tohiPickDisplayCandidate = tohiPickMvpCandidate || clarifiedTohiPickCandidate;
+  const tohiPickDisplaySource = tohiPickMvpCandidate
+    ? "deterministic"
+    : clarifiedTohiPickCandidate
+    ? "clarification"
+    : "none";
+  const showTohiPickClarificationQuestion =
+    !tohiPickMvpCandidate &&
+    tohiPickClarification.status === TOHI_PICK_CLARIFICATION_STATUSES.AVAILABLE;
+
+  function handleAnswerTohiPickClarification(answer) {
+    const evaluation = tohiPickClarificationEvaluation;
+    const resolved = resolveTohiPickClarificationAnswer(evaluation, answer);
+
+    if (!resolved || !evaluation.signature) return;
+
+    trackAppEvent("tohi_pick_clarification_answered", {
+      source: "plan_clarification_card",
+      activePark,
+      metadata: {
+        answer,
+        status: resolved.status,
+        candidateId: resolved.candidate?.rideId || "",
+      },
+    });
+
+    storeTohiPickClarificationResult(
+      tohiPickClarificationCacheRef.current,
+      evaluation.signature,
+      resolved
+    );
+    setTohiPickClarificationVersion((current) => current + 1);
+  }
+
   const primaryRecommendation =
     recommendations.bestMove ||
     recommendations.backup ||
@@ -4171,6 +4255,26 @@ function App() {
               {dbRow(
                 "arrivalLastRejection",
                 parkArrivalTracker.lastSample?.rejectionReason || "none"
+              )}
+              {dbRow("clarificationStatus", tohiPickClarification.status)}
+              {dbRow(
+                "clarificationReason",
+                tohiPickClarificationEvaluation.reasonUnavailable || "none"
+              )}
+              {dbRow(
+                "clarificationNearby",
+                tohiPickClarificationEvaluation.nearbyCandidate?.name || "none"
+              )}
+              {dbRow(
+                "clarificationMustDo",
+                tohiPickClarificationEvaluation.mustDoCandidate?.name || "none"
+              )}
+              {dbRow("tohiPickDisplaySource", tohiPickDisplaySource)}
+              {dbRow(
+                "clarificationSignature",
+                tohiPickClarificationEvaluation.signature
+                  ? `${tohiPickClarificationEvaluation.signature.slice(0, 120)}…`
+                  : "none"
               )}
               {dbRow("sourceCount", tohiPickDebugPreview.sourceCount)}
               {dbRow("usableCount", tohiPickDebugPreview.usableCount)}
@@ -5502,7 +5606,118 @@ function App() {
                 </div>
               ) : hasAnyRecommendation ? (
                 <div style={{ display: "grid", gap: 10 }}>
-                  {tohiPickMvpCandidate && (
+                  {showTohiPickClarificationQuestion && (
+                    <section
+                      aria-label="TOHI Pick clarification question"
+                      style={{
+                        padding: 16,
+                        marginBottom: 14,
+                        borderRadius: 22,
+                        background: parkPresenceTheme.isNight
+                          ? "linear-gradient(150deg, #0F172A 0%, #1E1B4B 100%)"
+                          : "linear-gradient(150deg, #FFFFFF 0%, #F8F5FF 100%)",
+                        border: parkPresenceTheme.isNight
+                          ? "1px solid rgba(139, 92, 246, 0.45)"
+                          : "1px solid rgba(124, 58, 237, 0.20)",
+                        boxShadow: parkPresenceTheme.isNight
+                          ? "0 12px 30px rgba(76, 29, 149, 0.30)"
+                          : "0 12px 30px rgba(91, 33, 182, 0.08)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 950,
+                          letterSpacing: 0.7,
+                          marginBottom: 6,
+                          color: parkPresenceTheme.isNight ? "#C4B5FD" : colors.purpleDeep,
+                        }}
+                      >
+                        HELP TOHI CHOOSE
+                      </div>
+
+                      <h4
+                        style={{
+                          margin: "0 0 6px",
+                          fontSize: 19,
+                          letterSpacing: -0.3,
+                          color: parkPresenceTheme.isNight ? "#F5F3FF" : colors.text,
+                        }}
+                      >
+                        What matters more right now?
+                      </h4>
+
+                      <p
+                        style={{
+                          margin: "0 0 12px",
+                          fontSize: 13,
+                          lineHeight: 1.45,
+                          color: parkPresenceTheme.isNight ? "#C7D2FE" : colors.muted,
+                        }}
+                      >
+                        Stay nearby, or walk farther for one of your must-dos?
+                      </p>
+
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleAnswerTohiPickClarification(
+                              TOHI_PICK_CLARIFICATION_ANSWERS.STAY_NEARBY
+                            )
+                          }
+                          style={{
+                            ...button,
+                            background: colors.purpleDeep,
+                            borderColor: colors.purpleDeep,
+                            color: "white",
+                          }}
+                        >
+                          Stay nearby
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleAnswerTohiPickClarification(
+                              TOHI_PICK_CLARIFICATION_ANSWERS.GO_MUST_DO
+                            )
+                          }
+                          style={{
+                            ...button,
+                            background: colors.purple,
+                            borderColor: colors.purple,
+                            color: "white",
+                          }}
+                        >
+                          Go for the must-do
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleAnswerTohiPickClarification(
+                              TOHI_PICK_CLARIFICATION_ANSWERS.NOT_RIGHT_NOW
+                            )
+                          }
+                          style={{
+                            ...button,
+                            ...(parkPresenceTheme.isNight
+                              ? {
+                                  background: "rgba(30, 27, 75, 0.6)",
+                                  color: "#C7D2FE",
+                                  borderColor: "rgba(139, 92, 246, 0.4)",
+                                }
+                              : { color: colors.muted }),
+                          }}
+                        >
+                          Not right now
+                        </button>
+                      </div>
+                    </section>
+                  )}
+
+                  {tohiPickDisplayCandidate && (
                     <div
                       aria-label="TOHI Pick recommendation"
                       style={{
@@ -5588,8 +5803,8 @@ function App() {
                                 fontWeight: 900,
                               }}
                             >
-                              {Number.isFinite(Number(tohiPickMvpCandidate.wait))
-                                ? `${tohiPickMvpCandidate.wait} min`
+                              {Number.isFinite(Number(tohiPickDisplayCandidate.wait))
+                                ? `${tohiPickDisplayCandidate.wait} min`
                                 : "Check wait"}
                             </span>
                           </div>
@@ -5604,7 +5819,7 @@ function App() {
                               color: colors.text,
                             }}
                           >
-                            {tohiPickMvpCandidate.name}
+                            {tohiPickDisplayCandidate.name}
                           </h3>
 
                           <p
@@ -5616,20 +5831,20 @@ function App() {
                               fontWeight: 650,
                             }}
                           >
-                            {tohiPickMvpCandidate.engineReason ||
+                            {tohiPickDisplayCandidate.engineReason ||
                               "This looks like the clearest fit right now based on your family, location, waits, and the day around you."}
                           </p>
 
-                          {tohiPickMvpCandidate.tags?.length > 0 && (
+                          {tohiPickDisplayCandidate.tags?.length > 0 && (
                             <div
                               style={{
                                 display: "flex",
                                 flexWrap: "wrap",
                                 gap: 7,
-                                marginBottom: tohiPickMvpCandidate.engineCaution ? 12 : 0,
+                                marginBottom: tohiPickDisplayCandidate.engineCaution ? 12 : 0,
                               }}
                             >
-                              {tohiPickMvpCandidate.tags.slice(0, 6).map((tag) => (
+                              {tohiPickDisplayCandidate.tags.slice(0, 6).map((tag) => (
                                 <span
                                   key={tag}
                                   style={{
@@ -5651,7 +5866,7 @@ function App() {
                             </div>
                           )}
 
-                          {tohiPickMvpCandidate.engineCaution && (
+                          {tohiPickDisplayCandidate.engineCaution && (
                             <div
                               style={{
                                 marginTop: 10,
@@ -5665,9 +5880,23 @@ function App() {
                                 fontWeight: 750,
                               }}
                             >
-                              {tohiPickMvpCandidate.engineCaution}
+                              {tohiPickDisplayCandidate.engineCaution}
                             </div>
                           )}
+
+                          {tohiPickDisplaySource === "clarification" &&
+                            tohiPickClarification.explanation && (
+                              <p
+                                style={{
+                                  margin: "10px 0 0",
+                                  fontSize: 12.5,
+                                  fontWeight: 750,
+                                  color: colors.purpleDeep,
+                                }}
+                              >
+                                {tohiPickClarification.explanation}
+                              </p>
+                            )}
                         </div>
 
                         <div
