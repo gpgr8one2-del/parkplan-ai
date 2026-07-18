@@ -2324,11 +2324,6 @@ function App() {
       : "0 10px 24px rgba(28, 25, 23, 0.06)",
   };
 
-  // The blueprint's two Plan states share one existing condition: setup renders
-  // while personalized moves still need the family's location; the
-  // recommendation experience renders once that context exists.
-  const planShowsSetupState = recommendations.needsLocation || !currentLand;
-
   const browsedParkId = deriveBrowsedPark(parkPresence, activePark);
   const browsingAnotherPark = isBrowsingAnotherPark(parkPresence, browsedParkId);
   const confirmedActiveParkId = parkPresence?.confirmedActivePark || activePark;
@@ -2488,6 +2483,12 @@ function App() {
     timeContext,
     tripPlanState,
   ]);
+
+  // The blueprint's two Plan states share one existing condition: setup renders
+  // while personalized moves still need the family's location; the
+  // recommendation experience renders once that context exists. Declared after
+  // the recommendations memo it reads from.
+  const planShowsSetupState = recommendations.needsLocation || !currentLand;
 
   const weatherMode = useMemo(() => {
     return getWeatherMode(weather);
