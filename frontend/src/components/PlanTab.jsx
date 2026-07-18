@@ -1,6 +1,32 @@
 import React, { useState } from "react";
 import { colors } from "../theme";
 
+// 61A presentation-only palette. PlanTab swaps this before its children
+// render; day mode keeps the existing styles untouched (shell is null).
+const PLAN_TAB_DAY_PALETTE = {
+  isNight: false,
+  text: colors.text,
+  muted: colors.muted,
+  shell: null,
+  chip: null,
+  chipBorder: null,
+};
+
+const PLAN_TAB_NIGHT_PALETTE = {
+  isNight: true,
+  text: "#F5F3FF",
+  muted: "#B6C2E2",
+  shell: {
+    background: "#131C36",
+    border: "1px solid rgba(139, 92, 246, 0.30)",
+    boxShadow: "0 10px 24px rgba(2, 6, 23, 0.40)",
+  },
+  chip: "rgba(15, 23, 42, 0.72)",
+  chipBorder: "rgba(99, 102, 241, 0.30)",
+};
+
+
+
 const PRIORITY_STYLES = {
   must: { bg: colors.coralSoft, color: "#E11D48", label: "High priority" },
   should: { bg: colors.amberSoft, color: "#92400E", label: "Smart move" },
@@ -13,11 +39,32 @@ const PACKING_PRIORITY_STYLES = {
   nice_to_have: { bg: colors.skySoft, color: "#0369A1", label: "Nice" },
 };
 
+
+// Night chips keep their semantic accent but move to dark translucent
+// surfaces with readable light accents. Day chips are untouched.
+const NIGHT_CHIP_ACCENTS = {
+  "#E11D48": "#FDA4AF",
+  "#92400E": "#FCD34D",
+  "#0369A1": "#7DD3FC",
+  "#059669": "#6EE7B7",
+  "#7C3AED": "#C4B5FD",
+  "#5B21B6": "#C4B5FD",
+};
+
+function getChipAccent(color, palette) {
+  if (!palette?.isNight) return color;
+  return NIGHT_CHIP_ACCENTS[color] || "#C7D2FE";
+}
+
+function getChipSurface(background, palette) {
+  return palette?.isNight ? palette.chip : background;
+}
+
 function getSelectedHelper(options, value) {
   return options.find((option) => option.value === value)?.helper || "";
 }
 
-function SectionBadge({ children, background, color }) {
+function SectionBadge({ palette = PLAN_TAB_DAY_PALETTE, children, background, color }) {
   return (
     <div
       style={{
@@ -26,8 +73,9 @@ function SectionBadge({ children, background, color }) {
         gap: 6,
         padding: "5px 9px",
         borderRadius: 999,
-        background,
-        color,
+        background: getChipSurface(background, palette),
+        border: palette?.isNight ? `1px solid ${palette.chipBorder}` : "none",
+        color: getChipAccent(color, palette),
         fontSize: 11,
         fontWeight: 950,
         letterSpacing: 0.7,
@@ -40,15 +88,15 @@ function SectionBadge({ children, background, color }) {
 }
 
 
-function CollapseButton({ isOpen, openLabel = "See more", closeLabel = "Collapse", onClick }) {
+function CollapseButton({ palette = PLAN_TAB_DAY_PALETTE, isOpen, openLabel = "See more", closeLabel = "Collapse", onClick }) {
   return (
     <button
       type="button"
       onClick={onClick}
       style={{
-        border: `1px solid ${colors.cardBorder}`,
-        background: "rgba(255,255,255,0.82)",
-        color: colors.text,
+        border: `1px solid ${palette.chipBorder || colors.cardBorder}`,
+        background: palette.chip || "rgba(255,255,255,0.82)",
+        color: palette.text,
         borderRadius: 999,
         padding: "7px 10px",
         fontSize: 12,
@@ -62,7 +110,7 @@ function CollapseButton({ isOpen, openLabel = "See more", closeLabel = "Collapse
   );
 }
 
-function PlanPreferenceSelect({ id, label, value, options, onChange }) {
+function PlanPreferenceSelect({ palette = PLAN_TAB_DAY_PALETTE, id, label, value, options, onChange }) {
   return (
     <label
       htmlFor={id}
@@ -71,11 +119,11 @@ function PlanPreferenceSelect({ id, label, value, options, onChange }) {
         gap: 6,
         padding: 10,
         borderRadius: 16,
-        background: "rgba(255,255,255,0.78)",
+        background: palette.chip || "rgba(255,255,255,0.78)",
         border: `1px solid ${colors.cardBorder}`,
       }}
     >
-      <span style={{ color: colors.text, fontSize: 12, fontWeight: 950 }}>
+      <span style={{ color: palette.text, fontSize: 12, fontWeight: 950 }}>
         {label}
       </span>
 
@@ -89,8 +137,8 @@ function PlanPreferenceSelect({ id, label, value, options, onChange }) {
           borderRadius: 13,
           padding: "9px 10px",
           fontWeight: 850,
-          background: "white",
-          color: colors.text,
+          background: palette.chip || "white",
+          color: palette.text,
         }}
       >
         {options.map((option) => (
@@ -100,7 +148,7 @@ function PlanPreferenceSelect({ id, label, value, options, onChange }) {
         ))}
       </select>
 
-      <span style={{ color: colors.muted, fontSize: 11, lineHeight: 1.3 }}>
+      <span style={{ color: palette.muted, fontSize: 11, lineHeight: 1.3 }}>
         {getSelectedHelper(options, value)}
       </span>
     </label>
@@ -327,7 +375,7 @@ function buildTransportationBriefing({
 }
 
 
-function MorningBriefingCard({
+function MorningBriefingCard({ palette = PLAN_TAB_DAY_PALETTE,
   card,
   preferredName,
   familyProfile = {},
@@ -360,17 +408,18 @@ function MorningBriefingCard({
           "radial-gradient(circle at 92% 0%, rgba(251, 113, 133, 0.20) 0%, rgba(251, 113, 133, 0.05) 35%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #FFF7ED 54%, #FEF3C7 100%)",
         border: "1px solid rgba(245, 158, 11, 0.26)",
         boxShadow: "0 16px 38px rgba(245, 158, 11, 0.12)",
+              ...(palette.shell || {}),
       }}
     >
       <div style={{ position: "relative" }}>
-        <SectionBadge background={colors.amberSoft} color="#92400E">
+        <SectionBadge palette={palette} background={colors.amberSoft} color="#92400E">
           MORNING BRIEFING
         </SectionBadge>
 
         <h2
           style={{
             margin: 0,
-            color: colors.text,
+            color: palette.text,
             fontSize: 25,
             letterSpacing: -0.55,
             lineHeight: 1.12,
@@ -384,7 +433,7 @@ function MorningBriefingCard({
             style={{
               padding: 12,
               borderRadius: 18,
-              background: "rgba(255,255,255,0.84)",
+              background: palette.chip || "rgba(255,255,255,0.84)",
               border: `1px solid ${colors.cardBorder}`,
             }}
           >
@@ -403,7 +452,7 @@ function MorningBriefingCard({
               style={{
                 display: "block",
                 marginTop: 4,
-                color: colors.text,
+                color: palette.text,
                 fontSize: 15,
                 lineHeight: 1.28,
               }}
@@ -412,7 +461,7 @@ function MorningBriefingCard({
             </strong>
 
             {startPlan?.body && (
-              <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12.5, lineHeight: 1.38 }}>
+              <p style={{ margin: "6px 0 0", color: palette.muted, fontSize: 12.5, lineHeight: 1.38 }}>
                 {startPlan.body}
               </p>
             )}
@@ -423,7 +472,7 @@ function MorningBriefingCard({
               style={{
                 padding: 12,
                 borderRadius: 18,
-                background: "rgba(255,255,255,0.72)",
+                background: palette.chip || "rgba(255,255,255,0.72)",
                 border: `1px solid ${colors.cardBorder}`,
               }}
             >
@@ -442,7 +491,7 @@ function MorningBriefingCard({
                 style={{
                   display: "block",
                   marginTop: 4,
-                  color: colors.text,
+                  color: palette.text,
                   fontSize: 14,
                   lineHeight: 1.28,
                 }}
@@ -450,7 +499,7 @@ function MorningBriefingCard({
                 {transportationBriefing.title}
               </strong>
 
-              <p style={{ margin: "5px 0 0", color: colors.muted, fontSize: 12.5, lineHeight: 1.38 }}>
+              <p style={{ margin: "5px 0 0", color: palette.muted, fontSize: 12.5, lineHeight: 1.38 }}>
                 {transportationBriefing.detail}
               </p>
             </div>
@@ -461,7 +510,7 @@ function MorningBriefingCard({
               style={{
                 padding: 12,
                 borderRadius: 18,
-                background: "rgba(255,255,255,0.72)",
+                background: palette.chip || "rgba(255,255,255,0.72)",
                 border: `1px solid ${colors.cardBorder}`,
               }}
             >
@@ -476,7 +525,7 @@ function MorningBriefingCard({
                 WEATHER NOTE
               </div>
 
-              <p style={{ margin: "4px 0 0", color: colors.text, fontSize: 13, lineHeight: 1.38 }}>
+              <p style={{ margin: "4px 0 0", color: palette.text, fontSize: 13, lineHeight: 1.38 }}>
                 {weatherNote}
               </p>
             </div>
@@ -486,7 +535,7 @@ function MorningBriefingCard({
             style={{
               padding: 12,
               borderRadius: 18,
-              background: "rgba(255,255,255,0.72)",
+              background: palette.chip || "rgba(255,255,255,0.72)",
               border: `1px solid ${colors.cardBorder}`,
             }}
           >
@@ -501,12 +550,12 @@ function MorningBriefingCard({
               YOUR PRIORITIES
             </div>
 
-            <p style={{ margin: "4px 0 0", color: colors.text, fontSize: 13, lineHeight: 1.38 }}>
+            <p style={{ margin: "4px 0 0", color: palette.text, fontSize: 13, lineHeight: 1.38 }}>
               {priorityPreview.text}
             </p>
 
             {priorityPreview.empty && (
-              <p style={{ margin: "5px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+              <p style={{ margin: "5px 0 0", color: palette.muted, fontSize: 12, lineHeight: 1.35 }}>
                 Add a few before the trip so the morning plan knows what would make the day feel like a win.
               </p>
             )}
@@ -518,7 +567,7 @@ function MorningBriefingCard({
 }
 
 
-function PlanningStatusCard({
+function PlanningStatusCard({ palette = PLAN_TAB_DAY_PALETTE,
   card,
   timeContext = {},
   planTabState = {},
@@ -535,6 +584,7 @@ function PlanningStatusCard({
         background: "linear-gradient(145deg, #FFFFFF 0%, #FFF9F1 100%)",
         border: `1px solid ${colors.cardBorder}`,
         boxShadow: "0 10px 24px rgba(28, 25, 23, 0.05)",
+              ...(palette.shell || {}),
       }}
     >
       <div
@@ -547,13 +597,13 @@ function PlanningStatusCard({
         }}
       >
         <div style={{ minWidth: 220, flex: "1 1 300px" }}>
-          <SectionBadge background={colors.amberSoft} color="#92400E">
+          <SectionBadge palette={palette} background={colors.amberSoft} color="#92400E">
             TRIP STATUS
           </SectionBadge>
           <p
             style={{
               margin: 0,
-              color: colors.text,
+              color: palette.text,
               fontWeight: 900,
               fontSize: 15,
               lineHeight: 1.4,
@@ -566,20 +616,20 @@ function PlanningStatusCard({
             <p
               style={{
                 margin: "7px 0 0",
-                color: colors.text,
+                color: palette.text,
                 fontSize: 13,
                 lineHeight: 1.38,
                 fontWeight: 850,
               }}
             >
               {planTabState.headline}{" "}
-              <span style={{ color: colors.muted, fontWeight: 700 }}>
+              <span style={{ color: palette.muted, fontWeight: 700 }}>
                 {planTabState.detail}
               </span>
             </p>
           )}
 
-          <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+          <p style={{ margin: "6px 0 0", color: palette.muted, fontSize: 12, lineHeight: 1.35 }}>
             {hasPersonalizedAccess
               ? "Your setup is active. This plan is using your family details, priorities, and day style."
               : "Finish setup when you are ready for a plan that fits your family."}
@@ -592,7 +642,7 @@ function PlanningStatusCard({
           style={{
             ...button,
             background: profileCompletion.isComplete ? "rgba(255,255,255,0.82)" : colors.purpleDeep,
-            color: profileCompletion.isComplete ? colors.text : "white",
+            color: profileCompletion.isComplete ? palette.text : "white",
             borderColor: profileCompletion.isComplete ? colors.cardBorder : colors.purpleDeep,
           }}
         >
@@ -604,7 +654,7 @@ function PlanningStatusCard({
 }
 
 
-function TodayParkPlanCard({
+function TodayParkPlanCard({ palette = PLAN_TAB_DAY_PALETTE,
   card,
   scheduledParkForToday,
   todayPlannedParkLabel,
@@ -621,9 +671,10 @@ function TodayParkPlanCard({
         background: "linear-gradient(145deg, #FFFFFF 0%, #F5F3FF 100%)",
         border: "1px solid rgba(124, 58, 237, 0.18)",
         boxShadow: "0 10px 24px rgba(91, 33, 182, 0.06)",
+              ...(palette.shell || {}),
       }}
     >
-      <SectionBadge background="rgba(124, 58, 237, 0.10)" color={colors.purpleDeep}>
+      <SectionBadge palette={palette} background="rgba(124, 58, 237, 0.10)" color={colors.purpleDeep}>
         TODAY&apos;S PARK PLAN
       </SectionBadge>
 
@@ -631,7 +682,7 @@ function TodayParkPlanCard({
         style={{
           display: "block",
           marginTop: 2,
-          color: colors.text,
+          color: palette.text,
           fontSize: 15,
           lineHeight: 1.35,
         }}
@@ -639,7 +690,7 @@ function TodayParkPlanCard({
         Today&apos;s plan: {todayPlannedParkLabel || planningParkLabel || "the park"}.
       </strong>
 
-      <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12.5, lineHeight: 1.4 }}>
+      <p style={{ margin: "6px 0 0", color: palette.muted, fontSize: 12.5, lineHeight: 1.4 }}>
         {scheduledSecondaryParkLabel
           ? `Second park: ${scheduledSecondaryParkLabel}. For now, treat this as context; Right Now still follows the live park you choose.`
           : "This is the park TOHI is using for today’s planning view."}
@@ -649,7 +700,7 @@ function TodayParkPlanCard({
 }
 
 
-function ParkDayScheduleStatusCard({ card, parkDayScheduleStatus = {}, planningParkLabel = "" }) {
+function ParkDayScheduleStatusCard({ palette = PLAN_TAB_DAY_PALETTE, card, parkDayScheduleStatus = {}, planningParkLabel = "" }) {
   const status = parkDayScheduleStatus?.status || "";
 
   if (!status || status === "active_today") return null;
@@ -665,9 +716,10 @@ function ParkDayScheduleStatusCard({ card, parkDayScheduleStatus = {}, planningP
         background: "linear-gradient(145deg, #FFFFFF 0%, #FFF7ED 100%)",
         border: "1px solid rgba(245, 158, 11, 0.22)",
         boxShadow: "0 10px 24px rgba(245, 158, 11, 0.06)",
+              ...(palette.shell || {}),
       }}
     >
-      <SectionBadge background={colors.amberSoft} color="#92400E">
+      <SectionBadge palette={palette} background={colors.amberSoft} color="#92400E">
         PARK SCHEDULE STATUS
       </SectionBadge>
 
@@ -675,7 +727,7 @@ function ParkDayScheduleStatusCard({ card, parkDayScheduleStatus = {}, planningP
         style={{
           display: "block",
           marginTop: 2,
-          color: colors.text,
+          color: palette.text,
           fontSize: 15,
           lineHeight: 1.35,
         }}
@@ -683,12 +735,12 @@ function ParkDayScheduleStatusCard({ card, parkDayScheduleStatus = {}, planningP
         {parkDayScheduleStatus.label || "Using your profile park."}
       </strong>
 
-      <p style={{ margin: "6px 0 0", color: colors.text, fontSize: 12.5, lineHeight: 1.4 }}>
+      <p style={{ margin: "6px 0 0", color: palette.text, fontSize: 12.5, lineHeight: 1.4 }}>
         {parkDayScheduleStatus.guidance || `TOHI is using ${fallbackLabel} for the planning view.`}
       </p>
 
       {hasDateRange && (
-        <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+        <p style={{ margin: "6px 0 0", color: palette.muted, fontSize: 12, lineHeight: 1.35 }}>
           Saved schedule: {parkDayScheduleStatus.firstScheduleDate || "—"} to {parkDayScheduleStatus.lastScheduleDate || "—"}.
         </p>
       )}
@@ -696,7 +748,7 @@ function ParkDayScheduleStatusCard({ card, parkDayScheduleStatus = {}, planningP
   );
 }
 
-function ParkHopperTimingCard({ card, parkHopperContext = {} }) {
+function ParkHopperTimingCard({ palette = PLAN_TAB_DAY_PALETTE, card, parkHopperContext = {} }) {
   if (!parkHopperContext?.hasSecondPark) return null;
 
   const mustDoCount = Number(parkHopperContext?.secondParkMustDos?.count || 0);
@@ -712,9 +764,10 @@ function ParkHopperTimingCard({ card, parkHopperContext = {} }) {
         background: "linear-gradient(145deg, #FFFFFF 0%, #ECFEFF 100%)",
         border: "1px solid rgba(56, 189, 248, 0.24)",
         boxShadow: "0 10px 24px rgba(14, 165, 233, 0.06)",
+              ...(palette.shell || {}),
       }}
     >
-      <SectionBadge background="rgba(56, 189, 248, 0.14)" color="#0369A1">
+      <SectionBadge palette={palette} background="rgba(56, 189, 248, 0.14)" color="#0369A1">
         PARK HOPPER CONTEXT
       </SectionBadge>
 
@@ -722,7 +775,7 @@ function ParkHopperTimingCard({ card, parkHopperContext = {} }) {
         style={{
           display: "block",
           marginTop: 2,
-          color: colors.text,
+          color: palette.text,
           fontSize: 15,
           lineHeight: 1.35,
         }}
@@ -730,7 +783,7 @@ function ParkHopperTimingCard({ card, parkHopperContext = {} }) {
         {parkHopperContext.label || "Second park timing"}
       </strong>
 
-      <p style={{ margin: "6px 0 0", color: colors.text, fontSize: 12.5, lineHeight: 1.4 }}>
+      <p style={{ margin: "6px 0 0", color: palette.text, fontSize: 12.5, lineHeight: 1.4 }}>
         {parkHopperContext.guidance}
       </p>
 
@@ -739,24 +792,24 @@ function ParkHopperTimingCard({ card, parkHopperContext = {} }) {
           marginTop: 9,
           padding: 10,
           borderRadius: 16,
-          background: "rgba(255,255,255,0.72)",
+          background: palette.chip || "rgba(255,255,255,0.72)",
           border: `1px solid ${colors.cardBorder}`,
         }}
       >
-        <strong style={{ display: "block", color: colors.text, fontSize: 12.5, lineHeight: 1.3 }}>
+        <strong style={{ display: "block", color: palette.text, fontSize: 12.5, lineHeight: 1.3 }}>
           {hasSecondParkMustDos
             ? `${secondaryParkLabel} has ${mustDoCount} must-do${mustDoCount === 1 ? "" : "s"}.`
             : `No ${secondaryParkLabel} must-dos saved yet.`}
         </strong>
 
-        <p style={{ margin: "5px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+        <p style={{ margin: "5px 0 0", color: palette.muted, fontSize: 12, lineHeight: 1.35 }}>
           {hasSecondParkMustDos
             ? `TOHI should treat ${mustDoLabel} as a reason the second park may matter, not as a reason to rush the hop.`
             : "Treat the hop as flexible until something in the second park is marked important."}
         </p>
       </div>
 
-      <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+      <p style={{ margin: "7px 0 0", color: palette.muted, fontSize: 12, lineHeight: 1.35 }}>
         {parkHopperContext.shouldConsiderSecondPark
           ? "This is a context signal, not an automatic recommendation to leave."
           : "TOHI is intentionally not pushing the hop yet."}
@@ -765,7 +818,7 @@ function ParkHopperTimingCard({ card, parkHopperContext = {} }) {
   );
 }
 
-function LiveParkContextCard({ card, liveParkContext = {} }) {
+function LiveParkContextCard({ palette = PLAN_TAB_DAY_PALETTE, card, liveParkContext = {} }) {
   if (!liveParkContext?.showNotice) return null;
 
   return (
@@ -776,9 +829,10 @@ function LiveParkContextCard({ card, liveParkContext = {} }) {
         background: "linear-gradient(145deg, #FFFFFF 0%, #FFF7ED 100%)",
         border: "1px solid rgba(245, 158, 11, 0.24)",
         boxShadow: "0 10px 24px rgba(245, 158, 11, 0.06)",
+              ...(palette.shell || {}),
       }}
     >
-      <SectionBadge background={colors.amberSoft} color="#92400E">
+      <SectionBadge palette={palette} background={colors.amberSoft} color="#92400E">
         LIVE PARK CONTEXT
       </SectionBadge>
 
@@ -786,7 +840,7 @@ function LiveParkContextCard({ card, liveParkContext = {} }) {
         style={{
           display: "block",
           marginTop: 2,
-          color: colors.text,
+          color: palette.text,
           fontSize: 15,
           lineHeight: 1.35,
         }}
@@ -794,11 +848,11 @@ function LiveParkContextCard({ card, liveParkContext = {} }) {
         {liveParkContext.label || "Live park view"}
       </strong>
 
-      <p style={{ margin: "6px 0 0", color: colors.text, fontSize: 12.5, lineHeight: 1.4 }}>
+      <p style={{ margin: "6px 0 0", color: palette.text, fontSize: 12.5, lineHeight: 1.4 }}>
         {liveParkContext.guidance}
       </p>
 
-      <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+      <p style={{ margin: "7px 0 0", color: palette.muted, fontSize: 12, lineHeight: 1.35 }}>
         This explains the view only. It does not automatically switch parks or change recommendation scoring.
       </p>
     </section>
@@ -884,7 +938,7 @@ function getRollingGamePlanWindow({ dayGamePlan = [], timeContext = {}, planTabS
   };
 }
 
-function DayGamePlanItemCard({ item }) {
+function DayGamePlanItemCard({ palette = PLAN_TAB_DAY_PALETTE, item }) {
   const styleForPriority =
     PRIORITY_STYLES[item.priority] || PRIORITY_STYLES.optional;
 
@@ -894,7 +948,7 @@ function DayGamePlanItemCard({ item }) {
       style={{
         padding: 13,
         borderRadius: 18,
-        background: "rgba(255,255,255,0.84)",
+        background: palette.chip || "rgba(255,255,255,0.84)",
         border: `1px solid ${colors.cardBorder}`,
         boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
       }}
@@ -922,7 +976,7 @@ function DayGamePlanItemCard({ item }) {
             style={{
               display: "block",
               marginTop: 3,
-              color: colors.text,
+              color: palette.text,
               fontSize: 15,
               lineHeight: 1.25,
             }}
@@ -932,7 +986,7 @@ function DayGamePlanItemCard({ item }) {
           <p
             style={{
               margin: "6px 0 0",
-              color: colors.text,
+              color: palette.text,
               fontSize: 13,
               lineHeight: 1.38,
             }}
@@ -943,7 +997,7 @@ function DayGamePlanItemCard({ item }) {
             <p
               style={{
                 margin: "6px 0 0",
-                color: colors.muted,
+                color: palette.muted,
                 fontSize: 12,
                 lineHeight: 1.35,
                 fontWeight: 750,
@@ -959,8 +1013,9 @@ function DayGamePlanItemCard({ item }) {
             flexShrink: 0,
             padding: "5px 8px",
             borderRadius: 999,
-            background: styleForPriority.bg,
-            color: styleForPriority.color,
+            background: getChipSurface(styleForPriority.bg, palette),
+            border: palette?.isNight ? `1px solid ${palette.chipBorder}` : "none",
+            color: getChipAccent(styleForPriority.color, palette),
             fontSize: 11,
             fontWeight: 950,
           }}
@@ -972,7 +1027,7 @@ function DayGamePlanItemCard({ item }) {
   );
 }
 
-function DayGamePlanRow({ item }) {
+function DayGamePlanRow({ palette = PLAN_TAB_DAY_PALETTE, item }) {
   return (
     <div
       style={{
@@ -981,7 +1036,7 @@ function DayGamePlanRow({ item }) {
         gap: 8,
         padding: "7px 11px",
         borderRadius: 12,
-        background: "rgba(255,255,255,0.55)",
+        background: palette.chip || "rgba(255,255,255,0.55)",
         border: "1px solid " + colors.cardBorder,
       }}
     >
@@ -996,14 +1051,14 @@ function DayGamePlanRow({ item }) {
       >
         {item.eyebrow}
       </span>
-      <span style={{ color: colors.muted, fontSize: 12.5, lineHeight: 1.3 }}>
+      <span style={{ color: palette.muted, fontSize: 12.5, lineHeight: 1.3 }}>
         {item.title}
       </span>
     </div>
   );
 }
 
-function ActivityRecapSection({ card, activityLog = [] }) {
+function ActivityRecapSection({ palette = PLAN_TAB_DAY_PALETTE, card, activityLog = [] }) {
   if (!activityLog.length) return null;
 
   const now = new Date();
@@ -1033,15 +1088,15 @@ function ActivityRecapSection({ card, activityLog = [] }) {
     count === 1 ? "1 attraction so far" : count + " attractions so far";
 
   return (
-    <section style={{ ...card, padding: 16 }}>
-      <SectionBadge background={colors.skySoft} color="#0369A1">
+    <section style={{ ...card, padding: 16, ...(palette.shell || {}) }}>
+      <SectionBadge palette={palette} background={colors.skySoft} color="#0369A1">
         TODAY SO FAR
       </SectionBadge>
 
       <p
         style={{
           margin: "0 0 10px",
-          color: colors.text,
+          color: palette.text,
           fontSize: 15,
           fontWeight: 800,
         }}
@@ -1054,7 +1109,7 @@ function ActivityRecapSection({ card, activityLog = [] }) {
           <div
             key={i}
             style={{
-              color: colors.muted,
+              color: palette.muted,
               fontSize: 13,
               lineHeight: 1.3,
             }}
@@ -1066,7 +1121,7 @@ function ActivityRecapSection({ card, activityLog = [] }) {
         {extra > 0 && (
           <div
             style={{
-              color: colors.muted,
+              color: palette.muted,
               fontSize: 12,
               fontWeight: 800,
             }}
@@ -1079,7 +1134,7 @@ function ActivityRecapSection({ card, activityLog = [] }) {
   );
 }
 
-function DayGamePlanSection({ card, dayGamePlan = [], timeContext = {}, planTabState = {} }) {
+function DayGamePlanSection({ palette = PLAN_TAB_DAY_PALETTE, card, dayGamePlan = [], timeContext = {}, planTabState = {} }) {
   const [isOpen, setIsOpen] = useState(false);
   const rollingWindow = getRollingGamePlanWindow({ dayGamePlan, timeContext, planTabState });
   const visibleItems = rollingWindow.items.length ? rollingWindow.items : dayGamePlan.slice(0, 1);
@@ -1100,6 +1155,7 @@ function DayGamePlanSection({ card, dayGamePlan = [], timeContext = {}, planTabS
           "radial-gradient(circle at 92% 0%, rgba(14, 165, 233, 0.20) 0%, rgba(14, 165, 233, 0.05) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%)",
         border: "1px solid rgba(14, 165, 233, 0.22)",
         boxShadow: "0 16px 38px rgba(14, 165, 233, 0.10)",
+              ...(palette.shell || {}),
       }}
     >
       <div
@@ -1126,14 +1182,14 @@ function DayGamePlanSection({ card, dayGamePlan = [], timeContext = {}, planTabS
           }}
         >
           <div style={{ minWidth: 220, flex: "1 1 320px" }}>
-            <SectionBadge background={colors.skySoft} color="#0369A1">
+            <SectionBadge palette={palette} background={colors.skySoft} color="#0369A1">
               DAY STRATEGY
             </SectionBadge>
 
             <h2
               style={{
                 margin: 0,
-                color: colors.text,
+                color: palette.text,
                 fontSize: 24,
                 letterSpacing: -0.55,
                 lineHeight: 1.12,
@@ -1145,7 +1201,7 @@ function DayGamePlanSection({ card, dayGamePlan = [], timeContext = {}, planTabS
             <p
               style={{
                 margin: "8px 0 0",
-                color: colors.muted,
+                color: palette.muted,
                 fontSize: 14,
                 lineHeight: 1.45,
                 maxWidth: 660,
@@ -1156,7 +1212,7 @@ function DayGamePlanSection({ card, dayGamePlan = [], timeContext = {}, planTabS
           </div>
 
           {isInParkView && (
-          <CollapseButton
+          <CollapseButton palette={palette}
             isOpen={isOpen}
             openLabel="See full plan"
             closeLabel="Hide full plan"
@@ -1170,7 +1226,7 @@ function DayGamePlanSection({ card, dayGamePlan = [], timeContext = {}, planTabS
             marginTop: 14,
             padding: 12,
             borderRadius: 18,
-            background: "rgba(255,255,255,0.72)",
+            background: palette.chip || "rgba(255,255,255,0.72)",
             border: `1px solid ${colors.cardBorder}`,
           }}
         >
@@ -1185,20 +1241,20 @@ function DayGamePlanSection({ card, dayGamePlan = [], timeContext = {}, planTabS
             {rollingWindow.label.toUpperCase()}
           </div>
 
-          <p style={{ margin: "4px 0 0", color: colors.muted, fontSize: 12.5, lineHeight: 1.38 }}>
+          <p style={{ margin: "4px 0 0", color: palette.muted, fontSize: 12.5, lineHeight: 1.38 }}>
             {rollingWindow.description}
           </p>
         </div>
 
         <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
           {isInParkView ? visibleItems.map((item) => (
-            <DayGamePlanItemCard key={`rolling-${item.id}`} item={item} />
+            <DayGamePlanItemCard palette={palette} key={`rolling-${item.id}`} item={item} />
           ))
             : dayGamePlan.map((item) =>
                 activeIds.has(item.id) ? (
-                  <DayGamePlanItemCard key={`full-${item.id}`} item={item} />
+                  <DayGamePlanItemCard palette={palette} key={`full-${item.id}`} item={item} />
                 ) : (
-                  <DayGamePlanRow key={`row-${item.id}`} item={item} />
+                  <DayGamePlanRow palette={palette} key={`row-${item.id}`} item={item} />
                 )
               )}
         </div>
@@ -1207,7 +1263,7 @@ function DayGamePlanSection({ card, dayGamePlan = [], timeContext = {}, planTabS
           <div style={{ marginTop: 14 }}>
             <div
               style={{
-                color: colors.muted,
+                color: palette.muted,
                 fontSize: 12,
                 fontWeight: 950,
                 letterSpacing: 0.5,
@@ -1219,7 +1275,7 @@ function DayGamePlanSection({ card, dayGamePlan = [], timeContext = {}, planTabS
 
             <div style={{ display: "grid", gap: 10 }}>
               {dayGamePlan.map((item) => (
-                <DayGamePlanItemCard key={`full-${item.id}`} item={item} />
+                <DayGamePlanItemCard palette={palette} key={`full-${item.id}`} item={item} />
               ))}
             </div>
           </div>
@@ -1242,7 +1298,7 @@ function PlanningParkSelector({
         marginTop: 12,
         padding: 12,
         borderRadius: 18,
-        background: "rgba(255,255,255,0.78)",
+        background: palette.chip || "rgba(255,255,255,0.78)",
         border: `1px solid ${colors.cardBorder}`,
         display: "grid",
         gap: 8,
@@ -1253,7 +1309,7 @@ function PlanningParkSelector({
         style={{
           display: "grid",
           gap: 6,
-          color: colors.text,
+          color: palette.text,
           fontSize: 12,
           fontWeight: 950,
         }}
@@ -1270,7 +1326,7 @@ function PlanningParkSelector({
             padding: "10px 11px",
             fontWeight: 900,
             background: "white",
-            color: colors.text,
+            color: palette.text,
           }}
         >
           {parkOptions.map((park) => (
@@ -1281,7 +1337,7 @@ function PlanningParkSelector({
         </select>
       </label>
 
-      <p style={{ margin: 0, color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+      <p style={{ margin: 0, color: palette.muted, fontSize: 12, lineHeight: 1.35 }}>
         Must-dos below are for {planningParkLabel || "this planning park"}.
         {hasSeparateLivePark
           ? ` Home is still showing ${activeParkLabel || "your current park"} for live waits.`
@@ -1306,7 +1362,7 @@ function formatPlanFreshnessAge(ageMinutes) {
 }
 
 
-function PlanFreshnessNotice({ card, button, planFreshness, onRefreshTripPlanContext }) {
+function PlanFreshnessNotice({ palette = PLAN_TAB_DAY_PALETTE, card, button, planFreshness, onRefreshTripPlanContext }) {
   if (!planFreshness?.isStale) return null;
 
   const ageLabel = formatPlanFreshnessAge(planFreshness.ageMinutes);
@@ -1325,6 +1381,7 @@ function PlanFreshnessNotice({ card, button, planFreshness, onRefreshTripPlanCon
             ? "1px solid rgba(245, 158, 11, 0.28)"
             : "1px solid rgba(14, 165, 233, 0.22)",
         boxShadow: "0 10px 24px rgba(28, 25, 23, 0.05)",
+              ...(palette.shell || {}),
       }}
     >
       <div
@@ -1337,18 +1394,18 @@ function PlanFreshnessNotice({ card, button, planFreshness, onRefreshTripPlanCon
         }}
       >
         <div style={{ minWidth: 220, flex: "1 1 260px" }}>
-          <SectionBadge
+          <SectionBadge palette={palette}
             background={planFreshness.severity === "attention" ? colors.amberSoft : colors.skySoft}
             color={planFreshness.severity === "attention" ? "#92400E" : "#0369A1"}
           >
             PLAN CHECK
           </SectionBadge>
 
-          <h3 style={{ margin: 0, color: colors.text, fontSize: 18, letterSpacing: -0.25 }}>
+          <h3 style={{ margin: 0, color: palette.text, fontSize: 18, letterSpacing: -0.25 }}>
             {planFreshness.title || "Plan may need a quick refresh"}
           </h3>
 
-          <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
+          <p style={{ margin: "6px 0 0", color: palette.muted, fontSize: 13, lineHeight: 1.4 }}>
             {planFreshness.message || "Your timing, weather, or setup changed since this plan was refreshed."}
             {ageLabel ? ` Last refreshed ${ageLabel}.` : ""}
           </p>
@@ -1359,7 +1416,7 @@ function PlanFreshnessNotice({ card, button, planFreshness, onRefreshTripPlanCon
                 <div
                   key={reason}
                   style={{
-                    color: colors.text,
+                    color: palette.text,
                     fontSize: 12,
                     lineHeight: 1.35,
                     fontWeight: 750,
@@ -1392,7 +1449,7 @@ function PlanFreshnessNotice({ card, button, planFreshness, onRefreshTripPlanCon
 
 
 
-function PackingPreviewSection({ card, packingChecklist = [] }) {
+function PackingPreviewSection({ palette = PLAN_TAB_DAY_PALETTE, card, packingChecklist = [] }) {
   const [isOpen, setIsOpen] = useState(false);
   const previewItems = packingChecklist.slice(0, 2).map((item) => item.label).filter(Boolean);
   const previewText = previewItems.length
@@ -1407,6 +1464,7 @@ function PackingPreviewSection({ card, packingChecklist = [] }) {
         background: "linear-gradient(145deg, #FFFFFF 0%, #ECFDF5 100%)",
         border: "1px solid rgba(5, 150, 105, 0.18)",
         boxShadow: "0 10px 24px rgba(5, 150, 105, 0.06)",
+              ...(palette.shell || {}),
       }}
     >
       <div
@@ -1419,13 +1477,13 @@ function PackingPreviewSection({ card, packingChecklist = [] }) {
         }}
       >
         <div style={{ minWidth: 220, flex: "1 1 300px" }}>
-          <SectionBadge background={colors.successSoft} color={colors.success}>
+          <SectionBadge palette={palette} background={colors.successSoft} color={colors.success}>
             WHAT TO PACK
           </SectionBadge>
-          <h3 style={{ margin: 0, color: colors.text, fontSize: 22, letterSpacing: -0.35 }}>
+          <h3 style={{ margin: 0, color: palette.text, fontSize: 22, letterSpacing: -0.35 }}>
             Quick bag check for today
           </h3>
-          <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 13, lineHeight: 1.4 }}>
+          <p style={{ margin: "7px 0 0", color: palette.muted, fontSize: 13, lineHeight: 1.4 }}>
             {previewText}
           </p>
         </div>
@@ -1435,9 +1493,9 @@ function PackingPreviewSection({ card, packingChecklist = [] }) {
             style={{
               padding: "7px 10px",
               borderRadius: 999,
-              background: "rgba(255,255,255,0.78)",
+              background: palette.chip || "rgba(255,255,255,0.78)",
               border: `1px solid ${colors.cardBorder}`,
-              color: colors.text,
+              color: palette.text,
               fontSize: 12,
               fontWeight: 900,
             }}
@@ -1445,7 +1503,7 @@ function PackingPreviewSection({ card, packingChecklist = [] }) {
             {packingChecklist.length} items
           </span>
 
-          <CollapseButton
+          <CollapseButton palette={palette}
             isOpen={isOpen}
             openLabel="See bag"
             closeLabel="Hide bag"
@@ -1470,16 +1528,16 @@ function PackingPreviewSection({ card, packingChecklist = [] }) {
                   alignItems: "start",
                   padding: 11,
                   borderRadius: 16,
-                  background: "rgba(255,255,255,0.82)",
+                  background: palette.chip || "rgba(255,255,255,0.82)",
                   border: `1px solid ${colors.cardBorder}`,
                 }}
               >
                 <div>
-                  <strong style={{ color: colors.text, fontSize: 13 }}>{item.label}</strong>
+                  <strong style={{ color: palette.text, fontSize: 13 }}>{item.label}</strong>
                   <p
                     style={{
                       margin: "4px 0 0",
-                      color: colors.muted,
+                      color: palette.muted,
                       fontSize: 12,
                       lineHeight: 1.35,
                     }}
@@ -1492,8 +1550,9 @@ function PackingPreviewSection({ card, packingChecklist = [] }) {
                   style={{
                     padding: "5px 8px",
                     borderRadius: 999,
-                    background: styleForPriority.bg,
-                    color: styleForPriority.color,
+                    background: getChipSurface(styleForPriority.bg, palette),
+                    border: palette?.isNight ? `1px solid ${palette.chipBorder}` : "none",
+                    color: getChipAccent(styleForPriority.color, palette),
                     fontSize: 11,
                     fontWeight: 950,
                     whiteSpace: "nowrap",
@@ -1511,12 +1570,12 @@ function PackingPreviewSection({ card, packingChecklist = [] }) {
 }
 
 
-function buttonLikeLinkStyle() {
+function buttonLikeLinkStyle(palette = PLAN_TAB_DAY_PALETTE) {
   return {
     border: `1px solid ${colors.cardBorder}`,
     borderRadius: 999,
     background: "rgba(255,255,255,0.86)",
-    color: colors.text,
+    color: palette.text,
     padding: "8px 11px",
     fontSize: 12,
     fontWeight: 950,
@@ -1525,7 +1584,7 @@ function buttonLikeLinkStyle() {
 }
 
 
-function PlanDetailsSection({ card, children }) {
+function PlanDetailsSection({ palette = PLAN_TAB_DAY_PALETTE, card, children }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -1536,6 +1595,7 @@ function PlanDetailsSection({ card, children }) {
         background:
           "linear-gradient(145deg, rgba(255,255,255,0.96), rgba(248,250,252,0.92))",
         border: `1px solid ${colors.cardBorder}`,
+              ...(palette.shell || {}),
       }}
     >
       <div
@@ -1548,14 +1608,14 @@ function PlanDetailsSection({ card, children }) {
         }}
       >
         <div style={{ minWidth: 220, flex: "1 1 300px" }}>
-          <SectionBadge background={colors.skySoft} color="#0369A1">
+          <SectionBadge palette={palette} background={colors.skySoft} color="#0369A1">
             PLAN DETAILS
           </SectionBadge>
 
           <strong
             style={{
               display: "block",
-              color: colors.text,
+              color: palette.text,
               fontSize: 16,
               lineHeight: 1.25,
             }}
@@ -1566,7 +1626,7 @@ function PlanDetailsSection({ card, children }) {
           <p
             style={{
               margin: "6px 0 0",
-              color: colors.muted,
+              color: palette.muted,
               fontSize: 13,
               lineHeight: 1.42,
             }}
@@ -1575,7 +1635,7 @@ function PlanDetailsSection({ card, children }) {
           </p>
         </div>
 
-        <CollapseButton
+        <CollapseButton palette={palette}
           isOpen={isOpen}
           openLabel="Show details"
           closeLabel="Hide details"
@@ -1618,14 +1678,18 @@ export function PlanTab({
   parkHopperContext = {},
   liveParkContext = {},
   setActiveScreen,
+  night = false,
 }) {
+  // Presentation-only: a local palette value threaded to children as a prop.
+  const palette = night ? PLAN_TAB_NIGHT_PALETTE : PLAN_TAB_DAY_PALETTE;
+
   const isInParkView = planTabState?.mode === "in_park";
   const showMorningBriefing = planTabState?.mode === "morning_of";
 
   return (
     <>
       {showMorningBriefing && (
-        <MorningBriefingCard
+        <MorningBriefingCard palette={palette}
           card={card}
           preferredName={preferredName}
           familyProfile={familyProfile}
@@ -1638,27 +1702,27 @@ export function PlanTab({
         />
       )}
 
-      <DayGamePlanSection
+      <DayGamePlanSection palette={palette}
         card={card}
         dayGamePlan={dayGamePlan}
         timeContext={timeContext}
         planTabState={planTabState}
       />
       {isInParkView && (
-        <ActivityRecapSection card={card} activityLog={activityLog} />
+        <ActivityRecapSection palette={palette} card={card} activityLog={activityLog} />
       )}
 
-      {!isInParkView && <PackingPreviewSection card={card} packingChecklist={packingChecklist} />}
+      {!isInParkView && <PackingPreviewSection palette={palette} card={card} packingChecklist={packingChecklist} />}
 
-      <PlanFreshnessNotice
+      <PlanFreshnessNotice palette={palette}
         card={card}
         button={button}
         planFreshness={tripPlanFreshness}
         onRefreshTripPlanContext={onRefreshTripPlanContext}
       />
 
-      <PlanDetailsSection card={card}>
-        <PlanningStatusCard
+      <PlanDetailsSection palette={palette} card={card}>
+        <PlanningStatusCard palette={palette}
           card={card}
           button={button}
           timeContext={timeContext}
@@ -1668,7 +1732,7 @@ export function PlanTab({
           setActiveScreen={setActiveScreen}
         />
 
-        <TodayParkPlanCard
+        <TodayParkPlanCard palette={palette}
           card={card}
           scheduledParkForToday={scheduledParkForToday}
           todayPlannedParkLabel={todayPlannedParkLabel}
@@ -1676,15 +1740,15 @@ export function PlanTab({
           scheduledSecondaryParkLabel={scheduledSecondaryParkLabel}
         />
 
-        <ParkDayScheduleStatusCard
+        <ParkDayScheduleStatusCard palette={palette}
           card={card}
           parkDayScheduleStatus={parkDayScheduleStatus}
           planningParkLabel={planningParkLabel}
         />
 
-        <LiveParkContextCard card={card} liveParkContext={liveParkContext} />
+        <LiveParkContextCard palette={palette} card={card} liveParkContext={liveParkContext} />
 
-        <ParkHopperTimingCard card={card} parkHopperContext={parkHopperContext} />
+        <ParkHopperTimingCard palette={palette} card={card} parkHopperContext={parkHopperContext} />
       </PlanDetailsSection>
 
     </>
