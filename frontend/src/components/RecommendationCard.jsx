@@ -69,133 +69,125 @@ export function RecommendationCard({
   reason,
   color,
   borderColor,
-  background,
-  titleSize = 18,
+  titleSize = 16,
   night = false,
   renderShowtimeInfo,
   renderRideActions,
 }) {
   if (!ride) return null;
 
-  const slot = getSlotStyle(title, color, borderColor, background);
+  const slot = getSlotStyle(title, color, borderColor);
   const accent = night ? slot.accentNight : slot.accent;
   const border = night ? slot.borderNight : slot.border;
   const surface = night ? "#131C36" : "#FFFFFF";
   const titleColor = night ? "#F5F3FF" : colors.text;
   const mutedColor = night ? "#B6C2E2" : colors.muted;
-  const pillSurface = night ? "rgba(15, 23, 42, 0.72)" : "rgba(255, 255, 255, 0.78)";
+  const pillSurface = night
+    ? "rgba(15, 23, 42, 0.72)"
+    : "rgba(255, 255, 255, 0.82)";
 
   return (
-    <div
+    <article
       style={{
         position: "relative",
-        overflow: "hidden",
-        padding: 16,
-        borderRadius: 20,
+        padding: 12,
+        borderRadius: 16,
         border: `1px solid ${border}`,
         background: surface,
         boxShadow: night
-          ? "0 12px 30px rgba(2, 6, 23, 0.45)"
-          : "0 10px 24px rgba(28, 25, 23, 0.06)",
+          ? "0 8px 20px rgba(2, 6, 23, 0.34)"
+          : "0 5px 14px rgba(28, 25, 23, 0.045)",
       }}
     >
       <div
-        aria-hidden="true"
         style={{
-          position: "absolute",
-          width: 92,
-          height: 92,
-          borderRadius: "999px",
-          right: -36,
-          top: -38,
-          background: night ? "rgba(76, 29, 149, 0.28)" : slot.accentSoft,
-          opacity: night ? 0.5 : 0.6,
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 8,
+          alignItems: "center",
+          marginBottom: 5,
         }}
-      />
-
-      <div style={{ position: "relative" }}>
+      >
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 10,
-            alignItems: "center",
-            marginBottom: 8,
+            minWidth: 0,
+            fontSize: 10,
+            color: accent,
+            fontWeight: 950,
+            letterSpacing: 0.65,
           }}
         >
-          <div
-            style={{
-              fontSize: 12,
-              color: accent,
-              fontWeight: 950,
-              letterSpacing: 0.6,
-            }}
-          >
-            {slot.eyebrow}
-          </div>
-
-          <div
-            style={{
-              padding: "5px 9px",
-              borderRadius: 999,
-              background: pillSurface,
-              border: `1px solid ${border}`,
-              color: accent,
-              fontSize: 11,
-              fontWeight: 900,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {slot.badge}
-          </div>
+          {slot.eyebrow}
         </div>
 
-        <h4
-          style={{
-            margin: "0 0 7px",
-            fontSize: titleSize,
-            lineHeight: 1.15,
-            color: titleColor,
-            letterSpacing: -0.25,
-          }}
-        >
-          {ride.name}
-        </h4>
-
         <div
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "7px 10px",
+            flexShrink: 0,
+            padding: "4px 7px",
             borderRadius: 999,
             background: pillSurface,
             border: `1px solid ${border}`,
             color: accent,
-            fontWeight: 950,
-            fontSize: 14,
+            fontSize: 9.5,
+            fontWeight: 900,
+            whiteSpace: "nowrap",
           }}
         >
-          {ride.waitTime != null ? `${ride.waitTime} min wait` : "Wait unavailable"}
+          {slot.badge}
         </div>
-
-        {reason && (
-          <p
-            style={{
-              margin: "10px 0 0",
-              color: mutedColor,
-              fontSize: 14,
-              lineHeight: 1.45,
-            }}
-          >
-            {reason}
-          </p>
-        )}
-
-        {renderShowtimeInfo?.(ride)}
-        {renderRideActions?.(ride)}
       </div>
-    </div>
+
+      <h4
+        style={{
+          margin: "0 0 5px",
+          fontSize: titleSize,
+          lineHeight: 1.12,
+          color: titleColor,
+          letterSpacing: -0.2,
+        }}
+      >
+        {ride.name}
+      </h4>
+
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          padding: "5px 8px",
+          borderRadius: 999,
+          background: pillSurface,
+          border: `1px solid ${border}`,
+          color: accent,
+          fontWeight: 900,
+          fontSize: 11.5,
+          lineHeight: 1.1,
+        }}
+      >
+        {ride.waitTime != null
+          ? `${ride.waitTime} min wait`
+          : "Wait unavailable"}
+      </div>
+
+      {reason && (
+        <p
+          style={{
+            margin: "7px 0 0",
+            color: mutedColor,
+            fontSize: 12,
+            lineHeight: 1.35,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
+          {reason}
+        </p>
+      )}
+
+      {renderShowtimeInfo?.(ride)}
+      {renderRideActions?.(ride)}
+    </article>
   );
 }
 
