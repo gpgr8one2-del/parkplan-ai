@@ -2306,6 +2306,29 @@ function App() {
   }, [parkArrivalPlanKey]);
 
   const parkPresenceTheme = getTohiAppShellTheme();
+
+  // 61A Plan visual tokens — presentation only. Day: warm cream/white with
+  // restrained lavender. Night: deep navy with muted purple borders.
+  const planNight = parkPresenceTheme.isNight;
+  const planTokens = {
+    surface: planNight ? "#131C36" : "#FFFFFF",
+    surfaceSoft: planNight ? "#0F172A" : "#FFF9F1",
+    border: planNight ? "rgba(139, 92, 246, 0.34)" : "rgba(124, 58, 237, 0.16)",
+    borderQuiet: planNight ? "rgba(99, 102, 241, 0.26)" : colors.cardBorder,
+    title: planNight ? "#F5F3FF" : colors.text,
+    muted: planNight ? "#B6C2E2" : colors.muted,
+    eyebrow: planNight ? "#C4B5FD" : colors.purpleDeep,
+    eyebrowPill: planNight ? "rgba(76, 29, 149, 0.45)" : "rgba(124, 58, 237, 0.10)",
+    shadow: planNight
+      ? "0 12px 30px rgba(2, 6, 23, 0.45)"
+      : "0 10px 24px rgba(28, 25, 23, 0.06)",
+  };
+
+  // The blueprint's two Plan states share one existing condition: setup renders
+  // while personalized moves still need the family's location; the
+  // recommendation experience renders once that context exists.
+  const planShowsSetupState = recommendations.needsLocation || !currentLand;
+
   const browsedParkId = deriveBrowsedPark(parkPresence, activePark);
   const browsingAnotherPark = isBrowsingAnotherPark(parkPresence, browsedParkId);
   const confirmedActiveParkId = parkPresence?.confirmedActivePark || activePark;
@@ -3132,14 +3155,37 @@ function App() {
     );
   }
 
-  function renderLockedFeatureCard({ title, body, actionLabel = "Finish trip setup" }) {
+  function renderLockedFeatureCard({
+    title,
+    body,
+    actionLabel = "Finish trip setup",
+    night = false,
+  }) {
     return (
-      <section style={lockedCardStyle}>
-        <div style={{ fontSize: 12, fontWeight: 900, color: colors.purple }}>
+      <section
+        style={{
+          ...lockedCardStyle,
+          ...(night
+            ? {
+                background: "#131C36",
+                border: "1px solid rgba(139, 92, 246, 0.34)",
+                boxShadow: "0 12px 30px rgba(2, 6, 23, 0.45)",
+              }
+            : {}),
+        }}
+      >
+        <div style={{ fontSize: 12, fontWeight: 900, color: night ? "#C4B5FD" : colors.purple }}>
           PERSONALIZED FEATURE
         </div>
-        <h3 style={{ margin: "6px 0 6px" }}>{title}</h3>
-        <p style={{ margin: 0, color: colors.muted, fontSize: 14, lineHeight: 1.45 }}>
+        <h3 style={{ margin: "6px 0 6px", color: night ? "#F5F3FF" : undefined }}>{title}</h3>
+        <p
+          style={{
+            margin: 0,
+            color: night ? "#B6C2E2" : colors.muted,
+            fontSize: 14,
+            lineHeight: 1.45,
+          }}
+        >
           {body}
         </p>
 
@@ -3174,10 +3220,21 @@ function App() {
     );
   }
 
-  function renderRideActions(ride) {
+  function renderRideActions(ride, options = {}) {
     if (!ride?.id) return null;
 
     const isActiveRide = activeRideId === String(ride.id);
+    // Night styling is opt-in per surface (Plan passes it); Waits and other
+    // day-styled surfaces keep the existing look and identical handlers.
+    const night = options.night === true;
+    const themedActionButton = night
+      ? {
+          ...actionButton,
+          background: "rgba(15, 23, 42, 0.72)",
+          border: "1px solid rgba(99, 102, 241, 0.30)",
+          color: "#E2E8F0",
+        }
+      : actionButton;
 
     return (
       <div
@@ -3193,9 +3250,15 @@ function App() {
           onClick={() => handleInLine(ride)}
           disabled={isActiveRide}
           style={{
-            ...actionButton,
-            color: isActiveRide ? "#94a3b8" : "#6d28d9",
-            borderColor: isActiveRide ? "#e2e8f0" : "#ddd6fe",
+            ...themedActionButton,
+            color: isActiveRide ? "#94a3b8" : night ? "#C4B5FD" : "#6d28d9",
+            borderColor: isActiveRide
+              ? night
+                ? "rgba(148, 163, 184, 0.30)"
+                : "#e2e8f0"
+              : night
+              ? "rgba(196, 181, 253, 0.36)"
+              : "#ddd6fe",
             cursor: isActiveRide ? "not-allowed" : "pointer",
           }}
         >
@@ -3204,14 +3267,14 @@ function App() {
 
         <button
           onClick={() => handleDone(ride.id)}
-          style={{ ...actionButton, color: colors.success }}
+          style={{ ...themedActionButton, color: night ? "#6EE7B7" : colors.success }}
         >
           ✓ Done
         </button>
 
         <button
           onClick={() => handleSkip(ride.id)}
-          style={{ ...actionButton, color: colors.muted }}
+          style={{ ...themedActionButton, color: night ? "#B6C2E2" : colors.muted }}
         >
           Skip
         </button>
@@ -3219,9 +3282,9 @@ function App() {
         <button
           onClick={() => handleReportRideIssue(ride)}
           style={{
-            ...actionButton,
-            color: "#92400E",
-            borderColor: colors.amberSoft,
+            ...themedActionButton,
+            color: night ? "#FCD34D" : "#92400E",
+            borderColor: night ? "rgba(252, 211, 77, 0.30)" : colors.amberSoft,
           }}
         >
           Report Issue
@@ -3230,11 +3293,13 @@ function App() {
     );
   }
 
-  function renderShowtimeInfo(ride) {
+  function renderShowtimeInfo(ride, options = {}) {
     const meta = getRideMetaForDisplay(activePark, ride);
     const showProfile = ride?.showProfile || meta?.showProfile;
 
     if (!showProfile?.showtimes?.length) return null;
+
+    const night = options.night === true;
 
     return (
       <div
@@ -3242,18 +3307,24 @@ function App() {
           marginTop: 10,
           padding: 10,
           borderRadius: 14,
-          border: "1px solid #e9d5ff",
-          background: "rgba(250,245,255,.75)",
+          border: night ? "1px solid rgba(139, 92, 246, 0.30)" : "1px solid #e9d5ff",
+          background: night ? "rgba(15, 23, 42, 0.72)" : "rgba(250,245,255,.75)",
         }}
       >
-        <div style={{ fontSize: 12, color: colors.purple, fontWeight: 900 }}>
+        <div
+          style={{
+            fontSize: 12,
+            color: night ? "#C4B5FD" : colors.purple,
+            fontWeight: 900,
+          }}
+        >
           SHOWTIMES
         </div>
 
         <p
           style={{
             margin: "5px 0 0",
-            color: colors.text,
+            color: night ? "#F5F3FF" : colors.text,
             fontSize: 13,
             fontWeight: 700,
           }}
@@ -3262,13 +3333,13 @@ function App() {
         </p>
 
         {showProfile.recommendedShowtimes?.length > 0 && (
-          <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12 }}>
+          <p style={{ margin: "6px 0 0", color: night ? "#B6C2E2" : colors.muted, fontSize: 12 }}>
             Best target: {showProfile.recommendedShowtimes.join(" or ")}
           </p>
         )}
 
         {(showProfile.arrivalBufferMinutes || showProfile.middayArrivalBufferMinutes) && (
-          <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12 }}>
+          <p style={{ margin: "6px 0 0", color: night ? "#B6C2E2" : colors.muted, fontSize: 12 }}>
             Arrival buffer:{" "}
             {showProfile.middayArrivalBufferMinutes
               ? `${showProfile.arrivalBufferMinutes || 15}–${showProfile.middayArrivalBufferMinutes} min depending on heat/crowds`
@@ -3277,7 +3348,7 @@ function App() {
         )}
 
         {showProfile.verifyDailySchedule && (
-          <p style={{ margin: "6px 0 0", color: "#92400E", fontSize: 12 }}>
+          <p style={{ margin: "6px 0 0", color: night ? "#FCD34D" : "#92400E", fontSize: 12 }}>
             Verify in My Disney Experience. Showtimes can change by day.
           </p>
         )}
@@ -5196,50 +5267,38 @@ function App() {
               ...card,
               position: "relative",
               overflow: "hidden",
-              background:
-                "radial-gradient(circle at 92% 0%, rgba(5, 150, 105, 0.14) 0%, rgba(5, 150, 105, 0.04) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #FFF9F1 100%)",
-              border: `1px solid ${colors.cardBorder}`,
-              borderRadius: 28,
-              boxShadow: "0 18px 44px rgba(28, 25, 23, 0.09)",
+              background: planNight ? planTokens.surfaceSoft : planTokens.surfaceSoft,
+              border: `1px solid ${planTokens.border}`,
+              borderRadius: 22,
+              boxShadow: planTokens.shadow,
             }}
           >
-            <div
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                width: 116,
-                height: 116,
-                borderRadius: "999px",
-                right: -44,
-                top: -50,
-                background: "rgba(124, 58, 237, 0.10)",
-              }}
-            />
-
             <div style={{ position: "relative" }}>
+              {planShowsSetupState ? (
+                <>
               <div
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 6,
-                  padding: "5px 9px",
+                  padding: "5px 10px",
                   borderRadius: 999,
-                  background: colors.successSoft,
-                  color: colors.success,
+                  background: planTokens.eyebrowPill,
+                  color: planTokens.eyebrow,
                   fontSize: 11,
                   fontWeight: 950,
                   letterSpacing: 0.7,
                   marginBottom: 9,
                 }}
               >
-                BEST NEXT MOVE
+                {planNight ? "EVENING STRATEGY" : "DAY STRATEGY"}
               </div>
 
               <h3
                 style={{
                   margin: 0,
-                  color: colors.text,
-                  fontSize: 25,
+                  color: planTokens.title,
+                  fontSize: 24,
                   letterSpacing: -0.5,
                   lineHeight: 1.15,
                 }}
@@ -5250,40 +5309,76 @@ function App() {
               <p
                 style={{
                   margin: "7px 0 14px",
-                  color: colors.muted,
+                  color: planTokens.muted,
                   fontSize: 13,
                   lineHeight: 1.45,
                 }}
               >
-                TOHI uses your park area, waits, weather, and family setup to avoid
-                sending everyone on a bad walk.
+                TOHI uses your park, weather, family setup, and live waits to guide
+                your next move.
               </p>
 
               <div
                 style={{
-                  marginBottom: 14,
-                  padding: 13,
-                  borderRadius: 22,
-                  border: "1px solid rgba(124, 58, 237, 0.16)",
-                  background:
-                    "linear-gradient(145deg, rgba(255,255,255,0.88) 0%, #F3E8FF 100%)",
-                  boxShadow: "0 10px 24px rgba(124, 58, 237, 0.08)",
+                  marginBottom: 12,
+                  padding: 14,
+                  borderRadius: 20,
+                  border: `1px solid ${planTokens.border}`,
+                  background: planTokens.surface,
+                  boxShadow: planTokens.shadow,
                 }}
               >
                 <label
                   htmlFor="current-land"
                   style={{
-                    display: "block",
-                    fontSize: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontSize: 11,
                     fontWeight: 950,
-                    color: colors.purpleDeep,
+                    color: planTokens.eyebrow,
                     marginBottom: 7,
-                    letterSpacing: 0.4,
+                    letterSpacing: 0.7,
                     textTransform: "uppercase",
                   }}
                 >
-                  What area are you near?
+                  <MapPin size={12} /> Where are you?
                 </label>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "baseline",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    marginBottom: 8,
+                  }}
+                >
+                  <div>
+                    <strong style={{ color: planTokens.title, fontSize: 16 }}>
+                      {currentLand
+                        ? LAND_OPTIONS[activePark]?.find(
+                            (option) => option.value === currentLand
+                          )?.label || currentLand
+                        : "Choose your area"}
+                    </strong>
+                    {detectedLocationContext?.nearestAnchorName && (
+                      <p
+                        style={{
+                          margin: "3px 0 0",
+                          color: planTokens.muted,
+                          fontSize: 12,
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        Near {detectedLocationContext.nearestAnchorName}
+                      </p>
+                    )}
+                  </div>
+                  <span aria-hidden="true" style={{ color: planTokens.muted, fontSize: 16 }}>
+                    ›
+                  </span>
+                </div>
 
                 <select
                   id="current-land"
@@ -5310,13 +5405,13 @@ function App() {
                   }}
                   style={{
                     width: "100%",
-                    border: `1px solid ${colors.cardBorder}`,
+                    border: `1px solid ${planTokens.borderQuiet}`,
                     borderRadius: 16,
                     padding: "11px 12px",
                     fontWeight: 850,
-                    background: colors.card,
-                    color: colors.text,
-                    boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
+                    background: planNight ? "#0F172A" : colors.card,
+                    color: planTokens.title,
+                    boxShadow: planNight ? "none" : "0 8px 18px rgba(28, 25, 23, 0.04)",
                   }}
                 >
                   <option value="">Pick your current area</option>
@@ -5342,17 +5437,21 @@ function App() {
                     disabled={locationLoading}
                     style={{
                       ...actionButton,
-                      color: "#0369A1",
-                      borderColor: "rgba(56, 189, 248, 0.28)",
-                      background: "rgba(255,255,255,0.82)",
+                      color: planNight ? "#7DD3FC" : "#0369A1",
+                      borderColor: planNight
+                        ? "rgba(125, 211, 252, 0.32)"
+                        : "rgba(56, 189, 248, 0.28)",
+                      background: planNight
+                        ? "rgba(15, 23, 42, 0.72)"
+                        : "rgba(255,255,255,0.82)",
                     }}
                   >
                     <MapPin size={13} />{" "}
                     {locationLoading ? "Finding you..." : "Use My Location"}
                   </button>
 
-                  <span style={{ color: colors.muted, fontSize: 12 }}>
-                    Optional — helps avoid unnecessary walking.
+                  <span style={{ color: planTokens.muted, fontSize: 12 }}>
+                    Helps avoid unnecessary walking. Auto-updates while the app is open.
                   </span>
                 </div>
 
@@ -5360,17 +5459,17 @@ function App() {
                   <p
                     style={{
                       margin: "8px 0 0",
-                      color: colors.muted,
+                      color: planTokens.muted,
                       fontSize: 12,
                       lineHeight: 1.4,
                     }}
                   >
-                    Auto-updates while the app is open
                     {lastAutoUpdateAt
-                      ? ` · waits/weather ${formatAutoUpdateTime(lastAutoUpdateAt)}`
+                      ? `Waits/weather updated ${formatAutoUpdateTime(lastAutoUpdateAt)}`
                       : ""}
+                    {lastAutoUpdateAt && lastLocationUpdateAt ? " · " : ""}
                     {lastLocationUpdateAt
-                      ? ` · location ${formatAutoUpdateTime(lastLocationUpdateAt)}`
+                      ? `Location updated ${formatAutoUpdateTime(lastLocationUpdateAt)}`
                       : ""}
                   </p>
                 )}
@@ -5416,6 +5515,290 @@ function App() {
                 </p>
               </div>
 
+              <div
+                style={{
+                  marginBottom: 12,
+                  padding: 14,
+                  borderRadius: 20,
+                  border: `1px solid ${planTokens.border}`,
+                  background: planTokens.surface,
+                  boxShadow: planTokens.shadow,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 950,
+                    color: planTokens.eyebrow,
+                    letterSpacing: 0.7,
+                    marginBottom: 7,
+                  }}
+                >
+                  ☀️ WEATHER + COMFORT
+                </div>
+
+                {weather?.tempF != null ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "baseline",
+                      gap: 10,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <strong
+                      style={{
+                        color: planTokens.title,
+                        fontSize: 26,
+                        letterSpacing: -0.5,
+                      }}
+                    >
+                      {weather.tempF}°F
+                    </strong>
+                    {weather.feelsLikeF != null && (
+                      <span style={{ color: planTokens.muted, fontSize: 13 }}>
+                        feels like {weather.feelsLikeF}°F
+                      </span>
+                    )}
+                    {weather.humidity != null && (
+                      <span style={{ color: planTokens.muted, fontSize: 13 }}>
+                        {weather.humidity}% humidity
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <strong style={{ color: planTokens.title, fontSize: 15 }}>
+                    {weather?.summary || "Loading weather..."}
+                  </strong>
+                )}
+
+                {weather?.tempF != null && weather?.summary && (
+                  <p
+                    style={{
+                      margin: "5px 0 0",
+                      color: planTokens.muted,
+                      fontSize: 13,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {weather.summary}
+                  </p>
+                )}
+
+                <p
+                  style={{
+                    margin: "7px 0 0",
+                    color: planTokens.title,
+                    fontSize: 12.5,
+                    lineHeight: 1.4,
+                    fontWeight: 750,
+                  }}
+                >
+                  {weatherMode?.mode && weatherMode.mode !== "normal"
+                    ? weatherMode.message ||
+                      `Weather mode: ${weatherMode.label || weatherMode.mode}.`
+                    : "Weather looks steady. Plan around waits and family energy."}
+                </p>
+              </div>
+
+              <div
+                style={{
+                  marginBottom: 14,
+                  padding: 14,
+                  borderRadius: 20,
+                  border: `1px solid ${planTokens.border}`,
+                  background: planTokens.surface,
+                  boxShadow: planTokens.shadow,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    gap: 10,
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 950,
+                        color: planTokens.eyebrow,
+                        letterSpacing: 0.7,
+                        marginBottom: 7,
+                      }}
+                    >
+                      👨‍👩‍👧‍👦 FAMILY CONTEXT
+                    </div>
+
+                    <strong style={{ color: planTokens.title, fontSize: 15 }}>
+                      {[
+                        Number(familyProfileSummary?.adultCount) > 0
+                          ? `${familyProfileSummary.adultCount} adult${
+                              Number(familyProfileSummary.adultCount) === 1 ? "" : "s"
+                            }`
+                          : null,
+                        Number(familyProfileSummary?.childCount) > 0
+                          ? `${familyProfileSummary.childCount} kid${
+                              Number(familyProfileSummary.childCount) === 1 ? "" : "s"
+                            }`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "Your family setup"}
+                    </strong>
+
+                    {(familyProfileSummary?.shortestHeightInches ||
+                      familyProfileSummary?.resortProfile?.name) && (
+                      <p
+                        style={{
+                          margin: "4px 0 0",
+                          color: planTokens.muted,
+                          fontSize: 12.5,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {[
+                          familyProfileSummary?.shortestHeightInches
+                            ? `Shortest rider ${familyProfileSummary.shortestHeightInches}"`
+                            : null,
+                          familyProfileSummary?.resortProfile?.name || null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveScreen("family_profile")}
+                    aria-label="Edit family profile"
+                    style={{
+                      border: `1px solid ${planTokens.borderQuiet}`,
+                      borderRadius: 999,
+                      background: planNight ? "rgba(30, 27, 75, 0.6)" : "rgba(255,255,255,0.85)",
+                      color: planTokens.muted,
+                      padding: "6px 11px",
+                      fontSize: 14,
+                      cursor: "pointer",
+                      flexShrink: 0,
+                    }}
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  padding: 15,
+                  borderRadius: 20,
+                  border: planNight
+                    ? "1px solid rgba(125, 211, 252, 0.26)"
+                    : "1px solid rgba(56, 189, 248, 0.28)",
+                  background: planNight ? "#111A33" : "#F4FAFF",
+                }}
+              >
+                <strong style={{ color: planTokens.title }}>
+                  Pick where you are first.
+                </strong>
+                <p
+                  style={{
+                    margin: "7px 0 0",
+                    color: planTokens.muted,
+                    fontSize: 13,
+                    lineHeight: 1.45,
+                  }}
+                >
+                  TOHI can show wait times without your location, but personalized
+                  next moves need your current park area so we do not send your
+                  family on a bad walk.
+                </p>
+              </div>
+                </>
+              ) : (
+                <>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  flexWrap: "wrap",
+                  marginBottom: 12,
+                  padding: "10px 12px",
+                  borderRadius: 16,
+                  border: `1px solid ${planTokens.border}`,
+                  background: planTokens.surface,
+                }}
+              >
+                <MapPin size={13} style={{ color: planTokens.eyebrow, flexShrink: 0 }} />
+
+                <select
+                  id="current-land"
+                  aria-label="Current park area"
+                  value={currentLand || ""}
+                  onChange={(e) => {
+                    const nextLand = e.target.value || null;
+
+                    setCurrentLand(nextLand);
+                    setDetectedLocationContext(null);
+                    setLocationAutoEnabled(false);
+                    setLocationMessage(
+                      nextLand
+                        ? "Using your selected park area. You can update it anytime."
+                        : ""
+                    );
+
+                    trackAppEvent("manual_location_selected", {
+                      source: "current_land_dropdown",
+                      currentLand: nextLand,
+                      metadata: {
+                        nextLand,
+                      },
+                    });
+                  }}
+                  style={{
+                    flex: "1 1 150px",
+                    minWidth: 130,
+                    border: `1px solid ${planTokens.borderQuiet}`,
+                    borderRadius: 12,
+                    padding: "8px 10px",
+                    fontWeight: 800,
+                    fontSize: 13,
+                    background: planNight ? "#0F172A" : colors.card,
+                    color: planTokens.title,
+                  }}
+                >
+                  <option value="">Pick your current area</option>
+                  {landOptions.map((land) => (
+                    <option key={land.value} value={land.value}>
+                      {land.label}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  onClick={handleUseMyLocation}
+                  disabled={locationLoading}
+                  style={{
+                    ...actionButton,
+                    color: planNight ? "#7DD3FC" : "#0369A1",
+                    borderColor: planNight
+                      ? "rgba(125, 211, 252, 0.32)"
+                      : "rgba(56, 189, 248, 0.28)",
+                    background: planNight
+                      ? "rgba(15, 23, 42, 0.72)"
+                      : "rgba(255,255,255,0.82)",
+                  }}
+                >
+                  <MapPin size={13} />{" "}
+                  {locationLoading ? "Finding you..." : "Use My Location"}
+                </button>
+              </div>
+
               {(reportedRideIssueIds.length > 0 || hiddenRideCount > 0) && (
                 <div
                   style={{
@@ -5431,9 +5814,11 @@ function App() {
                       style={{
                         padding: "8px 10px",
                         borderRadius: 999,
-                        border: "1px solid rgba(245, 158, 11, 0.28)",
-                        background: colors.amberSoft,
-                        color: "#92400E",
+                        border: planNight
+                          ? "1px solid rgba(252, 211, 77, 0.28)"
+                          : "1px solid rgba(245, 158, 11, 0.28)",
+                        background: planNight ? "rgba(15, 23, 42, 0.72)" : colors.amberSoft,
+                        color: planNight ? "#FCD34D" : "#92400E",
                         fontSize: 12,
                         fontWeight: 900,
                       }}
@@ -5463,75 +5848,32 @@ function App() {
                   style={{
                     padding: 15,
                     marginBottom: 12,
-                    borderRadius: 22,
-                    border: `1px solid ${colors.cardBorder}`,
-                    background: "linear-gradient(145deg, #FFFFFF 0%, #F8F5FF 100%)",
+                    borderRadius: 20,
+                    border: `1px solid ${planTokens.borderQuiet}`,
+                    background: planNight ? "#111A33" : "#FBF9FF",
                   }}
                 >
-                  <strong>You’re browsing {browsedParkLabel} waits right now.</strong>
-                  <p style={{ margin: "7px 0 0", color: colors.muted, lineHeight: 1.45 }}>
+                  <strong style={{ color: planTokens.title }}>
+                    You’re browsing {browsedParkLabel} waits right now.
+                  </strong>
+                  <p style={{ margin: "7px 0 0", color: planTokens.muted, lineHeight: 1.45 }}>
                     These picks are still for {confirmedActiveParkLabel}, where your day
                     is anchored.
                   </p>
                 </div>
               )}
 
-              {recommendations.needsLocation || !currentLand ? (
-                <div
-                  style={{
-                    padding: 15,
-                    borderRadius: 22,
-                    border: "1px solid rgba(56, 189, 248, 0.28)",
-                    background:
-                      "linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%)",
-                    boxShadow: "0 12px 28px rgba(2, 132, 199, 0.08)",
-                  }}
-                >
-                  <strong style={{ color: colors.text }}>
-                    Pick where you are first.
-                  </strong>
-                  <p
-                    style={{
-                      margin: "7px 0 0",
-                      color: colors.muted,
-                      fontSize: 13,
-                      lineHeight: 1.45,
-                    }}
-                  >
-                    TOHI can show wait times without your location, but personalized
-                    next moves need your current park area so we do not send your
-                    family on a bad walk.
-                  </p>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-                    <button
-                      type="button"
-                      onClick={handleUseMyLocation}
-                      disabled={locationLoading}
-                      style={{
-                        ...button,
-                        background:
-                          "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
-                        color: "white",
-                        borderColor: "rgba(124, 58, 237, 0.28)",
-                        boxShadow: "0 12px 24px rgba(124, 58, 237, 0.18)",
-                      }}
-                    >
-                      {locationLoading ? "Finding you..." : "Use My Location"}
-                    </button>
-                  </div>
-                </div>
-              ) : isPreOpenRecommendationPause ? (
+              {isPreOpenRecommendationPause ? (
                 <div style={{ display: "grid", gap: 10 }}>
                   <div
                     role="status"
                     aria-live="polite"
                     style={{
                       padding: 16,
-                      borderRadius: 24,
-                      border: `1px solid ${colors.cardBorder}`,
-                      background:
-                        "linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.92))",
-                      boxShadow: "0 14px 34px rgba(28, 25, 23, 0.08)",
+                      borderRadius: 20,
+                      border: `1px solid ${planTokens.borderQuiet}`,
+                      background: planNight ? "#111A33" : "#FBFDFF",
+                      boxShadow: planTokens.shadow,
                     }}
                   >
                     <div
@@ -5551,7 +5893,7 @@ function App() {
                         margin: "0 0 8px",
                         fontSize: 20,
                         lineHeight: 1.15,
-                        color: colors.text,
+                        color: planTokens.title,
                         letterSpacing: -0.25,
                       }}
                     >
@@ -5561,7 +5903,7 @@ function App() {
                     <p
                       style={{
                         margin: 0,
-                        color: colors.muted,
+                        color: planTokens.muted,
                         fontSize: 14,
                         lineHeight: 1.45,
                       }}
@@ -5576,9 +5918,13 @@ function App() {
                         marginTop: 12,
                         padding: "9px 11px",
                         borderRadius: 16,
-                        border: "1px solid rgba(124, 58, 237, 0.18)",
-                        background: "rgba(255, 255, 255, 0.72)",
-                        color: colors.text,
+                        border: planNight
+                          ? "1px solid rgba(139, 92, 246, 0.32)"
+                          : "1px solid rgba(124, 58, 237, 0.18)",
+                        background: planNight
+                          ? "rgba(15, 23, 42, 0.72)"
+                          : "rgba(255, 255, 255, 0.72)",
+                        color: planTokens.title,
                         fontSize: 13,
                         lineHeight: 1.35,
                         fontWeight: 800,
@@ -5589,7 +5935,7 @@ function App() {
                   </div>
 
                   {recommendations.planAhead && (
-                    <RecommendationCard
+                    <RecommendationCard night={planNight}
                       title="PLAN AHEAD"
                       ride={recommendations.planAhead}
                       reason={
@@ -5599,13 +5945,55 @@ function App() {
                       color="#991b1b"
                       borderColor="#fecaca"
                       background="#fef2f2"
-                      renderShowtimeInfo={renderShowtimeInfo}
-                      renderRideActions={renderRideActions}
+                      renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
+                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
                     />
                   )}
                 </div>
               ) : hasAnyRecommendation ? (
                 <div style={{ display: "grid", gap: 10 }}>
+                  <div style={{ marginTop: 4 }}>
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "5px 10px",
+                        borderRadius: 999,
+                        background: planTokens.eyebrowPill,
+                        color: planTokens.eyebrow,
+                        fontSize: 11,
+                        fontWeight: 950,
+                        letterSpacing: 0.7,
+                        marginBottom: 8,
+                      }}
+                    >
+                      RECOMMENDATIONS
+                    </div>
+
+                    <h3
+                      style={{
+                        margin: 0,
+                        color: planTokens.title,
+                        fontSize: 21,
+                        letterSpacing: -0.4,
+                        lineHeight: 1.15,
+                      }}
+                    >
+                      Here’s what TOHI suggests
+                    </h3>
+
+                    <p
+                      style={{
+                        margin: "5px 0 2px",
+                        color: planTokens.muted,
+                        fontSize: 13,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      Based on live waits, weather, and your family.
+                    </p>
+                  </div>
+
                   {showTohiPickClarificationQuestion && (
                     <section
                       aria-label="TOHI Pick clarification question"
@@ -5721,14 +6109,17 @@ function App() {
                     <div
                       aria-label="TOHI Pick recommendation"
                       style={{
-                        background:
-                          "linear-gradient(145deg, rgba(255,255,255,0.98) 0%, #FFF7ED 100%)",
-                        border: "1px solid rgba(124, 58, 237, 0.16)",
-                        borderRadius: 28,
+                        background: planNight ? "#131C36" : planTokens.surface,
+                        border: planNight
+                          ? "1px solid rgba(139, 92, 246, 0.40)"
+                          : "1px solid rgba(124, 58, 237, 0.22)",
+                        borderRadius: 22,
                         padding: 14,
                         marginBottom: 4,
-                        color: colors.text,
-                        boxShadow: "0 16px 34px rgba(36, 28, 21, 0.10)",
+                        color: planTokens.title,
+                        boxShadow: planNight
+                          ? "0 12px 30px rgba(76, 29, 149, 0.35)"
+                          : "0 12px 28px rgba(91, 33, 182, 0.10)",
                         overflow: "hidden",
                         position: "relative",
                       }}
@@ -5796,9 +6187,13 @@ function App() {
                                 minHeight: 26,
                                 padding: "5px 9px",
                                 borderRadius: 999,
-                                background: "rgba(255,255,255,0.82)",
-                                color: colors.text,
-                                border: `1px solid ${colors.cardBorder}`,
+                                background: planNight
+                                  ? "rgba(15, 23, 42, 0.72)"
+                                  : "rgba(255,255,255,0.82)",
+                                color: planNight ? "#C4B5FD" : colors.text,
+                                border: planNight
+                                  ? "1px solid rgba(139, 92, 246, 0.36)"
+                                  : `1px solid ${colors.cardBorder}`,
                                 fontSize: 12,
                                 fontWeight: 900,
                               }}
@@ -5812,11 +6207,11 @@ function App() {
                           <h3
                             style={{
                               margin: "0 0 8px",
-                              fontSize: 24,
-                              lineHeight: 1.08,
+                              fontSize: 22,
+                              lineHeight: 1.1,
                               fontWeight: 950,
                               letterSpacing: -0.45,
-                              color: colors.text,
+                              color: planTokens.title,
                             }}
                           >
                             {tohiPickDisplayCandidate.name}
@@ -5827,7 +6222,7 @@ function App() {
                               margin: "0 0 12px",
                               fontSize: 14,
                               lineHeight: 1.45,
-                              color: colors.muted,
+                              color: planTokens.muted,
                               fontWeight: 650,
                             }}
                           >
@@ -5853,9 +6248,13 @@ function App() {
                                     minHeight: 24,
                                     padding: "5px 8px",
                                     borderRadius: 999,
-                                    border: "1px solid rgba(234, 220, 200, 0.9)",
-                                    background: "rgba(255,255,255,0.72)",
-                                    color: colors.muted,
+                                    border: planNight
+                                      ? "1px solid rgba(99, 102, 241, 0.30)"
+                                      : "1px solid rgba(234, 220, 200, 0.9)",
+                                    background: planNight
+                                      ? "rgba(15, 23, 42, 0.72)"
+                                      : "rgba(255,255,255,0.72)",
+                                    color: planTokens.muted,
                                     fontSize: 11,
                                     fontWeight: 850,
                                   }}
@@ -5872,9 +6271,13 @@ function App() {
                                 marginTop: 10,
                                 padding: "10px 11px",
                                 borderRadius: 16,
-                                border: "1px solid rgba(245, 158, 11, 0.22)",
-                                background: colors.amberSoft,
-                                color: "#7C2D12",
+                                border: planNight
+                                  ? "1px solid rgba(252, 211, 77, 0.28)"
+                                  : "1px solid rgba(245, 158, 11, 0.22)",
+                                background: planNight
+                                  ? "rgba(69, 26, 3, 0.45)"
+                                  : colors.amberSoft,
+                                color: planNight ? "#FCD34D" : "#7C2D12",
                                 fontSize: 12.5,
                                 lineHeight: 1.35,
                                 fontWeight: 750,
@@ -5905,11 +6308,16 @@ function App() {
                             position: "relative",
                             overflow: "hidden",
                             minHeight: 132,
-                            borderRadius: 24,
-                            border: "1px solid rgba(124, 58, 237, 0.14)",
-                            background:
-                              "linear-gradient(160deg, #F3E8FF 0%, #E0F2FE 54%, #FFF7ED 100%)",
-                            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
+                            borderRadius: 20,
+                            border: planNight
+                              ? "1px solid rgba(139, 92, 246, 0.30)"
+                              : "1px solid rgba(124, 58, 237, 0.14)",
+                            background: planNight
+                              ? "linear-gradient(160deg, #1E1B4B 0%, #0F172A 58%, #172554 100%)"
+                              : "linear-gradient(160deg, #F3E8FF 0%, #E0F2FE 54%, #FFF7ED 100%)",
+                            boxShadow: planNight
+                              ? "inset 0 1px 0 rgba(139, 92, 246, 0.18)"
+                              : "inset 0 1px 0 rgba(255,255,255,0.7)",
                           }}
                         >
                           <div
@@ -5963,7 +6371,7 @@ function App() {
                     </div>
                   )}
 
-                  <RecommendationCard
+                  <RecommendationCard night={planNight}
                     title={
                       primarySlot === "backup" ? "SMART BACKUP" :
                       primarySlot === "worthTheWalk" ? "WORTH THE WALK" :
@@ -5978,38 +6386,38 @@ function App() {
                     borderColor="#bbf7d0"
                     background="#f0fdf4"
                     titleSize={20}
-                    renderShowtimeInfo={renderShowtimeInfo}
-                    renderRideActions={renderRideActions}
+                    renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
+                    renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
                   />
 
                   {recommendations.backup && recommendations.backup.id !== primaryRecommendation?.id && (
-                    <RecommendationCard
+                    <RecommendationCard night={planNight}
                       title="SMART BACKUP"
                       ride={recommendations.backup}
                       reason={recommendations.backup.reason || "A solid nearby option if the primary move doesn't work out."}
                       color="#1d4ed8"
                       borderColor="#bfdbfe"
                       background="#eff6ff"
-                      renderShowtimeInfo={renderShowtimeInfo}
-                      renderRideActions={renderRideActions}
+                      renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
+                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
                     />
                   )}
 
                   {recommendations.worthTheWalk && recommendations.worthTheWalk.id !== primaryRecommendation?.id && (
-                    <RecommendationCard
+                    <RecommendationCard night={planNight}
                       title="WORTH THE WALK"
                       ride={recommendations.worthTheWalk}
                       reason={recommendations.worthTheWalk.reason || "The wait looks reasonable enough to consider the extra walk."}
                       color="#6d28d9"
                       borderColor="#ddd6fe"
                       background="#f5f3ff"
-                      renderShowtimeInfo={renderShowtimeInfo}
-                      renderRideActions={renderRideActions}
+                      renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
+                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
                     />
                   )}
 
                   {recommendations.planAhead && recommendations.planAhead.id !== primaryRecommendation?.id && (
-                    <RecommendationCard
+                    <RecommendationCard night={planNight}
                       title="PLAN AHEAD"
                       ride={recommendations.planAhead}
                       reason={
@@ -6019,21 +6427,21 @@ function App() {
                       color="#991b1b"
                       borderColor="#fecaca"
                       background="#fef2f2"
-                      renderShowtimeInfo={renderShowtimeInfo}
-                      renderRideActions={renderRideActions}
+                      renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
+                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
                     />
                   )}
 
                   {recommendations.waitOnThis && recommendations.waitOnThis.id !== primaryRecommendation?.id && (
-                    <RecommendationCard
+                    <RecommendationCard night={planNight}
                       title="WAIT ON THIS"
                       ride={recommendations.waitOnThis}
                       reason={recommendations.waitOnThis.waitOnThisReason || recommendations.waitOnThis.reason || "This may fit better later when the wait or effort drops."}
                       color="#9a3412"
                       borderColor="#fed7aa"
                       background="#fff7ed"
-                      renderShowtimeInfo={renderShowtimeInfo}
-                      renderRideActions={renderRideActions}
+                      renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
+                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
                     />
                   )}
                 </div>
@@ -6041,19 +6449,22 @@ function App() {
                 <div
                   style={{
                     padding: 15,
-                    borderRadius: 22,
-                    border: `1px solid ${colors.cardBorder}`,
-                    background:
-                      "linear-gradient(145deg, #FFFFFF 0%, #FFF9F1 100%)",
+                    borderRadius: 20,
+                    border: `1px solid ${planTokens.borderQuiet}`,
+                    background: planNight ? "#111A33" : "#FFFDF8",
                   }}
                 >
-                  <strong>No strong recommendation right now.</strong>
-                  <p style={{ margin: "7px 0 0", color: colors.muted, lineHeight: 1.45 }}>
+                  <strong style={{ color: planTokens.title }}>
+                    No strong recommendation right now.
+                  </strong>
+                  <p style={{ margin: "7px 0 0", color: planTokens.muted, lineHeight: 1.45 }}>
                     Refresh wait data, reset hidden rides, or use this as a good
                     moment for a nearby indoor break, snack, restroom stop, or
                     quick regroup.
                   </p>
                 </div>
+              )}
+                </>
               )}
             </div>
           </section>
@@ -6063,6 +6474,7 @@ function App() {
             title: "Personalized Best Move is locked until setup is finished",
             body:
               "Without your family profile, TOHI cannot safely know height limits, thrill comfort, heat sensitivity, resort-break realism, or what kind of day you want.",
+            night: planNight,
           })
         )}
 
@@ -6071,11 +6483,14 @@ function App() {
             ...card,
             position: "relative",
             overflow: "hidden",
-            background:
-              "radial-gradient(circle at 92% 0%, rgba(245, 158, 11, 0.20) 0%, rgba(245, 158, 11, 0.06) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #FFF7ED 100%)",
-            border: "1px solid rgba(245, 158, 11, 0.22)",
-            borderRadius: 28,
-            boxShadow: "0 16px 38px rgba(245, 158, 11, 0.10)",
+            background: planNight ? "#111A33" : "#FFFDF8",
+            border: planNight
+              ? "1px solid rgba(99, 102, 241, 0.26)"
+              : "1px solid rgba(245, 158, 11, 0.20)",
+            borderRadius: 20,
+            boxShadow: planNight
+              ? "0 10px 24px rgba(2, 6, 23, 0.40)"
+              : "0 8px 20px rgba(28, 25, 23, 0.05)",
           }}
         >
           <div
@@ -6099,8 +6514,9 @@ function App() {
                 gap: 6,
                 padding: "5px 9px",
                 borderRadius: 999,
-                background: colors.amberSoft,
-                color: "#92400E",
+                background: planNight ? "rgba(15, 23, 42, 0.72)" : colors.amberSoft,
+                border: planNight ? "1px solid rgba(252, 211, 77, 0.26)" : "none",
+                color: planNight ? "#FCD34D" : "#92400E",
                 fontSize: 11,
                 fontWeight: 950,
                 letterSpacing: 0.7,
@@ -6113,8 +6529,8 @@ function App() {
             <h3
               style={{
                 margin: 0,
-                color: colors.text,
-                fontSize: 23,
+                color: planTokens.title,
+                fontSize: 21,
                 letterSpacing: -0.4,
                 lineHeight: 1.15,
               }}
@@ -6125,9 +6541,9 @@ function App() {
             <p
               style={{
                 margin: "9px 0 0",
-                color: colors.text,
-                fontSize: 15,
-                fontWeight: 850,
+                color: planTokens.title,
+                fontSize: 14,
+                fontWeight: 800,
                 lineHeight: 1.45,
               }}
             >
@@ -6146,8 +6562,9 @@ function App() {
                 style={{
                   padding: "6px 9px",
                   borderRadius: 999,
-                  background: colors.purpleSoft,
-                  color: colors.purpleDeep,
+                  background: planNight ? "rgba(15, 23, 42, 0.72)" : colors.purpleSoft,
+                  border: planNight ? "1px solid rgba(139, 92, 246, 0.30)" : "none",
+                  color: planNight ? "#C4B5FD" : colors.purpleDeep,
                   fontSize: 12,
                   fontWeight: 900,
                 }}
@@ -6159,10 +6576,19 @@ function App() {
                 style={{
                   padding: "6px 9px",
                   borderRadius: 999,
-                  background: hasPersonalizedAccess
+                  background: planNight
+                    ? "rgba(15, 23, 42, 0.72)"
+                    : hasPersonalizedAccess
                     ? colors.successSoft
                     : colors.coralSoft,
-                  color: hasPersonalizedAccess ? colors.success : "#E11D48",
+                  border: planNight ? "1px solid rgba(99, 102, 241, 0.30)" : "none",
+                  color: planNight
+                    ? hasPersonalizedAccess
+                      ? "#6EE7B7"
+                      : "#FDA4AF"
+                    : hasPersonalizedAccess
+                    ? colors.success
+                    : "#E11D48",
                   fontSize: 12,
                   fontWeight: 900,
                 }}
@@ -6179,11 +6605,14 @@ function App() {
               ...card,
               position: "relative",
               overflow: "hidden",
-              background:
-                "linear-gradient(145deg, #FFFFFF 0%, #FEF3C7 100%)",
-              border: "1px solid rgba(245, 158, 11, 0.28)",
-              borderRadius: 28,
-              boxShadow: "0 16px 38px rgba(245, 158, 11, 0.12)",
+              background: planNight ? "#111A33" : "#FFFDF8",
+              border: planNight
+                ? "1px solid rgba(99, 102, 241, 0.26)"
+                : "1px solid rgba(245, 158, 11, 0.24)",
+              borderRadius: 20,
+              boxShadow: planNight
+                ? "0 10px 24px rgba(2, 6, 23, 0.40)"
+                : "0 8px 20px rgba(28, 25, 23, 0.05)",
             }}
           >
             <div
@@ -6193,8 +6622,9 @@ function App() {
                 gap: 6,
                 padding: "5px 9px",
                 borderRadius: 999,
-                background: colors.amberSoft,
-                color: "#92400E",
+                background: planNight ? "rgba(15, 23, 42, 0.72)" : colors.amberSoft,
+                border: planNight ? "1px solid rgba(252, 211, 77, 0.26)" : "none",
+                color: planNight ? "#FCD34D" : "#92400E",
                 fontSize: 11,
                 fontWeight: 950,
                 letterSpacing: 0.7,
@@ -6207,8 +6637,8 @@ function App() {
             <h3
               style={{
                 margin: 0,
-                color: colors.text,
-                fontSize: 22,
+                color: planTokens.title,
+                fontSize: 20,
                 letterSpacing: -0.3,
               }}
             >
@@ -6217,7 +6647,7 @@ function App() {
 
             <p
               style={{
-                color: colors.muted,
+                color: planTokens.muted,
                 margin: "8px 0 0",
                 lineHeight: 1.45,
               }}
@@ -6233,13 +6663,13 @@ function App() {
                     style={{
                       padding: 12,
                       borderRadius: 18,
-                      border: `1px solid ${colors.cardBorder}`,
-                      background: "rgba(255,255,255,0.78)",
+                      border: `1px solid ${planTokens.borderQuiet}`,
+                      background: planNight ? "rgba(15, 23, 42, 0.72)" : "rgba(255,255,255,0.78)",
                       boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
                     }}
                   >
-                    <strong style={{ color: colors.text }}>{item.title}</strong>
-                    <p style={{ margin: "6px 0 0", color: colors.muted }}>
+                    <strong style={{ color: planTokens.title }}>{item.title}</strong>
+                    <p style={{ margin: "6px 0 0", color: planTokens.muted }}>
                       {item.text}
                     </p>
                   </div>
@@ -6250,6 +6680,7 @@ function App() {
         )}
 
             <PlanTab
+              night={planNight}
               card={card}
               button={button}
               hasPersonalizedAccess={hasPersonalizedAccess}
