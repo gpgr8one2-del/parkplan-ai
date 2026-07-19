@@ -1750,8 +1750,6 @@ function App() {
   const lastProfilePlanningParkRef = useRef(planningPark);
 
   const [currentLand, setCurrentLand] = useState(null);
-  const [showMorePlanOptions, setShowMorePlanOptions] = useState(false);
-  const [showMorePlanningDetails, setShowMorePlanningDetails] = useState(false);
   const [completedRideIds, setCompletedRideIds] = useState([]);
   const [skippedRideIds, setSkippedRideIds] = useState([]);
   const [reportedRideIssueIds, setReportedRideIssueIds] = useState([]);
@@ -2314,7 +2312,7 @@ function App() {
   const planNight = parkPresenceTheme.isNight;
   const planTokens = {
     surface: planNight ? "#131C36" : "#FFFFFF",
-    surfaceSoft: planNight ? "#0F172A" : "#FFFCF8",
+    surfaceSoft: planNight ? "#0F172A" : "#FFF9F1",
     border: planNight ? "rgba(139, 92, 246, 0.34)" : "rgba(124, 58, 237, 0.16)",
     borderQuiet: planNight ? "rgba(99, 102, 241, 0.26)" : colors.cardBorder,
     title: planNight ? "#F5F3FF" : colors.text,
@@ -2323,7 +2321,7 @@ function App() {
     eyebrowPill: planNight ? "rgba(76, 29, 149, 0.45)" : "rgba(124, 58, 237, 0.10)",
     shadow: planNight
       ? "0 12px 30px rgba(2, 6, 23, 0.45)"
-      : "0 6px 18px rgba(28, 25, 23, 0.045)",
+      : "0 10px 24px rgba(28, 25, 23, 0.06)",
   };
 
   const browsedParkId = deriveBrowsedPark(parkPresence, activePark);
@@ -3227,10 +3225,9 @@ function App() {
     if (!ride?.id) return null;
 
     const isActiveRide = activeRideId === String(ride.id);
+    // Night styling is opt-in per surface (Plan passes it); Waits and other
+    // day-styled surfaces keep the existing look and identical handlers.
     const night = options.night === true;
-    const compact = options.compact === true;
-    const reportLabel = options.reportLabel || "Report Issue";
-
     const themedActionButton = night
       ? {
           ...actionButton,
@@ -3240,37 +3237,21 @@ function App() {
         }
       : actionButton;
 
-    const renderedActionButton = compact
-      ? {
-          ...themedActionButton,
-          flex: "1 1 0",
-          minWidth: 0,
-          padding: "6px 4px",
-          gap: 3,
-          justifyContent: "center",
-          fontSize: 11,
-          fontWeight: 850,
-          lineHeight: 1.1,
-          whiteSpace: "nowrap",
-        }
-      : themedActionButton;
-
     return (
       <div
         style={{
           display: "flex",
-          gap: compact ? 5 : 8,
-          justifyContent: compact ? "stretch" : "flex-end",
-          marginTop: compact ? 8 : 10,
-          flexWrap: compact ? "nowrap" : "wrap",
-          width: "100%",
+          gap: 8,
+          justifyContent: "flex-end",
+          marginTop: 10,
+          flexWrap: "wrap",
         }}
       >
         <button
           onClick={() => handleInLine(ride)}
           disabled={isActiveRide}
           style={{
-            ...renderedActionButton,
+            ...themedActionButton,
             color: isActiveRide ? "#94a3b8" : night ? "#C4B5FD" : "#6d28d9",
             borderColor: isActiveRide
               ? night
@@ -3282,25 +3263,19 @@ function App() {
             cursor: isActiveRide ? "not-allowed" : "pointer",
           }}
         >
-          {compact ? "In Line" : isActiveRide ? "In Line Now" : "In Line"}
+          {isActiveRide ? "In Line Now" : "In Line"}
         </button>
 
         <button
           onClick={() => handleDone(ride.id)}
-          style={{
-            ...renderedActionButton,
-            color: night ? "#6EE7B7" : colors.success,
-          }}
+          style={{ ...themedActionButton, color: night ? "#6EE7B7" : colors.success }}
         >
           ✓ Done
         </button>
 
         <button
           onClick={() => handleSkip(ride.id)}
-          style={{
-            ...renderedActionButton,
-            color: night ? "#B6C2E2" : colors.muted,
-          }}
+          style={{ ...themedActionButton, color: night ? "#B6C2E2" : colors.muted }}
         >
           Skip
         </button>
@@ -3308,14 +3283,12 @@ function App() {
         <button
           onClick={() => handleReportRideIssue(ride)}
           style={{
-            ...renderedActionButton,
+            ...themedActionButton,
             color: night ? "#FCD34D" : "#92400E",
-            borderColor: night
-              ? "rgba(252, 211, 77, 0.30)"
-              : colors.amberSoft,
+            borderColor: night ? "rgba(252, 211, 77, 0.30)" : colors.amberSoft,
           }}
         >
-          {reportLabel}
+          Report Issue
         </button>
       </div>
     );
@@ -3328,28 +3301,22 @@ function App() {
     if (!showProfile?.showtimes?.length) return null;
 
     const night = options.night === true;
-    const compact = options.compact === true;
 
     return (
       <div
         style={{
-          marginTop: compact ? 7 : 10,
-          padding: compact ? "7px 8px" : 10,
-          borderRadius: compact ? 11 : 14,
-          border: night
-            ? "1px solid rgba(139, 92, 246, 0.30)"
-            : "1px solid #e9d5ff",
-          background: night
-            ? "rgba(15, 23, 42, 0.72)"
-            : "rgba(250,245,255,.75)",
+          marginTop: 10,
+          padding: 10,
+          borderRadius: 14,
+          border: night ? "1px solid rgba(139, 92, 246, 0.30)" : "1px solid #e9d5ff",
+          background: night ? "rgba(15, 23, 42, 0.72)" : "rgba(250,245,255,.75)",
         }}
       >
         <div
           style={{
-            fontSize: compact ? 10 : 12,
+            fontSize: 12,
             color: night ? "#C4B5FD" : colors.purple,
             fontWeight: 900,
-            letterSpacing: compact ? 0.45 : 0,
           }}
         >
           SHOWTIMES
@@ -3357,59 +3324,486 @@ function App() {
 
         <p
           style={{
-            margin: compact ? "3px 0 0" : "5px 0 0",
+            margin: "5px 0 0",
             color: night ? "#F5F3FF" : colors.text,
-            fontSize: compact ? 11.5 : 13,
-            fontWeight: 750,
+            fontSize: 13,
+            fontWeight: 700,
           }}
         >
           {showProfile.showtimes.join(" · ")}
         </p>
 
         {showProfile.recommendedShowtimes?.length > 0 && (
-          <p
-            style={{
-              margin: compact ? "3px 0 0" : "6px 0 0",
-              color: night ? "#B6C2E2" : colors.muted,
-              fontSize: compact ? 10.5 : 12,
-            }}
-          >
+          <p style={{ margin: "6px 0 0", color: night ? "#B6C2E2" : colors.muted, fontSize: 12 }}>
             Best target: {showProfile.recommendedShowtimes.join(" or ")}
           </p>
         )}
 
-        {(showProfile.arrivalBufferMinutes ||
-          showProfile.middayArrivalBufferMinutes) && (
-          <p
-            style={{
-              margin: compact ? "3px 0 0" : "6px 0 0",
-              color: night ? "#B6C2E2" : colors.muted,
-              fontSize: compact ? 10.5 : 12,
-            }}
-          >
+        {(showProfile.arrivalBufferMinutes || showProfile.middayArrivalBufferMinutes) && (
+          <p style={{ margin: "6px 0 0", color: night ? "#B6C2E2" : colors.muted, fontSize: 12 }}>
             Arrival buffer:{" "}
             {showProfile.middayArrivalBufferMinutes
-              ? `${showProfile.arrivalBufferMinutes || 15}–${
-                  showProfile.middayArrivalBufferMinutes
-                } min depending on heat/crowds`
+              ? `${showProfile.arrivalBufferMinutes || 15}–${showProfile.middayArrivalBufferMinutes} min depending on heat/crowds`
               : `${showProfile.arrivalBufferMinutes} min`}
           </p>
         )}
 
         {showProfile.verifyDailySchedule && (
-          <p
-            style={{
-              margin: compact ? "3px 0 0" : "6px 0 0",
-              color: night ? "#FCD34D" : "#92400E",
-              fontSize: compact ? 10.5 : 12,
-            }}
-          >
+          <p style={{ margin: "6px 0 0", color: night ? "#FCD34D" : "#92400E", fontSize: 12 }}>
             Verify in My Disney Experience. Showtimes can change by day.
           </p>
         )}
       </div>
     );
   }
+
+
+  async function handleChatSubmit(e) {
+    e.preventDefault();
+
+    const trimmed = message.trim();
+    if (!trimmed) return;
+
+    trackAppEvent("ai_chat_sent", {
+      source: "ai_chat",
+      action: {
+        type: "send_chat",
+        label: "Send",
+      },
+      metadata: {
+        messageLength: trimmed.length,
+        hasCurrentActivity: Boolean(currentActivityContext),
+      },
+    });
+
+    const nextChat = [...chat, { role: "user", content: trimmed }];
+    setChat(nextChat);
+    setMessage("");
+
+    const freshTimeContext = getCurrentTimeContext({
+      activePark,
+      familyProfile: familyProfileSummary,
+    });
+
+    const freshPlanningTimeContext = getCurrentTimeContext({
+      activePark: planningPark,
+      familyProfile: familyProfileSummary,
+    });
+
+    const freshCurrentActivityContext = buildCurrentActivityContext(currentActivity);
+
+    const dataFreshness = {
+      computedAt: freshTimeContext?.nowIso || new Date().toISOString(),
+      waits: {
+        source: parkData?.source || "",
+        ageMs: parkData?.ageMs ?? null,
+        fetchedAt: parkData?.fetchedAt || "",
+        clientLastUpdatedAt: lastAutoUpdateAt || "",
+        hasData: Array.isArray(parkData?.rides) && parkData.rides.length > 0,
+      },
+      weather: {
+        source: weather?.source || "",
+        ageMs: weather?.ageMs ?? null,
+        fetchedAt: weather?.fetchedAt || "",
+        clientLastUpdatedAt: lastAutoUpdateAt || "",
+        hasData: Boolean(weather),
+      },
+      tripPlan: {
+        status: tripPlanFreshness?.status || "",
+        isStale: Boolean(tripPlanFreshness?.isStale),
+        severity: tripPlanFreshness?.severity || "",
+        ageMinutes: tripPlanFreshness?.ageMinutes ?? null,
+        reasons: Array.isArray(tripPlanFreshness?.reasons)
+          ? tripPlanFreshness.reasons.slice(0, 5)
+          : [],
+      },
+    };
+
+    if (shouldAskFrontendLiveStateQuestion(trimmed, chat)) {
+      const clarifyingQuestion = getLiveStateClarifyingQuestionForContext({
+        familyProfile: familyProfileSummary,
+        timeContext: freshTimeContext,
+      });
+
+      setChat([
+        ...nextChat,
+        {
+          role: "assistant",
+          content: clarifyingQuestion,
+          isLiveStateQuestion: true,
+        },
+      ]);
+
+      trackAppEvent("tohi_live_state_question_asked", {
+        source: "tohi_chat",
+        metadata: {
+          reason: "open_ended_next_move",
+          interceptedBeforeAi: true,
+          dayPhase: freshTimeContext?.dayPhase,
+          planningMode: freshTimeContext?.planningMode,
+        },
+      });
+
+      return;
+    }
+
+    setChatLoading(true);
+
+    try {
+      const res = await sendChatMessage(trimmed, {
+        activePark,
+        activeParkLabel: getParkNameById(activePark),
+        activeLandLabel:
+          locationContextForDecisions?.landLabel ||
+          (currentLand ? formatLandLabel(activePark, currentLand) : ""),
+        latestFamilyState: inferLatestLiveFamilyState(trimmed, chat),
+        chatResponseMode: isLiveModeQuestion(trimmed) ? "live" : "planning",
+        chatFieldTestIntent: isPlanningModeQuestion(trimmed) ? "planning_detail" : "live_next_move",
+        planningPark,
+        planningParkLabel,
+        planningParkSource,
+        planningParkManualOverride: Boolean(manualPlanningParkOverride),
+        scheduledParkForToday,
+        scheduledParkPlanLabel: todayPlannedParkLabel,
+        todayPlannedParkLabel,
+        scheduledSecondaryParkForToday: scheduledParkForToday?.secondaryParkId || "",
+        scheduledSecondaryParkLabel,
+        parkDayScheduleStatus,
+        parkHopperContext,
+        liveParkContext,
+        planTabState,
+        planningTimeContext: freshPlanningTimeContext,
+        tripPlan: tripPlanState,
+        mustDoExperiences: tripPlanState?.mustDoExperiences || [],
+        dayGamePlan,
+        weather,
+        weatherMode,
+        recommendations,
+        conversationHistory: nextChat.slice(-6),
+        liveStateClarificationPending: isAwaitingLiveStateAnswer(chat),
+        completedRideIds,
+        activityLog,
+        skippedRideIds,
+        reportedRideIssueIds,
+        currentLand,
+        familyProfile: {
+          ...familyProfileSummary,
+          isSetupComplete: profileCompletion.isComplete,
+        },
+        timeContext: freshTimeContext,
+        dataFreshness,
+        locationContext: locationContextForDecisions,
+        currentActivity: freshCurrentActivityContext,
+        currentActivityContext: freshCurrentActivityContext,
+      });
+
+      setChat([...nextChat, { role: "assistant", content: cleanAssistantReply(res.reply, trimmed) }]);
+    } catch {
+      setChat([
+        ...nextChat,
+        {
+          role: "assistant",
+          content: cleanAssistantReply(
+            buildLocalChatFallback({
+              activePark,
+              weatherMode,
+              currentActivityContext: freshCurrentActivityContext,
+              familyProfile: familyProfileSummary,
+              recommendations,
+            }),
+            trimmed
+          ),
+        },
+      ]);
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
+  const landOptions = LAND_OPTIONS[activePark] || [];
+  const hiddenRideCount =
+    completedRideIds.length +
+    skippedRideIds.length +
+    reportedRideIssueIds.length +
+    (currentActivity ? 1 : 0);
+
+  const tohiPickDebugPreview = useMemo(() => {
+    const input = {
+      recommendations,
+      familyProfile,
+      profile: familyProfile,
+      activePark,
+      currentArea: currentLand,
+      locationRequired: Boolean(activePark),
+      locationConfidence: detectedLocationContext?.confidence || null,
+      location: detectedLocationContext || null,
+      waits: parkData?.rides || [],
+      waitDataFresh:
+        tripPlanFreshness?.isFresh !== false &&
+        tripPlanFreshness?.status !== "stale",
+      weather,
+      weatherState: weather,
+      weatherContext: weather,
+      weatherUsable: Boolean(weather),
+      activityLog,
+      completedRideIds,
+      mustDos: tripPlanState?.mustDoExperiences || [],
+      // Browsing a park without confirming presence there is a live-context
+      // ambiguity: TOHI Pick must stay anchored to the confirmed active park.
+      blockingAmbiguity: browsingAnotherPark,
+    };
+
+    const eligibility = evaluateTohiPickEligibility(input);
+    const candidateResult = buildTohiPickCandidates(input);
+    const decision = evaluateTohiPickFinalDecision({
+      eligibility,
+      candidates: candidateResult.candidates,
+      weatherMode,
+    });
+
+    const reasonNoPick = decision.showPick
+      ? null
+      : decision.reasonCodes.join(", ") || "no pick";
+
+    return {
+      eligibility,
+      candidates: candidateResult.candidates,
+      excludedCandidates: candidateResult.excludedCandidates,
+      topCandidate: candidateResult.topCandidate,
+      sourceCount: candidateResult.sourceCount,
+      usableCount: candidateResult.usableCount,
+      finalDecision: decision.status,
+      decision,
+      reasonNoPick,
+    };
+  }, [
+    recommendations,
+    familyProfile,
+    activePark,
+    currentLand,
+    detectedLocationContext,
+    parkData?.rides,
+    tripPlanFreshness,
+    weather,
+    weatherMode,
+    activityLog,
+    completedRideIds,
+    tripPlanState,
+    browsingAnotherPark,
+  ]);
+
+  const tohiPickReviewSignature = useMemo(() => {
+    if (activeTab !== "plan") return null;
+    if (!tohiPickDebugPreview.decision.showPick || !tohiPickDebugPreview.decision.candidate) {
+      return null;
+    }
+
+    return buildTohiPickReviewSignature({
+      candidate: tohiPickDebugPreview.decision.candidate,
+      candidates: tohiPickDebugPreview.candidates,
+      activePark,
+      currentLand,
+      weatherMode,
+      dayPhase: timeContext?.dayPhase || null,
+      waitAgeMinutes: Number.isFinite(Number(parkData?.ageMs))
+        ? Number(parkData.ageMs) / 60000
+        : null,
+      currentActivity,
+      familyContext: familyProfileSummary,
+    });
+  }, [
+    activeTab,
+    tohiPickDebugPreview,
+    activePark,
+    currentLand,
+    weatherMode,
+    timeContext,
+    parkData,
+    currentActivity,
+    familyProfileSummary,
+  ]);
+
+  const [tohiPickAiReview, setTohiPickAiReview] = useState({
+    status: "idle",
+    signature: null,
+    validation: null,
+    unavailableReason: null,
+  });
+  const tohiPickReviewInFlightRef = useRef(new Set());
+  const tohiPickReviewCacheRef = useRef(new Map());
+  const tohiPickReviewContextRef = useRef(null);
+
+  tohiPickReviewContextRef.current = {
+    decision: tohiPickDebugPreview.decision,
+    candidates: tohiPickDebugPreview.candidates,
+    activePark,
+    currentLand,
+    weatherMode,
+    dayPhase: timeContext?.dayPhase || null,
+    waitAgeMinutes: Number.isFinite(Number(parkData?.ageMs))
+      ? Number(parkData.ageMs) / 60000
+      : null,
+    currentActivity,
+    familyContext: familyProfileSummary,
+  };
+
+  useEffect(() => {
+    const signature = tohiPickReviewSignature;
+    const context = tohiPickReviewContextRef.current;
+
+    const wantsReview = shouldRequestTohiPickReview({
+      isPlanTabActive: activeTab === "plan",
+      decision: context?.decision,
+      signature,
+      requestedSignatures: tohiPickReviewInFlightRef.current,
+      cache: tohiPickReviewCacheRef.current,
+    });
+
+    if (!wantsReview) return undefined;
+
+    // Debounce so rapid wait/location churn settles before the AI is asked.
+    // Clearing the timer also abandons a request whose signature became
+    // obsolete before it ever fired.
+    const timer = setTimeout(() => {
+      const fireContext = tohiPickReviewContextRef.current;
+      const candidate = fireContext?.decision?.candidate;
+
+      if (!candidate) return;
+      if (tohiPickReviewInFlightRef.current.has(signature)) return;
+      if (tohiPickReviewCacheRef.current.has(signature)) return;
+
+      tohiPickReviewInFlightRef.current.add(signature);
+      setTohiPickAiReview({
+        status: "pending",
+        signature,
+        validation: null,
+        unavailableReason: null,
+      });
+
+      const reviewRequest = sanitizeTohiPickReviewRequest({
+        candidate,
+        candidates: fireContext.candidates,
+        activePark: fireContext.activePark,
+        currentLand: fireContext.currentLand,
+        weatherMode: fireContext.weatherMode,
+        dayPhase: fireContext.dayPhase,
+        waitAgeMinutes: fireContext.waitAgeMinutes,
+        currentActivity: fireContext.currentActivity,
+        familyContext: fireContext.familyContext,
+      });
+
+      // Every terminal outcome is cached under the signature it was requested
+      // for, so returning to that exact situation reuses the verdict instead
+      // of asking again. The setState guard keeps a response for a superseded
+      // signature from overwriting the visible state of the current one.
+      const settleReview = (terminalResult) => {
+        storeTohiPickReviewResult(tohiPickReviewCacheRef.current, signature, terminalResult);
+        tohiPickReviewInFlightRef.current.delete(signature);
+        setTohiPickAiReview((current) =>
+          current.signature !== signature ? current : terminalResult
+        );
+      };
+
+      sendTohiPickReview(reviewRequest)
+        .then((result) => {
+          if (!result || result.unavailable || !result.reviewText) {
+            settleReview({
+              status: "unavailable",
+              signature,
+              validation: null,
+              unavailableReason: result?.reason || "unavailable",
+            });
+            return;
+          }
+
+          settleReview({
+            status: "complete",
+            signature,
+            validation: validateTohiPickReviewResponse(result.reviewText, candidate.rideId),
+            unavailableReason: null,
+          });
+        })
+        .catch(() => {
+          settleReview({
+            status: "unavailable",
+            signature,
+            validation: null,
+            unavailableReason: "request_failed",
+          });
+        });
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [tohiPickReviewSignature, activeTab]);
+
+  const tohiPickSelectedReview = useMemo(() => {
+    return selectTohiPickReviewForSignature({
+      signature: tohiPickReviewSignature,
+      cache: tohiPickReviewCacheRef.current,
+      liveReview: tohiPickAiReview,
+    });
+  }, [tohiPickReviewSignature, tohiPickAiReview]);
+
+  const tohiPickAgreement = useMemo(() => {
+    return resolveTohiPickAgreementDecision({
+      decision: tohiPickDebugPreview.decision,
+      review: tohiPickSelectedReview,
+    });
+  }, [tohiPickDebugPreview.decision, tohiPickSelectedReview]);
+
+  const tohiPickMvpCandidate = tohiPickAgreement.showPick ? tohiPickAgreement.candidate : null;
+
+  // 60E — bounded clarification. Session-only cache, no timers, no network.
+  const tohiPickClarificationCacheRef = useRef(new Map());
+  const [tohiPickClarificationVersion, setTohiPickClarificationVersion] = useState(0);
+
+  const tohiPickClarificationEvaluation = useMemo(() => {
+    return evaluateTohiPickClarification({
+      decision: tohiPickDebugPreview.decision,
+      candidates: tohiPickDebugPreview.candidates,
+      isPlanTabActive: activeTab === "plan",
+      browsingAnotherPark,
+      presencePromptActive: Boolean(parkPresencePrompt),
+      confirmedActivePark: parkPresence?.confirmedActivePark || activePark,
+      currentLand,
+      currentActivity,
+      dateString: parkPresence?.dateString || "",
+    });
+  }, [
+    tohiPickDebugPreview,
+    activeTab,
+    browsingAnotherPark,
+    parkPresencePrompt,
+    parkPresence,
+    activePark,
+    currentLand,
+    currentActivity,
+  ]);
+
+  const tohiPickClarification = useMemo(() => {
+    return selectTohiPickClarificationForSignature({
+      evaluation: tohiPickClarificationEvaluation,
+      cache: tohiPickClarificationCacheRef.current,
+    });
+    // tohiPickClarificationVersion re-selects after an answer/dismissal write.
+  }, [tohiPickClarificationEvaluation, tohiPickClarificationVersion]);
+
+  const clarifiedTohiPickCandidate =
+    !tohiPickMvpCandidate &&
+    (tohiPickClarification.status === TOHI_PICK_CLARIFICATION_STATUSES.NEARBY_CONFIRMED ||
+      tohiPickClarification.status === TOHI_PICK_CLARIFICATION_STATUSES.MUST_DO_CONFIRMED)
+      ? tohiPickClarification.candidate
+      : null;
+
+  const tohiPickDisplayCandidate = tohiPickMvpCandidate || clarifiedTohiPickCandidate;
+  const tohiPickDisplaySource = tohiPickMvpCandidate
+    ? "deterministic"
+    : clarifiedTohiPickCandidate
+    ? "clarification"
+    : "none";
+  const showTohiPickClarificationQuestion =
+    !tohiPickMvpCandidate &&
+    tohiPickClarification.status === TOHI_PICK_CLARIFICATION_STATUSES.AVAILABLE;
 
   function handleAnswerTohiPickClarification(answer) {
     const evaluation = tohiPickClarificationEvaluation;
@@ -3449,16 +3843,6 @@ function App() {
   const hasAnyRecommendation = Boolean(primaryRecommendation);
   const parkOpenStatus = recommendations.parkOpenStatus || {};
   const isPreOpenRecommendationPause = Boolean(parkOpenStatus.shouldBlockGoNow);
-
-  const hasMorePlanOptions =
-    Boolean(
-      recommendations.worthTheWalk &&
-        recommendations.worthTheWalk.id !== primaryRecommendation?.id
-    ) ||
-    Boolean(
-      recommendations.waitOnThis &&
-        recommendations.waitOnThis.id !== primaryRecommendation?.id
-    );
   const preOpenTimeLabel =
     parkOpenStatus.openTime instanceof Date && Number.isFinite(parkOpenStatus.openTime.getTime())
       ? parkOpenStatus.openTime.toLocaleTimeString("en-US", {
@@ -4881,12 +5265,13 @@ function App() {
         {hasPersonalizedAccess ? (
           <section
             style={{
+              ...card,
               position: "relative",
-              background: "transparent",
-              border: "none",
-              borderRadius: 0,
-              boxShadow: "none",
-              padding: 0,
+              overflow: "hidden",
+              background: planNight ? planTokens.surfaceSoft : planTokens.surfaceSoft,
+              border: `1px solid ${planTokens.border}`,
+              borderRadius: 22,
+              boxShadow: planTokens.shadow,
             }}
           >
             <div style={{ position: "relative" }}>
@@ -5340,21 +5725,16 @@ function App() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 6,
-                  marginBottom: 8,
-                  padding: "6px 8px",
-                  borderRadius: 14,
-                  border: `1px solid ${planTokens.borderQuiet}`,
-                  background: planNight ? "#111A33" : "#FFFFFF",
+                  gap: 8,
+                  flexWrap: "wrap",
+                  marginBottom: 12,
+                  padding: "10px 12px",
+                  borderRadius: 16,
+                  border: `1px solid ${planTokens.border}`,
+                  background: planTokens.surface,
                 }}
               >
-                <MapPin
-                  size={12}
-                  style={{
-                    color: planTokens.eyebrow,
-                    flexShrink: 0,
-                  }}
-                />
+                <MapPin size={13} style={{ color: planTokens.eyebrow, flexShrink: 0 }} />
 
                 <select
                   id="current-land"
@@ -5381,14 +5761,14 @@ function App() {
                     });
                   }}
                   style={{
-                    flex: "1 1 auto",
-                    minWidth: 0,
-                    border: "none",
-                    borderRadius: 9,
-                    padding: "5px 4px",
+                    flex: "1 1 150px",
+                    minWidth: 130,
+                    border: `1px solid ${planTokens.borderQuiet}`,
+                    borderRadius: 12,
+                    padding: "8px 10px",
                     fontWeight: 800,
-                    fontSize: 12,
-                    background: "transparent",
+                    fontSize: 13,
+                    background: planNight ? "#0F172A" : colors.card,
                     color: planTokens.title,
                   }}
                 >
@@ -5404,13 +5784,8 @@ function App() {
                   type="button"
                   onClick={handleUseMyLocation}
                   disabled={locationLoading}
-                  aria-label="Use My Location"
-                  title="Use My Location"
                   style={{
                     ...actionButton,
-                    flexShrink: 0,
-                    padding: "6px 8px",
-                    fontSize: 11,
                     color: planNight ? "#7DD3FC" : "#0369A1",
                     borderColor: planNight
                       ? "rgba(125, 211, 252, 0.32)"
@@ -5420,8 +5795,8 @@ function App() {
                       : "rgba(255,255,255,0.82)",
                   }}
                 >
-                  <MapPin size={12} />{" "}
-                  {locationLoading ? "Finding…" : "Locate"}
+                  <MapPin size={13} />{" "}
+                  {locationLoading ? "Finding you..." : "Use My Location"}
                 </button>
               </div>
 
@@ -5472,30 +5847,19 @@ function App() {
               {browsingAnotherPark && (
                 <div
                   style={{
-                    padding: "9px 10px",
-                    marginBottom: 8,
-                    borderRadius: 14,
+                    padding: 15,
+                    marginBottom: 12,
+                    borderRadius: 20,
                     border: `1px solid ${planTokens.borderQuiet}`,
                     background: planNight ? "#111A33" : "#FBF9FF",
                   }}
                 >
-                  <strong
-                    style={{
-                      color: planTokens.title,
-                      fontSize: 12,
-                    }}
-                  >
-                    Browsing {browsedParkLabel} waits
+                  <strong style={{ color: planTokens.title }}>
+                    You’re browsing {browsedParkLabel} waits right now.
                   </strong>
-                  <p
-                    style={{
-                      margin: "3px 0 0",
-                      color: planTokens.muted,
-                      fontSize: 11.5,
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    Personalized picks remain anchored to {confirmedActiveParkLabel}.
+                  <p style={{ margin: "7px 0 0", color: planTokens.muted, lineHeight: 1.45 }}>
+                    These picks are still for {confirmedActiveParkLabel}, where your day
+                    is anchored.
                   </p>
                 </div>
               )}
@@ -5582,26 +5946,26 @@ function App() {
                       color="#991b1b"
                       borderColor="#fecaca"
                       background="#fef2f2"
-                      renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight, compact: true })}
-                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true, reportLabel: "Report" })}
+                      renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
+                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
                     />
                   )}
                 </div>
               ) : hasAnyRecommendation ? (
-                <div style={{ display: "grid", gap: 8 }}>
-                  <div style={{ marginTop: 1, marginBottom: 2 }}>
+                <div style={{ display: "grid", gap: 10 }}>
+                  <div style={{ marginTop: 4 }}>
                     <div
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
-                        padding: "4px 8px",
+                        padding: "5px 10px",
                         borderRadius: 999,
                         background: planTokens.eyebrowPill,
                         color: planTokens.eyebrow,
-                        fontSize: 9.5,
+                        fontSize: 11,
                         fontWeight: 950,
-                        letterSpacing: 0.65,
-                        marginBottom: 5,
+                        letterSpacing: 0.7,
+                        marginBottom: 8,
                       }}
                     >
                       RECOMMENDATIONS
@@ -5611,9 +5975,9 @@ function App() {
                       style={{
                         margin: 0,
                         color: planTokens.title,
-                        fontSize: 19,
-                        letterSpacing: -0.35,
-                        lineHeight: 1.12,
+                        fontSize: 21,
+                        letterSpacing: -0.4,
+                        lineHeight: 1.15,
                       }}
                     >
                       Here’s what TOHI suggests
@@ -5621,10 +5985,10 @@ function App() {
 
                     <p
                       style={{
-                        margin: "3px 0 1px",
+                        margin: "5px 0 2px",
                         color: planTokens.muted,
-                        fontSize: 11.5,
-                        lineHeight: 1.35,
+                        fontSize: 13,
+                        lineHeight: 1.4,
                       }}
                     >
                       Based on live waits, weather, and your family.
@@ -5635,9 +5999,9 @@ function App() {
                     <section
                       aria-label="TOHI Pick clarification question"
                       style={{
-                        padding: 12,
-                        marginBottom: 8,
-                        borderRadius: 16,
+                        padding: 16,
+                        marginBottom: 14,
+                        borderRadius: 22,
                         background: parkPresenceTheme.isNight
                           ? "linear-gradient(150deg, #0F172A 0%, #1E1B4B 100%)"
                           : "linear-gradient(150deg, #FFFFFF 0%, #F8F5FF 100%)",
@@ -5664,7 +6028,7 @@ function App() {
                       <h4
                         style={{
                           margin: "0 0 6px",
-                          fontSize: 16,
+                          fontSize: 19,
                           letterSpacing: -0.3,
                           color: parkPresenceTheme.isNight ? "#F5F3FF" : colors.text,
                         }}
@@ -5674,8 +6038,8 @@ function App() {
 
                       <p
                         style={{
-                          margin: "0 0 8px",
-                          fontSize: 12,
+                          margin: "0 0 12px",
+                          fontSize: 13,
                           lineHeight: 1.45,
                           color: parkPresenceTheme.isNight ? "#C7D2FE" : colors.muted,
                         }}
@@ -5683,7 +6047,7 @@ function App() {
                         Stay nearby, or walk farther for one of your must-dos?
                       </p>
 
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         <button
                           type="button"
                           onClick={() =>
@@ -5750,8 +6114,8 @@ function App() {
                         border: planNight
                           ? "1px solid rgba(139, 92, 246, 0.40)"
                           : "1px solid rgba(124, 58, 237, 0.22)",
-                        borderRadius: 18,
-                        padding: 12,
+                        borderRadius: 22,
+                        padding: 14,
                         marginBottom: 4,
                         color: planTokens.title,
                         boxShadow: planNight
@@ -5764,7 +6128,7 @@ function App() {
                       <div
                         style={{
                           display: "grid",
-                          gridTemplateColumns: "1fr",
+                          gridTemplateColumns: "minmax(0, 1fr) 116px",
                           gap: 14,
                           alignItems: "stretch",
                         }}
@@ -5844,7 +6208,7 @@ function App() {
                           <h3
                             style={{
                               margin: "0 0 8px",
-                              fontSize: 18,
+                              fontSize: 22,
                               lineHeight: 1.1,
                               fontWeight: 950,
                               letterSpacing: -0.45,
@@ -5944,7 +6308,7 @@ function App() {
                           style={{
                             position: "relative",
                             overflow: "hidden",
-                            display: "none",
+                            minHeight: 132,
                             borderRadius: 20,
                             border: planNight
                               ? "1px solid rgba(139, 92, 246, 0.30)"
@@ -6022,9 +6386,9 @@ function App() {
                     color="#166534"
                     borderColor="#bbf7d0"
                     background="#f0fdf4"
-                    titleSize={17}
-                    renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight, compact: true })}
-                    renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true, reportLabel: "Report" })}
+                    titleSize={20}
+                    renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
+                    renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
                   />
 
                   {recommendations.backup && recommendations.backup.id !== primaryRecommendation?.id && (
@@ -6035,141 +6399,51 @@ function App() {
                       color="#1d4ed8"
                       borderColor="#bfdbfe"
                       background="#eff6ff"
-                      renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight, compact: true })}
-                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true, reportLabel: "Report" })}
+                      renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
+                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
                     />
                   )}
 
-                  {recommendations.planAhead &&
-                    recommendations.planAhead.id !== primaryRecommendation?.id && (
-                      <RecommendationCard
-                        night={planNight}
-                        title="PLAN AHEAD"
-                        ride={recommendations.planAhead}
-                        reason={
-                          recommendations.planAhead.planAheadReason ||
-                          "This ride usually needs a strategy. Consider Lightning Lane, rope drop, late night, or watching for a rare dip."
-                        }
-                        color="#991b1b"
-                        borderColor="#fecaca"
-                        background="#fef2f2"
-                        renderShowtimeInfo={(ride) =>
-                          renderShowtimeInfo(ride, {
-                            night: planNight,
-                            compact: true,
-                          })
-                        }
-                        renderRideActions={(ride) =>
-                          renderRideActions(ride, {
-                            night: planNight,
-                            compact: true,
-                            reportLabel: "Report",
-                          })
-                        }
-                      />
-                    )}
+                  {recommendations.worthTheWalk && recommendations.worthTheWalk.id !== primaryRecommendation?.id && (
+                    <RecommendationCard night={planNight}
+                      title="WORTH THE WALK"
+                      ride={recommendations.worthTheWalk}
+                      reason={recommendations.worthTheWalk.reason || "The wait looks reasonable enough to consider the extra walk."}
+                      color="#6d28d9"
+                      borderColor="#ddd6fe"
+                      background="#f5f3ff"
+                      renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
+                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
+                    />
+                  )}
 
-                  {hasMorePlanOptions && (
-                    <div>
-                      <button
-                        type="button"
-                        aria-expanded={showMorePlanOptions}
-                        onClick={() =>
-                          setShowMorePlanOptions((current) => !current)
-                        }
-                        style={{
-                          width: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 6,
-                          padding: "8px 10px",
-                          borderRadius: 14,
-                          border: `1px solid ${planTokens.borderQuiet}`,
-                          background: planNight ? "#111A33" : "#FFFFFF",
-                          color: planTokens.eyebrow,
-                          fontSize: 11.5,
-                          fontWeight: 900,
-                          cursor: "pointer",
-                        }}
-                      >
-                        {showMorePlanOptions
-                          ? "Hide more options ▲"
-                          : "More options ▼"}
-                      </button>
+                  {recommendations.planAhead && recommendations.planAhead.id !== primaryRecommendation?.id && (
+                    <RecommendationCard night={planNight}
+                      title="PLAN AHEAD"
+                      ride={recommendations.planAhead}
+                      reason={
+                        recommendations.planAhead.planAheadReason ||
+                        "This ride usually needs a strategy. Consider Lightning Lane, rope drop, late night, or watching for a rare dip."
+                      }
+                      color="#991b1b"
+                      borderColor="#fecaca"
+                      background="#fef2f2"
+                      renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
+                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
+                    />
+                  )}
 
-                      {showMorePlanOptions && (
-                        <div
-                          style={{
-                            display: "grid",
-                            gap: 8,
-                            marginTop: 8,
-                          }}
-                        >
-                          {recommendations.worthTheWalk &&
-                            recommendations.worthTheWalk.id !==
-                              primaryRecommendation?.id && (
-                              <RecommendationCard
-                                night={planNight}
-                                title="WORTH THE WALK"
-                                ride={recommendations.worthTheWalk}
-                                reason={
-                                  recommendations.worthTheWalk.reason ||
-                                  "The wait looks reasonable enough to consider the extra walk."
-                                }
-                                color="#6d28d9"
-                                borderColor="#ddd6fe"
-                                background="#f5f3ff"
-                                renderShowtimeInfo={(ride) =>
-                                  renderShowtimeInfo(ride, {
-                                    night: planNight,
-                                    compact: true,
-                                  })
-                                }
-                                renderRideActions={(ride) =>
-                                  renderRideActions(ride, {
-                                    night: planNight,
-                                    compact: true,
-                                    reportLabel: "Report",
-                                  })
-                                }
-                              />
-                            )}
-
-                          {recommendations.waitOnThis &&
-                            recommendations.waitOnThis.id !==
-                              primaryRecommendation?.id && (
-                              <RecommendationCard
-                                night={planNight}
-                                title="WAIT ON THIS"
-                                ride={recommendations.waitOnThis}
-                                reason={
-                                  recommendations.waitOnThis
-                                    .waitOnThisReason ||
-                                  recommendations.waitOnThis.reason ||
-                                  "This may fit better later when the wait or effort drops."
-                                }
-                                color="#9a3412"
-                                borderColor="#fed7aa"
-                                background="#fff7ed"
-                                renderShowtimeInfo={(ride) =>
-                                  renderShowtimeInfo(ride, {
-                                    night: planNight,
-                                    compact: true,
-                                  })
-                                }
-                                renderRideActions={(ride) =>
-                                  renderRideActions(ride, {
-                                    night: planNight,
-                                    compact: true,
-                                    reportLabel: "Report",
-                                  })
-                                }
-                              />
-                            )}
-                        </div>
-                      )}
-                    </div>
+                  {recommendations.waitOnThis && recommendations.waitOnThis.id !== primaryRecommendation?.id && (
+                    <RecommendationCard night={planNight}
+                      title="WAIT ON THIS"
+                      ride={recommendations.waitOnThis}
+                      reason={recommendations.waitOnThis.waitOnThisReason || recommendations.waitOnThis.reason || "This may fit better later when the wait or effort drops."}
+                      color="#9a3412"
+                      borderColor="#fed7aa"
+                      background="#fff7ed"
+                      renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
+                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
+                    />
                   )}
                 </div>
               ) : (
@@ -6205,62 +6479,6 @@ function App() {
           })
         )}
 
-        <section style={{ marginTop: 10 }}>
-          <button
-            type="button"
-            aria-expanded={showMorePlanningDetails}
-            onClick={() =>
-              setShowMorePlanningDetails((current) => !current)
-            }
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-              padding: "11px 12px",
-              borderRadius: 15,
-              border: `1px solid ${planTokens.borderQuiet}`,
-              background: planNight ? "#111A33" : "#FFFFFF",
-              color: planTokens.title,
-              boxShadow: planNight
-                ? "none"
-                : "0 6px 16px rgba(28, 25, 23, 0.04)",
-              cursor: "pointer",
-              textAlign: "left",
-            }}
-          >
-            <span>
-              <span
-                style={{
-                  display: "block",
-                  fontSize: 12.5,
-                  fontWeight: 900,
-                }}
-              >
-                More planning details
-              </span>
-              <span
-                style={{
-                  display: "block",
-                  marginTop: 2,
-                  color: planTokens.muted,
-                  fontSize: 10.5,
-                  fontWeight: 650,
-                }}
-              >
-                Trip timing, weather strategy, and your full plan
-              </span>
-            </span>
-
-            <span aria-hidden="true">
-              {showMorePlanningDetails ? "▲" : "▼"}
-            </span>
-          </button>
-        </section>
-
-        {showMorePlanningDetails && (
-          <>
         <section
           style={{
             ...card,
@@ -6490,8 +6708,6 @@ function App() {
               liveParkContext={liveParkContext}
               setActiveScreen={setActiveScreen}
             />
-          </>
-        )}
             </>
           )}
 
