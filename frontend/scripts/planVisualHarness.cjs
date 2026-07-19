@@ -9,6 +9,19 @@ const cardSource = fs.readFileSync(
   path.join(frontendRoot, "src", "components", "RecommendationCard.jsx"),
   "utf8"
 );
+const planRecommendationsPath = path.join(
+  frontendRoot,
+  "src/components/PlanRecommendations.jsx"
+);
+const planRecommendationsSource = fs.readFileSync(
+  planRecommendationsPath,
+  "utf8"
+);
+
+// The Plan presentation now lives in PlanRecommendations.jsx while App.jsx
+// keeps state, handlers, and integration. Contracts that span both read the
+// combined source; pure presentation reads the extracted component.
+const planPresentationSource = `${appSource}\n${planRecommendationsSource}`;
 
 let passCount = 0;
 let failCount = 0;
@@ -28,81 +41,81 @@ function check(label, actual, expected) {
 console.log("Setup header");
 check(
   "strategy eyebrow switches day/night",
-  appSource.includes('{planNight ? "EVENING STRATEGY" : "DAY STRATEGY"}'),
+  planRecommendationsSource.includes('{planNight ? "EVENING STRATEGY" : "DAY STRATEGY"}'),
   true
 );
 check(
   "approved setup subtitle",
-  appSource.includes(
+  planRecommendationsSource.includes(
     "TOHI uses your park, weather, family setup, and live waits to guide"
   ),
   true
 );
-check("setup title kept", appSource.includes("What should we do next?"), true);
+check("setup title kept", planRecommendationsSource.includes("What should we do next?"), true);
 
 console.log("Recommendations header");
-check("RECOMMENDATIONS eyebrow", appSource.includes(">\n                      RECOMMENDATIONS"), true);
-check("recommendations title", appSource.includes("Here’s what TOHI suggests"), true);
+check("RECOMMENDATIONS eyebrow", planRecommendationsSource.includes(">\n                      RECOMMENDATIONS"), true);
+check("recommendations title", planRecommendationsSource.includes("Here’s what TOHI suggests"), true);
 check(
   "recommendations subtitle",
-  appSource.includes("Based on live waits, weather, and your family."),
+  planRecommendationsSource.includes("Based on live waits, weather, and your family."),
   true
 );
 
 console.log("Where Are You card");
-check("WHERE ARE YOU eyebrow", appSource.includes("Where are you?"), true);
-check("Use My Location preserved", appSource.includes("Use My Location"), true);
+check("WHERE ARE YOU eyebrow", planRecommendationsSource.includes("Where are you?"), true);
+check("Use My Location preserved", planRecommendationsSource.includes("Use My Location"), true);
 check(
   "approved helper copy",
-  appSource.includes(
+  planRecommendationsSource.includes(
     "Helps avoid unnecessary walking. Auto-updates while the app is open."
   ),
   true
 );
-check("land select preserved", appSource.includes('id="current-land"'), true);
-check("manual selection handler preserved", appSource.includes("manual_location_selected"), true);
+check("land select preserved", planRecommendationsSource.includes('id="current-land"'), true);
+check("manual selection handler preserved", planRecommendationsSource.includes("manual_location_selected"), true);
 
 console.log("Weather + Comfort card");
-check("eyebrow present", appSource.includes("WEATHER + COMFORT"), true);
-check("uses real temperature state", appSource.includes("weather?.tempF != null ? ("), true);
+check("eyebrow present", planRecommendationsSource.includes("WEATHER + COMFORT"), true);
+check("uses real temperature state", planRecommendationsSource.includes("weather?.tempF != null ? ("), true);
 check(
   "unavailable/loading fallback uses real summary",
-  appSource.includes('{weather?.summary || "Loading weather..."}'),
+  planRecommendationsSource.includes('{weather?.summary || "Loading weather..."}'),
   true
 );
 
 console.log("Family Context card");
-check("eyebrow present", appSource.includes("FAMILY CONTEXT"), true);
+check("eyebrow present", planRecommendationsSource.includes("FAMILY CONTEXT"), true);
 check(
   "edit affordance uses existing screen navigation",
-  appSource.includes('onClick={() => setActiveScreen("family_profile")}'),
+  planRecommendationsSource.includes('onClick={() => setActiveScreen("family_profile")}'),
   true
 );
 check(
   "connected to real family summary",
-  appSource.includes("familyProfileSummary?.shortestHeightInches"),
+  planRecommendationsSource.includes("familyProfileSummary?.shortestHeightInches"),
   true
 );
 
 console.log("Clarification card intact");
-check("eyebrow once", (appSource.match(/HELP TOHI CHOOSE/g) || []).length, 1);
-check("question copy", appSource.includes("What matters more right now?"), true);
-check("actions preserved", appSource.includes("Go for the must-do"), true);
+check("eyebrow once", (planPresentationSource.match(/HELP TOHI CHOOSE/g) || []).length, 1);
+check("question copy", planRecommendationsSource.includes("What matters more right now?"), true);
+check("actions preserved", planRecommendationsSource.includes("Go for the must-do"), true);
 
 console.log("Recommendation stack");
 {
-  const cardCalls = (appSource.match(/<RecommendationCard/g) || []).length;
-  const nightCalls = (appSource.match(/<RecommendationCard night=\{planNight\}/g) || []).length;
+  const cardCalls = (planRecommendationsSource.match(/<RecommendationCard/g) || []).length;
+  const nightCalls = (planRecommendationsSource.match(/<RecommendationCard night=\{planNight\}/g) || []).length;
   check("all recommendation cards receive night mode", cardCalls > 0 && cardCalls === nightCalls, true);
   check(
     "stack container is a vertical grid",
-    appSource.includes('<div style={{ display: "grid", gap: 10 }}>'),
+    planRecommendationsSource.includes('<div style={{ display: "grid", gap: 10 }}>'),
     true
   );
   check("no carousel introduced", appSource.includes('overflowX: "auto", paddingBottom: 4 }}>\n            {PARKS.map'), true);
   check(
     "action handlers still wired",
-    (appSource.match(/renderRideActions=\{\(ride\) => renderRideActions\(ride, \{ night: planNight \}\)\}/g) || [])
+    (planRecommendationsSource.match(/renderRideActions=\{\(ride\) => renderRideActions\(ride, \{ night: planNight \}\)\}/g) || [])
       .length >= 5,
     true
   );
@@ -124,7 +137,7 @@ console.log("Artwork rules");
   const imgTags = (appSource.match(/<img/g) || []).length;
   check("only the existing logo image exists", imgTags, 1);
   check("logo is the repo asset", appSource.includes('src="/tohi-logo.png"'), true);
-  check("no external image URLs", /src="https?:\/\//.test(appSource), false);
+  check("no external image URLs", /src="https?:\/\//.test(planPresentationSource), false);
   check("no external images in card component", /https?:\/\//.test(cardSource), false);
 }
 
@@ -140,7 +153,7 @@ check(
 console.log("Night tokens");
 check("plan night tokens defined", appSource.includes("const planTokens = {"), true);
 check("night surface navy", appSource.includes('surface: planNight ? "#131C36"'), true);
-check("no pure black surfaces", appSource.includes('"#000000"'), false);
+check("no pure black surfaces", planPresentationSource.includes('"#000000"'), false);
 
 console.log("Two-state Plan structure");
 {
@@ -151,13 +164,13 @@ console.log("Two-state Plan structure");
     ),
     true
   );
-  const branchStart = appSource.indexOf("{planShowsSetupState ? (");
-  const dayStrategy = appSource.indexOf('"EVENING STRATEGY" : "DAY STRATEGY"');
-  const whereAreYou = appSource.indexOf("Where are you?");
-  const weatherComfort = appSource.indexOf("WEATHER + COMFORT");
-  const familyContext = appSource.indexOf("FAMILY CONTEXT");
-  const branchElse = appSource.indexOf('aria-label="Current park area"');
-  const recommendationsHeader = appSource.indexOf(">\n                      RECOMMENDATIONS");
+  const branchStart = planRecommendationsSource.indexOf("{planShowsSetupState ? (");
+  const dayStrategy = planRecommendationsSource.indexOf('"EVENING STRATEGY" : "DAY STRATEGY"');
+  const whereAreYou = planRecommendationsSource.indexOf("Where are you?");
+  const weatherComfort = planRecommendationsSource.indexOf("WEATHER + COMFORT");
+  const familyContext = planRecommendationsSource.indexOf("FAMILY CONTEXT");
+  const branchElse = planRecommendationsSource.indexOf('aria-label="Current park area"');
+  const recommendationsHeader = planRecommendationsSource.indexOf(">\n                      RECOMMENDATIONS");
 
   check("setup branch exists", branchStart > 0, true);
   check("setup header inside setup branch", branchStart < dayStrategy, true);
@@ -176,17 +189,17 @@ console.log("Two-state Plan structure");
   );
   check(
     "recommendation state keeps a compact location affordance",
-    appSource.includes('aria-label="Current park area"'),
+    planRecommendationsSource.includes('aria-label="Current park area"'),
     true
   );
   check(
     "setup headers appear exactly once",
-    (appSource.match(/DAY STRATEGY/g) || []).length,
+    (planPresentationSource.match(/DAY STRATEGY/g) || []).length,
     1
   );
   check(
     "old always-stacked location prompt removed from recommendation chain",
-    appSource.includes("{recommendations.needsLocation || !currentLand ? ("),
+    planPresentationSource.includes("{recommendations.needsLocation || !currentLand ? ("),
     false
   );
 }
@@ -206,7 +219,7 @@ console.log("Night coverage for every Plan fallback and control");
   );
   check(
     "location selects are theme-aware",
-    (appSource.match(/background: planNight \? "#0F172A" : colors.card/g) || []).length,
+    (planRecommendationsSource.match(/background: planNight \? "#0F172A" : colors.card/g) || []).length,
     2
   );
   check(
@@ -220,7 +233,7 @@ console.log("Night coverage for every Plan fallback and control");
   );
   check(
     "plan cards pass night to ride actions",
-    (appSource.match(/renderRideActions\(ride, \{ night: planNight \}\)/g) || []).length >= 6,
+    (planRecommendationsSource.match(/renderRideActions\(ride, \{ night: planNight \}\)/g) || []).length >= 6,
     true
   );
   check(
@@ -230,17 +243,17 @@ console.log("Night coverage for every Plan fallback and control");
   );
   check(
     "tohi pick caution is theme-aware",
-    appSource.includes('"rgba(69, 26, 3, 0.45)"'),
+    planRecommendationsSource.includes('"rgba(69, 26, 3, 0.45)"'),
     true
   );
   check(
     "tohi pick decorative panel has night treatment",
-    appSource.includes("#1E1B4B 0%, #0F172A 58%"),
+    planRecommendationsSource.includes("#1E1B4B 0%, #0F172A 58%"),
     true
   );
   check(
     "pre-open, browse, and fallback cards are theme-aware",
-    (appSource.match(/planNight \? "#111A33"/g) || []).length >= 3,
+    (planPresentationSource.match(/planNight \? "#111A33"/g) || []).length >= 3,
     true
   );
 }
@@ -322,7 +335,7 @@ console.log("Night chip coverage");
   );
   check(
     "trip timing + strategy badges night-treated",
-    (appSource.match(/planNight \? "rgba\(15, 23, 42, 0\.72\)" : colors\.amberSoft/g) || [])
+    (planPresentationSource.match(/planNight \? "rgba\(15, 23, 42, 0\.72\)" : colors\.amberSoft/g) || [])
       .length >= 3,
     true
   );
@@ -340,7 +353,7 @@ console.log("Night chip coverage");
   );
   check(
     "plan cards pass night to showtime info",
-    (appSource.match(/renderShowtimeInfo\(ride, \{ night: planNight \}\)/g) || []).length >= 6,
+    (planRecommendationsSource.match(/renderShowtimeInfo\(ride, \{ night: planNight \}\)/g) || []).length >= 6,
     true
   );
   check(
@@ -353,14 +366,55 @@ console.log("Night chip coverage");
 console.log("Scope protection");
 {
   check(
-    "RecommendationCard used only in App Plan region",
-    (appSource.match(/<RecommendationCard/g) || []).length,
+    "RecommendationCard used only in the Plan presentation",
+    (planRecommendationsSource.match(/<RecommendationCard/g) || []).length,
     6
   );
   check("BottomTabs untouched structurally", appSource.includes("<BottomTabs activeTab={activeTab}"), true);
   check(
     "Home hero untouched",
     appSource.includes("TODAY&apos;S GAME PLAN"),
+    true
+  );
+}
+
+console.log("Extraction integrity");
+{
+  check(
+    "App imports PlanRecommendations exactly once",
+    (appSource.match(/import \{ PlanRecommendations \} from "\.\/components\/PlanRecommendations";/g) || [])
+      .length,
+    1
+  );
+  check(
+    "App renders PlanRecommendations exactly once",
+    (appSource.match(/<PlanRecommendations/g) || []).length,
+    1
+  );
+  check(
+    "component holds all six RecommendationCard render sites",
+    (planRecommendationsSource.match(/<RecommendationCard/g) || []).length,
+    6
+  );
+  check(
+    "App holds zero RecommendationCard render sites",
+    (appSource.match(/<RecommendationCard/g) || []).length,
+    0
+  );
+  check("Trip Timing remains in App", appSource.includes("TRIP TIMING"), true);
+  check("Weather Strategy remains in App", appSource.includes("WEATHER STRATEGY"), true);
+  check("PlanTab remains in App", appSource.includes("<PlanTab"), true);
+  check(
+    "locked hasPersonalizedAccess branch remains in App",
+    appSource.includes("renderLockedFeatureCard({") &&
+      appSource.includes("Personalized Best Move is locked until setup is finished"),
+    true
+  );
+  check("handleChatSubmit remains in App", appSource.includes("handleChatSubmit"), true);
+  check("landOptions remains in App", appSource.includes("const landOptions = LAND_OPTIONS[activePark]"), true);
+  check(
+    "tohiPickDisplayCandidate remains in App",
+    appSource.includes("const tohiPickDisplayCandidate ="),
     true
   );
 }
