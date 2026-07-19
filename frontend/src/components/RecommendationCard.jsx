@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { colors } from "../theme";
 
 const SLOT_STYLES = {
@@ -8,8 +8,6 @@ const SLOT_STYLES = {
     accentNight: "#6EE7B7",
     accentSoft: colors.successSoft,
     border: "rgba(5, 150, 105, 0.24)",
-    borderNight: "rgba(110, 231, 183, 0.30)",
-    badge: "Go now",
   },
   "SMART BACKUP": {
     eyebrow: "SMART BACKUP",
@@ -17,8 +15,6 @@ const SLOT_STYLES = {
     accentNight: "#7DD3FC",
     accentSoft: colors.skySoft,
     border: "rgba(56, 189, 248, 0.32)",
-    borderNight: "rgba(125, 211, 252, 0.30)",
-    badge: "Safe pick",
   },
   "WORTH THE WALK": {
     eyebrow: "WORTH THE WALK",
@@ -26,8 +22,6 @@ const SLOT_STYLES = {
     accentNight: "#C4B5FD",
     accentSoft: colors.purpleSoft,
     border: "rgba(124, 58, 237, 0.26)",
-    borderNight: "rgba(196, 181, 253, 0.32)",
-    badge: "Big payoff",
   },
   "PLAN AHEAD": {
     eyebrow: "PLAN AHEAD",
@@ -35,8 +29,6 @@ const SLOT_STYLES = {
     accentNight: "#FCD34D",
     accentSoft: colors.amberSoft,
     border: "rgba(245, 158, 11, 0.32)",
-    borderNight: "rgba(252, 211, 77, 0.28)",
-    badge: "Strategy",
   },
   "WAIT ON THIS": {
     eyebrow: "WAIT ON THIS",
@@ -44,9 +36,26 @@ const SLOT_STYLES = {
     accentNight: "#FCD34D",
     accentSoft: colors.amberSoft,
     border: "rgba(245, 158, 11, 0.26)",
-    borderNight: "rgba(252, 211, 77, 0.24)",
-    badge: "Later",
   },
+};
+
+// Local compact-card presentation tokens (61C-1). Presentation-only: slot
+// accents still come from SLOT_STYLES; night stays a navy surface with a
+// thin purple border per the approved blueprint.
+const COMPACT_CARD = {
+  padding: 12,
+  daySurface: "#FFFFFF",
+  nightSurface: "#131C36",
+  nightBorder: "rgba(139, 92, 246, 0.32)",
+  dayShadow: "0 6px 14px rgba(28, 25, 23, 0.05)",
+  nightShadow: "0 8px 18px rgba(2, 6, 23, 0.35)",
+};
+
+const TWO_LINE_CLAMP = {
+  display: "-webkit-box",
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: "vertical",
+  overflow: "hidden",
 };
 
 function getSlotStyle(title, fallbackColor, fallbackBorder) {
@@ -57,8 +66,6 @@ function getSlotStyle(title, fallbackColor, fallbackBorder) {
       accentNight: "#C4B5FD",
       accentSoft: colors.purpleSoft,
       border: fallbackBorder || colors.cardBorder,
-      borderNight: "rgba(139, 92, 246, 0.30)",
-      badge: "Recommended",
     }
   );
 }
@@ -72,129 +79,124 @@ export function RecommendationCard({
   background,
   titleSize = 18,
   night = false,
+  protectReason = false,
   renderShowtimeInfo,
   renderRideActions,
 }) {
+  const [reasonExpanded, setReasonExpanded] = useState(false);
+  const [reasonClipped, setReasonClipped] = useState(false);
+  const reasonRef = useRef(null);
+
+  // Only measure while the reason is visually clamped; once expanded the
+  // element no longer overflows, so keep the last clipped result for "Less".
+  useEffect(() => {
+    if (protectReason || reasonExpanded) return;
+    const el = reasonRef.current;
+    if (!el) return;
+    setReasonClipped(el.scrollHeight > el.clientHeight + 1);
+  }, [reason, protectReason, reasonExpanded]);
+
   if (!ride) return null;
 
   const slot = getSlotStyle(title, color, borderColor, background);
   const accent = night ? slot.accentNight : slot.accent;
-  const border = night ? slot.borderNight : slot.border;
-  const surface = night ? "#131C36" : "#FFFFFF";
+  const border = night ? COMPACT_CARD.nightBorder : slot.border;
+  const surface = night ? COMPACT_CARD.nightSurface : COMPACT_CARD.daySurface;
   const titleColor = night ? "#F5F3FF" : colors.text;
   const mutedColor = night ? "#B6C2E2" : colors.muted;
   const pillSurface = night ? "rgba(15, 23, 42, 0.72)" : "rgba(255, 255, 255, 0.78)";
+  const showFullReason = protectReason || reasonExpanded;
 
   return (
     <div
       style={{
-        position: "relative",
-        overflow: "hidden",
-        padding: 16,
+        padding: COMPACT_CARD.padding,
         borderRadius: 20,
         border: `1px solid ${border}`,
         background: surface,
-        boxShadow: night
-          ? "0 12px 30px rgba(2, 6, 23, 0.45)"
-          : "0 10px 24px rgba(28, 25, 23, 0.06)",
+        boxShadow: night ? COMPACT_CARD.nightShadow : COMPACT_CARD.dayShadow,
       }}
     >
       <div
-        aria-hidden="true"
         style={{
-          position: "absolute",
-          width: 92,
-          height: 92,
-          borderRadius: "999px",
-          right: -36,
-          top: -38,
-          background: night ? "rgba(76, 29, 149, 0.28)" : slot.accentSoft,
-          opacity: night ? 0.5 : 0.6,
+          fontSize: 11,
+          color: accent,
+          fontWeight: 950,
+          letterSpacing: 0.6,
+          marginBottom: 5,
         }}
-      />
+      >
+        {slot.eyebrow}
+      </div>
 
-      <div style={{ position: "relative" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 10,
-            alignItems: "center",
-            marginBottom: 8,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 12,
-              color: accent,
-              fontWeight: 950,
-              letterSpacing: 0.6,
-            }}
-          >
-            {slot.eyebrow}
-          </div>
+      <h4
+        style={{
+          margin: "0 0 6px",
+          fontSize: Math.min(titleSize, 18),
+          lineHeight: 1.15,
+          color: titleColor,
+          letterSpacing: -0.25,
+          ...TWO_LINE_CLAMP,
+        }}
+      >
+        {ride.name}
+      </h4>
 
-          <div
-            style={{
-              padding: "5px 9px",
-              borderRadius: 999,
-              background: pillSurface,
-              border: `1px solid ${border}`,
-              color: accent,
-              fontSize: 11,
-              fontWeight: 900,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {slot.badge}
-          </div>
-        </div>
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "5px 9px",
+          borderRadius: 999,
+          background: pillSurface,
+          border: `1px solid ${border}`,
+          color: accent,
+          fontWeight: 950,
+          fontSize: 13,
+        }}
+      >
+        {ride.waitTime != null ? `${ride.waitTime} min wait` : "Wait unavailable"}
+      </div>
 
-        <h4
-          style={{
-            margin: "0 0 7px",
-            fontSize: titleSize,
-            lineHeight: 1.15,
-            color: titleColor,
-            letterSpacing: -0.25,
-          }}
-        >
-          {ride.name}
-        </h4>
-
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "7px 10px",
-            borderRadius: 999,
-            background: pillSurface,
-            border: `1px solid ${border}`,
-            color: accent,
-            fontWeight: 950,
-            fontSize: 14,
-          }}
-        >
-          {ride.waitTime != null ? `${ride.waitTime} min wait` : "Wait unavailable"}
-        </div>
-
-        {reason && (
+      {reason && (
+        <div style={{ margin: "8px 0 0" }}>
           <p
+            ref={reasonRef}
             style={{
-              margin: "10px 0 0",
+              margin: 0,
               color: mutedColor,
-              fontSize: 14,
-              lineHeight: 1.45,
+              fontSize: 12.5,
+              lineHeight: 1.4,
+              ...(showFullReason ? {} : TWO_LINE_CLAMP),
             }}
           >
             {reason}
           </p>
-        )}
 
-        {renderShowtimeInfo?.(ride)}
-        {renderRideActions?.(ride)}
-      </div>
+          {!protectReason && (reasonClipped || reasonExpanded) && (
+            <button
+              type="button"
+              aria-expanded={reasonExpanded}
+              onClick={() => setReasonExpanded((expanded) => !expanded)}
+              style={{
+                background: "none",
+                border: "none",
+                padding: "3px 0 0",
+                fontSize: 12,
+                fontWeight: 800,
+                color: accent,
+                cursor: "pointer",
+              }}
+            >
+              {reasonExpanded ? "Less" : "More"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {renderShowtimeInfo?.(ride)}
+      {renderRideActions?.(ride)}
     </div>
   );
 }
