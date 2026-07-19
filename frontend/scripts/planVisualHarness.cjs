@@ -115,7 +115,7 @@ console.log("Recommendation stack");
   check("no carousel introduced", appSource.includes('overflowX: "auto", paddingBottom: 4 }}>\n            {PARKS.map'), true);
   check(
     "action handlers still wired",
-    (planRecommendationsSource.match(/renderRideActions=\{\(ride\) => renderRideActions\(ride, \{ night: planNight \}\)\}/g) || [])
+    (planRecommendationsSource.match(/renderRideActions=\{\(ride\) => renderRideActions\(ride, \{ night: planNight, compact: true \}\)\}/g) || [])
       .length >= 5,
     true
   );
@@ -131,6 +131,109 @@ check(
   true
 );
 check("no full-card gradient backgrounds", cardSource.includes("linear-gradient(145deg, #FFFFFF"), false);
+
+console.log("Compact card anatomy (61C-1)");
+{
+  check(
+    "every Plan card action callback passes compact",
+    (planRecommendationsSource.match(/renderRideActions\(ride, \{ night: planNight, compact: true \}\)/g) || []).length,
+    6
+  );
+  const rideActionsStart = appSource.indexOf("function renderRideActions(ride, options = {})");
+  const rideActionsEnd = appSource.indexOf("function renderShowtimeInfo(ride, options = {})");
+  const rideActionsSlice = appSource.slice(rideActionsStart, rideActionsEnd);
+  check(
+    "compact option is read inside renderRideActions only",
+    rideActionsStart > 0 &&
+      rideActionsSlice.includes("const compact = options.compact === true;") &&
+      (appSource.match(/options\.compact/g) || []).length ===
+        (rideActionsSlice.match(/options\.compact/g) || []).length,
+    true
+  );
+  check(
+    "default Report Issue label kept in the non-compact branch",
+    rideActionsSlice.includes('{compact ? "Report" : "Report Issue"}'),
+    true
+  );
+  check(
+    "compact Report label exists only via the compact branch",
+    (appSource.match(/"Report"/g) || []).length ===
+      (rideActionsSlice.match(/\{compact \? "Report" : "Report Issue"\}/g) || []).length,
+    true
+  );
+  check(
+    "compact action row uses nowrap and default keeps wrap",
+    rideActionsSlice.includes('flexWrap: compact ? "nowrap" : "wrap"'),
+    true
+  );
+  check(
+    "non-compact button sizing untouched",
+    rideActionsSlice.includes(": themedActionButton;") &&
+      appSource.includes('padding: "7px 10px"'),
+    true
+  );
+  check(
+    "compact buttons keep a 36px minimum touch height",
+    /const sizedActionButton = compact\n      \? \{[\s\S]*?minHeight: 36,\n        \}\n      : themedActionButton;/.test(
+      rideActionsSlice
+    ),
+    true
+  );
+  const cardShowtimeIndex = cardSource.indexOf("{renderShowtimeInfo?.(ride)}");
+  const cardActionsIndex = cardSource.indexOf("{renderRideActions?.(ride)}");
+  check(
+    "showtime info renders before ride actions in the card",
+    cardShowtimeIndex > 0 && cardActionsIndex > cardShowtimeIndex,
+    true
+  );
+  check(
+    "action row is the final dynamic card section",
+    cardSource.indexOf("</div>", cardActionsIndex) ===
+      cardSource.indexOf("<", cardActionsIndex + "{renderRideActions?.(ride)}".length + 1),
+    true
+  );
+  check("badge pill removed from RecommendationCard", /badge/.test(cardSource), false);
+  check("category eyebrow remains", cardSource.includes("{slot.eyebrow}"), true);
+  check("two-line reason clamp exists", cardSource.includes("WebkitLineClamp: 2"), true);
+  check(
+    "More/Less control uses aria-expanded",
+    cardSource.includes("aria-expanded={reasonExpanded}"),
+    true
+  );
+  check(
+    "More control only renders when content is clipped",
+    cardSource.includes("reasonClipped || reasonExpanded"),
+    true
+  );
+  check(
+    "protected reasons bypass the default clamp",
+    cardSource.includes("protectReason = false") &&
+      cardSource.includes("const showFullReason = protectReason || reasonExpanded;"),
+    true
+  );
+  check(
+    "protectReason driven by explicit ride data at all Plan call sites",
+    (planRecommendationsSource.match(/protectReason=\{Boolean\(/g) || []).length,
+    6
+  );
+  check(
+    "protectReason never inferred from copy text",
+    /protectReason=\{[^}]*(reason|Reason)\b[^}]*\.includes/.test(planRecommendationsSource),
+    false
+  );
+  check(
+    "no remote artwork URLs in the card or Plan presentation",
+    /https?:\/\//.test(cardSource) || /src="https?:\/\//.test(planRecommendationsSource),
+    false
+  );
+  check(
+    "no park-level or area-level artwork fallback consumed",
+    /getParkArtwork|getAreaArtwork|getTohiArtwork|TOHI_PARK_ARTWORK|TOHI_AREA_ARTWORK/.test(
+      `${cardSource}\n${planRecommendationsSource}`
+    ),
+    false
+  );
+}
 
 console.log("Artwork rules");
 {
@@ -233,7 +336,7 @@ console.log("Night coverage for every Plan fallback and control");
   );
   check(
     "plan cards pass night to ride actions",
-    (planRecommendationsSource.match(/renderRideActions\(ride, \{ night: planNight \}\)/g) || []).length >= 6,
+    (planRecommendationsSource.match(/renderRideActions\(ride, \{ night: planNight, compact: true \}\)/g) || []).length >= 6,
     true
   );
   check(

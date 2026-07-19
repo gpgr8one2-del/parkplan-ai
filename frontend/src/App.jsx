@@ -3227,6 +3227,9 @@ function App() {
     // Night styling is opt-in per surface (Plan passes it); Waits and other
     // day-styled surfaces keep the existing look and identical handlers.
     const night = options.night === true;
+    // Compact styling is opt-in for Plan recommendation cards (61C-1). Callers
+    // that do not pass it keep the existing padding, type, wrap, and labels.
+    const compact = options.compact === true;
     const themedActionButton = night
       ? {
           ...actionButton,
@@ -3235,22 +3238,32 @@ function App() {
           color: "#E2E8F0",
         }
       : actionButton;
+    const sizedActionButton = compact
+      ? {
+          ...themedActionButton,
+          padding: "6px 9px",
+          fontSize: 11,
+          whiteSpace: "nowrap",
+          minWidth: 0,
+          minHeight: 36,
+        }
+      : themedActionButton;
 
     return (
       <div
         style={{
           display: "flex",
-          gap: 8,
+          gap: compact ? 6 : 8,
           justifyContent: "flex-end",
-          marginTop: 10,
-          flexWrap: "wrap",
+          marginTop: compact ? 8 : 10,
+          flexWrap: compact ? "nowrap" : "wrap",
         }}
       >
         <button
           onClick={() => handleInLine(ride)}
           disabled={isActiveRide}
           style={{
-            ...themedActionButton,
+            ...sizedActionButton,
             color: isActiveRide ? "#94a3b8" : night ? "#C4B5FD" : "#6d28d9",
             borderColor: isActiveRide
               ? night
@@ -3267,14 +3280,14 @@ function App() {
 
         <button
           onClick={() => handleDone(ride.id)}
-          style={{ ...themedActionButton, color: night ? "#6EE7B7" : colors.success }}
+          style={{ ...sizedActionButton, color: night ? "#6EE7B7" : colors.success }}
         >
           ✓ Done
         </button>
 
         <button
           onClick={() => handleSkip(ride.id)}
-          style={{ ...themedActionButton, color: night ? "#B6C2E2" : colors.muted }}
+          style={{ ...sizedActionButton, color: night ? "#B6C2E2" : colors.muted }}
         >
           Skip
         </button>
@@ -3282,12 +3295,12 @@ function App() {
         <button
           onClick={() => handleReportRideIssue(ride)}
           style={{
-            ...themedActionButton,
+            ...sizedActionButton,
             color: night ? "#FCD34D" : "#92400E",
             borderColor: night ? "rgba(252, 211, 77, 0.30)" : colors.amberSoft,
           }}
         >
-          Report Issue
+          {compact ? "Report" : "Report Issue"}
         </button>
       </div>
     );

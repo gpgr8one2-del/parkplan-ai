@@ -738,8 +738,12 @@ export function PlanRecommendations({
                       color="#991b1b"
                       borderColor="#fecaca"
                       background="#fef2f2"
+                      protectReason={Boolean(
+                        recommendations.planAhead.mustDoPriority ||
+                          recommendations.planAhead.shouldProtectLater
+                      )}
                       renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
-                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
+                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                     />
                   )}
                 </div>
@@ -1179,8 +1183,12 @@ export function PlanRecommendations({
                     borderColor="#bbf7d0"
                     background="#f0fdf4"
                     titleSize={20}
+                    protectReason={Boolean(
+                      primaryRecommendation.mustDoPriority ||
+                        primaryRecommendation.shouldProtectLater
+                    )}
                     renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
-                    renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
+                    renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                   />
 
                   {recommendations.backup && recommendations.backup.id !== primaryRecommendation?.id && (
@@ -1191,8 +1199,12 @@ export function PlanRecommendations({
                       color="#1d4ed8"
                       borderColor="#bfdbfe"
                       background="#eff6ff"
+                      protectReason={Boolean(
+                        recommendations.backup.mustDoPriority ||
+                          recommendations.backup.shouldProtectLater
+                      )}
                       renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
-                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
+                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                     />
                   )}
 
@@ -1204,8 +1216,12 @@ export function PlanRecommendations({
                       color="#6d28d9"
                       borderColor="#ddd6fe"
                       background="#f5f3ff"
+                      protectReason={Boolean(
+                        recommendations.worthTheWalk.mustDoPriority ||
+                          recommendations.worthTheWalk.shouldProtectLater
+                      )}
                       renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
-                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
+                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                     />
                   )}
 
@@ -1220,8 +1236,12 @@ export function PlanRecommendations({
                       color="#991b1b"
                       borderColor="#fecaca"
                       background="#fef2f2"
+                      protectReason={Boolean(
+                        recommendations.planAhead.mustDoPriority ||
+                          recommendations.planAhead.shouldProtectLater
+                      )}
                       renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
-                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
+                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                     />
                   )}
 
@@ -1233,8 +1253,12 @@ export function PlanRecommendations({
                       color="#9a3412"
                       borderColor="#fed7aa"
                       background="#fff7ed"
+                      protectReason={Boolean(
+                        recommendations.waitOnThis.mustDoPriority ||
+                          recommendations.waitOnThis.shouldProtectLater
+                      )}
                       renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
-                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight })}
+                      renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                     />
                   )}
                 </div>
