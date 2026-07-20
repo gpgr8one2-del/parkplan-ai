@@ -51,6 +51,13 @@ const COMPACT_CARD = {
   nightShadow: "0 8px 18px rgba(2, 6, 23, 0.35)",
 };
 
+// Restrained purple treatment for the card carrying the TOHI Pick (61C-2).
+const TOHI_PICK_STYLE = {
+  accent: (night) => (night ? "#C4B5FD" : colors.purpleDeep),
+  border: (night) =>
+    night ? "rgba(139, 92, 246, 0.45)" : "rgba(124, 58, 237, 0.28)",
+};
+
 const TWO_LINE_CLAMP = {
   display: "-webkit-box",
   WebkitLineClamp: 2,
@@ -81,6 +88,7 @@ export function RecommendationCard({
   night = false,
   protectReason = false,
   artwork = null,
+  isTohiPick = false,
   renderShowtimeInfo,
   renderRideActions,
 }) {
@@ -100,8 +108,18 @@ export function RecommendationCard({
   if (!ride) return null;
 
   const slot = getSlotStyle(title, color, borderColor, background);
-  const accent = night ? slot.accentNight : slot.accent;
-  const border = night ? COMPACT_CARD.nightBorder : slot.border;
+  // The TOHI Pick keeps its slot's category eyebrow and only borrows a
+  // restrained purple accent, so the stack still reads as one calm list.
+  const accent = isTohiPick
+    ? TOHI_PICK_STYLE.accent(night)
+    : night
+    ? slot.accentNight
+    : slot.accent;
+  const border = isTohiPick
+    ? TOHI_PICK_STYLE.border(night)
+    : night
+    ? COMPACT_CARD.nightBorder
+    : slot.border;
   const surface = night ? COMPACT_CARD.nightSurface : COMPACT_CARD.daySurface;
   const titleColor = night ? "#F5F3FF" : colors.text;
   const mutedColor = night ? "#B6C2E2" : colors.muted;
@@ -120,7 +138,7 @@ export function RecommendationCard({
           marginBottom: 5,
         }}
       >
-        {slot.eyebrow}
+        {isTohiPick ? `✨ TOHI PICK · ${slot.eyebrow}` : slot.eyebrow}
       </div>
 
       <h4

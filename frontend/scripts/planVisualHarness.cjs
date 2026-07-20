@@ -444,6 +444,93 @@ console.log("Exact ride artwork (61C-1A)");
   );
 }
 
+console.log("TOHI Pick integration (61C-2)");
+{
+  check(
+    "pick ride ID is String-normalized before comparison",
+    planRecommendationsSource.includes("? String(tohiPickDisplayCandidate.rideId)") &&
+      planRecommendationsSource.includes("String(slot.ride.id) === tohiPickRideId"),
+    true
+  );
+  check(
+    "match uses the rideId field, never a name",
+    planRecommendationsSource.includes("tohiPickDisplayCandidate?.rideId != null") &&
+      !/toLowerCase\(\)|\.name\s*===/.test(planRecommendationsSource),
+    true
+  );
+  check(
+    "only rendered normal-branch slots are matchable",
+    planRecommendationsSource.includes('{ key: "primary", ride: primaryRecommendation }') &&
+      planRecommendationsSource.includes(
+        ".filter((slot) => slot && slot.ride && slot.ride.id != null)"
+      ),
+    true
+  );
+  check(
+    "render guards and match list share one source of truth",
+    ["showsBackupCard", "showsWorthTheWalkCard", "showsPlanAheadCard", "showsWaitOnThisCard"].every(
+      (name) => (planRecommendationsSource.match(new RegExp(name, "g")) || []).length >= 3
+    ),
+    true
+  );
+  check(
+    "the pre-open plan-ahead card is excluded from matching",
+    (planRecommendationsSource.match(/isTohiPick=\{tohiPickMatchedSlotKey === "/g) || []).length,
+    5
+  );
+  check(
+    "exactly one card can claim the pick",
+    ["primary", "backup", "worthTheWalk", "planAhead", "waitOnThis"].every(
+      (key) =>
+        (planRecommendationsSource.match(
+          new RegExp(`isTohiPick=\\{tohiPickMatchedSlotKey === "${key}"\\}`, "g")
+        ) || []).length === 1
+    ),
+    true
+  );
+  check(
+    "standalone pick is suppressed only when a rendered card matched",
+    planRecommendationsSource.includes(
+      "{tohiPickDisplayCandidate && !tohiPickMatchedSlotKey && ("
+    ),
+    true
+  );
+  check(
+    "standalone pick block itself is otherwise unchanged",
+    planRecommendationsSource.includes('aria-label="TOHI Pick recommendation"') &&
+      planRecommendationsSource.includes("✨ TOHI Pick") &&
+      planRecommendationsSource.includes("Calmest clear move") &&
+      planRecommendationsSource.includes("Best move right now"),
+    true
+  );
+  check("card accepts an optional isTohiPick", cardSource.includes("isTohiPick = false,"), true);
+  check(
+    "pick eyebrow prefixes the existing category label",
+    cardSource.includes("{isTohiPick ? `✨ TOHI PICK · ${slot.eyebrow}` : slot.eyebrow}"),
+    true
+  );
+  check(
+    "pick uses a restrained purple accent and border",
+    cardSource.includes("const TOHI_PICK_STYLE = {") &&
+      cardSource.includes("TOHI_PICK_STYLE.accent(night)") &&
+      cardSource.includes("TOHI_PICK_STYLE.border(night)"),
+    true
+  );
+  check(
+    "pick styling leaves surface, artwork, reason, and actions alone",
+    cardSource.includes("const surface = night ? COMPACT_CARD.nightSurface") &&
+      cardSource.includes("const showFullReason = protectReason || reasonExpanded;") &&
+      cardSource.includes("const hasArtwork = Boolean(artwork?.src);"),
+    true
+  );
+  check(
+    "TOHI Pick selection stays in App and is untouched",
+    appSource.includes("const tohiPickDisplayCandidate =") &&
+      !/isTohiPick|tohiPickMatchedSlotKey/.test(appSource),
+    true
+  );
+}
+
 console.log("Strategy sections preserved and quieter");
 check("TRIP TIMING present", appSource.includes("TRIP TIMING"), true);
 check("WEATHER STRATEGY present", appSource.includes("WEATHER STRATEGY"), true);
