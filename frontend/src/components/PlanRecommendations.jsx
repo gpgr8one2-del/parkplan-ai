@@ -3,6 +3,7 @@ import { MapPin } from "lucide-react";
 import { RecommendationCard } from "./RecommendationCard";
 import { colors } from "../theme";
 import { LAND_OPTIONS } from "../data/parkAreas";
+import { getRideArtwork } from "../data/rideArtManifest";
 import { TOHI_PICK_CLARIFICATION_ANSWERS } from "../utils/tohiPickClarification";
 
 export function PlanRecommendations({
@@ -742,6 +743,7 @@ export function PlanRecommendations({
                         recommendations.planAhead.mustDoPriority ||
                           recommendations.planAhead.shouldProtectLater
                       )}
+                      artwork={getRideArtwork(activePark, recommendations.planAhead.id, planNight)}
                       renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
                       renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                     />
@@ -1187,6 +1189,7 @@ export function PlanRecommendations({
                       primaryRecommendation.mustDoPriority ||
                         primaryRecommendation.shouldProtectLater
                     )}
+                    artwork={getRideArtwork(activePark, primaryRecommendation.id, planNight)}
                     renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
                     renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                   />
@@ -1203,6 +1206,7 @@ export function PlanRecommendations({
                         recommendations.backup.mustDoPriority ||
                           recommendations.backup.shouldProtectLater
                       )}
+                      artwork={getRideArtwork(activePark, recommendations.backup.id, planNight)}
                       renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
                       renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                     />
@@ -1220,6 +1224,7 @@ export function PlanRecommendations({
                         recommendations.worthTheWalk.mustDoPriority ||
                           recommendations.worthTheWalk.shouldProtectLater
                       )}
+                      artwork={getRideArtwork(activePark, recommendations.worthTheWalk.id, planNight)}
                       renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
                       renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                     />
@@ -1240,6 +1245,7 @@ export function PlanRecommendations({
                         recommendations.planAhead.mustDoPriority ||
                           recommendations.planAhead.shouldProtectLater
                       )}
+                      artwork={getRideArtwork(activePark, recommendations.planAhead.id, planNight)}
                       renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
                       renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                     />
@@ -1257,6 +1263,7 @@ export function PlanRecommendations({
                         recommendations.waitOnThis.mustDoPriority ||
                           recommendations.waitOnThis.shouldProtectLater
                       )}
+                      artwork={getRideArtwork(activePark, recommendations.waitOnThis.id, planNight)}
                       renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
                       renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                     />

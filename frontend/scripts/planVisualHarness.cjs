@@ -244,6 +244,206 @@ console.log("Artwork rules");
   check("no external images in card component", /https?:\/\//.test(cardSource), false);
 }
 
+console.log("Exact ride artwork (61C-1A)");
+{
+  const manifestPath = path.join(frontendRoot, "src", "data", "rideArtManifest.js");
+  const manifestSource = fs.readFileSync(manifestPath, "utf8");
+
+  const importMatches = [
+    ...manifestSource.matchAll(
+      /^import (\w+) from "(\.\.\/assets\/rideArt\/[\w.-]+\.webp)";$/gm
+    ),
+  ];
+  check("manifest imports exactly six webp assets", importMatches.length, 6);
+  check(
+    "webp imports are bundled, not public/ paths",
+    importMatches.every(([, , assetPath]) => assetPath.startsWith("../assets/rideArt/")) &&
+      !/PUBLIC_URL|\/public\//.test(manifestSource),
+    true
+  );
+
+  const expectedAssets = [
+    "13630-tianas-bayou-adventure_day.webp",
+    "13630-tianas-bayou-adventure_night.webp",
+    "137-pirates-of-the-caribbean_day.webp",
+    "137-pirates-of-the-caribbean_night.webp",
+    "138-space-mountain_day.webp",
+    "138-space-mountain_night.webp",
+  ];
+  const assetDir = path.join(frontendRoot, "src", "assets", "rideArt");
+  const assetBuffers = expectedAssets.map((name) => {
+    const assetPath = path.join(assetDir, name);
+    return fs.existsSync(assetPath) ? fs.readFileSync(assetPath) : null;
+  });
+  check(
+    "all six webp files exist and are nonzero",
+    assetBuffers.every((buf) => buf && buf.length > 0),
+    true
+  );
+  check(
+    "all six files carry the WebP RIFF signature",
+    assetBuffers.every(
+      (buf) =>
+        buf &&
+        buf.slice(0, 4).toString("ascii") === "RIFF" &&
+        buf.slice(8, 12).toString("ascii") === "WEBP"
+    ),
+    true
+  );
+  check(
+    "no accidental duplicate assets — all six files are distinct",
+    new Set(assetBuffers.map((buf) => (buf ? buf.toString("base64") : ""))).size,
+    6
+  );
+  check(
+    "extra files have not crept into the rideArt directory",
+    fs.readdirSync(assetDir).filter((name) => name !== ".DS_Store").sort().join(","),
+    [...expectedAssets].sort().join(",")
+  );
+
+  // Evaluate the manifest with import identifiers stubbed to their file paths
+  // so lookup behavior is tested for real, not just by source inspection.
+  const preamble = importMatches
+    .map(([, name, assetPath]) => `const ${name} = ${JSON.stringify(assetPath)};`)
+    .join("\n");
+  const executable = manifestSource
+    .split("\n")
+    .filter((line) => !line.startsWith("import ") && !line.startsWith("export default"))
+    .join("\n")
+    .replace(/^export /gm, "");
+  const { RIDE_ART_MANIFEST, getRideArtwork } = new Function(
+    `${preamble}\n${executable}\nreturn { RIDE_ART_MANIFEST, getRideArtwork };`
+  )();
+
+  check(
+    "manifest holds only the canonical park",
+    Object.keys(RIDE_ART_MANIFEST).join(","),
+    "magic_kingdom"
+  );
+  check(
+    "manifest holds only the three approved ride IDs",
+    Object.keys(RIDE_ART_MANIFEST.magic_kingdom).sort().join(","),
+    ["13630", "137", "138"].sort().join(",")
+  );
+  check(
+    "every ride has distinct day and night sources with alt text",
+    Object.values(RIDE_ART_MANIFEST.magic_kingdom).every(
+      (rideArt) =>
+        rideArt.day?.src &&
+        rideArt.night?.src &&
+        rideArt.day.src !== rideArt.night.src &&
+        typeof rideArt.day.alt === "string" &&
+        typeof rideArt.night.alt === "string"
+    ),
+    true
+  );
+  check(
+    "day lookup returns the day asset for an exact ID",
+    getRideArtwork("magic_kingdom", "138", false)?.src.endsWith(
+      "138-space-mountain_day.webp"
+    ),
+    true
+  );
+  check(
+    "night lookup returns the night asset for an exact ID",
+    getRideArtwork("magic_kingdom", "13630", true)?.src.endsWith(
+      "13630-tianas-bayou-adventure_night.webp"
+    ),
+    true
+  );
+  check(
+    "numeric ride IDs are canonicalized with String",
+    getRideArtwork("magic_kingdom", 137, false)?.src.endsWith(
+      "137-pirates-of-the-caribbean_day.webp"
+    ),
+    true
+  );
+  check("unknown ride returns null", getRideArtwork("magic_kingdom", "999", false), null);
+  check("unknown park returns null", getRideArtwork("epcot", "137", false), null);
+  check("null inputs return null", getRideArtwork(null, null, false), null);
+  check(
+    "lookup uses exact park + ride keys only",
+    manifestSource.includes("RIDE_ART_MANIFEST[parkId]") &&
+      manifestSource.includes("parkArt[String(rideId)]"),
+    true
+  );
+  check(
+    "no fuzzy attraction-name matching in the manifest",
+    /\.name\b|toLowerCase|normalize|includes\(|indexOf\(|match\(/.test(manifestSource),
+    false
+  );
+  check(
+    "no park-level or area-level fallback in the manifest",
+    /getParkArtwork|getAreaArtwork|getTohiArtwork|TOHI_PARK_ARTWORK|TOHI_AREA_ARTWORK|DEFAULT_TOHI_ARTWORK/.test(
+      manifestSource
+    ),
+    false
+  );
+  check("no remote URLs in the manifest", /https?:\/\//.test(manifestSource), false);
+
+  check("artwork prop is optional with a null default", cardSource.includes("artwork = null,"), true);
+  check(
+    "absent artwork renders the text-led layout with no panel",
+    cardSource.includes("const hasArtwork = Boolean(artwork?.src);") &&
+      /\{hasArtwork \? \(/.test(cardSource) &&
+      /\) : \(\n        upperContent\n      \)\}/.test(cardSource),
+    true
+  );
+  check(
+    "artwork panel is a contained 4:5 rounded panel",
+    cardSource.includes('aspectRatio: "4 / 5"') &&
+      cardSource.includes('overflow: "hidden"') &&
+      cardSource.includes("borderRadius: 14"),
+    true
+  );
+  check(
+    "artwork panel takes roughly a third of the card width",
+    cardSource.includes('flex: "0 0 36%"') && cardSource.includes('maxWidth: "40%"'),
+    true
+  );
+  check("artwork image uses object-fit cover", cardSource.includes('objectFit: "cover"'), true);
+  check(
+    "artwork image lazy-loads and decodes async",
+    cardSource.includes('loading="lazy"') && cardSource.includes('decoding="async"'),
+    true
+  );
+  check(
+    "text column stays shrinkable beside the artwork",
+    cardSource.includes('<div style={{ minWidth: 0, flex: "1 1 auto" }}>{upperContent}</div>'),
+    true
+  );
+  check(
+    "artwork never becomes the card background",
+    /backgroundImage|url\(/.test(cardSource),
+    false
+  );
+
+  check(
+    "all six Plan call sites resolve exact artwork",
+    (planRecommendationsSource.match(/artwork=\{getRideArtwork\(activePark, /g) || []).length,
+    6
+  );
+  check(
+    "every lookup is driven by activePark, ride.id, and planNight",
+    (planRecommendationsSource.match(
+      /artwork=\{getRideArtwork\(activePark, [\w.]+\.id, planNight\)\}/g
+    ) || []).length,
+    6
+  );
+  check(
+    "Plan imports the exact-art helper from the manifest",
+    planRecommendationsSource.includes(
+      'import { getRideArtwork } from "../data/rideArtManifest";'
+    ),
+    true
+  );
+  check(
+    "App.jsx has no artwork changes",
+    /getRideArtwork|rideArtManifest|rideArt\//.test(appSource),
+    false
+  );
+}
+
 console.log("Strategy sections preserved and quieter");
 check("TRIP TIMING present", appSource.includes("TRIP TIMING"), true);
 check("WEATHER STRATEGY present", appSource.includes("WEATHER STRATEGY"), true);
