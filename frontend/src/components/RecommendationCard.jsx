@@ -80,6 +80,7 @@ export function RecommendationCard({
   titleSize = 18,
   night = false,
   protectReason = false,
+  artwork = null,
   renderShowtimeInfo,
   renderRideActions,
 }) {
@@ -106,17 +107,10 @@ export function RecommendationCard({
   const mutedColor = night ? "#B6C2E2" : colors.muted;
   const pillSurface = night ? "rgba(15, 23, 42, 0.72)" : "rgba(255, 255, 255, 0.78)";
   const showFullReason = protectReason || reasonExpanded;
+  const hasArtwork = Boolean(artwork?.src);
 
-  return (
-    <div
-      style={{
-        padding: COMPACT_CARD.padding,
-        borderRadius: 20,
-        border: `1px solid ${border}`,
-        background: surface,
-        boxShadow: night ? COMPACT_CARD.nightShadow : COMPACT_CARD.dayShadow,
-      }}
-    >
+  const upperContent = (
+    <>
       <div
         style={{
           fontSize: 11,
@@ -193,6 +187,50 @@ export function RecommendationCard({
             </button>
           )}
         </div>
+      )}
+    </>
+  );
+
+  return (
+    <div
+      style={{
+        padding: COMPACT_CARD.padding,
+        borderRadius: 20,
+        border: `1px solid ${border}`,
+        background: surface,
+        boxShadow: night ? COMPACT_CARD.nightShadow : COMPACT_CARD.dayShadow,
+      }}
+    >
+      {hasArtwork ? (
+        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <div style={{ minWidth: 0, flex: "1 1 auto" }}>{upperContent}</div>
+
+          <div
+            style={{
+              flex: "0 0 36%",
+              maxWidth: "40%",
+              aspectRatio: "4 / 5",
+              borderRadius: 14,
+              overflow: "hidden",
+              border: `1px solid ${border}`,
+            }}
+          >
+            <img
+              src={artwork.src}
+              alt={artwork.alt || ""}
+              loading="lazy"
+              decoding="async"
+              style={{
+                display: "block",
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+          </div>
+        </div>
+      ) : (
+        upperContent
       )}
 
       {renderShowtimeInfo?.(ride)}
