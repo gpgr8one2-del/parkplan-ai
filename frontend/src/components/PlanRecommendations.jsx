@@ -55,6 +55,46 @@ export function PlanRecommendations({
   renderShowtimeInfo,
   trackAppEvent,
 }) {
+  // 61C-2: the TOHI Pick is decorated onto the card that already shows the same
+  // ride instead of repeating it above the stack. Matching is exact ride-ID
+  // only (String-normalized on both sides) — never by name — and only against
+  // cards the normal recommendation branch actually renders, so a Pick that has
+  // no rendered card keeps its standalone block.
+  const tohiPickRideId =
+    tohiPickDisplayCandidate?.rideId != null
+      ? String(tohiPickDisplayCandidate.rideId)
+      : null;
+
+  const showsBackupCard = Boolean(
+    recommendations.backup && recommendations.backup.id !== primaryRecommendation?.id
+  );
+  const showsWorthTheWalkCard = Boolean(
+    recommendations.worthTheWalk &&
+      recommendations.worthTheWalk.id !== primaryRecommendation?.id
+  );
+  const showsPlanAheadCard = Boolean(
+    recommendations.planAhead && recommendations.planAhead.id !== primaryRecommendation?.id
+  );
+  const showsWaitOnThisCard = Boolean(
+    recommendations.waitOnThis && recommendations.waitOnThis.id !== primaryRecommendation?.id
+  );
+
+  const renderedPlanSlots = [
+    { key: "primary", ride: primaryRecommendation },
+    showsBackupCard ? { key: "backup", ride: recommendations.backup } : null,
+    showsWorthTheWalkCard
+      ? { key: "worthTheWalk", ride: recommendations.worthTheWalk }
+      : null,
+    showsPlanAheadCard ? { key: "planAhead", ride: recommendations.planAhead } : null,
+    showsWaitOnThisCard ? { key: "waitOnThis", ride: recommendations.waitOnThis } : null,
+  ].filter((slot) => slot && slot.ride && slot.ride.id != null);
+
+  const tohiPickMatchedSlotKey =
+    tohiPickRideId == null
+      ? null
+      : renderedPlanSlots.find((slot) => String(slot.ride.id) === tohiPickRideId)?.key ||
+        null;
+
   return (
           <section
             style={{
@@ -904,7 +944,7 @@ export function PlanRecommendations({
                     </section>
                   )}
 
-                  {tohiPickDisplayCandidate && (
+                  {tohiPickDisplayCandidate && !tohiPickMatchedSlotKey && (
                     <div
                       aria-label="TOHI Pick recommendation"
                       style={{
@@ -1190,11 +1230,12 @@ export function PlanRecommendations({
                         primaryRecommendation.shouldProtectLater
                     )}
                     artwork={getRideArtwork(activePark, primaryRecommendation.id, planNight)}
+                    isTohiPick={tohiPickMatchedSlotKey === "primary"}
                     renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
                     renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                   />
 
-                  {recommendations.backup && recommendations.backup.id !== primaryRecommendation?.id && (
+                  {showsBackupCard && (
                     <RecommendationCard night={planNight}
                       title="SMART BACKUP"
                       ride={recommendations.backup}
@@ -1207,12 +1248,13 @@ export function PlanRecommendations({
                           recommendations.backup.shouldProtectLater
                       )}
                       artwork={getRideArtwork(activePark, recommendations.backup.id, planNight)}
+                      isTohiPick={tohiPickMatchedSlotKey === "backup"}
                       renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
                       renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                     />
                   )}
 
-                  {recommendations.worthTheWalk && recommendations.worthTheWalk.id !== primaryRecommendation?.id && (
+                  {showsWorthTheWalkCard && (
                     <RecommendationCard night={planNight}
                       title="WORTH THE WALK"
                       ride={recommendations.worthTheWalk}
@@ -1225,12 +1267,13 @@ export function PlanRecommendations({
                           recommendations.worthTheWalk.shouldProtectLater
                       )}
                       artwork={getRideArtwork(activePark, recommendations.worthTheWalk.id, planNight)}
+                      isTohiPick={tohiPickMatchedSlotKey === "worthTheWalk"}
                       renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
                       renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                     />
                   )}
 
-                  {recommendations.planAhead && recommendations.planAhead.id !== primaryRecommendation?.id && (
+                  {showsPlanAheadCard && (
                     <RecommendationCard night={planNight}
                       title="PLAN AHEAD"
                       ride={recommendations.planAhead}
@@ -1246,12 +1289,13 @@ export function PlanRecommendations({
                           recommendations.planAhead.shouldProtectLater
                       )}
                       artwork={getRideArtwork(activePark, recommendations.planAhead.id, planNight)}
+                      isTohiPick={tohiPickMatchedSlotKey === "planAhead"}
                       renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
                       renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                     />
                   )}
 
-                  {recommendations.waitOnThis && recommendations.waitOnThis.id !== primaryRecommendation?.id && (
+                  {showsWaitOnThisCard && (
                     <RecommendationCard night={planNight}
                       title="WAIT ON THIS"
                       ride={recommendations.waitOnThis}
@@ -1264,6 +1308,7 @@ export function PlanRecommendations({
                           recommendations.waitOnThis.shouldProtectLater
                       )}
                       artwork={getRideArtwork(activePark, recommendations.waitOnThis.id, planNight)}
+                      isTohiPick={tohiPickMatchedSlotKey === "waitOnThis"}
                       renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { night: planNight })}
                       renderRideActions={(ride) => renderRideActions(ride, { night: planNight, compact: true })}
                     />
