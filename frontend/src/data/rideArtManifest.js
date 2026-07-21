@@ -9,8 +9,14 @@
 // null so the card falls back to its text-led layout. There is no park-level,
 // area-level, or name-based fallback, and no remote URLs.
 
+import tronDay from "../assets/rideArt/11527-tron-lightcycle-run_day.webp";
+import tronNight from "../assets/rideArt/11527-tron-lightcycle-run_night.webp";
 import sevenDwarfsDay from "../assets/rideArt/129-seven-dwarfs-mine-train_day.webp";
 import sevenDwarfsNight from "../assets/rideArt/129-seven-dwarfs-mine-train_night.webp";
+import bigThunderDay from "../assets/rideArt/130-big-thunder-mountain-railroad_day.webp";
+import bigThunderNight from "../assets/rideArt/130-big-thunder-mountain-railroad_night.webp";
+import jungleCruiseDay from "../assets/rideArt/134-jungle-cruise_day.webp";
+import jungleCruiseNight from "../assets/rideArt/134-jungle-cruise_night.webp";
 import peterPanDay from "../assets/rideArt/136-peter-pans-flight_day.webp";
 import peterPanNight from "../assets/rideArt/136-peter-pans-flight_night.webp";
 import hauntedMansionDay from "../assets/rideArt/140-haunted-mansion_day.webp";
@@ -24,6 +30,16 @@ import spaceMountainNight from "../assets/rideArt/138-space-mountain_night.webp"
 
 export const RIDE_ART_MANIFEST = {
   magic_kingdom: {
+    "11527": {
+      day: {
+        src: tronDay,
+        alt: "Illustration of the TRON Lightcycle / Run canopy and coaster",
+      },
+      night: {
+        src: tronNight,
+        alt: "Illustration of the TRON Lightcycle / Run canopy lit at night",
+      },
+    },
     "129": {
       day: {
         src: sevenDwarfsDay,
@@ -32,6 +48,26 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: sevenDwarfsNight,
         alt: "Illustration of the Seven Dwarfs Mine Train coaster hill at night",
+      },
+    },
+    "130": {
+      day: {
+        src: bigThunderDay,
+        alt: "Illustration of a Big Thunder Mountain Railroad train on the mountain",
+      },
+      night: {
+        src: bigThunderNight,
+        alt: "Illustration of Big Thunder Mountain Railroad at night",
+      },
+    },
+    "134": {
+      day: {
+        src: jungleCruiseDay,
+        alt: "Illustration of a Jungle Cruise riverboat passing elephants",
+      },
+      night: {
+        src: jungleCruiseNight,
+        alt: "Illustration of a Jungle Cruise riverboat at night",
       },
     },
     "136": {
