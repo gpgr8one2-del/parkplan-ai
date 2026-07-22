@@ -254,7 +254,7 @@ console.log("Exact ride artwork (61C-1A)");
       /^import (\w+) from "(\.\.\/assets\/rideArt\/[\w.-]+\.webp)";$/gm
     ),
   ];
-  check("manifest imports exactly eighteen webp assets", importMatches.length, 18);
+  check("manifest imports exactly twenty-four webp assets", importMatches.length, 24);
   check(
     "webp imports are bundled, not public/ paths",
     importMatches.every(([, , assetPath]) => assetPath.startsWith("../assets/rideArt/")) &&
@@ -263,6 +263,12 @@ console.log("Exact ride artwork (61C-1A)");
   );
 
   const expectedAssets = [
+    "131-buzz-lightyears-space-ranger-spin_day.webp",
+    "131-buzz-lightyears-space-ranger-spin_night.webp",
+    "133-its-a-small-world_day.webp",
+    "133-its-a-small-world_night.webp",
+    "142-many-adventures-of-winnie-the-pooh_day.webp",
+    "142-many-adventures-of-winnie-the-pooh_night.webp",
     "11527-tron-lightcycle-run_day.webp",
     "11527-tron-lightcycle-run_night.webp",
     "130-big-thunder-mountain-railroad_day.webp",
@@ -288,12 +294,12 @@ console.log("Exact ride artwork (61C-1A)");
     return fs.existsSync(assetPath) ? fs.readFileSync(assetPath) : null;
   });
   check(
-    "all eighteen webp files exist and are nonzero",
+    "all twenty-four webp files exist and are nonzero",
     assetBuffers.every((buf) => buf && buf.length > 0),
     true
   );
   check(
-    "all eighteen files carry the WebP RIFF signature",
+    "all twenty-four files carry the WebP RIFF signature",
     assetBuffers.every(
       (buf) =>
         buf &&
@@ -303,9 +309,9 @@ console.log("Exact ride artwork (61C-1A)");
     true
   );
   check(
-    "no accidental duplicate assets — all eighteen files are distinct",
+    "no accidental duplicate assets — all twenty-four files are distinct",
     new Set(assetBuffers.map((buf) => (buf ? buf.toString("base64") : ""))).size,
-    18
+    24
   );
   check(
     "extra files have not crept into the rideArt directory",
@@ -333,9 +339,11 @@ console.log("Exact ride artwork (61C-1A)");
     "magic_kingdom"
   );
   check(
-    "manifest holds only the nine approved ride IDs",
+    "manifest holds only the twelve approved ride IDs",
     Object.keys(RIDE_ART_MANIFEST.magic_kingdom).sort().join(","),
-    ["129", "130", "134", "136", "140", "11527", "13630", "137", "138"].sort().join(",")
+    ["129", "130", "131", "133", "134", "136", "140", "142", "11527", "13630", "137", "138"]
+      .sort()
+      .join(",")
   );
   check(
     "each ride maps to its own ID-prefixed assets",
@@ -380,7 +388,7 @@ console.log("Exact ride artwork (61C-1A)");
     true
   );
   check(
-    "batch 2 and 3 rides resolve to their own day and night assets",
+    "batch 2, 3, and 4 rides resolve to their own day and night assets",
     [
       ["129", "129-seven-dwarfs-mine-train"],
       ["136", "136-peter-pans-flight"],
@@ -388,6 +396,9 @@ console.log("Exact ride artwork (61C-1A)");
       ["130", "130-big-thunder-mountain-railroad"],
       ["11527", "11527-tron-lightcycle-run"],
       ["134", "134-jungle-cruise"],
+      ["131", "131-buzz-lightyears-space-ranger-spin"],
+      ["133", "133-its-a-small-world"],
+      ["142", "142-many-adventures-of-winnie-the-pooh"],
     ].every(
       ([rideId, stem]) =>
         getRideArtwork("magic_kingdom", rideId, false)?.src.endsWith(`${stem}_day.webp`) &&
@@ -403,7 +414,7 @@ console.log("Exact ride artwork (61C-1A)");
         rideArt.night.src,
       ])
     ).size,
-    18
+    24
   );
   check("unknown ride returns null", getRideArtwork("magic_kingdom", "999", false), null);
   check("unknown park returns null", getRideArtwork("epcot", "137", false), null);

@@ -15,10 +15,16 @@ import sevenDwarfsDay from "../assets/rideArt/129-seven-dwarfs-mine-train_day.we
 import sevenDwarfsNight from "../assets/rideArt/129-seven-dwarfs-mine-train_night.webp";
 import bigThunderDay from "../assets/rideArt/130-big-thunder-mountain-railroad_day.webp";
 import bigThunderNight from "../assets/rideArt/130-big-thunder-mountain-railroad_night.webp";
+import buzzDay from "../assets/rideArt/131-buzz-lightyears-space-ranger-spin_day.webp";
+import buzzNight from "../assets/rideArt/131-buzz-lightyears-space-ranger-spin_night.webp";
+import smallWorldDay from "../assets/rideArt/133-its-a-small-world_day.webp";
+import smallWorldNight from "../assets/rideArt/133-its-a-small-world_night.webp";
 import jungleCruiseDay from "../assets/rideArt/134-jungle-cruise_day.webp";
 import jungleCruiseNight from "../assets/rideArt/134-jungle-cruise_night.webp";
 import peterPanDay from "../assets/rideArt/136-peter-pans-flight_day.webp";
 import peterPanNight from "../assets/rideArt/136-peter-pans-flight_night.webp";
+import winnieThePoohDay from "../assets/rideArt/142-many-adventures-of-winnie-the-pooh_day.webp";
+import winnieThePoohNight from "../assets/rideArt/142-many-adventures-of-winnie-the-pooh_night.webp";
 import hauntedMansionDay from "../assets/rideArt/140-haunted-mansion_day.webp";
 import hauntedMansionNight from "../assets/rideArt/140-haunted-mansion_night.webp";
 import tianaDay from "../assets/rideArt/13630-tianas-bayou-adventure_day.webp";
@@ -60,6 +66,26 @@ export const RIDE_ART_MANIFEST = {
         alt: "Illustration of Big Thunder Mountain Railroad at night",
       },
     },
+    "131": {
+      day: {
+        src: buzzDay,
+        alt: "Illustration of a Buzz Lightyear’s Space Ranger Spin ride vehicle",
+      },
+      night: {
+        src: buzzNight,
+        alt: "Illustration of a Buzz Lightyear’s Space Ranger Spin ride vehicle at night",
+      },
+    },
+    "133": {
+      day: {
+        src: smallWorldDay,
+        alt: "Illustration of the “it’s a small world” clock facade and boats",
+      },
+      night: {
+        src: smallWorldNight,
+        alt: "Illustration of the “it’s a small world” clock facade at night",
+      },
+    },
     "134": {
       day: {
         src: jungleCruiseDay,
@@ -78,6 +104,16 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: peterPanNight,
         alt: "Illustration of a Peter Pan’s Flight pirate ship over London at night",
+      },
+    },
+    "142": {
+      day: {
+        src: winnieThePoohDay,
+        alt: "Illustration of a honey pot ride vehicle in The Many Adventures of Winnie the Pooh",
+      },
+      night: {
+        src: winnieThePoohNight,
+        alt: "Illustration of a honey pot ride vehicle in a nighttime Hundred Acre Wood scene",
       },
     },
     "140": {
