@@ -11,16 +11,22 @@
 
 import tronDay from "../assets/rideArt/11527-tron-lightcycle-run_day.webp";
 import tronNight from "../assets/rideArt/11527-tron-lightcycle-run_night.webp";
+import littleMermaidDay from "../assets/rideArt/127-under-the-sea-journey-of-the-little-mermaid_day.webp";
+import littleMermaidNight from "../assets/rideArt/127-under-the-sea-journey-of-the-little-mermaid_night.webp";
 import sevenDwarfsDay from "../assets/rideArt/129-seven-dwarfs-mine-train_day.webp";
 import sevenDwarfsNight from "../assets/rideArt/129-seven-dwarfs-mine-train_night.webp";
 import bigThunderDay from "../assets/rideArt/130-big-thunder-mountain-railroad_day.webp";
 import bigThunderNight from "../assets/rideArt/130-big-thunder-mountain-railroad_night.webp";
 import buzzDay from "../assets/rideArt/131-buzz-lightyears-space-ranger-spin_day.webp";
 import buzzNight from "../assets/rideArt/131-buzz-lightyears-space-ranger-spin_night.webp";
+import dumboDay from "../assets/rideArt/132-dumbo-the-flying-elephant_day.webp";
+import dumboNight from "../assets/rideArt/132-dumbo-the-flying-elephant_night.webp";
 import smallWorldDay from "../assets/rideArt/133-its-a-small-world_day.webp";
 import smallWorldNight from "../assets/rideArt/133-its-a-small-world_night.webp";
 import jungleCruiseDay from "../assets/rideArt/134-jungle-cruise_day.webp";
 import jungleCruiseNight from "../assets/rideArt/134-jungle-cruise_night.webp";
+import madTeaPartyDay from "../assets/rideArt/135-mad-tea-party_day.webp";
+import madTeaPartyNight from "../assets/rideArt/135-mad-tea-party_night.webp";
 import peterPanDay from "../assets/rideArt/136-peter-pans-flight_day.webp";
 import peterPanNight from "../assets/rideArt/136-peter-pans-flight_night.webp";
 import winnieThePoohDay from "../assets/rideArt/142-many-adventures-of-winnie-the-pooh_day.webp";
@@ -44,6 +50,16 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: tronNight,
         alt: "Illustration of the TRON Lightcycle / Run canopy lit at night",
+      },
+    },
+    "127": {
+      day: {
+        src: littleMermaidDay,
+        alt: "Illustration of a clamshell ride vehicle in Under the Sea – Journey of The Little Mermaid",
+      },
+      night: {
+        src: littleMermaidNight,
+        alt: "Illustration of a clamshell ride vehicle in a nighttime Under the Sea – Journey of The Little Mermaid scene",
       },
     },
     "129": {
@@ -76,6 +92,16 @@ export const RIDE_ART_MANIFEST = {
         alt: "Illustration of a Buzz Lightyear’s Space Ranger Spin ride vehicle at night",
       },
     },
+    "132": {
+      day: {
+        src: dumboDay,
+        alt: "Illustration of a Dumbo the Flying Elephant ride vehicle above the carousel",
+      },
+      night: {
+        src: dumboNight,
+        alt: "Illustration of a Dumbo the Flying Elephant ride vehicle at night",
+      },
+    },
     "133": {
       day: {
         src: smallWorldDay,
@@ -94,6 +120,16 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: jungleCruiseNight,
         alt: "Illustration of a Jungle Cruise riverboat at night",
+      },
+    },
+    "135": {
+      day: {
+        src: madTeaPartyDay,
+        alt: "Illustration of a Mad Tea Party spinning teacup and teapot centerpiece",
+      },
+      night: {
+        src: madTeaPartyNight,
+        alt: "Illustration of a Mad Tea Party spinning teacup at night",
       },
     },
     "136": {
