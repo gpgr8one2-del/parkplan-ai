@@ -13,6 +13,8 @@ import tronDay from "../assets/rideArt/11527-tron-lightcycle-run_day.webp";
 import tronNight from "../assets/rideArt/11527-tron-lightcycle-run_night.webp";
 import ttaPeopleMoverDay from "../assets/rideArt/1190-tomorrowland-transit-authority-peoplemover_day.webp";
 import ttaPeopleMoverNight from "../assets/rideArt/1190-tomorrowland-transit-authority-peoplemover_night.webp";
+import barnstormerDay from "../assets/rideArt/126-the-barnstormer_day.webp";
+import barnstormerNight from "../assets/rideArt/126-the-barnstormer_night.webp";
 import littleMermaidDay from "../assets/rideArt/127-under-the-sea-journey-of-the-little-mermaid_day.webp";
 import littleMermaidNight from "../assets/rideArt/127-under-the-sea-journey-of-the-little-mermaid_night.webp";
 import sevenDwarfsDay from "../assets/rideArt/129-seven-dwarfs-mine-train_day.webp";
@@ -37,6 +39,10 @@ import peterPanDay from "../assets/rideArt/136-peter-pans-flight_day.webp";
 import peterPanNight from "../assets/rideArt/136-peter-pans-flight_night.webp";
 import winnieThePoohDay from "../assets/rideArt/142-many-adventures-of-winnie-the-pooh_day.webp";
 import winnieThePoohNight from "../assets/rideArt/142-many-adventures-of-winnie-the-pooh_night.webp";
+import magicCarpetsDay from "../assets/rideArt/141-magic-carpets-of-aladdin_day.webp";
+import magicCarpetsNight from "../assets/rideArt/141-magic-carpets-of-aladdin_night.webp";
+import regalCarrouselDay from "../assets/rideArt/161-prince-charming-regal-carrousel_day.webp";
+import regalCarrouselNight from "../assets/rideArt/161-prince-charming-regal-carrousel_night.webp";
 import hauntedMansionDay from "../assets/rideArt/140-haunted-mansion_day.webp";
 import hauntedMansionNight from "../assets/rideArt/140-haunted-mansion_night.webp";
 import tianaDay from "../assets/rideArt/13630-tianas-bayou-adventure_day.webp";
@@ -66,6 +72,16 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: ttaPeopleMoverNight,
         alt: "Illustration of a Tomorrowland Transit Authority PeopleMover tram on its elevated track at night",
+      },
+    },
+    "126": {
+      day: {
+        src: barnstormerDay,
+        alt: "Illustration of The Barnstormer airplane coaster train beside its red barn",
+      },
+      night: {
+        src: barnstormerNight,
+        alt: "Illustration of The Barnstormer airplane coaster train beside its red barn at night",
       },
     },
     "127": {
@@ -166,6 +182,26 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: astroOrbiterNight,
         alt: "Illustration of Astro Orbiter rockets circling the attraction’s planetary spire at night",
+      },
+    },
+    "141": {
+      day: {
+        src: magicCarpetsDay,
+        alt: "Illustration of a flying carpet vehicle on The Magic Carpets of Aladdin above the attraction’s genie lamp",
+      },
+      night: {
+        src: magicCarpetsNight,
+        alt: "Illustration of a flying carpet vehicle on The Magic Carpets of Aladdin at night",
+      },
+    },
+    "161": {
+      day: {
+        src: regalCarrouselDay,
+        alt: "Illustration of a decorated horse on Prince Charming Regal Carrousel",
+      },
+      night: {
+        src: regalCarrouselNight,
+        alt: "Illustration of a decorated horse on Prince Charming Regal Carrousel at night",
       },
     },
     "136": {
