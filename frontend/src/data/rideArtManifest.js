@@ -11,6 +11,8 @@
 
 import tronDay from "../assets/rideArt/11527-tron-lightcycle-run_day.webp";
 import tronNight from "../assets/rideArt/11527-tron-lightcycle-run_night.webp";
+import ttaPeopleMoverDay from "../assets/rideArt/1190-tomorrowland-transit-authority-peoplemover_day.webp";
+import ttaPeopleMoverNight from "../assets/rideArt/1190-tomorrowland-transit-authority-peoplemover_night.webp";
 import littleMermaidDay from "../assets/rideArt/127-under-the-sea-journey-of-the-little-mermaid_day.webp";
 import littleMermaidNight from "../assets/rideArt/127-under-the-sea-journey-of-the-little-mermaid_night.webp";
 import sevenDwarfsDay from "../assets/rideArt/129-seven-dwarfs-mine-train_day.webp";
@@ -27,6 +29,10 @@ import jungleCruiseDay from "../assets/rideArt/134-jungle-cruise_day.webp";
 import jungleCruiseNight from "../assets/rideArt/134-jungle-cruise_night.webp";
 import madTeaPartyDay from "../assets/rideArt/135-mad-tea-party_day.webp";
 import madTeaPartyNight from "../assets/rideArt/135-mad-tea-party_night.webp";
+import speedwayDay from "../assets/rideArt/143-tomorrowland-speedway_day.webp";
+import speedwayNight from "../assets/rideArt/143-tomorrowland-speedway_night.webp";
+import astroOrbiterDay from "../assets/rideArt/248-astro-orbiter_day.webp";
+import astroOrbiterNight from "../assets/rideArt/248-astro-orbiter_night.webp";
 import peterPanDay from "../assets/rideArt/136-peter-pans-flight_day.webp";
 import peterPanNight from "../assets/rideArt/136-peter-pans-flight_night.webp";
 import winnieThePoohDay from "../assets/rideArt/142-many-adventures-of-winnie-the-pooh_day.webp";
@@ -50,6 +56,16 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: tronNight,
         alt: "Illustration of the TRON Lightcycle / Run canopy lit at night",
+      },
+    },
+    "1190": {
+      day: {
+        src: ttaPeopleMoverDay,
+        alt: "Illustration of a Tomorrowland Transit Authority PeopleMover tram on its elevated track",
+      },
+      night: {
+        src: ttaPeopleMoverNight,
+        alt: "Illustration of a Tomorrowland Transit Authority PeopleMover tram on its elevated track at night",
       },
     },
     "127": {
@@ -130,6 +146,26 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: madTeaPartyNight,
         alt: "Illustration of a Mad Tea Party spinning teacup at night",
+      },
+    },
+    "143": {
+      day: {
+        src: speedwayDay,
+        alt: "Illustration of a Tomorrowland Speedway race car on the track",
+      },
+      night: {
+        src: speedwayNight,
+        alt: "Illustration of a Tomorrowland Speedway race car on the track at night",
+      },
+    },
+    "248": {
+      day: {
+        src: astroOrbiterDay,
+        alt: "Illustration of Astro Orbiter rockets circling the attraction’s planetary spire",
+      },
+      night: {
+        src: astroOrbiterNight,
+        alt: "Illustration of Astro Orbiter rockets circling the attraction’s planetary spire at night",
       },
     },
     "136": {
