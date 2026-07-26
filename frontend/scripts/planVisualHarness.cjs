@@ -254,7 +254,7 @@ console.log("Exact ride artwork (61C-1A)");
       /^import (\w+) from "(\.\.\/assets\/rideArt\/[\w.-]+\.webp)";$/gm
     ),
   ];
-  check("manifest imports exactly thirty-six webp assets", importMatches.length, 36);
+  check("manifest imports exactly forty-four webp assets", importMatches.length, 44);
   check(
     "webp imports are bundled, not public/ paths",
     importMatches.every(([, , assetPath]) => assetPath.startsWith("../assets/rideArt/")) &&
@@ -263,6 +263,14 @@ console.log("Exact ride artwork (61C-1A)");
   );
 
   const expectedAssets = [
+    "128-enchanted-tales-with-belle_day.webp",
+    "128-enchanted-tales-with-belle_night.webp",
+    "126-the-barnstormer_day.webp",
+    "126-the-barnstormer_night.webp",
+    "141-magic-carpets-of-aladdin_day.webp",
+    "141-magic-carpets-of-aladdin_night.webp",
+    "161-prince-charming-regal-carrousel_day.webp",
+    "161-prince-charming-regal-carrousel_night.webp",
     "1190-tomorrowland-transit-authority-peoplemover_day.webp",
     "1190-tomorrowland-transit-authority-peoplemover_night.webp",
     "143-tomorrowland-speedway_day.webp",
@@ -306,12 +314,12 @@ console.log("Exact ride artwork (61C-1A)");
     return fs.existsSync(assetPath) ? fs.readFileSync(assetPath) : null;
   });
   check(
-    "all thirty-six webp files exist and are nonzero",
+    "all forty-four webp files exist and are nonzero",
     assetBuffers.every((buf) => buf && buf.length > 0),
     true
   );
   check(
-    "all thirty-six files carry the WebP RIFF signature",
+    "all forty-four files carry the WebP RIFF signature",
     assetBuffers.every(
       (buf) =>
         buf &&
@@ -321,9 +329,9 @@ console.log("Exact ride artwork (61C-1A)");
     true
   );
   check(
-    "no accidental duplicate assets — all thirty-six files are distinct",
+    "no accidental duplicate assets — all forty-four files are distinct",
     new Set(assetBuffers.map((buf) => (buf ? buf.toString("base64") : ""))).size,
-    36
+    44
   );
   check(
     "extra files have not crept into the rideArt directory",
@@ -351,11 +359,12 @@ console.log("Exact ride artwork (61C-1A)");
     "magic_kingdom"
   );
   check(
-    "manifest holds only the eighteen approved ride IDs",
+    "manifest holds only the twenty-two approved ride IDs",
     Object.keys(RIDE_ART_MANIFEST.magic_kingdom).sort().join(","),
     [
-      "127", "129", "130", "131", "132", "133", "134", "135", "136", "140",
-      "142", "143", "248", "1190", "11527", "13630", "137", "138",
+      "126", "127", "128", "129", "130", "131", "132", "133", "134", "135",
+      "136", "140", "141", "142", "143", "161", "248", "1190", "11527",
+      "13630", "137", "138",
     ]
       .sort()
       .join(",")
@@ -403,8 +412,9 @@ console.log("Exact ride artwork (61C-1A)");
     true
   );
   check(
-    "batch 2, 3, 4, 5, and 6 rides resolve to their own day and night assets",
+    "batch 2 through 7g rides resolve to their own day and night assets",
     [
+      ["128", "128-enchanted-tales-with-belle"],
       ["129", "129-seven-dwarfs-mine-train"],
       ["136", "136-peter-pans-flight"],
       ["140", "140-haunted-mansion"],
@@ -420,6 +430,9 @@ console.log("Exact ride artwork (61C-1A)");
       ["1190", "1190-tomorrowland-transit-authority-peoplemover"],
       ["143", "143-tomorrowland-speedway"],
       ["248", "248-astro-orbiter"],
+      ["126", "126-the-barnstormer"],
+      ["141", "141-magic-carpets-of-aladdin"],
+      ["161", "161-prince-charming-regal-carrousel"],
     ].every(
       ([rideId, stem]) =>
         getRideArtwork("magic_kingdom", rideId, false)?.src.endsWith(`${stem}_day.webp`) &&
@@ -435,7 +448,7 @@ console.log("Exact ride artwork (61C-1A)");
         rideArt.night.src,
       ])
     ).size,
-    36
+    44
   );
   check("unknown ride returns null", getRideArtwork("magic_kingdom", "999", false), null);
   check("unknown park returns null", getRideArtwork("epcot", "137", false), null);
