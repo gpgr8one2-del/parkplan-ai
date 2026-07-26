@@ -17,6 +17,8 @@ import barnstormerDay from "../assets/rideArt/126-the-barnstormer_day.webp";
 import barnstormerNight from "../assets/rideArt/126-the-barnstormer_night.webp";
 import littleMermaidDay from "../assets/rideArt/127-under-the-sea-journey-of-the-little-mermaid_day.webp";
 import littleMermaidNight from "../assets/rideArt/127-under-the-sea-journey-of-the-little-mermaid_night.webp";
+import enchantedTalesDay from "../assets/rideArt/128-enchanted-tales-with-belle_day.webp";
+import enchantedTalesNight from "../assets/rideArt/128-enchanted-tales-with-belle_night.webp";
 import sevenDwarfsDay from "../assets/rideArt/129-seven-dwarfs-mine-train_day.webp";
 import sevenDwarfsNight from "../assets/rideArt/129-seven-dwarfs-mine-train_night.webp";
 import bigThunderDay from "../assets/rideArt/130-big-thunder-mountain-railroad_day.webp";
@@ -92,6 +94,16 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: littleMermaidNight,
         alt: "Illustration of a clamshell ride vehicle in a nighttime Under the Sea – Journey of The Little Mermaid scene",
+      },
+    },
+    "128": {
+      day: {
+        src: enchantedTalesDay,
+        alt: "Illustration of Maurice’s workshop and enchanted mirror in Enchanted Tales with Belle",
+      },
+      night: {
+        src: enchantedTalesNight,
+        alt: "Illustration of Maurice’s workshop and glowing enchanted mirror in Enchanted Tales with Belle at night",
       },
     },
     "129": {
