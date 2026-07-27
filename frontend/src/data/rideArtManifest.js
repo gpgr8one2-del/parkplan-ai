@@ -53,6 +53,12 @@ import piratesDay from "../assets/rideArt/137-pirates-of-the-caribbean_day.webp"
 import piratesNight from "../assets/rideArt/137-pirates-of-the-caribbean_night.webp";
 import spaceMountainDay from "../assets/rideArt/138-space-mountain_day.webp";
 import spaceMountainNight from "../assets/rideArt/138-space-mountain_night.webp";
+import guardiansDay from "../assets/rideArt/10916-guardians-of-the-galaxy-cosmic-rewind_day.webp";
+import guardiansNight from "../assets/rideArt/10916-guardians-of-the-galaxy-cosmic-rewind_night.webp";
+import frozenDay from "../assets/rideArt/2679-frozen-ever-after_day.webp";
+import frozenNight from "../assets/rideArt/2679-frozen-ever-after_night.webp";
+import remyDay from "../assets/rideArt/10914-remys-ratatouille-adventure_day.webp";
+import remyNight from "../assets/rideArt/10914-remys-ratatouille-adventure_night.webp";
 
 export const RIDE_ART_MANIFEST = {
   magic_kingdom: {
@@ -274,6 +280,38 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: spaceMountainNight,
         alt: "Illustration of Space Mountain at night",
+      },
+    },
+  },
+  epcot: {
+    "10916": {
+      day: {
+        src: guardiansDay,
+        alt: "Illustration of the Starblaster sculpture outside the Guardians of the Galaxy: Cosmic Rewind attraction",
+      },
+      night: {
+        src: guardiansNight,
+        alt: "Illustration of the Starblaster sculpture outside the Guardians of the Galaxy: Cosmic Rewind attraction at night",
+      },
+    },
+    "2679": {
+      day: {
+        src: frozenDay,
+        alt: "Illustration of a Frozen Ever After Nordic boat in the frozen willow forest approaching the ice palace",
+      },
+      night: {
+        src: frozenNight,
+        alt: "Illustration of a Frozen Ever After Nordic boat in the frozen willow forest approaching the ice palace at night",
+      },
+    },
+    "10914": {
+      day: {
+        src: remyDay,
+        alt: "Illustration of a Remy’s Ratatouille Adventure rat-shaped ride vehicle inside the oversized kitchen",
+      },
+      night: {
+        src: remyNight,
+        alt: "Illustration of a Remy’s Ratatouille Adventure rat-shaped ride vehicle inside the oversized kitchen at night",
       },
     },
   },

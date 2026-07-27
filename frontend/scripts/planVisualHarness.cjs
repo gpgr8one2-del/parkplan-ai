@@ -254,7 +254,7 @@ console.log("Exact ride artwork (61C-1A)");
       /^import (\w+) from "(\.\.\/assets\/rideArt\/[\w.-]+\.webp)";$/gm
     ),
   ];
-  check("manifest imports exactly forty-four webp assets", importMatches.length, 44);
+  check("manifest imports exactly fifty webp assets", importMatches.length, 50);
   check(
     "webp imports are bundled, not public/ paths",
     importMatches.every(([, , assetPath]) => assetPath.startsWith("../assets/rideArt/")) &&
@@ -263,6 +263,12 @@ console.log("Exact ride artwork (61C-1A)");
   );
 
   const expectedAssets = [
+    "10916-guardians-of-the-galaxy-cosmic-rewind_day.webp",
+    "10916-guardians-of-the-galaxy-cosmic-rewind_night.webp",
+    "2679-frozen-ever-after_day.webp",
+    "2679-frozen-ever-after_night.webp",
+    "10914-remys-ratatouille-adventure_day.webp",
+    "10914-remys-ratatouille-adventure_night.webp",
     "128-enchanted-tales-with-belle_day.webp",
     "128-enchanted-tales-with-belle_night.webp",
     "126-the-barnstormer_day.webp",
@@ -314,12 +320,12 @@ console.log("Exact ride artwork (61C-1A)");
     return fs.existsSync(assetPath) ? fs.readFileSync(assetPath) : null;
   });
   check(
-    "all forty-four webp files exist and are nonzero",
+    "all fifty webp files exist and are nonzero",
     assetBuffers.every((buf) => buf && buf.length > 0),
     true
   );
   check(
-    "all forty-four files carry the WebP RIFF signature",
+    "all fifty files carry the WebP RIFF signature",
     assetBuffers.every(
       (buf) =>
         buf &&
@@ -329,9 +335,9 @@ console.log("Exact ride artwork (61C-1A)");
     true
   );
   check(
-    "no accidental duplicate assets — all forty-four files are distinct",
+    "no accidental duplicate assets — all fifty files are distinct",
     new Set(assetBuffers.map((buf) => (buf ? buf.toString("base64") : ""))).size,
-    44
+    50
   );
   check(
     "extra files have not crept into the rideArt directory",
@@ -354,9 +360,9 @@ console.log("Exact ride artwork (61C-1A)");
   )();
 
   check(
-    "manifest holds only the canonical park",
-    Object.keys(RIDE_ART_MANIFEST).join(","),
-    "magic_kingdom"
+    "manifest holds only the two canonical parks",
+    Object.keys(RIDE_ART_MANIFEST).sort().join(","),
+    ["magic_kingdom", "epcot"].sort().join(",")
   );
   check(
     "manifest holds only the twenty-two approved ride IDs",
@@ -453,6 +459,51 @@ console.log("Exact ride artwork (61C-1A)");
   check("unknown ride returns null", getRideArtwork("magic_kingdom", "999", false), null);
   check("unknown park returns null", getRideArtwork("epcot", "137", false), null);
   check("null inputs return null", getRideArtwork(null, null, false), null);
+
+  // EPCOT ride artwork (61C-2h) — first non-Magic-Kingdom park.
+  check(
+    "epcot holds only the three approved ride IDs",
+    Object.keys(RIDE_ART_MANIFEST.epcot).sort().join(","),
+    ["10916", "2679", "10914"].sort().join(",")
+  );
+  check(
+    "each epcot ride maps to its own ID-prefixed distinct day/night assets with alt text",
+    Object.entries(RIDE_ART_MANIFEST.epcot).every(
+      ([rideId, rideArt]) =>
+        rideArt.day.src.includes(`/${rideId}-`) &&
+        rideArt.night.src.includes(`/${rideId}-`) &&
+        rideArt.day.src !== rideArt.night.src &&
+        typeof rideArt.day.alt === "string" &&
+        typeof rideArt.night.alt === "string"
+    ),
+    true
+  );
+  check(
+    "epcot rides resolve to their own day and night assets by exact ID (incl. String canonicalization)",
+    [
+      ["10916", "10916-guardians-of-the-galaxy-cosmic-rewind"],
+      ["2679", "2679-frozen-ever-after"],
+      ["10914", "10914-remys-ratatouille-adventure"],
+    ].every(
+      ([rideId, stem]) =>
+        getRideArtwork("epcot", rideId, false)?.src.endsWith(`${stem}_day.webp`) &&
+        getRideArtwork("epcot", rideId, true)?.src.endsWith(`${stem}_night.webp`) &&
+        getRideArtwork("epcot", Number(rideId), false)?.src.endsWith(`${stem}_day.webp`)
+    ),
+    true
+  );
+  check(
+    "epcot lookup has no cross-park fallback — unknown epcot ride returns null",
+    getRideArtwork("epcot", "999", false),
+    null
+  );
+  check(
+    "park artwork is isolated — a Magic Kingdom ID never resolves under epcot and vice versa",
+    getRideArtwork("epcot", "138", false) === null &&
+      getRideArtwork("magic_kingdom", "10916", false) === null,
+    true
+  );
+
   check(
     "lookup uses exact park + ride keys only",
     manifestSource.includes("RIDE_ART_MANIFEST[parkId]") &&
