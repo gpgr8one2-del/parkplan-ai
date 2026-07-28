@@ -59,6 +59,12 @@ import frozenDay from "../assets/rideArt/2679-frozen-ever-after_day.webp";
 import frozenNight from "../assets/rideArt/2679-frozen-ever-after_night.webp";
 import remyDay from "../assets/rideArt/10914-remys-ratatouille-adventure_day.webp";
 import remyNight from "../assets/rideArt/10914-remys-ratatouille-adventure_night.webp";
+import soarinDay from "../assets/rideArt/151-soarin-across-america_day.webp";
+import soarinNight from "../assets/rideArt/151-soarin-across-america_night.webp";
+import missionSpaceDay from "../assets/rideArt/158-mission-space_day.webp";
+import missionSpaceNight from "../assets/rideArt/158-mission-space_night.webp";
+import testTrackDay from "../assets/rideArt/160-test-track_day.webp";
+import testTrackNight from "../assets/rideArt/160-test-track_night.webp";
 
 export const RIDE_ART_MANIFEST = {
   magic_kingdom: {
@@ -312,6 +318,36 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: remyNight,
         alt: "Illustration of a Remy’s Ratatouille Adventure rat-shaped ride vehicle inside the oversized kitchen at night",
+      },
+    },
+    "151": {
+      day: {
+        src: soarinDay,
+        alt: "Illustration of Soarin’ hang-glider seats gliding over a canyon river vista",
+      },
+      night: {
+        src: soarinNight,
+        alt: "Illustration of Soarin’ hang-glider seats gliding over a canyon river vista at night",
+      },
+    },
+    "158": {
+      day: {
+        src: missionSpaceDay,
+        alt: "Illustration of the Mission: SPACE planet spheres and crescent sculpture at the attraction entrance",
+      },
+      night: {
+        src: missionSpaceNight,
+        alt: "Illustration of the Mission: SPACE planet spheres and crescent sculpture at the attraction entrance at night",
+      },
+    },
+    "160": {
+      day: {
+        src: testTrackDay,
+        alt: "Illustration of a Test Track vehicle on the outdoor speed loop",
+      },
+      night: {
+        src: testTrackNight,
+        alt: "Illustration of a Test Track vehicle on the outdoor speed loop at night",
       },
     },
   },
