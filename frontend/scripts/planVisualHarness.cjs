@@ -254,7 +254,7 @@ console.log("Exact ride artwork (61C-1A)");
       /^import (\w+) from "(\.\.\/assets\/rideArt\/[\w.-]+\.webp)";$/gm
     ),
   ];
-  check("manifest imports exactly fifty-six webp assets", importMatches.length, 56);
+  check("manifest imports exactly sixty-two webp assets", importMatches.length, 62);
   check(
     "webp imports are bundled, not public/ paths",
     importMatches.every(([, , assetPath]) => assetPath.startsWith("../assets/rideArt/")) &&
@@ -263,6 +263,12 @@ console.log("Exact ride artwork (61C-1A)");
   );
 
   const expectedAssets = [
+    "155-journey-into-imagination-with-figment_day.webp",
+    "155-journey-into-imagination-with-figment_night.webp",
+    "156-living-with-the-land_day.webp",
+    "156-living-with-the-land_night.webp",
+    "159-spaceship-earth_day.webp",
+    "159-spaceship-earth_night.webp",
     "151-soarin-across-america_day.webp",
     "151-soarin-across-america_night.webp",
     "158-mission-space_day.webp",
@@ -326,12 +332,12 @@ console.log("Exact ride artwork (61C-1A)");
     return fs.existsSync(assetPath) ? fs.readFileSync(assetPath) : null;
   });
   check(
-    "all fifty-six webp files exist and are nonzero",
+    "all sixty-two webp files exist and are nonzero",
     assetBuffers.every((buf) => buf && buf.length > 0),
     true
   );
   check(
-    "all fifty-six files carry the WebP RIFF signature",
+    "all sixty-two files carry the WebP RIFF signature",
     assetBuffers.every(
       (buf) =>
         buf &&
@@ -341,9 +347,9 @@ console.log("Exact ride artwork (61C-1A)");
     true
   );
   check(
-    "no accidental duplicate assets — all fifty-six files are distinct",
+    "no accidental duplicate assets — all sixty-two files are distinct",
     new Set(assetBuffers.map((buf) => (buf ? buf.toString("base64") : ""))).size,
-    56
+    62
   );
   check(
     "extra files have not crept into the rideArt directory",
@@ -468,9 +474,11 @@ console.log("Exact ride artwork (61C-1A)");
 
   // EPCOT ride artwork (61C-2h) — first non-Magic-Kingdom park.
   check(
-    "epcot holds only the six approved ride IDs",
+    "epcot holds only the nine approved ride IDs",
     Object.keys(RIDE_ART_MANIFEST.epcot).sort().join(","),
-    ["10916", "2679", "10914", "151", "158", "160"].sort().join(",")
+    ["10916", "2679", "10914", "151", "158", "160", "155", "156", "159"]
+      .sort()
+      .join(",")
   );
   check(
     "each epcot ride maps to its own ID-prefixed distinct day/night assets with alt text",
@@ -493,6 +501,9 @@ console.log("Exact ride artwork (61C-1A)");
       ["151", "151-soarin-across-america"],
       ["158", "158-mission-space"],
       ["160", "160-test-track"],
+      ["155", "155-journey-into-imagination-with-figment"],
+      ["156", "156-living-with-the-land"],
+      ["159", "159-spaceship-earth"],
     ].every(
       ([rideId, stem]) =>
         getRideArtwork("epcot", rideId, false)?.src.endsWith(`${stem}_day.webp`) &&

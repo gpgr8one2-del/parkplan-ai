@@ -65,6 +65,12 @@ import missionSpaceDay from "../assets/rideArt/158-mission-space_day.webp";
 import missionSpaceNight from "../assets/rideArt/158-mission-space_night.webp";
 import testTrackDay from "../assets/rideArt/160-test-track_day.webp";
 import testTrackNight from "../assets/rideArt/160-test-track_night.webp";
+import figmentDay from "../assets/rideArt/155-journey-into-imagination-with-figment_day.webp";
+import figmentNight from "../assets/rideArt/155-journey-into-imagination-with-figment_night.webp";
+import livingWithLandDay from "../assets/rideArt/156-living-with-the-land_day.webp";
+import livingWithLandNight from "../assets/rideArt/156-living-with-the-land_night.webp";
+import spaceshipEarthDay from "../assets/rideArt/159-spaceship-earth_day.webp";
+import spaceshipEarthNight from "../assets/rideArt/159-spaceship-earth_night.webp";
 
 export const RIDE_ART_MANIFEST = {
   magic_kingdom: {
@@ -348,6 +354,36 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: testTrackNight,
         alt: "Illustration of a Test Track vehicle on the outdoor speed loop at night",
+      },
+    },
+    "155": {
+      day: {
+        src: figmentDay,
+        alt: "Illustration of the Journey Into Imagination With Figment glass pyramids and fountains",
+      },
+      night: {
+        src: figmentNight,
+        alt: "Illustration of the Journey Into Imagination With Figment glass pyramids and fountains at night",
+      },
+    },
+    "156": {
+      day: {
+        src: livingWithLandDay,
+        alt: "Illustration of a Living with the Land boat cruising through the greenhouse growing area",
+      },
+      night: {
+        src: livingWithLandNight,
+        alt: "Illustration of a Living with the Land boat cruising through the greenhouse growing area at night",
+      },
+    },
+    "159": {
+      day: {
+        src: spaceshipEarthDay,
+        alt: "Illustration of the Spaceship Earth geodesic sphere",
+      },
+      night: {
+        src: spaceshipEarthNight,
+        alt: "Illustration of the Spaceship Earth geodesic sphere illuminated at night",
       },
     },
   },
