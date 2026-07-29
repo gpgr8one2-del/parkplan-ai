@@ -254,7 +254,7 @@ console.log("Exact ride artwork (61C-1A)");
       /^import (\w+) from "(\.\.\/assets\/rideArt\/[\w.-]+\.webp)";$/gm
     ),
   ];
-  check("manifest imports exactly sixty-two webp assets", importMatches.length, 62);
+  check("manifest imports exactly sixty-eight webp assets", importMatches.length, 68);
   check(
     "webp imports are bundled, not public/ paths",
     importMatches.every(([, , assetPath]) => assetPath.startsWith("../assets/rideArt/")) &&
@@ -325,6 +325,12 @@ console.log("Exact ride artwork (61C-1A)");
     "137-pirates-of-the-caribbean_night.webp",
     "138-space-mountain_day.webp",
     "138-space-mountain_night.webp",
+    "6369-star-wars-rise-of-the-resistance_day.webp",
+    "6369-star-wars-rise-of-the-resistance_night.webp",
+    "5476-slinky-dog-dash_day.webp",
+    "5476-slinky-dog-dash_night.webp",
+    "6361-mickey-and-minnies-runaway-railway_day.webp",
+    "6361-mickey-and-minnies-runaway-railway_night.webp",
   ];
   const assetDir = path.join(frontendRoot, "src", "assets", "rideArt");
   const assetBuffers = expectedAssets.map((name) => {
@@ -332,12 +338,12 @@ console.log("Exact ride artwork (61C-1A)");
     return fs.existsSync(assetPath) ? fs.readFileSync(assetPath) : null;
   });
   check(
-    "all sixty-two webp files exist and are nonzero",
+    "all sixty-eight webp files exist and are nonzero",
     assetBuffers.every((buf) => buf && buf.length > 0),
     true
   );
   check(
-    "all sixty-two files carry the WebP RIFF signature",
+    "all sixty-eight files carry the WebP RIFF signature",
     assetBuffers.every(
       (buf) =>
         buf &&
@@ -347,9 +353,9 @@ console.log("Exact ride artwork (61C-1A)");
     true
   );
   check(
-    "no accidental duplicate assets — all sixty-two files are distinct",
+    "no accidental duplicate assets — all sixty-eight files are distinct",
     new Set(assetBuffers.map((buf) => (buf ? buf.toString("base64") : ""))).size,
-    62
+    68
   );
   check(
     "extra files have not crept into the rideArt directory",
@@ -372,9 +378,9 @@ console.log("Exact ride artwork (61C-1A)");
   )();
 
   check(
-    "manifest holds only the two canonical parks",
+    "manifest holds only the three canonical parks",
     Object.keys(RIDE_ART_MANIFEST).sort().join(","),
-    ["magic_kingdom", "epcot"].sort().join(",")
+    ["magic_kingdom", "epcot", "hollywood"].sort().join(",")
   );
   check(
     "manifest holds only the twenty-two approved ride IDs",
@@ -521,6 +527,52 @@ console.log("Exact ride artwork (61C-1A)");
     "park artwork is isolated — a Magic Kingdom ID never resolves under epcot and vice versa",
     getRideArtwork("epcot", "138", false) === null &&
       getRideArtwork("magic_kingdom", "10916", false) === null,
+    true
+  );
+
+  // Hollywood Studios ride artwork (61C-3a) — first batch under the hollywood key.
+  check(
+    "hollywood holds only the three approved ride IDs",
+    Object.keys(RIDE_ART_MANIFEST.hollywood).sort().join(","),
+    ["6369", "5476", "6361"].sort().join(",")
+  );
+  check(
+    "each hollywood ride maps to its own ID-prefixed distinct day/night assets with alt text",
+    Object.entries(RIDE_ART_MANIFEST.hollywood).every(
+      ([rideId, rideArt]) =>
+        rideArt.day.src.includes(`/${rideId}-`) &&
+        rideArt.night.src.includes(`/${rideId}-`) &&
+        rideArt.day.src !== rideArt.night.src &&
+        typeof rideArt.day.alt === "string" &&
+        typeof rideArt.night.alt === "string"
+    ),
+    true
+  );
+  check(
+    "hollywood rides resolve to their own day and night assets by exact ID (incl. String canonicalization)",
+    [
+      ["6369", "6369-star-wars-rise-of-the-resistance"],
+      ["5476", "5476-slinky-dog-dash"],
+      ["6361", "6361-mickey-and-minnies-runaway-railway"],
+    ].every(
+      ([rideId, stem]) =>
+        getRideArtwork("hollywood", rideId, false)?.src.endsWith(`${stem}_day.webp`) &&
+        getRideArtwork("hollywood", rideId, true)?.src.endsWith(`${stem}_night.webp`) &&
+        getRideArtwork("hollywood", Number(rideId), false)?.src.endsWith(`${stem}_day.webp`)
+    ),
+    true
+  );
+  check(
+    "hollywood lookup has no cross-park fallback — unknown hollywood ride returns null",
+    getRideArtwork("hollywood", "999", false),
+    null
+  );
+  check(
+    "park artwork is isolated — a hollywood ID never resolves under another park and vice versa",
+    getRideArtwork("magic_kingdom", "6369", false) === null &&
+      getRideArtwork("epcot", "5476", false) === null &&
+      getRideArtwork("hollywood", "138", false) === null &&
+      getRideArtwork("hollywood", "10916", false) === null,
     true
   );
 
