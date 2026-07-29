@@ -71,6 +71,12 @@ import livingWithLandDay from "../assets/rideArt/156-living-with-the-land_day.we
 import livingWithLandNight from "../assets/rideArt/156-living-with-the-land_night.webp";
 import spaceshipEarthDay from "../assets/rideArt/159-spaceship-earth_day.webp";
 import spaceshipEarthNight from "../assets/rideArt/159-spaceship-earth_night.webp";
+import riseDay from "../assets/rideArt/6369-star-wars-rise-of-the-resistance_day.webp";
+import riseNight from "../assets/rideArt/6369-star-wars-rise-of-the-resistance_night.webp";
+import slinkyDogDashDay from "../assets/rideArt/5476-slinky-dog-dash_day.webp";
+import slinkyDogDashNight from "../assets/rideArt/5476-slinky-dog-dash_night.webp";
+import runawayRailwayDay from "../assets/rideArt/6361-mickey-and-minnies-runaway-railway_day.webp";
+import runawayRailwayNight from "../assets/rideArt/6361-mickey-and-minnies-runaway-railway_night.webp";
 
 export const RIDE_ART_MANIFEST = {
   magic_kingdom: {
@@ -384,6 +390,38 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: spaceshipEarthNight,
         alt: "Illustration of the Spaceship Earth geodesic sphere illuminated at night",
+      },
+    },
+  },
+  hollywood: {
+    "6369": {
+      day: {
+        src: riseDay,
+        alt: "Illustration of a Star Wars: Rise of the Resistance First Order Star Destroyer hangar bay",
+      },
+      night: {
+        src: riseNight,
+        alt: "Illustration of a Star Wars: Rise of the Resistance First Order Star Destroyer hangar bay at night",
+      },
+    },
+    "5476": {
+      day: {
+        src: slinkyDogDashDay,
+        alt: "Illustration of a Slinky Dog Dash coaster train winding through Toy Story Land",
+      },
+      night: {
+        src: slinkyDogDashNight,
+        alt: "Illustration of a Slinky Dog Dash coaster train winding through Toy Story Land at night",
+      },
+    },
+    "6361": {
+      day: {
+        src: runawayRailwayDay,
+        alt: "Illustration of the Mickey & Minnie’s Runaway Railway train in a colorful cartoon landscape",
+      },
+      night: {
+        src: runawayRailwayNight,
+        alt: "Illustration of the Mickey & Minnie’s Runaway Railway train in a colorful cartoon landscape at night",
       },
     },
   },
