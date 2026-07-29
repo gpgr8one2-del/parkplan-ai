@@ -77,6 +77,12 @@ import slinkyDogDashDay from "../assets/rideArt/5476-slinky-dog-dash_day.webp";
 import slinkyDogDashNight from "../assets/rideArt/5476-slinky-dog-dash_night.webp";
 import runawayRailwayDay from "../assets/rideArt/6361-mickey-and-minnies-runaway-railway_day.webp";
 import runawayRailwayNight from "../assets/rideArt/6361-mickey-and-minnies-runaway-railway_night.webp";
+import toyStoryManiaDay from "../assets/rideArt/117-toy-story-mania_day.webp";
+import toyStoryManiaNight from "../assets/rideArt/117-toy-story-mania_night.webp";
+import towerOfTerrorDay from "../assets/rideArt/123-tower-of-terror_day.webp";
+import towerOfTerrorNight from "../assets/rideArt/123-tower-of-terror_night.webp";
+import smugglersRunDay from "../assets/rideArt/6368-millennium-falcon-smugglers-run_day.webp";
+import smugglersRunNight from "../assets/rideArt/6368-millennium-falcon-smugglers-run_night.webp";
 
 export const RIDE_ART_MANIFEST = {
   magic_kingdom: {
@@ -422,6 +428,36 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: runawayRailwayNight,
         alt: "Illustration of the Mickey & Minnie’s Runaway Railway train in a colorful cartoon landscape at night",
+      },
+    },
+    "117": {
+      day: {
+        src: toyStoryManiaDay,
+        alt: "Illustration of a Toy Story Mania! carnival tram passing the midway game targets",
+      },
+      night: {
+        src: toyStoryManiaNight,
+        alt: "Illustration of a Toy Story Mania! carnival tram passing the midway game targets at night",
+      },
+    },
+    "123": {
+      day: {
+        src: towerOfTerrorDay,
+        alt: "Illustration of The Twilight Zone Tower of Terror hotel tower",
+      },
+      night: {
+        src: towerOfTerrorNight,
+        alt: "Illustration of The Twilight Zone Tower of Terror hotel tower at night",
+      },
+    },
+    "6368": {
+      day: {
+        src: smugglersRunDay,
+        alt: "Illustration of the Millennium Falcon: Smugglers Run starship at its Batuu docking bay",
+      },
+      night: {
+        src: smugglersRunNight,
+        alt: "Illustration of the Millennium Falcon: Smugglers Run starship at its Batuu docking bay at night",
       },
     },
   },
