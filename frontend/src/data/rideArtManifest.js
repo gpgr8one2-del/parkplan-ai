@@ -89,6 +89,12 @@ import starToursDay from "../assets/rideArt/120-star-tours-the-adventures-contin
 import starToursNight from "../assets/rideArt/120-star-tours-the-adventures-continue_night.webp";
 import rockNRollerDay from "../assets/rideArt/16342-rock-n-roller-coaster-starring-the-muppets_day.webp";
 import rockNRollerNight from "../assets/rideArt/16342-rock-n-roller-coaster-starring-the-muppets_night.webp";
+import flightOfPassageDay from "../assets/rideArt/4439-avatar-flight-of-passage_day.webp";
+import flightOfPassageNight from "../assets/rideArt/4439-avatar-flight-of-passage_night.webp";
+import naviRiverJourneyDay from "../assets/rideArt/4438-navi-river-journey_day.webp";
+import naviRiverJourneyNight from "../assets/rideArt/4438-navi-river-journey_night.webp";
+import kilimanjaroSafarisDay from "../assets/rideArt/113-kilimanjaro-safaris_day.webp";
+import kilimanjaroSafarisNight from "../assets/rideArt/113-kilimanjaro-safaris_night.webp";
 
 export const RIDE_ART_MANIFEST = {
   magic_kingdom: {
@@ -494,6 +500,38 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: rockNRollerNight,
         alt: "Illustration of the Rock ’n’ Roller Coaster Starring The Muppets stretch limo and electric guitar entrance at night",
+      },
+    },
+  },
+  animal_kingdom: {
+    "4439": {
+      day: {
+        src: flightOfPassageDay,
+        alt: "Illustration of the Avatar Flight of Passage floating mountains and waterfalls over a Pandora lagoon",
+      },
+      night: {
+        src: flightOfPassageNight,
+        alt: "Illustration of the Avatar Flight of Passage floating mountains and waterfalls over a Pandora lagoon at night",
+      },
+    },
+    "4438": {
+      day: {
+        src: naviRiverJourneyDay,
+        alt: "Illustration of a Na’vi River Journey reed boat drifting through Pandora’s rainforest",
+      },
+      night: {
+        src: naviRiverJourneyNight,
+        alt: "Illustration of a Na’vi River Journey reed boat drifting through Pandora’s bioluminescent rainforest at night",
+      },
+    },
+    "113": {
+      day: {
+        src: kilimanjaroSafarisDay,
+        alt: "Illustration of a Kilimanjaro Safaris open-air truck passing a giraffe and elephants on the savanna",
+      },
+      night: {
+        src: kilimanjaroSafarisNight,
+        alt: "Illustration of a Kilimanjaro Safaris open-air truck passing a giraffe and elephants on the savanna at night",
       },
     },
   },
