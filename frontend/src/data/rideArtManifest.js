@@ -83,6 +83,12 @@ import towerOfTerrorDay from "../assets/rideArt/123-tower-of-terror_day.webp";
 import towerOfTerrorNight from "../assets/rideArt/123-tower-of-terror_night.webp";
 import smugglersRunDay from "../assets/rideArt/6368-millennium-falcon-smugglers-run_day.webp";
 import smugglersRunNight from "../assets/rideArt/6368-millennium-falcon-smugglers-run_night.webp";
+import alienSaucersDay from "../assets/rideArt/5477-alien-swirling-saucers_day.webp";
+import alienSaucersNight from "../assets/rideArt/5477-alien-swirling-saucers_night.webp";
+import starToursDay from "../assets/rideArt/120-star-tours-the-adventures-continue_day.webp";
+import starToursNight from "../assets/rideArt/120-star-tours-the-adventures-continue_night.webp";
+import rockNRollerDay from "../assets/rideArt/16342-rock-n-roller-coaster-starring-the-muppets_day.webp";
+import rockNRollerNight from "../assets/rideArt/16342-rock-n-roller-coaster-starring-the-muppets_night.webp";
 
 export const RIDE_ART_MANIFEST = {
   magic_kingdom: {
@@ -458,6 +464,36 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: smugglersRunNight,
         alt: "Illustration of the Millennium Falcon: Smugglers Run starship at its Batuu docking bay at night",
+      },
+    },
+    "5477": {
+      day: {
+        src: alienSaucersDay,
+        alt: "Illustration of Alien Swirling Saucers spinning ride vehicles under the Little Green Aliens",
+      },
+      night: {
+        src: alienSaucersNight,
+        alt: "Illustration of Alien Swirling Saucers spinning ride vehicles under the Little Green Aliens at night",
+      },
+    },
+    "120": {
+      day: {
+        src: starToursDay,
+        alt: "Illustration of a Star Tours – The Adventures Continue StarSpeeder shuttle",
+      },
+      night: {
+        src: starToursNight,
+        alt: "Illustration of a Star Tours – The Adventures Continue StarSpeeder shuttle at night",
+      },
+    },
+    "16342": {
+      day: {
+        src: rockNRollerDay,
+        alt: "Illustration of the Rock ’n’ Roller Coaster Starring The Muppets stretch limo and electric guitar entrance",
+      },
+      night: {
+        src: rockNRollerNight,
+        alt: "Illustration of the Rock ’n’ Roller Coaster Starring The Muppets stretch limo and electric guitar entrance at night",
       },
     },
   },
