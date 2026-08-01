@@ -254,7 +254,7 @@ console.log("Exact ride artwork (61C-1A)");
       /^import (\w+) from "(\.\.\/assets\/rideArt\/[\w.-]+\.webp)";$/gm
     ),
   ];
-  check("manifest imports exactly seventy-four webp assets", importMatches.length, 74);
+  check("manifest imports exactly eighty webp assets", importMatches.length, 80);
   check(
     "webp imports are bundled, not public/ paths",
     importMatches.every(([, , assetPath]) => assetPath.startsWith("../assets/rideArt/")) &&
@@ -337,6 +337,12 @@ console.log("Exact ride artwork (61C-1A)");
     "123-tower-of-terror_night.webp",
     "6368-millennium-falcon-smugglers-run_day.webp",
     "6368-millennium-falcon-smugglers-run_night.webp",
+    "5477-alien-swirling-saucers_day.webp",
+    "5477-alien-swirling-saucers_night.webp",
+    "120-star-tours-the-adventures-continue_day.webp",
+    "120-star-tours-the-adventures-continue_night.webp",
+    "16342-rock-n-roller-coaster-starring-the-muppets_day.webp",
+    "16342-rock-n-roller-coaster-starring-the-muppets_night.webp",
   ];
   const assetDir = path.join(frontendRoot, "src", "assets", "rideArt");
   const assetBuffers = expectedAssets.map((name) => {
@@ -344,12 +350,12 @@ console.log("Exact ride artwork (61C-1A)");
     return fs.existsSync(assetPath) ? fs.readFileSync(assetPath) : null;
   });
   check(
-    "all seventy-four webp files exist and are nonzero",
+    "all eighty webp files exist and are nonzero",
     assetBuffers.every((buf) => buf && buf.length > 0),
     true
   );
   check(
-    "all seventy-four files carry the WebP RIFF signature",
+    "all eighty files carry the WebP RIFF signature",
     assetBuffers.every(
       (buf) =>
         buf &&
@@ -359,9 +365,9 @@ console.log("Exact ride artwork (61C-1A)");
     true
   );
   check(
-    "no accidental duplicate assets — all seventy-four files are distinct",
+    "no accidental duplicate assets — all eighty files are distinct",
     new Set(assetBuffers.map((buf) => (buf ? buf.toString("base64") : ""))).size,
-    74
+    80
   );
   check(
     "extra files have not crept into the rideArt directory",
@@ -538,9 +544,9 @@ console.log("Exact ride artwork (61C-1A)");
 
   // Hollywood Studios ride artwork (61C-3a) — first batch under the hollywood key.
   check(
-    "hollywood holds only the six approved ride IDs",
+    "hollywood holds only the nine approved ride IDs",
     Object.keys(RIDE_ART_MANIFEST.hollywood).sort().join(","),
-    ["6369", "5476", "6361", "117", "123", "6368"].sort().join(",")
+    ["6369", "5476", "6361", "117", "123", "6368", "5477", "120", "16342"].sort().join(",")
   );
   check(
     "each hollywood ride maps to its own ID-prefixed distinct day/night assets with alt text",
@@ -563,6 +569,9 @@ console.log("Exact ride artwork (61C-1A)");
       ["117", "117-toy-story-mania"],
       ["123", "123-tower-of-terror"],
       ["6368", "6368-millennium-falcon-smugglers-run"],
+      ["5477", "5477-alien-swirling-saucers"],
+      ["120", "120-star-tours-the-adventures-continue"],
+      ["16342", "16342-rock-n-roller-coaster-starring-the-muppets"],
     ].every(
       ([rideId, stem]) =>
         getRideArtwork("hollywood", rideId, false)?.src.endsWith(`${stem}_day.webp`) &&
