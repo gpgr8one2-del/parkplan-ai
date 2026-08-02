@@ -103,6 +103,12 @@ import kaliRiverRapidsDay from "../assets/rideArt/112-kali-river-rapids_day.webp
 import kaliRiverRapidsNight from "../assets/rideArt/112-kali-river-rapids_night.webp";
 import wildlifeExpressTrainDay from "../assets/rideArt/655-wildlife-express-train_day.webp";
 import wildlifeExpressTrainNight from "../assets/rideArt/655-wildlife-express-train_night.webp";
+import zootopiaDay from "../assets/rideArt/14943-zootopia-better-zoogether_day.webp";
+import zootopiaNight from "../assets/rideArt/14943-zootopia-better-zoogether_night.webp";
+import blueysWildWorldDay from "../assets/rideArt/16545-blueys-wild-world-at-conservation-station_day.webp";
+import blueysWildWorldNight from "../assets/rideArt/16545-blueys-wild-world-at-conservation-station_night.webp";
+import gorillaFallsDay from "../assets/rideArt/651-gorilla-falls-exploration-trail_day.webp";
+import gorillaFallsNight from "../assets/rideArt/651-gorilla-falls-exploration-trail_night.webp";
 
 export const RIDE_ART_MANIFEST = {
   magic_kingdom: {
@@ -580,6 +586,36 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: wildlifeExpressTrainNight,
         alt: "Illustration of the Wildlife Express Train steam locomotive pulling open-air cars past its savanna station at night",
+      },
+    },
+    "14943": {
+      day: {
+        src: zootopiaDay,
+        alt: "Illustration of the Tree of Life, home of the Zootopia: Better Zoogether! theater, above a garden stream",
+      },
+      night: {
+        src: zootopiaNight,
+        alt: "Illustration of the Tree of Life, home of the Zootopia: Better Zoogether! theater, above a garden stream at night",
+      },
+    },
+    "16545": {
+      day: {
+        src: blueysWildWorldDay,
+        alt: "Illustration of the Conservation Station courtyard and animal mural, home of Bluey’s Wild World",
+      },
+      night: {
+        src: blueysWildWorldNight,
+        alt: "Illustration of the Conservation Station courtyard and animal mural, home of Bluey’s Wild World at night",
+      },
+    },
+    "651": {
+      day: {
+        src: gorillaFallsDay,
+        alt: "Illustration of a gorilla resting by a waterfall beside the Gorilla Falls Exploration Trail boardwalk",
+      },
+      night: {
+        src: gorillaFallsNight,
+        alt: "Illustration of a gorilla resting by a waterfall beside the Gorilla Falls Exploration Trail boardwalk at night",
       },
     },
   },
