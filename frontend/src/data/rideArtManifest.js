@@ -109,6 +109,10 @@ import blueysWildWorldDay from "../assets/rideArt/16545-blueys-wild-world-at-con
 import blueysWildWorldNight from "../assets/rideArt/16545-blueys-wild-world-at-conservation-station_night.webp";
 import gorillaFallsDay from "../assets/rideArt/651-gorilla-falls-exploration-trail_day.webp";
 import gorillaFallsNight from "../assets/rideArt/651-gorilla-falls-exploration-trail_night.webp";
+import findingNemoShowDay from "../assets/rideArt/10920-finding-nemo-the-big-blue-and-beyond_day.webp";
+import findingNemoShowNight from "../assets/rideArt/10920-finding-nemo-the-big-blue-and-beyond_night.webp";
+import festivalOfTheLionKingDay from "../assets/rideArt/657-festival-of-the-lion-king_day.webp";
+import festivalOfTheLionKingNight from "../assets/rideArt/657-festival-of-the-lion-king_night.webp";
 
 export const RIDE_ART_MANIFEST = {
   magic_kingdom: {
@@ -616,6 +620,26 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: gorillaFallsNight,
         alt: "Illustration of a gorilla resting by a waterfall beside the Gorilla Falls Exploration Trail boardwalk at night",
+      },
+    },
+    "10920": {
+      day: {
+        src: findingNemoShowDay,
+        alt: "Illustration of the Finding Nemo: The Big Blue… and Beyond! stage with puppeteers guiding a ray and clownfish puppets",
+      },
+      night: {
+        src: findingNemoShowNight,
+        alt: "Illustration of the Finding Nemo: The Big Blue… and Beyond! stage with puppeteers guiding a ray and clownfish puppets at night",
+      },
+    },
+    "657": {
+      day: {
+        src: festivalOfTheLionKingDay,
+        alt: "Illustration of the Festival of the Lion King stage with the lion float, stilt dancers, and aerialists",
+      },
+      night: {
+        src: festivalOfTheLionKingNight,
+        alt: "Illustration of the Festival of the Lion King stage with the lion float, stilt dancers, and aerialists at night",
       },
     },
   },

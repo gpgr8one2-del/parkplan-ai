@@ -254,7 +254,7 @@ console.log("Exact ride artwork (61C-1A)");
       /^import (\w+) from "(\.\.\/assets\/rideArt\/[\w.-]+\.webp)";$/gm
     ),
   ];
-  check("manifest imports exactly one hundred webp assets", importMatches.length, 100);
+  check("manifest imports exactly one hundred four webp assets", importMatches.length, 104);
   check(
     "webp imports are bundled, not public/ paths",
     importMatches.every(([, , assetPath]) => assetPath.startsWith("../assets/rideArt/")) &&
@@ -363,6 +363,10 @@ console.log("Exact ride artwork (61C-1A)");
     "16545-blueys-wild-world-at-conservation-station_night.webp",
     "651-gorilla-falls-exploration-trail_day.webp",
     "651-gorilla-falls-exploration-trail_night.webp",
+    "10920-finding-nemo-the-big-blue-and-beyond_day.webp",
+    "10920-finding-nemo-the-big-blue-and-beyond_night.webp",
+    "657-festival-of-the-lion-king_day.webp",
+    "657-festival-of-the-lion-king_night.webp",
   ];
   const assetDir = path.join(frontendRoot, "src", "assets", "rideArt");
   const assetBuffers = expectedAssets.map((name) => {
@@ -370,12 +374,12 @@ console.log("Exact ride artwork (61C-1A)");
     return fs.existsSync(assetPath) ? fs.readFileSync(assetPath) : null;
   });
   check(
-    "all one hundred webp files exist and are nonzero",
+    "all one hundred four webp files exist and are nonzero",
     assetBuffers.every((buf) => buf && buf.length > 0),
     true
   );
   check(
-    "all one hundred files carry the WebP RIFF signature",
+    "all one hundred four files carry the WebP RIFF signature",
     assetBuffers.every(
       (buf) =>
         buf &&
@@ -385,9 +389,9 @@ console.log("Exact ride artwork (61C-1A)");
     true
   );
   check(
-    "no accidental duplicate assets — all one hundred files are distinct",
+    "no accidental duplicate assets — all one hundred four files are distinct",
     new Set(assetBuffers.map((buf) => (buf ? buf.toString("base64") : ""))).size,
-    100
+    104
   );
   check(
     "extra files have not crept into the rideArt directory",
@@ -634,11 +638,13 @@ console.log("Exact ride artwork (61C-1A)");
     true
   );
 
-  // Animal Kingdom ride artwork (batches 1-3) — rides under the animal_kingdom key.
+  // Animal Kingdom ride and show artwork (batches 1-3 plus the final show batch).
   check(
-    "animal kingdom holds only the nine approved ride IDs",
+    "animal kingdom holds only the eleven approved ride IDs",
     Object.keys(RIDE_ART_MANIFEST.animal_kingdom).sort().join(","),
-    ["4439", "4438", "113", "110", "112", "655", "14943", "16545", "651"].sort().join(",")
+    ["4439", "4438", "113", "110", "112", "655", "14943", "16545", "651", "10920", "657"]
+      .sort()
+      .join(",")
   );
   check(
     "each animal kingdom ride maps to its own ID-prefixed distinct day/night assets with alt text",
@@ -664,6 +670,8 @@ console.log("Exact ride artwork (61C-1A)");
       ["14943", "14943-zootopia-better-zoogether"],
       ["16545", "16545-blueys-wild-world-at-conservation-station"],
       ["651", "651-gorilla-falls-exploration-trail"],
+      ["10920", "10920-finding-nemo-the-big-blue-and-beyond"],
+      ["657", "657-festival-of-the-lion-king"],
     ].every(
       ([rideId, stem]) =>
         getRideArtwork("animal_kingdom", rideId, false)?.src.endsWith(`${stem}_day.webp`) &&
@@ -688,6 +696,9 @@ console.log("Exact ride artwork (61C-1A)");
       getRideArtwork("magic_kingdom", "14943", false) === null &&
       getRideArtwork("epcot", "16545", false) === null &&
       getRideArtwork("hollywood", "651", false) === null &&
+      getRideArtwork("magic_kingdom", "10920", false) === null &&
+      getRideArtwork("epcot", "657", false) === null &&
+      getRideArtwork("hollywood", "10920", false) === null &&
       getRideArtwork("animal_kingdom", "138", false) === null &&
       getRideArtwork("animal_kingdom", "10916", false) === null &&
       getRideArtwork("animal_kingdom", "6369", false) === null,
@@ -704,7 +715,37 @@ console.log("Exact ride artwork (61C-1A)");
       "149430",
       "16545x",
       "1654",
+      "1092",
+      "109200",
+      "10920x",
+      "65",
+      "6570",
     ].every((rideId) => getRideArtwork("animal_kingdom", rideId, false) === null),
+    true
+  );
+  // Feathered Friends in Flight (10921) is intentionally excluded from this batch.
+  // It must resolve to nothing rather than borrowing the adjacent 10920 show art.
+  check(
+    "Feathered Friends (10921) has no artwork entry in any park",
+    ["magic_kingdom", "epcot", "hollywood", "animal_kingdom"].every(
+      (parkId) =>
+        getRideArtwork(parkId, "10921", false) === null &&
+        getRideArtwork(parkId, "10921", true) === null &&
+        getRideArtwork(parkId, 10921, false) === null
+    ),
+    true
+  );
+  check(
+    "10921 is absent from the animal kingdom manifest keys",
+    Object.prototype.hasOwnProperty.call(RIDE_ART_MANIFEST.animal_kingdom, "10921"),
+    false
+  );
+  check(
+    "neighboring show IDs stay distinct — 657 and 655 never share artwork",
+    getRideArtwork("animal_kingdom", "657", false).src !==
+      getRideArtwork("animal_kingdom", "655", false).src &&
+      getRideArtwork("animal_kingdom", "657", true).src !==
+        getRideArtwork("animal_kingdom", "655", true).src,
     true
   );
   check(
