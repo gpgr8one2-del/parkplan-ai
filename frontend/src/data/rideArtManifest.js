@@ -95,6 +95,12 @@ import naviRiverJourneyDay from "../assets/rideArt/4438-navi-river-journey_day.w
 import naviRiverJourneyNight from "../assets/rideArt/4438-navi-river-journey_night.webp";
 import kilimanjaroSafarisDay from "../assets/rideArt/113-kilimanjaro-safaris_day.webp";
 import kilimanjaroSafarisNight from "../assets/rideArt/113-kilimanjaro-safaris_night.webp";
+import expeditionEverestDay from "../assets/rideArt/110-expedition-everest_day.webp";
+import expeditionEverestNight from "../assets/rideArt/110-expedition-everest_night.webp";
+import kaliRiverRapidsDay from "../assets/rideArt/112-kali-river-rapids_day.webp";
+import kaliRiverRapidsNight from "../assets/rideArt/112-kali-river-rapids_night.webp";
+import wildlifeExpressTrainDay from "../assets/rideArt/655-wildlife-express-train_day.webp";
+import wildlifeExpressTrainNight from "../assets/rideArt/655-wildlife-express-train_night.webp";
 
 export const RIDE_ART_MANIFEST = {
   magic_kingdom: {
@@ -532,6 +538,36 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: kilimanjaroSafarisNight,
         alt: "Illustration of a Kilimanjaro Safaris open-air truck passing a giraffe and elephants on the savanna at night",
+      },
+    },
+    "110": {
+      day: {
+        src: expeditionEverestDay,
+        alt: "Illustration of the Expedition Everest coaster track climbing the snow-capped Forbidden Mountain",
+      },
+      night: {
+        src: expeditionEverestNight,
+        alt: "Illustration of the Expedition Everest coaster track climbing the snow-capped Forbidden Mountain at night",
+      },
+    },
+    "112": {
+      day: {
+        src: kaliRiverRapidsDay,
+        alt: "Illustration of a Kali River Rapids raft spinning below a jungle waterfall and temple ruins",
+      },
+      night: {
+        src: kaliRiverRapidsNight,
+        alt: "Illustration of a Kali River Rapids raft spinning below a jungle waterfall and lantern-lit temple ruins at night",
+      },
+    },
+    "655": {
+      day: {
+        src: wildlifeExpressTrainDay,
+        alt: "Illustration of the Wildlife Express Train steam locomotive pulling open-air cars past its savanna station",
+      },
+      night: {
+        src: wildlifeExpressTrainNight,
+        alt: "Illustration of the Wildlife Express Train steam locomotive pulling open-air cars past its savanna station at night",
       },
     },
   },
