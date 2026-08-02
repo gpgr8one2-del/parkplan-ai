@@ -71,6 +71,8 @@ import livingWithLandDay from "../assets/rideArt/156-living-with-the-land_day.we
 import livingWithLandNight from "../assets/rideArt/156-living-with-the-land_night.webp";
 import spaceshipEarthDay from "../assets/rideArt/159-spaceship-earth_day.webp";
 import spaceshipEarthNight from "../assets/rideArt/159-spaceship-earth_night.webp";
+import seasNemoDay from "../assets/rideArt/153-the-seas-with-nemo-and-friends_day.webp";
+import seasNemoNight from "../assets/rideArt/153-the-seas-with-nemo-and-friends_night.webp";
 import riseDay from "../assets/rideArt/6369-star-wars-rise-of-the-resistance_day.webp";
 import riseNight from "../assets/rideArt/6369-star-wars-rise-of-the-resistance_night.webp";
 import slinkyDogDashDay from "../assets/rideArt/5476-slinky-dog-dash_day.webp";
@@ -414,6 +416,16 @@ export const RIDE_ART_MANIFEST = {
       night: {
         src: spaceshipEarthNight,
         alt: "Illustration of the Spaceship Earth geodesic sphere illuminated at night",
+      },
+    },
+    "153": {
+      day: {
+        src: seasNemoDay,
+        alt: "Illustration of a The Seas with Nemo & Friends clamshell ride vehicle in a bright sunlit underwater reef scene",
+      },
+      night: {
+        src: seasNemoNight,
+        alt: "Illustration of a The Seas with Nemo & Friends clamshell ride vehicle in a deep-blue nighttime underwater reef scene",
       },
     },
   },
