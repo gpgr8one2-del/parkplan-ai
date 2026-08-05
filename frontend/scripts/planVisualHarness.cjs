@@ -1205,6 +1205,444 @@ console.log("Extraction integrity");
   );
 }
 
+// ─── 61D Plan Tools hub ──────────────────────────────────────────────────────
+// Split into two explicitly labeled categories.
+//
+//   FEATURE-DISCRIMINATING — proves Phase 1 functionality exists. Every one of
+//   these MUST fail against base commit da09a71.
+//
+//   INVARIANT REGRESSION GUARDS — protects behavior that intentionally did not
+//   change. These legitimately pass against da09a71; passing at base is correct
+//   for this category and is not a defect.
+//
+// Matches here are whitespace-tolerant on purpose: a reformat must not turn the
+// harness red, and no assertion is weakened to achieve that.
+{
+  const planTabSource = fs.readFileSync(
+    path.join(frontendRoot, "src", "components", "PlanTab.jsx"),
+    "utf8"
+  );
+  const bottomTabsSource = fs.readFileSync(
+    path.join(frontendRoot, "src", "components", "BottomTabs.jsx"),
+    "utf8"
+  );
+
+  // PlanTab.jsx is one file, so "moved out of the feed" and "moved into Plan
+  // Tools" are proven by slicing the two component bodies apart rather than by
+  // searching the whole file.
+  const toolsViewStart = planTabSource.search(/export function PlanToolsView\s*\(/);
+  const planTabStart = planTabSource.search(/export function PlanTab\s*\(/);
+  const planToolsBody =
+    toolsViewStart > 0 && planTabStart > toolsViewStart
+      ? planTabSource.slice(toolsViewStart, planTabStart)
+      : "";
+  const planFeedBody = planTabStart > 0 ? planTabSource.slice(planTabStart) : "";
+
+  const shellFnStart = planTabSource.search(/function getPlanToolsShellStyle\s*\(/);
+  const shellFnBody =
+    shellFnStart > 0 ? planTabSource.slice(shellFnStart, shellFnStart + 600) : "";
+
+  const toolsCallStart = appSource.search(/<PlanToolsView[\s>]/);
+  const toolsCallEnd = appSource.indexOf("</PlanToolsView>");
+  const planToolsCallSite =
+    toolsCallStart > 0 && toolsCallEnd > toolsCallStart
+      ? appSource.slice(toolsCallStart, toolsCallEnd)
+      : "";
+
+  const RELOCATED_TAGS = [
+    "<PackingPreviewSection",
+    "<PlanFreshnessNotice",
+    "<PlanDetailsSection",
+    "<PlanningStatusCard",
+    "<TodayParkPlanCard",
+    "<ParkDayScheduleStatusCard",
+    "<LiveParkContextCard",
+    "<ParkHopperTimingCard",
+  ];
+
+  // Every .js/.jsx under src, so "zero render sites anywhere in the frontend"
+  // means exactly that rather than "zero in the files we happened to read".
+  function collectSources(dir) {
+    return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) return collectSources(full);
+      return /\.(js|jsx)$/.test(entry.name)
+        ? [{ file: path.relative(frontendRoot, full), text: fs.readFileSync(full, "utf8") }]
+        : [];
+    });
+  }
+  const allFrontendSources = collectSources(path.join(frontendRoot, "src"));
+
+  let featurePass = 0;
+  let featureFail = 0;
+  let invariantPass = 0;
+  let invariantFail = 0;
+
+  function featureCheck(label, actual, expected) {
+    const before = failCount;
+    check(label, actual, expected);
+    if (failCount > before) featureFail += 1;
+    else featurePass += 1;
+  }
+
+  function invariantCheck(label, actual, expected) {
+    const before = failCount;
+    check(label, actual, expected);
+    if (failCount > before) invariantFail += 1;
+    else invariantPass += 1;
+  }
+
+  console.log("Plan Tools hub (61D) — FEATURE-DISCRIMINATING");
+
+  featureCheck("Plan Tools view component exists", toolsViewStart > 0, true);
+  featureCheck(
+    "labeled Plan Tools control sits in the Plan header",
+    /onClick=\{\(\)\s*=>\s*setPlanToolsOpen\(true\)\}/.test(appSource) &&
+      />\s*Plan Tools\s*<\/button>/.test(appSource),
+    true
+  );
+  featureCheck(
+    "Plan Tools control is labeled text, not a bare icon",
+    /aria-expanded=\{planToolsOpen\}/.test(appSource) && !/<Menu\b|hamburger/i.test(appSource),
+    true
+  );
+  featureCheck(
+    "Plan Tools view is labeled and carries a back control",
+    /aria-label="Plan Tools"/.test(planToolsBody) &&
+      /onClick=\{onBack\}/.test(planToolsBody) &&
+      /‹\s*Back to Plan/.test(planToolsBody),
+    true
+  );
+  featureCheck(
+    "Plan Tools sub-view state exists and is local to the Plan surface",
+    /const \[planToolsOpen, setPlanToolsOpen\]\s*=\s*useState\(false\)/.test(appSource),
+    true
+  );
+
+  featureCheck(
+    "every relocated utility left the main Plan feed",
+    RELOCATED_TAGS.every((tag) => !planFeedBody.includes(tag)),
+    true
+  );
+  featureCheck(
+    "every relocated utility is rendered inside Plan Tools",
+    RELOCATED_TAGS.every((tag) => planToolsBody.includes(tag)),
+    true
+  );
+  featureCheck(
+    "Trip Timing moved out of the feed and into the Plan Tools call site",
+    planToolsCallSite.includes("TRIP TIMING") &&
+      (appSource.match(/TRIP TIMING/g) || []).length === 1,
+    true
+  );
+  featureCheck(
+    "relocated cards keep their own render conditionals",
+    /\{!isInParkView\s*&&/.test(planToolsBody) &&
+      /if \(!planFreshness\?\.isStale\) return null;/.test(planTabSource) &&
+      /if \(!scheduledParkForToday\?\.parkId\) return null;/.test(planTabSource) &&
+      /if \(!liveParkContext\?\.showNotice\) return null;/.test(planTabSource) &&
+      /if \(!parkHopperContext\?\.hasSecondPark\) return null;/.test(planTabSource),
+    true
+  );
+  featureCheck(
+    "Plan Tools opens only inside the plan tab branch",
+    appSource.indexOf('{activeTab === "plan" && (') < toolsCallStart &&
+      toolsCallStart < appSource.search(/<PlanTab[\s>]/),
+    true
+  );
+
+  featureCheck(
+    "main Plan feed is display-toggled, never unmounted, so Plan state survives",
+    /display:\s*planToolsOpen\s*\?\s*"none"\s*:\s*"contents"/.test(appSource) &&
+      /display:\s*planToolsOpen\s*\?\s*"contents"\s*:\s*"none"/.test(appSource) &&
+      (appSource.match(/<PlanRecommendations[\s>]/g) || []).length === 1 &&
+      (appSource.match(/<PlanTab[\s>]/g) || []).length === 1,
+    true
+  );
+  featureCheck(
+    "leaving the Plan tab resets only the sub-view flag",
+    /if\s*\(activeTab\s*!==\s*"plan"\)\s*\{\s*setPlanToolsOpen\(false\);/.test(appSource),
+    true
+  );
+  featureCheck(
+    "relocated components keep their handlers at the new call site",
+    /onRefreshTripPlanContext=\{handleRefreshTripPlanContext\}/.test(planToolsCallSite) &&
+      /setActiveScreen=\{setActiveScreen\}/.test(planToolsCallSite) &&
+      /onClick=\{\(\)\s*=>\s*setActiveScreen\("family_profile"\)\}/.test(planTabSource) &&
+      /onClick=\{onRefreshTripPlanContext\}/.test(planTabSource),
+    true
+  );
+
+  featureCheck(
+    "Plan Tools shell has a real day treatment",
+    shellFnBody.length > 0 &&
+      /background:\s*"#FFF4E6"/.test(shellFnBody) &&
+      /border:\s*`1px solid \$\{colors\.cardBorder\}`/.test(shellFnBody) &&
+      /boxShadow:\s*"0 14px 34px rgba\(28, 25, 23, 0\.08\)"/.test(shellFnBody),
+    true
+  );
+  featureCheck(
+    "Plan Tools shell has a real night treatment",
+    shellFnBody.length > 0 &&
+      /background:\s*"#0F172A"/.test(shellFnBody) &&
+      /border:\s*"1px solid rgba\(139, 92, 246, 0\.30\)"/.test(shellFnBody) &&
+      /boxShadow:\s*"0 14px 34px rgba\(2, 6, 23, 0\.45\)"/.test(shellFnBody),
+    true
+  );
+  featureCheck(
+    "Plan Tools header and back control are night-guarded, never unguarded white",
+    /background:\s*palette\.chip\s*\|\|\s*"#FFF9F1"/.test(planToolsBody) &&
+      /borderColor:\s*palette\.chipBorder\s*\|\|\s*colors\.cardBorder/.test(planToolsBody) &&
+      !/background:\s*"(white|#FFFFFF)"/i.test(planToolsBody),
+    true
+  );
+  featureCheck(
+    "Plan Tools header control is night-guarded in App",
+    /background:\s*planNight\s*\?\s*"rgba\(15, 23, 42, 0\.72\)"\s*:\s*"#FFF9F1"/.test(appSource) &&
+      /background:\s*planNight\s*\?\s*"#131C36"\s*:\s*"#FFF9F1"/.test(appSource),
+    true
+  );
+  featureCheck(
+    "Plan Tools reuses existing primitives instead of new ones",
+    /<SectionBadge\s+palette=\{palette\}/.test(planToolsBody) &&
+      /<PlanDetailsSection\s+palette=\{palette\}/.test(planToolsBody) &&
+      /function CollapseButton\s*\(/.test(planTabSource),
+    true
+  );
+
+  featureCheck(
+    "compact stale row renders only when the plan is stale",
+    /export function PlanCheckCompactRow\s*\([\s\S]*?if \(!planFreshness\?\.isStale\) return null;/.test(
+      planTabSource
+    ),
+    true
+  );
+  featureCheck(
+    "compact stale row opens Plan Tools and never duplicates the full notice",
+    /<PlanCheckCompactRow[\s>]/.test(appSource) &&
+      /onOpenPlanTools=\{\(\)\s*=>\s*setPlanToolsOpen\(true\)\}/.test(appSource) &&
+      /planFreshness=\{tripPlanFreshness\}/.test(appSource) &&
+      !/PlanCheckCompactRow[\s\S]{0,400}Refresh plan/.test(planTabSource),
+    true
+  );
+  featureCheck(
+    "compact stale row keeps the full Plan Check reachable in Plan Tools",
+    /<PlanFreshnessNotice\s+palette=\{palette\}/.test(planToolsBody) &&
+      planTabSource.includes("PLAN CHECK") &&
+      planTabSource.includes("Refresh plan"),
+    true
+  );
+  featureCheck(
+    "compact stale row is night-treated",
+    /PlanCheckCompactRow[\s\S]{0,1400}resolvedPalette\.isNight\s*\?\s*"1px solid rgba\(252, 211, 77, 0\.28\)"/.test(
+      planTabSource
+    ),
+    true
+  );
+
+  featureCheck(
+    "PlanningParkSelector keeps its identifier repair but stays deactivated",
+    // 61D repaired the four out-of-scope identifiers so the file has no
+    // undefined references. It deliberately did not add a render site.
+    /function PlanningParkSelector\(\{[\s\S]{0,240}?parkOptions\s*=\s*\[\][\s\S]{0,240}?onPlanningParkChange,/.test(
+      planTabSource
+    ) &&
+      /NOT RENDERED\./.test(planTabSource) &&
+      /handlePlanningParkChange in App\.jsx/.test(planTabSource),
+    true
+  );
+
+  // Hidden-mount measurement safety. The Plan feed is display-toggled, so a
+  // RecommendationCard can have its reason change while it has no layout box.
+  // The fix lives entirely inside RecommendationCard and is driven by layout,
+  // never by a parent telling the card whether it is visible.
+  {
+    const effectStart = cardSource.search(/useEffect\s*\(\s*\(\)\s*=>\s*\{/);
+    const effectBody = effectStart > 0 ? cardSource.slice(effectStart, effectStart + 1600) : "";
+
+    const propsStart = cardSource.search(/export\s+function\s+RecommendationCard\s*\(\s*\{/);
+    const propsEnd = propsStart > 0 ? cardSource.indexOf("}", cardSource.indexOf("{", propsStart)) : -1;
+    const propNames =
+      propsStart > 0 && propsEnd > propsStart
+        ? cardSource
+            .slice(cardSource.indexOf("{", propsStart) + 1, propsEnd)
+            .split(",")
+            .map((entry) => entry.split("=")[0].trim())
+            .filter(Boolean)
+        : [];
+
+    // Union of prop names actually passed at the six RecommendationCard call
+    // sites, so a prop added by any parent shows up here.
+    const cardCallSiteProps = [
+      ...new Set(
+        [...planRecommendationsSource.matchAll(/<RecommendationCard[\s\S]*?\/>/g)].flatMap(
+          (match) => [...match[0].matchAll(/(\w+)=[{"]/g)].map((attr) => attr[1])
+        )
+      ),
+    ];
+
+    featureCheck(
+      "reason measurement bails out when the card has no layout box",
+      /const\s+measureReason\s*=\s*\(\)\s*=>\s*\{[\s\S]{0,600}?if\s*\(\s*el\.clientHeight\s*===\s*0\s*\)\s*return;[\s\S]{0,200}?setReasonClipped\s*\(\s*el\.scrollHeight\s*>\s*el\.clientHeight\s*\+\s*1\s*\)/.test(
+        effectBody
+      ),
+      true
+    );
+    featureCheck(
+      "a layout-driven re-measure is wired, with cleanup",
+      /typeof\s+window\.ResizeObserver\s*===\s*"undefined"/.test(effectBody) &&
+        /new\s+window\.ResizeObserver\s*\(\s*measureReason\s*\)/.test(effectBody) &&
+        /observer\.observe\s*\(\s*el\s*\)/.test(effectBody) &&
+        /return\s*\(\)\s*=>\s*observer\.disconnect\s*\(\s*\)\s*;/.test(effectBody),
+      true
+    );
+    featureCheck(
+      "reasonClipped is only ever written through the guarded measurement",
+      (cardSource.match(/setReasonClipped\s*\(/g) || []).length === 1 &&
+        /if\s*\(\s*el\.clientHeight\s*===\s*0\s*\)\s*return;[\s\S]{0,200}?setReasonClipped\s*\(/.test(
+          cardSource
+        ),
+      true
+    );
+    featureCheck(
+      "the fix requires no props from any parent",
+      // Pinning the exact prop set is deliberate: a future refactor cannot
+      // quietly reintroduce prop-driven correctness under any name, whether or
+      // not it sounds like visibility.
+      propNames.join(",") ===
+        [
+          "title",
+          "ride",
+          "reason",
+          "color",
+          "borderColor",
+          "background",
+          "titleSize",
+          "night",
+          "protectReason",
+          "artwork",
+          "isTohiPick",
+          "renderShowtimeInfo",
+          "renderRideActions",
+        ].join(",") &&
+        /new\s+window\.ResizeObserver/.test(cardSource) &&
+        // Every prop actually handed to a card must already be one of the
+        // declared thirteen. Pinning the set rather than blacklisting names
+        // avoids collisions with unrelated domain words (hiddenRideCount) and
+        // catches a reintroduced visibility prop whatever it is called.
+        cardCallSiteProps.length > 0 &&
+        cardCallSiteProps.every((name) => propNames.includes(name)),
+      true
+    );
+    featureCheck(
+      "the protectReason bypass short-circuits before the layout-driven measurement",
+      effectBody.search(/if\s*\(\s*protectReason\s*\|\|\s*reasonExpanded\s*\)\s*return;/) <
+        effectBody.search(/const\s+measureReason\s*=/) &&
+        effectBody.search(/const\s+measureReason\s*=/) <
+          effectBody.search(/new\s+window\.ResizeObserver/) &&
+        /const showFullReason = protectReason \|\| reasonExpanded;/.test(cardSource),
+      true
+    );
+    featureCheck(
+      "the More control gates on the same condition, against unchanged clamp values",
+      /new\s+window\.ResizeObserver/.test(cardSource) &&
+        /\{!protectReason\s*&&\s*\(reasonClipped\s*\|\|\s*reasonExpanded\)\s*&&\s*\(/.test(cardSource) &&
+        /aria-expanded=\{reasonExpanded\}/.test(cardSource) &&
+        /WebkitLineClamp:\s*2/.test(cardSource) &&
+        /\.\.\.\(showFullReason\s*\?\s*\{\}\s*:\s*TWO_LINE_CLAMP\)/.test(cardSource),
+      true
+    );
+  }
+
+  console.log("Plan Tools hub (61D) — INVARIANT REGRESSION GUARDS");
+
+  invariantCheck(
+    "bottom nav is still five tabs in the Home/Waits/Plan/TOHI/Profile order",
+    [...bottomTabsSource.matchAll(/key:\s*"(\w+)"/g)].map((m) => m[1]).join(",") ===
+      "home,waits,plan,tohi,profile",
+    true
+  );
+  invariantCheck(
+    "Plan Tools never becomes a router or tab value",
+    !/setActiveTab\(\s*["'`]plan_tools/.test(appSource) &&
+      !/setActiveScreen\(\s*["'`]plan_tools/.test(appSource) &&
+      !/plan_tools|planTools/.test(bottomTabsSource) &&
+      /<BottomTabs\s+activeTab=\{activeTab\}\s+onTabChange=\{setActiveTab\}\s*\/>/.test(appSource),
+    true
+  );
+  invariantCheck(
+    "the main Plan feed keeps its own three surfaces",
+    ["<MorningBriefingCard", "<DayGamePlanSection", "<ActivityRecapSection"].every((tag) =>
+      planFeedBody.includes(tag)
+    ),
+    true
+  );
+  invariantCheck(
+    "freshness refresh keeps its identity and event source",
+    /function handleRefreshTripPlanContext\s*\(\)\s*\{/.test(appSource) &&
+      /source:\s*"plan_check",/.test(appSource) &&
+      /source:\s*"plan_tab",/.test(appSource),
+    true
+  );
+  invariantCheck(
+    "no component in the Plan Tools tree consumes renderRideActions or renderShowtimeInfo",
+    !/renderRideActions|renderShowtimeInfo/.test(planTabSource) &&
+      !/renderRideActions|renderShowtimeInfo/.test(planToolsCallSite) &&
+      /renderRideActions=\{renderRideActions\}/.test(appSource) &&
+      /renderShowtimeInfo=\{renderShowtimeInfo\}/.test(appSource) &&
+      /browsingAnotherPark \? \(\) => null : renderRideActions/.test(appSource),
+    true
+  );
+  invariantCheck(
+    "PlanningParkSelector has zero JSX render sites anywhere in the frontend",
+    allFrontendSources.filter(({ text }) => /<PlanningParkSelector[\s/>]/.test(text)).length,
+    0
+  );
+
+  {
+    // Storage keys live across App.jsx, the utils, and api.js. Read them all so
+    // the relocation is proven to have neither dropped a key nor added one.
+    const storageSources = [
+      "src/App.jsx",
+      "src/api.js",
+      "src/utils/tripPlan.js",
+      "src/utils/familyProfile.js",
+      "src/components/PlanRecommendations.jsx",
+      "src/components/PlanTab.jsx",
+    ]
+      .map((relative) => fs.readFileSync(path.join(frontendRoot, relative), "utf8"))
+      .join("\n");
+
+    invariantCheck(
+      "relocation kept every storage key and introduced none",
+      [
+        "parkplan.state",
+        "parkplan.tripPlan",
+        "parkplan.familyProfile",
+        "parkplan.parkPresence",
+        "parkplan.anonymousUserId",
+        "parkplan.sessionId",
+        "parkplan.debugSnapshot",
+        "parkplan.devPreviewFullApp",
+        "tohi_pick_clarification_answered",
+        "tohiPickDisplaySource",
+        "tohi_live_state_question_asked",
+      ].every((key) => storageSources.includes(key)) &&
+        new Set(storageSources.match(/"parkplan\.[\w.]+"/g) || []).size === 8 &&
+        !/localStorage|sessionStorage/.test(planTabSource),
+      true
+    );
+  }
+
+  console.log("");
+  console.log(
+    `  61D feature-discriminating: ${featurePass} passed, ${featureFail} failed`
+  );
+  console.log(
+    `  61D invariant regression guards: ${invariantPass} passed, ${invariantFail} failed`
+  );
+}
+
 console.log("");
 console.log(`${passCount} passed, ${failCount} failed`);
 

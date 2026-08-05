@@ -102,7 +102,33 @@ export function RecommendationCard({
     if (protectReason || reasonExpanded) return;
     const el = reasonRef.current;
     if (!el) return;
-    setReasonClipped(el.scrollHeight > el.clientHeight + 1);
+
+    const measureReason = () => {
+      // An element with no layout box — display: none on this element or any
+      // ancestor — reports scrollHeight and clientHeight as 0, so the
+      // comparison below would evaluate to "not clipped" and silently drop the
+      // More control. Bail out and keep the last real verdict rather than
+      // writing a false negative.
+      if (el.clientHeight === 0) return;
+      setReasonClipped(el.scrollHeight > el.clientHeight + 1);
+    };
+
+    measureReason();
+
+    // When reason changes while the card has no layout box, the bail-out above
+    // leaves in place the verdict computed for the PREVIOUS reason, and nothing
+    // re-runs this effect at the moment the card is laid out again — the deps
+    // do not change on reveal. ResizeObserver closes that gap: the observed box
+    // goes from 0 to its real size when layout returns, which is a resize, so
+    // the stale verdict is recomputed against the current reason. This is
+    // driven by actual layout, so it holds for any hiding mechanism and needs
+    // no cooperation from any parent.
+    if (typeof window.ResizeObserver === "undefined") return;
+
+    const observer = new window.ResizeObserver(measureReason);
+    observer.observe(el);
+
+    return () => observer.disconnect();
   }, [reason, protectReason, reasonExpanded]);
 
   if (!ride) return null;

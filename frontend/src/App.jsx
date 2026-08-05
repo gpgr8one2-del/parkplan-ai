@@ -87,7 +87,7 @@ import { OnboardingFlow } from "./components/OnboardingFlow";
 import { PlanRecommendations } from "./components/PlanRecommendations";
 import { WaitTimesList } from "./components/WaitTimesList";
 import { WhileYouWaitCard } from "./components/WhileYouWaitCard";
-import { PlanTab } from "./components/PlanTab";
+import { PlanTab, PlanToolsView, PlanCheckCompactRow } from "./components/PlanTab";
 import BottomTabs from "./components/BottomTabs";
 import { colors, getTohiAppShellTheme } from "./theme";
 import { useMiniGames } from "./hooks/useMiniGames";
@@ -1737,6 +1737,10 @@ function App() {
   const [familyProfile, setFamilyProfile] = useState(() => initialFamilyProfileState.profile);
   const [activeScreen, setActiveScreen] = useState(() => initialFamilyProfileState.activeScreen);
   const [activeTab, setActiveTab] = useState("home");
+  // 61D: Plan Tools is a sub-view of the Plan tab, not a router destination.
+  // The global router (activeScreen) and the tab bar (activeTab) are untouched,
+  // so the bottom nav keeps showing Plan as active while Plan Tools is open.
+  const [planToolsOpen, setPlanToolsOpen] = useState(false);
   const [devPreviewFullApp, setDevPreviewFullApp] = useState(() =>
     readDevPreviewFullApp()
   );
@@ -2723,6 +2727,15 @@ function App() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeScreen]);
+
+  // 61D: leaving the Plan tab closes its sub-view, so the bottom nav never
+  // lands the family inside Plan Tools instead of Plan. This only resets the
+  // new local flag — activeTab and activeScreen are not touched.
+  useEffect(() => {
+    if (activeTab !== "plan") {
+      setPlanToolsOpen(false);
+    }
+  }, [activeTab]);
 
   function updateFamilyProfile(patch) {
     setFamilyProfile((prev) =>
@@ -5274,68 +5287,34 @@ function App() {
           {activeTab === "plan" && (
             <>
 
-        {hasPersonalizedAccess ? (
-          <PlanRecommendations
-            planNight={planNight}
-            planTokens={planTokens}
-            parkPresenceTheme={parkPresenceTheme}
-            card={card}
-            button={button}
-            actionButton={actionButton}
-            planShowsSetupState={planShowsSetupState}
-            activePark={activePark}
-            currentLand={currentLand}
-            landOptions={landOptions}
-            detectedLocationContext={detectedLocationContext}
-            locationAutoEnabled={locationAutoEnabled}
-            locationLoading={locationLoading}
-            locationError={locationError}
-            locationMessage={locationMessage}
-            lastAutoUpdateAt={lastAutoUpdateAt}
-            lastLocationUpdateAt={lastLocationUpdateAt}
-            setCurrentLand={setCurrentLand}
-            setDetectedLocationContext={setDetectedLocationContext}
-            setLocationAutoEnabled={setLocationAutoEnabled}
-            setLocationMessage={setLocationMessage}
-            handleUseMyLocation={handleUseMyLocation}
-            formatAutoUpdateTime={formatAutoUpdateTime}
-            weather={weather}
-            weatherMode={weatherMode}
-            familyProfileSummary={familyProfileSummary}
-            setActiveScreen={setActiveScreen}
-            browsingAnotherPark={browsingAnotherPark}
-            browsedParkLabel={browsedParkLabel}
-            confirmedActiveParkLabel={confirmedActiveParkLabel}
-            recommendations={recommendations}
-            primaryRecommendation={primaryRecommendation}
-            primarySlot={primarySlot}
-            hasAnyRecommendation={hasAnyRecommendation}
-            isPreOpenRecommendationPause={isPreOpenRecommendationPause}
-            preOpenTimeLabel={preOpenTimeLabel}
-            hiddenRideCount={hiddenRideCount}
-            reportedRideIssueIds={reportedRideIssueIds}
-            handleResetRecs={handleResetRecs}
-            tohiPickDisplayCandidate={tohiPickDisplayCandidate}
-            tohiPickDisplaySource={tohiPickDisplaySource}
-            tohiPickClarification={tohiPickClarification}
-            showTohiPickClarificationQuestion={showTohiPickClarificationQuestion}
-            handleAnswerTohiPickClarification={
-              handleAnswerTohiPickClarification
-            }
-            renderRideActions={renderRideActions}
-            renderShowtimeInfo={renderShowtimeInfo}
-            trackAppEvent={trackAppEvent}
-          />
-
-        ) : (
-          renderLockedFeatureCard({
-            title: "Personalized Best Move is locked until setup is finished",
-            body:
-              "Without your family profile, TOHI cannot safely know height limits, thrill comfort, heat sensitivity, resort-break realism, or what kind of day you want.",
-            night: planNight,
-          })
-        )}
-
+            {/* 61D Plan Tools — a secondary view subordinate to the Plan tab.
+                It is not a router destination and not a sixth bottom-nav tab:
+                activeTab stays "plan" the whole time. The main Plan feed below
+                stays mounted and is only display-toggled, so nothing held in
+                component state (card expansions, collapse states) is lost
+                entering or leaving Plan Tools. */}
+            <div style={{ display: planToolsOpen ? "contents" : "none" }}>
+              <PlanToolsView
+                night={planNight}
+                card={card}
+                button={button}
+                onBack={() => setPlanToolsOpen(false)}
+                timeContext={planningTimeContext}
+                planTabState={planTabState}
+                hasPersonalizedAccess={hasPersonalizedAccess}
+                profileCompletion={profileCompletion}
+                packingChecklist={packingChecklist}
+                tripPlanFreshness={tripPlanFreshness}
+                onRefreshTripPlanContext={handleRefreshTripPlanContext}
+                planningParkLabel={planningParkLabel}
+                scheduledParkForToday={scheduledParkForToday}
+                todayPlannedParkLabel={todayPlannedParkLabel}
+                scheduledSecondaryParkLabel={scheduledSecondaryParkLabel}
+                parkDayScheduleStatus={parkDayScheduleStatus}
+                parkHopperContext={parkHopperContext}
+                liveParkContext={liveParkContext}
+                setActiveScreen={setActiveScreen}
+              >
         <section
           style={{
             ...card,
@@ -5456,6 +5435,144 @@ function App() {
             </div>
           </div>
         </section>
+              </PlanToolsView>
+            </div>
+
+            <div style={{ display: planToolsOpen ? "none" : "contents" }}>
+
+        <section
+          style={{
+            ...card,
+            background: planNight ? "#131C36" : "#FFF9F1",
+            border: `1px solid ${planTokens.border}`,
+            borderRadius: 20,
+            boxShadow: planTokens.shadow,
+            padding: 14,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ minWidth: 180, flex: "1 1 240px" }}>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "5px 9px",
+                  borderRadius: 999,
+                  background: planTokens.eyebrowPill,
+                  color: planTokens.eyebrow,
+                  fontSize: 11,
+                  fontWeight: 950,
+                  letterSpacing: 0.7,
+                  marginBottom: 8,
+                }}
+              >
+                PLAN
+              </div>
+
+              <strong
+                style={{
+                  display: "block",
+                  color: planTokens.title,
+                  fontSize: 17,
+                  lineHeight: 1.25,
+                }}
+              >
+                Your day, and what to do next
+              </strong>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setPlanToolsOpen(true)}
+              aria-expanded={planToolsOpen}
+              style={{
+                ...button,
+                background: planNight ? "rgba(15, 23, 42, 0.72)" : "#FFF9F1",
+                color: planTokens.title,
+                borderColor: planTokens.borderQuiet,
+                flexShrink: 0,
+              }}
+            >
+              Plan Tools
+            </button>
+          </div>
+
+          <PlanCheckCompactRow
+            night={planNight}
+            planFreshness={tripPlanFreshness}
+            onOpenPlanTools={() => setPlanToolsOpen(true)}
+          />
+        </section>
+
+        {hasPersonalizedAccess ? (
+          <PlanRecommendations
+            planNight={planNight}
+            planTokens={planTokens}
+            parkPresenceTheme={parkPresenceTheme}
+            card={card}
+            button={button}
+            actionButton={actionButton}
+            planShowsSetupState={planShowsSetupState}
+            activePark={activePark}
+            currentLand={currentLand}
+            landOptions={landOptions}
+            detectedLocationContext={detectedLocationContext}
+            locationAutoEnabled={locationAutoEnabled}
+            locationLoading={locationLoading}
+            locationError={locationError}
+            locationMessage={locationMessage}
+            lastAutoUpdateAt={lastAutoUpdateAt}
+            lastLocationUpdateAt={lastLocationUpdateAt}
+            setCurrentLand={setCurrentLand}
+            setDetectedLocationContext={setDetectedLocationContext}
+            setLocationAutoEnabled={setLocationAutoEnabled}
+            setLocationMessage={setLocationMessage}
+            handleUseMyLocation={handleUseMyLocation}
+            formatAutoUpdateTime={formatAutoUpdateTime}
+            weather={weather}
+            weatherMode={weatherMode}
+            familyProfileSummary={familyProfileSummary}
+            setActiveScreen={setActiveScreen}
+            browsingAnotherPark={browsingAnotherPark}
+            browsedParkLabel={browsedParkLabel}
+            confirmedActiveParkLabel={confirmedActiveParkLabel}
+            recommendations={recommendations}
+            primaryRecommendation={primaryRecommendation}
+            primarySlot={primarySlot}
+            hasAnyRecommendation={hasAnyRecommendation}
+            isPreOpenRecommendationPause={isPreOpenRecommendationPause}
+            preOpenTimeLabel={preOpenTimeLabel}
+            hiddenRideCount={hiddenRideCount}
+            reportedRideIssueIds={reportedRideIssueIds}
+            handleResetRecs={handleResetRecs}
+            tohiPickDisplayCandidate={tohiPickDisplayCandidate}
+            tohiPickDisplaySource={tohiPickDisplaySource}
+            tohiPickClarification={tohiPickClarification}
+            showTohiPickClarificationQuestion={showTohiPickClarificationQuestion}
+            handleAnswerTohiPickClarification={
+              handleAnswerTohiPickClarification
+            }
+            renderRideActions={renderRideActions}
+            renderShowtimeInfo={renderShowtimeInfo}
+            trackAppEvent={trackAppEvent}
+          />
+
+        ) : (
+          renderLockedFeatureCard({
+            title: "Personalized Best Move is locked until setup is finished",
+            body:
+              "Without your family profile, TOHI cannot safely know height limits, thrill comfort, heat sensitivity, resort-break realism, or what kind of day you want.",
+            night: planNight,
+          })
+        )}
 
         {weatherMode.mode !== "normal" && (
           <section
@@ -5540,31 +5657,18 @@ function App() {
             <PlanTab
               night={planNight}
               card={card}
-              button={button}
-              hasPersonalizedAccess={hasPersonalizedAccess}
-              profileCompletion={profileCompletion}
               timeContext={planningTimeContext}
               planTabState={planTabState}
               activityLog={activityLog}
               preferredName={familyProfileSummary?.preferredName}
               familyProfile={familyProfileSummary}
               weatherMode={weatherMode}
-              packingChecklist={packingChecklist}
               dayGamePlan={dayGamePlan}
-              tripPlanFreshness={tripPlanFreshness}
-              onRefreshTripPlanContext={handleRefreshTripPlanContext}
               tripPlan={tripPlanState}
-              activePark={activePark}
               planningPark={planningPark}
               planningParkLabel={planningParkLabel}
-              todayPlannedParkLabel={todayPlannedParkLabel}
-              scheduledParkForToday={scheduledParkForToday}
-              scheduledSecondaryParkLabel={scheduledSecondaryParkLabel}
-              parkDayScheduleStatus={parkDayScheduleStatus}
-              parkHopperContext={parkHopperContext}
-              liveParkContext={liveParkContext}
-              setActiveScreen={setActiveScreen}
             />
+            </div>
             </>
           )}
 

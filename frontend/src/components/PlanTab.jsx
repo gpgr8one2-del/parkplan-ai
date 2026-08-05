@@ -1285,9 +1285,22 @@ function DayGamePlanSection({ palette = PLAN_TAB_DAY_PALETTE, card, dayGamePlan 
   );
 }
 
+// NOT RENDERED. This selector has never executed in the app: it had no render
+// site anywhere, and its body referenced four identifiers that did not exist in
+// its scope. Its counterpart handler, handlePlanningParkChange in App.jsx, is
+// likewise implemented but called from nowhere — both halves were built and
+// never connected. 61D repaired the identifier references only, so the file
+// stays free of undefined references; it deliberately did NOT add a render
+// site. Activating this control changes planning-park behavior for the first
+// time and needs its own behavior and QA phase, including the day/night pass on
+// the <select> below. Do not render it as part of a relocation change.
 function PlanningParkSelector({
+  palette = PLAN_TAB_DAY_PALETTE,
+  parkOptions = [],
+  activePark,
   planningPark,
   planningParkLabel,
+  onPlanningParkChange,
 }) {
   const activeParkLabel = parkOptions.find((park) => park.id === activePark)?.name || activePark;
   const hasSeparateLivePark = activePark && planningPark && activePark !== planningPark;
@@ -1653,23 +1666,102 @@ function PlanDetailsSection({ palette = PLAN_TAB_DAY_PALETTE, card, children }) 
 }
 
 
-export function PlanTab({
+// 61D Plan Tools shell. Day: warm cream shell around cream/soft-white cards.
+// Night: deep navy shell with a thin purple border and restrained purple glow,
+// so the relocated cards keep their own dark interiors instead of cream.
+function getPlanToolsShellStyle(palette) {
+  return palette?.isNight
+    ? {
+        background: "#0F172A",
+        border: "1px solid rgba(139, 92, 246, 0.30)",
+        boxShadow: "0 14px 34px rgba(2, 6, 23, 0.45)",
+      }
+    : {
+        background: "#FFF4E6",
+        border: `1px solid ${colors.cardBorder}`,
+        boxShadow: "0 14px 34px rgba(28, 25, 23, 0.08)",
+      };
+}
+
+// 61D compact stale row for the main Plan screen. It never reproduces the full
+// PlanFreshnessNotice — it only says a check is due and opens Plan Tools. It
+// shares the exact staleness gate the full notice uses, so a stale plan is
+// never hidden from the family.
+export function PlanCheckCompactRow({
+  palette = PLAN_TAB_DAY_PALETTE,
+  planFreshness,
+  onOpenPlanTools,
+  night = false,
+}) {
+  const resolvedPalette = night ? PLAN_TAB_NIGHT_PALETTE : palette;
+
+  if (!planFreshness?.isStale) return null;
+
+  return (
+    <div
+      role="status"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 10,
+        flexWrap: "wrap",
+        marginTop: 10,
+        padding: "9px 11px",
+        borderRadius: 16,
+        background: resolvedPalette.chip || "rgba(255, 249, 241, 0.92)",
+        border: resolvedPalette.isNight
+          ? "1px solid rgba(252, 211, 77, 0.28)"
+          : "1px solid rgba(245, 158, 11, 0.28)",
+      }}
+    >
+      <span
+        style={{
+          color: resolvedPalette.isNight ? "#FCD34D" : "#92400E",
+          fontSize: 12.5,
+          fontWeight: 900,
+          lineHeight: 1.35,
+        }}
+      >
+        Plan may need a quick check.
+      </span>
+
+      <button
+        type="button"
+        onClick={onOpenPlanTools}
+        style={{
+          border: `1px solid ${resolvedPalette.chipBorder || colors.cardBorder}`,
+          background: resolvedPalette.chip || "rgba(255,255,255,0.86)",
+          color: resolvedPalette.text,
+          borderRadius: 999,
+          padding: "7px 10px",
+          fontSize: 12,
+          fontWeight: 950,
+          cursor: "pointer",
+          whiteSpace: "nowrap",
+          flexShrink: 0,
+        }}
+      >
+        Open Plan Check
+      </button>
+    </div>
+  );
+}
+
+// 61D Plan Tools: a secondary view subordinate to the Plan tab. It renders the
+// same components the main Plan feed used to render, with the same props and
+// the same per-component conditionals — this is a relocation, not a redesign.
+export function PlanToolsView({
   card,
   button,
+  onBack,
+  timeContext,
+  planTabState = {},
   hasPersonalizedAccess,
   profileCompletion,
-  timeContext,
-  planTabState,
-  activityLog = [],
-  preferredName,
-  familyProfile,
-  weatherMode,
   packingChecklist,
-  dayGamePlan = [],
   tripPlanFreshness,
   onRefreshTripPlanContext,
-  tripPlan = { preferences: {}, mustDoExperiences: [] },
-  planningPark,
   planningParkLabel,
   scheduledParkForToday = null,
   todayPlannedParkLabel = "",
@@ -1678,6 +1770,138 @@ export function PlanTab({
   parkHopperContext = {},
   liveParkContext = {},
   setActiveScreen,
+  night = false,
+  children,
+}) {
+  // Same presentation-only palette contract PlanTab uses.
+  const palette = night ? PLAN_TAB_NIGHT_PALETTE : PLAN_TAB_DAY_PALETTE;
+
+  const isInParkView = planTabState?.mode === "in_park";
+
+  return (
+    <section
+      aria-label="Plan Tools"
+      style={{
+        ...card,
+        padding: 15,
+        ...getPlanToolsShellStyle(palette),
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ minWidth: 200, flex: "1 1 300px" }}>
+          <SectionBadge palette={palette} background="rgba(124, 58, 237, 0.10)" color={colors.purpleDeep}>
+            PLAN TOOLS
+          </SectionBadge>
+
+          <h2
+            style={{
+              margin: 0,
+              color: palette.text,
+              fontSize: 21,
+              letterSpacing: -0.4,
+              lineHeight: 1.15,
+            }}
+          >
+            Plan Tools
+          </h2>
+
+          <p
+            style={{
+              margin: "6px 0 0",
+              color: palette.muted,
+              fontSize: 13,
+              lineHeight: 1.42,
+            }}
+          >
+            The optional planning pieces live here so the Plan screen can stay on
+            what to do next.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={onBack}
+          style={{
+            ...button,
+            background: palette.chip || "#FFF9F1",
+            color: palette.text,
+            borderColor: palette.chipBorder || colors.cardBorder,
+            flexShrink: 0,
+          }}
+        >
+          ‹ Back to Plan
+        </button>
+      </div>
+
+      <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
+        {children}
+
+        {!isInParkView && (
+          <PackingPreviewSection palette={palette} card={card} packingChecklist={packingChecklist} />
+        )}
+
+        <PlanFreshnessNotice palette={palette}
+          card={card}
+          button={button}
+          planFreshness={tripPlanFreshness}
+          onRefreshTripPlanContext={onRefreshTripPlanContext}
+        />
+
+        <PlanDetailsSection palette={palette} card={card}>
+          <PlanningStatusCard palette={palette}
+            card={card}
+            button={button}
+            timeContext={timeContext}
+            planTabState={planTabState}
+            hasPersonalizedAccess={hasPersonalizedAccess}
+            profileCompletion={profileCompletion}
+            setActiveScreen={setActiveScreen}
+          />
+
+          <TodayParkPlanCard palette={palette}
+            card={card}
+            scheduledParkForToday={scheduledParkForToday}
+            todayPlannedParkLabel={todayPlannedParkLabel}
+            planningParkLabel={planningParkLabel}
+            scheduledSecondaryParkLabel={scheduledSecondaryParkLabel}
+          />
+
+          <ParkDayScheduleStatusCard palette={palette}
+            card={card}
+            parkDayScheduleStatus={parkDayScheduleStatus}
+            planningParkLabel={planningParkLabel}
+          />
+
+          <LiveParkContextCard palette={palette} card={card} liveParkContext={liveParkContext} />
+
+          <ParkHopperTimingCard palette={palette} card={card} parkHopperContext={parkHopperContext} />
+        </PlanDetailsSection>
+      </div>
+    </section>
+  );
+}
+
+
+export function PlanTab({
+  card,
+  timeContext,
+  planTabState,
+  activityLog = [],
+  preferredName,
+  familyProfile,
+  weatherMode,
+  dayGamePlan = [],
+  tripPlan = { preferences: {}, mustDoExperiences: [] },
+  planningPark,
+  planningParkLabel,
   night = false,
 }) {
   // Presentation-only: a local palette value threaded to children as a prop.
@@ -1711,46 +1935,6 @@ export function PlanTab({
       {isInParkView && (
         <ActivityRecapSection palette={palette} card={card} activityLog={activityLog} />
       )}
-
-      {!isInParkView && <PackingPreviewSection palette={palette} card={card} packingChecklist={packingChecklist} />}
-
-      <PlanFreshnessNotice palette={palette}
-        card={card}
-        button={button}
-        planFreshness={tripPlanFreshness}
-        onRefreshTripPlanContext={onRefreshTripPlanContext}
-      />
-
-      <PlanDetailsSection palette={palette} card={card}>
-        <PlanningStatusCard palette={palette}
-          card={card}
-          button={button}
-          timeContext={timeContext}
-          planTabState={planTabState}
-          hasPersonalizedAccess={hasPersonalizedAccess}
-          profileCompletion={profileCompletion}
-          setActiveScreen={setActiveScreen}
-        />
-
-        <TodayParkPlanCard palette={palette}
-          card={card}
-          scheduledParkForToday={scheduledParkForToday}
-          todayPlannedParkLabel={todayPlannedParkLabel}
-          planningParkLabel={planningParkLabel}
-          scheduledSecondaryParkLabel={scheduledSecondaryParkLabel}
-        />
-
-        <ParkDayScheduleStatusCard palette={palette}
-          card={card}
-          parkDayScheduleStatus={parkDayScheduleStatus}
-          planningParkLabel={planningParkLabel}
-        />
-
-        <LiveParkContextCard palette={palette} card={card} liveParkContext={liveParkContext} />
-
-        <ParkHopperTimingCard palette={palette} card={card} parkHopperContext={parkHopperContext} />
-      </PlanDetailsSection>
-
     </>
   );
 }
