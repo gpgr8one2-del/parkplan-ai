@@ -667,8 +667,13 @@ export function PlanRecommendations({
                       onClick={handleResetRecs}
                       style={{
                         ...actionButton,
-                        color: colors.muted,
-                        background: "rgba(255,255,255,0.74)",
+                        color: planNight ? planTokens.muted : colors.muted,
+                        background: planNight
+                          ? "rgba(15, 23, 42, 0.72)"
+                          : "rgba(255,255,255,0.74)",
+                        borderColor: planNight
+                          ? planTokens.borderQuiet
+                          : colors.cardBorder,
                       }}
                     >
                       Reset hidden rides ({hiddenRideCount})
@@ -713,7 +718,7 @@ export function PlanRecommendations({
                     <div
                       style={{
                         fontSize: 12,
-                        color: colors.purple,
+                        color: planNight ? planTokens.eyebrow : colors.purple,
                         fontWeight: 950,
                         letterSpacing: 0.6,
                         marginBottom: 8,
@@ -980,9 +985,13 @@ export function PlanRecommendations({
                               width: "fit-content",
                               padding: "6px 10px",
                               borderRadius: 999,
-                              border: "1px solid rgba(124, 58, 237, 0.18)",
-                              background: "rgba(243, 232, 255, 0.78)",
-                              color: colors.purpleDeep,
+                              border: planNight
+                                ? "1px solid rgba(139, 92, 246, 0.40)"
+                                : "1px solid rgba(124, 58, 237, 0.18)",
+                              background: planNight
+                                ? "rgba(76, 29, 149, 0.45)"
+                                : "rgba(243, 232, 255, 0.78)",
+                              color: planNight ? "#C4B5FD" : colors.purpleDeep,
                               fontSize: 11,
                               fontWeight: 950,
                               letterSpacing: 0.6,
@@ -1009,9 +1018,13 @@ export function PlanRecommendations({
                                 minHeight: 26,
                                 padding: "5px 9px",
                                 borderRadius: 999,
-                                background: colors.purpleSoft,
-                                color: colors.purpleDeep,
-                                border: "1px solid rgba(124, 58, 237, 0.14)",
+                                background: planNight
+                                  ? "rgba(76, 29, 149, 0.45)"
+                                  : colors.purpleSoft,
+                                color: planNight ? "#C4B5FD" : colors.purpleDeep,
+                                border: planNight
+                                  ? "1px solid rgba(139, 92, 246, 0.36)"
+                                  : "1px solid rgba(124, 58, 237, 0.14)",
                                 fontSize: 12,
                                 fontWeight: 900,
                               }}
