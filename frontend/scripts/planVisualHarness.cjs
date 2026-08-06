@@ -1643,6 +1643,235 @@ console.log("Extraction integrity");
   );
 }
 
+// ─── Phase 61E Plan Night Completion ─────────────────────────────────────────
+// Presentation-only night coverage for the last five visibly day-styled Plan
+// surfaces. Same two categories as 61D:
+//
+//   FEATURE-DISCRIMINATING — proves the 61E night treatment exists. All seven
+//   MUST fail against base commit 80aa26f.
+//
+//   INVARIANT REGRESSION GUARDS — protects day values and everything 61E was
+//   told not to touch. These legitimately pass against the base; no new-feature
+//   conjunct is bolted on to force a baseline failure.
+//
+// Matchers are whitespace-tolerant throughout.
+{
+  const planTabSource = fs.readFileSync(
+    path.join(frontendRoot, "src", "components", "PlanTab.jsx"),
+    "utf8"
+  );
+  const bottomTabsSource = fs.readFileSync(
+    path.join(frontendRoot, "src", "components", "BottomTabs.jsx"),
+    "utf8"
+  );
+  const themeSource = fs.readFileSync(path.join(frontendRoot, "src", "theme.js"), "utf8");
+
+  const briefingStart = planTabSource.search(/function MorningBriefingCard\s*\(/);
+  const briefingEnd = planTabSource.search(/function PlanningStatusCard\s*\(/);
+  const briefingBody =
+    briefingStart > 0 && briefingEnd > briefingStart
+      ? planTabSource.slice(briefingStart, briefingEnd)
+      : "";
+
+  let e5FeaturePass = 0;
+  let e5FeatureFail = 0;
+  let e5InvariantPass = 0;
+  let e5InvariantFail = 0;
+
+  function nightFeatureCheck(label, actual, expected) {
+    const before = failCount;
+    check(label, actual, expected);
+    if (failCount > before) e5FeatureFail += 1;
+    else e5FeaturePass += 1;
+  }
+
+  function nightInvariantCheck(label, actual, expected) {
+    const before = failCount;
+    check(label, actual, expected);
+    if (failCount > before) e5InvariantFail += 1;
+    else e5InvariantPass += 1;
+  }
+
+  console.log("Phase 61E Plan Night Completion — FEATURE-DISCRIMINATING");
+
+  nightFeatureCheck(
+    "all four Morning Briefing label accents route through getChipAccent",
+    briefingBody.length > 0 &&
+      ["#92400E", "#5B21B6", "#0369A1", "#E11D48"].every((dayColor) =>
+        new RegExp(
+          `color:\\s*getChipAccent\\(\\s*"${dayColor}"\\s*,\\s*palette\\s*\\)`
+        ).test(briefingBody)
+      ) &&
+      // no raw semantic label colour left behind in the briefing card
+      !/color:\s*"#(92400E|5B21B6|0369A1|E11D48)"/.test(briefingBody),
+    true
+  );
+  nightFeatureCheck(
+    "Morning Briefing inner-card borders use palette.chipBorder at night",
+    /function getChipBorder\s*\(\s*dayBorder\s*,\s*palette\s*\)/.test(planTabSource) &&
+      /palette\?\.isNight\s*\?\s*`1px solid \$\{palette\.chipBorder\}`\s*:\s*dayBorder/.test(
+        planTabSource
+      ) &&
+      (briefingBody.match(
+        /border:\s*getChipBorder\(\s*`1px solid \$\{colors\.cardBorder\}`\s*,\s*palette\s*\)/g
+      ) || []).length === 4,
+    true
+  );
+  nightFeatureCheck(
+    "the standalone TOHI Pick label pill has an explicit night treatment",
+    /background:\s*planNight\s*\?\s*"rgba\(76, 29, 149, 0\.45\)"\s*:\s*"rgba\(243, 232, 255, 0\.78\)"/.test(
+      planRecommendationsSource
+    ) &&
+      /border:\s*planNight\s*\?\s*"1px solid rgba\(139, 92, 246, 0\.40\)"\s*:\s*"1px solid rgba\(124, 58, 237, 0\.18\)"/.test(
+        planRecommendationsSource
+      ),
+    true
+  );
+  nightFeatureCheck(
+    "the standalone Best Move pill has an explicit night treatment",
+    /background:\s*planNight\s*\?\s*"rgba\(76, 29, 149, 0\.45\)"\s*:\s*colors\.purpleSoft/.test(
+      planRecommendationsSource
+    ) &&
+      /border:\s*planNight\s*\?\s*"1px solid rgba\(139, 92, 246, 0\.36\)"\s*:\s*"1px solid rgba\(124, 58, 237, 0\.14\)"/.test(
+        planRecommendationsSource
+      ),
+    true
+  );
+  nightFeatureCheck(
+    "Reset hidden rides has a night surface, text, and border",
+    /color:\s*planNight\s*\?\s*planTokens\.muted\s*:\s*colors\.muted/.test(
+      planRecommendationsSource
+    ) &&
+      /background:\s*planNight\s*\?\s*"rgba\(15, 23, 42, 0\.72\)"\s*:\s*"rgba\(255,255,255,0\.74\)"/.test(
+        planRecommendationsSource
+      ) &&
+      /borderColor:\s*planNight\s*\?\s*planTokens\.borderQuiet\s*:\s*colors\.cardBorder/.test(
+        planRecommendationsSource
+      ),
+    true
+  );
+  nightFeatureCheck(
+    "completed-profile Review setup uses the night palette",
+    /background:\s*profileCompletion\.isComplete\s*\?\s*palette\.chip\s*\|\|\s*"rgba\(255,255,255,0\.82\)"\s*:\s*colors\.purpleDeep/.test(
+      planTabSource
+    ) &&
+      /borderColor:\s*profileCompletion\.isComplete\s*\?\s*palette\.chipBorder\s*\|\|\s*colors\.cardBorder\s*:\s*colors\.purpleDeep/.test(
+        planTabSource
+      ),
+    true
+  );
+  nightFeatureCheck(
+    "Before Park Open has an explicit night accent",
+    /color:\s*planNight\s*\?\s*planTokens\.eyebrow\s*:\s*colors\.purple\b/.test(
+      planRecommendationsSource
+    ),
+    true
+  );
+
+  console.log("Phase 61E Plan Night Completion — INVARIANT REGRESSION GUARDS");
+
+  nightInvariantCheck(
+    "every corrected element keeps its existing day value",
+    // Day side of each 61E ternary / fallback, verbatim.
+    /"rgba\(243, 232, 255, 0\.78\)"/.test(planRecommendationsSource) &&
+      /colors\.purpleSoft/.test(planRecommendationsSource) &&
+      /"1px solid rgba\(124, 58, 237, 0\.18\)"/.test(planRecommendationsSource) &&
+      /"1px solid rgba\(124, 58, 237, 0\.14\)"/.test(planRecommendationsSource) &&
+      /"rgba\(255,255,255,0\.74\)"/.test(planRecommendationsSource) &&
+      /colors\.purple\b/.test(planRecommendationsSource) &&
+      /"rgba\(255,255,255,0\.82\)"/.test(planTabSource) &&
+      // day branch of the chip accent helper returns the untouched day value
+      /if \(!palette\?\.isNight\) return color;/.test(planTabSource) &&
+      // the four semantic day accents still resolve through the shared map
+      ['"#E11D48": "#FDA4AF"', '"#92400E": "#FCD34D"', '"#0369A1": "#7DD3FC"', '"#5B21B6": "#C4B5FD"'].every(
+        (entry) => planTabSource.includes(entry)
+      ),
+    true
+  );
+  nightInvariantCheck(
+    "no app-wide theme or BottomTabs change was introduced",
+    [...bottomTabsSource.matchAll(/key:\s*"(\w+)"/g)].map((m) => m[1]).join(",") ===
+      "home,waits,plan,tohi,profile" &&
+      !/isNight|planNight|prefers-color-scheme/.test(bottomTabsSource) &&
+      !/planNight|PLAN_TAB_NIGHT_PALETTE/.test(themeSource),
+    true
+  );
+  nightInvariantCheck(
+    "PlanningParkSelector remains unrendered — zero JSX render sites",
+    (function () {
+      function walk(dir) {
+        return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+          const full = path.join(dir, entry.name);
+          if (entry.isDirectory()) return walk(full);
+          return /\.(js|jsx)$/.test(entry.name) ? [fs.readFileSync(full, "utf8")] : [];
+        });
+      }
+      return walk(path.join(frontendRoot, "src")).filter((text) =>
+        /<PlanningParkSelector[\s/>]/.test(text)
+      ).length;
+    })(),
+    0
+  );
+  nightInvariantCheck(
+    "RecommendationCard keeps its hidden-mount ResizeObserver protection",
+    /if\s*\(\s*el\.clientHeight\s*===\s*0\s*\)\s*return;/.test(cardSource) &&
+      /new\s+window\.ResizeObserver\s*\(\s*measureReason\s*\)/.test(cardSource) &&
+      /return\s*\(\)\s*=>\s*observer\.disconnect\s*\(\s*\)\s*;/.test(cardSource) &&
+      !/planNight|isNight/.test(cardSource),
+    true
+  );
+  nightInvariantCheck(
+    "Reset hidden rides keeps its handler and render condition",
+    /\{hiddenRideCount > 0 && \(/.test(planRecommendationsSource) &&
+      /onClick=\{handleResetRecs\}/.test(planRecommendationsSource) &&
+      /Reset hidden rides \(\{hiddenRideCount\}\)/.test(planRecommendationsSource),
+    true
+  );
+  nightInvariantCheck(
+    "Review setup and Finish setup retain their existing behavior",
+    /onClick=\{\(\)\s*=>\s*setActiveScreen\("family_profile"\)\}/.test(planTabSource) &&
+      /\{profileCompletion\.isComplete \? "Review setup" : "Finish setup"\}/.test(
+        planTabSource
+      ) &&
+      /color:\s*profileCompletion\.isComplete\s*\?\s*palette\.text\s*:\s*"white"/.test(
+        planTabSource
+      ),
+    true
+  );
+  nightInvariantCheck(
+    "recommendation and TOHI Pick logic remain structurally unchanged",
+    /\{tohiPickDisplayCandidate && !tohiPickMatchedSlotKey && \(/.test(
+      planRecommendationsSource
+    ) &&
+      /String\(slot\.ride\.id\) === tohiPickRideId/.test(planRecommendationsSource) &&
+      (planRecommendationsSource.match(/isTohiPick=\{tohiPickMatchedSlotKey === "/g) || [])
+        .length === 5 &&
+      (planRecommendationsSource.match(/<RecommendationCard/g) || []).length === 6,
+    true
+  );
+  nightInvariantCheck(
+    "the recommendation stack and the deferred dead helpers remain unchanged",
+    // Both DAY STRATEGY surfaces still stand; no consolidation happened here.
+    (planRecommendationsSource.match(/DAY STRATEGY/g) || []).length === 1 &&
+      (planTabSource.match(/DAY STRATEGY/g) || []).length === 1 &&
+      // deferred dead code left exactly as found
+      /function buttonLikeLinkStyle\(palette = PLAN_TAB_DAY_PALETTE\) \{/.test(planTabSource) &&
+      /background: "rgba\(255,255,255,0\.86\)"/.test(planTabSource) &&
+      /function PlanPreferenceSelect\(/.test(planTabSource) &&
+      /function getMustDoTypeLabel\(/.test(planTabSource) &&
+      /function getMustDoKey\(/.test(planTabSource),
+    true
+  );
+
+  console.log("");
+  console.log(
+    `  61E feature-discriminating: ${e5FeaturePass} passed, ${e5FeatureFail} failed`
+  );
+  console.log(
+    `  61E invariant regression guards: ${e5InvariantPass} passed, ${e5InvariantFail} failed`
+  );
+}
+
 console.log("");
 console.log(`${passCount} passed, ${failCount} failed`);
 

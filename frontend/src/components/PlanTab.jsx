@@ -60,6 +60,13 @@ function getChipSurface(background, palette) {
   return palette?.isNight ? palette.chip : background;
 }
 
+// Companion to getChipSurface for inner chip borders. Night swaps the cream
+// day border for the palette's thin purple one; day returns its border
+// untouched.
+function getChipBorder(dayBorder, palette) {
+  return palette?.isNight ? `1px solid ${palette.chipBorder}` : dayBorder;
+}
+
 function getSelectedHelper(options, value) {
   return options.find((option) => option.value === value)?.helper || "";
 }
@@ -434,12 +441,12 @@ function MorningBriefingCard({ palette = PLAN_TAB_DAY_PALETTE,
               padding: 12,
               borderRadius: 18,
               background: palette.chip || "rgba(255,255,255,0.84)",
-              border: `1px solid ${colors.cardBorder}`,
+              border: getChipBorder(`1px solid ${colors.cardBorder}`, palette),
             }}
           >
             <div
               style={{
-                color: "#92400E",
+                color: getChipAccent("#92400E", palette),
                 fontSize: 11,
                 fontWeight: 950,
                 letterSpacing: 0.55,
@@ -473,12 +480,12 @@ function MorningBriefingCard({ palette = PLAN_TAB_DAY_PALETTE,
                 padding: 12,
                 borderRadius: 18,
                 background: palette.chip || "rgba(255,255,255,0.72)",
-                border: `1px solid ${colors.cardBorder}`,
+                border: getChipBorder(`1px solid ${colors.cardBorder}`, palette),
               }}
             >
               <div
                 style={{
-                  color: "#5B21B6",
+                  color: getChipAccent("#5B21B6", palette),
                   fontSize: 11,
                   fontWeight: 950,
                   letterSpacing: 0.55,
@@ -511,12 +518,12 @@ function MorningBriefingCard({ palette = PLAN_TAB_DAY_PALETTE,
                 padding: 12,
                 borderRadius: 18,
                 background: palette.chip || "rgba(255,255,255,0.72)",
-                border: `1px solid ${colors.cardBorder}`,
+                border: getChipBorder(`1px solid ${colors.cardBorder}`, palette),
               }}
             >
               <div
                 style={{
-                  color: "#0369A1",
+                  color: getChipAccent("#0369A1", palette),
                   fontSize: 11,
                   fontWeight: 950,
                   letterSpacing: 0.55,
@@ -536,12 +543,12 @@ function MorningBriefingCard({ palette = PLAN_TAB_DAY_PALETTE,
               padding: 12,
               borderRadius: 18,
               background: palette.chip || "rgba(255,255,255,0.72)",
-              border: `1px solid ${colors.cardBorder}`,
+              border: getChipBorder(`1px solid ${colors.cardBorder}`, palette),
             }}
           >
             <div
               style={{
-                color: "#E11D48",
+                color: getChipAccent("#E11D48", palette),
                 fontSize: 11,
                 fontWeight: 950,
                 letterSpacing: 0.55,
@@ -641,9 +648,13 @@ function PlanningStatusCard({ palette = PLAN_TAB_DAY_PALETTE,
           onClick={() => setActiveScreen("family_profile")}
           style={{
             ...button,
-            background: profileCompletion.isComplete ? "rgba(255,255,255,0.82)" : colors.purpleDeep,
+            background: profileCompletion.isComplete
+              ? palette.chip || "rgba(255,255,255,0.82)"
+              : colors.purpleDeep,
             color: profileCompletion.isComplete ? palette.text : "white",
-            borderColor: profileCompletion.isComplete ? colors.cardBorder : colors.purpleDeep,
+            borderColor: profileCompletion.isComplete
+              ? palette.chipBorder || colors.cardBorder
+              : colors.purpleDeep,
           }}
         >
           {profileCompletion.isComplete ? "Review setup" : "Finish setup"}
