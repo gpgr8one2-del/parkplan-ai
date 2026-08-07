@@ -516,21 +516,48 @@ console.log("34. No network/API helper is introduced");
 
 console.log("35–37. App integration (static source checks)");
 {
+  // The 61C extraction moved Plan presentation JSX out of App.jsx and into
+  // PlanRecommendations.jsx. App.jsx still owns state, handlers, and
+  // integration. Presentation contracts are therefore asserted against
+  // PlanRecommendations.jsx, and the extraction boundary is asserted per file
+  // rather than against one merged string.
   const appSource = fs.readFileSync(path.join(frontendRoot, "src", "App.jsx"), "utf8");
+  const planRecommendationsSource = fs.readFileSync(
+    path.join(frontendRoot, "src", "components", "PlanRecommendations.jsx"),
+    "utf8"
+  );
+  const planPresentationSource = `${appSource}\n${planRecommendationsSource}`;
 
   check(
-    "question copy exists exactly once",
-    (appSource.match(/HELP TOHI CHOOSE/g) || []).length,
-    1
+    "question copy exists exactly once, and lives in PlanRecommendations",
+    (planPresentationSource.match(/HELP TOHI CHOOSE/g) || []).length === 1 &&
+      (planRecommendationsSource.match(/HELP TOHI CHOOSE/g) || []).length === 1 &&
+      (appSource.match(/HELP TOHI CHOOSE/g) || []).length === 0,
+    true
   );
   check(
     "question gated on plan-tab evaluation",
     appSource.includes('isPlanTabActive: activeTab === "plan"'),
     true
   );
-  const questionIndex = appSource.indexOf("HELP TOHI CHOOSE");
-  const recommendationAfter = appSource.indexOf("<RecommendationCard", questionIndex);
-  check("normal recommendation cards remain rendered beneath", recommendationAfter > questionIndex, true);
+  const questionIndex = planRecommendationsSource.indexOf("HELP TOHI CHOOSE");
+  // The normal stack's primary card is located by its ride contract, never by
+  // line number. This deliberately excludes the separate pre-open PLAN AHEAD
+  // card (ride={recommendations.planAhead}), which legitimately renders before
+  // the clarification block and is not part of the normal stack.
+  const primaryRideIndex = planRecommendationsSource.search(/ride=\{primaryRecommendation\}/);
+  const primaryCardIndex = planRecommendationsSource.lastIndexOf(
+    "<RecommendationCard",
+    primaryRideIndex
+  );
+  check(
+    "normal recommendation cards remain rendered beneath",
+    questionIndex > 0 &&
+      primaryRideIndex > 0 &&
+      primaryCardIndex > questionIndex &&
+      (planRecommendationsSource.match(/<RecommendationCard/g) || []).length === 6,
+    true
+  );
   check(
     "clarified candidate comes from helper result",
     appSource.includes("? tohiPickClarification.candidate"),
