@@ -1062,7 +1062,27 @@ console.log("PlanTab night compatibility");
     planTabSource.includes("palette.text") && planTabSource.includes("palette.muted"),
     true
   );
-  check("App passes night into PlanTab", appSource.includes("night={planNight}\n              card={card}"), true);
+  {
+    // Slice only the <PlanTab ... /> opening call, then confirm each prop
+    // independently. A whole-file regex could match these props on an
+    // unrelated element, and the previous form depended on an exact newline
+    // plus fourteen spaces, so any reformat would have broken it.
+    const planTabCallStart = appSource.search(/<PlanTab[\s>]/);
+    const planTabCallEnd =
+      planTabCallStart >= 0 ? appSource.indexOf("/>", planTabCallStart) : -1;
+    const planTabCall =
+      planTabCallStart >= 0 && planTabCallEnd > planTabCallStart
+        ? appSource.slice(planTabCallStart, planTabCallEnd + 2)
+        : "";
+
+    check(
+      "App passes night into PlanTab",
+      planTabCall.length > 0 &&
+        /\bnight=\{planNight\}/.test(planTabCall) &&
+        /\bcard=\{card\}/.test(planTabCall),
+      true
+    );
+  }
   check("day palette keeps existing values", planTabSource.includes("shell: null"), true);
 }
 
