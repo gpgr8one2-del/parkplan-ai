@@ -1,5 +1,7 @@
 import {
+  TOHI_DAY_SHELL,
   TOHI_DAY_THEME,
+  TOHI_NIGHT_SHELL,
   TOHI_NIGHT_THEME,
   TOHI_PREMIUM_THEME,
 } from "./tohiTheme.js";
@@ -41,6 +43,15 @@ export function getTohiTheme(input = {}) {
   return mode === TOHI_THEME_MODES.NIGHT ? TOHI_NIGHT_THEME : TOHI_DAY_THEME;
 }
 
+// 62A: the active app-shell token set follows the same forceMode contract as
+// every other runtime lookup, so a caller that forces day can never receive
+// night shell tokens.
+export function getTohiShellTokens(input = {}) {
+  return getTohiThemeMode(input) === TOHI_THEME_MODES.NIGHT
+    ? TOHI_NIGHT_SHELL
+    : TOHI_DAY_SHELL;
+}
+
 export function getTohiThemeTokens(input = {}) {
   const theme = getTohiTheme(input);
 
@@ -53,6 +64,7 @@ export function getTohiThemeTokens(input = {}) {
     activeSurface: theme.surface,
     activeHeroGradient: theme.heroGradient,
     activeBottomNavBackground: theme.bottomNavBackground,
+    activeShell: getTohiShellTokens(input),
   };
 }
 

@@ -1176,7 +1176,17 @@ console.log("Scope protection");
     (planRecommendationsSource.match(/<RecommendationCard/g) || []).length,
     6
   );
-  check("BottomTabs untouched structurally", appSource.includes("<BottomTabs activeTab={activeTab}"), true);
+  // 62A superseded the exact-string form of this check: the BottomTabs call is
+  // now multi-line and carries night={planShellNight}. The protected meaning is
+  // unchanged — App still drives BottomTabs with activeTab and setActiveTab —
+  // and the form is now whitespace- and prop-order-tolerant.
+  check(
+    "BottomTabs untouched structurally",
+    /<BottomTabs[\s\S]*?activeTab=\{activeTab\}/.test(appSource) &&
+      /<BottomTabs[\s\S]*?onTabChange=\{setActiveTab\}/.test(appSource) &&
+      (appSource.match(/<BottomTabs[\s>]/g) || []).length === 1,
+    true
+  );
   check(
     "Home hero untouched",
     appSource.includes("TODAY&apos;S GAME PLAN"),
@@ -1584,10 +1594,18 @@ console.log("Extraction integrity");
   );
   invariantCheck(
     "Plan Tools never becomes a router or tab value",
+    // 62A supersedes the exact-string BottomTabs pin: the call now spans
+    // multiple lines and carries night={planShellNight}, which is permitted.
+    // Every protected meaning is preserved — BottomTabs still receives
+    // activeTab and setActiveTab, Plan Tools is still not a router value, not a
+    // screen, and not a sixth tab — and the form is now whitespace- and
+    // prop-order-tolerant.
     !/setActiveTab\(\s*["'`]plan_tools/.test(appSource) &&
       !/setActiveScreen\(\s*["'`]plan_tools/.test(appSource) &&
       !/plan_tools|planTools/.test(bottomTabsSource) &&
-      /<BottomTabs\s+activeTab=\{activeTab\}\s+onTabChange=\{setActiveTab\}\s*\/>/.test(appSource),
+      /<BottomTabs[\s\S]*?activeTab=\{activeTab\}/.test(appSource) &&
+      /<BottomTabs[\s\S]*?onTabChange=\{setActiveTab\}/.test(appSource) &&
+      (bottomTabsSource.match(/key:\s*"(\w+)"/g) || []).length === 5,
     true
   );
   invariantCheck(
@@ -1809,11 +1827,31 @@ console.log("Extraction integrity");
     true
   );
   nightInvariantCheck(
-    "no app-wide theme or BottomTabs change was introduced",
+    // 62A supersedes the original "no app-wide theme or BottomTabs change"
+    // form. A shell/navigation night treatment now exists deliberately, but it
+    // is gated to Plan. The protected meaning is carried forward and
+    // strengthened: the five-tab order is unchanged, the night shell is gated
+    // to Plan only, no night styling reaches an unconverted tab's content, and
+    // the 61E Plan content corrections are still in place.
+    "night styling stays gated to Plan and never reaches an unconverted tab",
     [...bottomTabsSource.matchAll(/key:\s*"(\w+)"/g)].map((m) => m[1]).join(",") ===
       "home,waits,plan,tohi,profile" &&
-      !/isNight|planNight|prefers-color-scheme/.test(bottomTabsSource) &&
-      !/planNight|PLAN_TAB_NIGHT_PALETTE/.test(themeSource),
+      // If a shell-night flag exists at all, it must be Plan-gated. Stated as
+      // a conditional so this remains a true invariant rather than a
+      // new-feature assertion: it holds before 62A, holds now, and fails the
+      // moment someone ungates it. The positive existence claim belongs to
+      // appShellNightHarness, not here.
+      (!/const planShellNight/.test(appSource) ||
+        /const planShellNight\s*=\s*activeTab === "plan"\s*&&\s*planNight;/.test(appSource)) &&
+      // BottomTabs never decides night for itself
+      !/isNight|prefers-color-scheme|new Date\(|getHours/.test(bottomTabsSource) &&
+      // no per-tab night styling for the unconverted tabs
+      !/activeTab === "(home|waits|tohi|profile)"[^\n]*night/i.test(appSource) &&
+      // 61E Plan content corrections intact
+      (planTabSource.match(
+        /color:\s*getChipAccent\("#(92400E|5B21B6|0369A1|E11D48)",\s*palette\)/g
+      ) || []).length === 4 &&
+      /function getChipBorder\s*\(/.test(planTabSource),
     true
   );
   nightInvariantCheck(

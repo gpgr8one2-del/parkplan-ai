@@ -119,6 +119,70 @@ export const TOHI_NIGHT_THEME = {
   bottomNavBackground: "rgba(36, 28, 21, 0.96)",
 };
 
+// 62A app-shell tokens. These describe the shared page chrome and the bottom
+// navigation only — they are deliberately separate from the Plan card tokens so
+// converting a tab cannot disturb card styling.
+//
+// TOHI_DAY_SHELL reproduces the values the shell and BottomTabs already use
+// today, verbatim, so day mode resolves to exactly what it renders now.
+export const TOHI_DAY_SHELL = {
+  mode: "day",
+  pageBackground: TOHI_THEME_GRADIENTS.appBackground,
+  pageBackgroundColor: TOHI_THEME_COLORS.background,
+  text: TOHI_THEME_COLORS.text,
+  muted: TOHI_THEME_COLORS.muted,
+  surface: TOHI_THEME_COLORS.card,
+  border: TOHI_THEME_COLORS.cardBorder,
+  shadow: TOHI_THEME_SHADOWS.card,
+
+  navBackground: "rgba(255, 249, 241, 0.98)",
+  navBorder: TOHI_THEME_COLORS.cardBorder,
+  navShadow: TOHI_THEME_SHADOWS.premium,
+  navTrayBackground: "rgba(255, 255, 255, 0.52)",
+  navTrayBorder: "1px solid rgba(234, 220, 200, 0.55)",
+  navTrayInset: "inset 0 1px 0 rgba(255, 255, 255, 0.76)",
+  navActiveBackground:
+    "linear-gradient(145deg, rgba(255,255,255,0.96), rgba(243,232,255,0.94))",
+  navActiveBorder: "1px solid rgba(124, 58, 237, 0.24)",
+  navActiveColor: TOHI_THEME_COLORS.purpleDeep,
+  navActiveShadow: "0 10px 22px rgba(124, 58, 237, 0.16)",
+  navInactiveBackground: "transparent",
+  navInactiveBorder: "1px solid transparent",
+  navInactiveColor: TOHI_THEME_COLORS.muted,
+  navInactiveShadow: "none",
+};
+
+// Night uses the Plan navy/purple language already established by planTokens
+// and PLAN_TAB_NIGHT_PALETTE: navy backgrounds, muted purple borders, light
+// lavender active accents, readable blue-gray inactive text. No pure black and
+// no pale card surfaces inside the navigation.
+export const TOHI_NIGHT_SHELL = {
+  mode: "night",
+  pageBackground: "linear-gradient(180deg, #0F172A 0%, #111A33 55%, #131C36 100%)",
+  pageBackgroundColor: "#0F172A",
+  text: "#F5F3FF",
+  muted: "#B6C2E2",
+  surface: "#131C36",
+  border: "rgba(139, 92, 246, 0.30)",
+  shadow: "0 14px 34px rgba(2, 6, 23, 0.45)",
+
+  navBackground: "rgba(15, 23, 42, 0.96)",
+  navBorder: "rgba(139, 92, 246, 0.30)",
+  navShadow: "0 -12px 32px rgba(2, 6, 23, 0.55)",
+  navTrayBackground: "rgba(19, 28, 54, 0.72)",
+  navTrayBorder: "1px solid rgba(99, 102, 241, 0.26)",
+  navTrayInset: "inset 0 1px 0 rgba(139, 92, 246, 0.18)",
+  navActiveBackground:
+    "linear-gradient(145deg, rgba(76, 29, 149, 0.55), rgba(30, 27, 75, 0.85))",
+  navActiveBorder: "1px solid rgba(139, 92, 246, 0.45)",
+  navActiveColor: "#C4B5FD",
+  navActiveShadow: "0 10px 22px rgba(2, 6, 23, 0.45)",
+  navInactiveBackground: "transparent",
+  navInactiveBorder: "1px solid transparent",
+  navInactiveColor: "#B6C2E2",
+  navInactiveShadow: "none",
+};
+
 export const TOHI_PREMIUM_THEME = {
   colors: TOHI_THEME_COLORS,
   radii: TOHI_THEME_RADII,
@@ -128,6 +192,8 @@ export const TOHI_PREMIUM_THEME = {
   typography: TOHI_THEME_TYPOGRAPHY,
   day: TOHI_DAY_THEME,
   night: TOHI_NIGHT_THEME,
+  dayShell: TOHI_DAY_SHELL,
+  nightShell: TOHI_NIGHT_SHELL,
 };
 
 export default TOHI_PREMIUM_THEME;

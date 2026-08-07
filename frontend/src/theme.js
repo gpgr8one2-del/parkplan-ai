@@ -1,4 +1,6 @@
 import {
+  TOHI_DAY_SHELL,
+  TOHI_NIGHT_SHELL,
   TOHI_PREMIUM_THEME,
   TOHI_THEME_COLORS,
   TOHI_THEME_GRADIENTS,
@@ -9,6 +11,7 @@ import {
 } from "./theme/tohiTheme.js";
 import {
   TOHI_THEME_MODES,
+  getTohiShellTokens,
   getTohiThemeMode,
   getTohiThemeTokens,
   isTohiDayMode,
@@ -99,6 +102,10 @@ export function getTohiAppShellTheme(input = {}) {
     heroGradient: premiumTokens.activeHeroGradient,
     bottomNavBackground: premiumTokens.activeBottomNavBackground,
 
+    // 62A active app-shell tokens (page chrome + bottom navigation). Follows
+    // the same forceMode contract as the rest of this object.
+    shellTokens: premiumTokens.activeShell,
+
     radii: TOHI_THEME_RADII,
     shadows: TOHI_THEME_SHADOWS,
     spacing: TOHI_THEME_SPACING,
@@ -107,6 +114,8 @@ export function getTohiAppShellTheme(input = {}) {
 }
 
 export {
+  TOHI_DAY_SHELL,
+  TOHI_NIGHT_SHELL,
   TOHI_PREMIUM_THEME,
   TOHI_THEME_COLORS,
   TOHI_THEME_GRADIENTS,
@@ -115,6 +124,7 @@ export {
   TOHI_THEME_SHADOWS,
   TOHI_THEME_SPACING,
   TOHI_THEME_TYPOGRAPHY,
+  getTohiShellTokens,
   getTohiThemeMode,
   getTohiThemeTokens,
   isTohiDayMode,
