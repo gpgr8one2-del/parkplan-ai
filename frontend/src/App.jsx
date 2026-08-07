@@ -89,7 +89,7 @@ import { WaitTimesList } from "./components/WaitTimesList";
 import { WhileYouWaitCard } from "./components/WhileYouWaitCard";
 import { PlanTab, PlanToolsView, PlanCheckCompactRow } from "./components/PlanTab";
 import BottomTabs from "./components/BottomTabs";
-import { colors, getTohiAppShellTheme } from "./theme";
+import { colors, getTohiAppShellTheme, TOHI_THEME_MODES } from "./theme";
 import { useMiniGames } from "./hooks/useMiniGames";
 
 const STORAGE_KEY = "parkplan.state";
@@ -156,7 +156,11 @@ function dbFmt(v) {
 }
 
 
-const appShellTheme = getTohiAppShellTheme();
+// 62A: this module-level style is the day/onboarding page. It is resolved with
+// forced day mode so that merely importing App at night can never restyle
+// onboarding or an unconverted tab. Night is applied per-render, and only for
+// Plan, via planShellNight below.
+const appShellTheme = getTohiAppShellTheme({ forceMode: TOHI_THEME_MODES.DAY });
 
 const page = {
   minHeight: "100vh",
@@ -2313,6 +2317,30 @@ function App() {
   // 61A Plan visual tokens — presentation only. Day: warm cream/white with
   // restrained lavender. Night: deep navy with muted purple borders.
   const planNight = parkPresenceTheme.isNight;
+
+  // 62A: the one explicit, parent-controlled shell decision. The dark shell and
+  // dark navigation apply only while Plan is the active tab, because Home,
+  // Waits, TOHI, and Profile still render day content and a dark shell behind
+  // day surfaces would read as a bug. Plan Tools inherits true because it is a
+  // sub-view of Plan — activeTab stays "plan" while it is open. Derived from
+  // existing state only: no stored state, effects, timers, storage, or
+  // media-query listeners, and planNight itself is untouched.
+  const planShellNight = activeTab === "plan" && planNight;
+  const shellTokens = getTohiAppShellTheme({
+    forceMode: planShellNight ? TOHI_THEME_MODES.NIGHT : TOHI_THEME_MODES.DAY,
+  }).shellTokens;
+
+  // Both the page background and BottomTabs read planShellNight in the same
+  // render, so a tab switch flips them together in one commit. Day resolves to
+  // the untouched module-level page object by identity.
+  const pageStyle = planShellNight
+    ? {
+        ...page,
+        background: shellTokens.pageBackground,
+        backgroundColor: shellTokens.pageBackgroundColor,
+        color: shellTokens.text,
+      }
+    : page;
   const planTokens = {
     surface: planNight ? "#131C36" : "#FFFFFF",
     surfaceSoft: planNight ? "#0F172A" : "#FFF9F1",
@@ -4467,7 +4495,7 @@ function App() {
 
   return (
     <>
-      <main style={page}>
+      <main style={pageStyle}>
       <style>
         {`
           @keyframes tohiFloatCelebrate {
@@ -6451,7 +6479,11 @@ function App() {
       </div>
       </main>
 
-      <BottomTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomTabs
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        night={planShellNight}
+      />
     </>
   );
 }

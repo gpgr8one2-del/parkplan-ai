@@ -8,7 +8,7 @@ import {
   UserCircle,
 } from "lucide-react";
 
-import { getTohiAppShellTheme } from "../theme";
+import { getTohiAppShellTheme, TOHI_THEME_MODES } from "../theme";
 
 const TABS = [
   {
@@ -97,11 +97,15 @@ function useVisualViewportStyle() {
   return viewportStyle;
 }
 
-function BottomTabsContent({ activeTab = "home", onTabChange }) {
+function BottomTabsContent({ activeTab = "home", onTabChange, night = false }) {
   const viewportStyle = useVisualViewportStyle();
-  const shellTheme = getTohiAppShellTheme();
-  const navBackground =
-    shellTheme.bottomNavBackground || "rgba(255, 249, 241, 0.98)";
+  // 62A: BottomTabs never decides for itself whether it is night. It forces the
+  // mode App supplies, so an unconverted tab always resolves to day tokens.
+  const shellTheme = getTohiAppShellTheme({
+    forceMode: night ? TOHI_THEME_MODES.NIGHT : TOHI_THEME_MODES.DAY,
+  });
+  const shell = shellTheme.shellTokens;
+  const navBackground = shell.navBackground;
 
   return (
     <nav
@@ -116,10 +120,10 @@ function BottomTabsContent({ activeTab = "home", onTabChange }) {
         zIndex: 2147483647,
         padding: "8px 10px calc(8px + env(safe-area-inset-bottom, 0px))",
         background: navBackground,
-        borderTop: `1px solid ${shellTheme.border}`,
+        borderTop: `1px solid ${shell.navBorder}`,
         backdropFilter: "blur(18px)",
         WebkitBackdropFilter: "blur(18px)",
-        boxShadow: shellTheme.shadows?.premium || "0 -12px 32px rgba(36, 28, 21, 0.12)",
+        boxShadow: shell.navShadow,
         boxSizing: "border-box",
       }}
     >
@@ -132,9 +136,9 @@ function BottomTabsContent({ activeTab = "home", onTabChange }) {
           margin: "0 auto",
           padding: 4,
           borderRadius: 24,
-          background: "rgba(255, 255, 255, 0.52)",
-          border: "1px solid rgba(234, 220, 200, 0.55)",
-          boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.76)",
+          background: shell.navTrayBackground,
+          border: shell.navTrayBorder,
+          boxShadow: shell.navTrayInset,
         }}
       >
         {TABS.map((tab) => {
@@ -150,13 +154,11 @@ function BottomTabsContent({ activeTab = "home", onTabChange }) {
               style={{
                 appearance: "none",
                 WebkitAppearance: "none",
-                border: isActive
-                  ? "1px solid rgba(124, 58, 237, 0.24)"
-                  : "1px solid transparent",
+                border: isActive ? shell.navActiveBorder : shell.navInactiveBorder,
                 background: isActive
-                  ? "linear-gradient(145deg, rgba(255,255,255,0.96), rgba(243,232,255,0.94))"
-                  : "transparent",
-                color: isActive ? shellTheme.colors.purpleDeep : shellTheme.muted,
+                  ? shell.navActiveBackground
+                  : shell.navInactiveBackground,
+                color: isActive ? shell.navActiveColor : shell.navInactiveColor,
                 borderRadius: 18,
                 padding: "7px 4px 8px",
                 minHeight: 56,
@@ -171,9 +173,7 @@ function BottomTabsContent({ activeTab = "home", onTabChange }) {
                 cursor: "pointer",
                 WebkitTapHighlightColor: "transparent",
                 touchAction: "manipulation",
-                boxShadow: isActive
-                  ? "0 10px 22px rgba(124, 58, 237, 0.16)"
-                  : "none",
+                boxShadow: isActive ? shell.navActiveShadow : shell.navInactiveShadow,
                 transform: isActive ? "translateY(-1px)" : "none",
                 transition:
                   "background 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease",
@@ -193,7 +193,7 @@ function BottomTabsContent({ activeTab = "home", onTabChange }) {
   );
 }
 
-export function BottomTabs({ activeTab = "home", onTabChange }) {
+export function BottomTabs({ activeTab = "home", onTabChange, night = false }) {
   const spacer = (
     <div
       aria-hidden="true"
@@ -204,11 +204,17 @@ export function BottomTabs({ activeTab = "home", onTabChange }) {
     />
   );
 
+  // 62A: night is forwarded through both the server/non-portal fallback and the
+  // portal render, so the two paths can never disagree about the mode.
   if (typeof document === "undefined" || !document.body) {
     return (
       <>
         {spacer}
-        <BottomTabsContent activeTab={activeTab} onTabChange={onTabChange} />
+        <BottomTabsContent
+          activeTab={activeTab}
+          onTabChange={onTabChange}
+          night={night}
+        />
       </>
     );
   }
@@ -217,7 +223,11 @@ export function BottomTabs({ activeTab = "home", onTabChange }) {
     <>
       {spacer}
       {createPortal(
-        <BottomTabsContent activeTab={activeTab} onTabChange={onTabChange} />,
+        <BottomTabsContent
+          activeTab={activeTab}
+          onTabChange={onTabChange}
+          night={night}
+        />,
         document.body
       )}
     </>
