@@ -18,6 +18,13 @@ const planRecommendationsSource = fs.readFileSync(
   "utf8"
 );
 
+// 62B-1a extracted the Home presentation out of App.jsx. App.jsx still owns
+// Home's state, handlers, and render gate; the markup lives here.
+const homeTabSource = fs.readFileSync(
+  path.join(frontendRoot, "src", "components", "HomeTab.jsx"),
+  "utf8"
+);
+
 // The Plan presentation now lives in PlanRecommendations.jsx while App.jsx
 // keeps state, handlers, and integration. Contracts that span both read the
 // combined source; pure presentation reads the extracted component.
@@ -112,7 +119,18 @@ console.log("Recommendation stack");
     planRecommendationsSource.includes('<div style={{ display: "grid", gap: 10 }}>'),
     true
   );
-  check("no carousel introduced", appSource.includes('overflowX: "auto", paddingBottom: 4 }}>\n            {PARKS.map'), true);
+  // 62B-1a restated this. It was pinned to Home's park selector by exact markup
+  // and indentation, which was never what it protected: the invariant is that
+  // the PLAN recommendation stack stays a vertical list rather than becoming a
+  // horizontal carousel. Home's selector is intentionally horizontal, is not
+  // part of the Plan stack, and now lives in HomeTab.jsx. Stated directly
+  // against the Plan presentation, whitespace-tolerant.
+  check(
+    "no carousel introduced",
+    !/overflowX:\s*["'](auto|scroll)["']/.test(planRecommendationsSource) &&
+      !/scrollSnapType/.test(planRecommendationsSource),
+    true
+  );
   check(
     "action handlers still wired",
     (planRecommendationsSource.match(/renderRideActions=\{\(ride\) => renderRideActions\(ride, \{ night: planNight, compact: true \}\)\}/g) || [])
@@ -237,9 +255,15 @@ console.log("Compact card anatomy (61C-1)");
 
 console.log("Artwork rules");
 {
-  const imgTags = (appSource.match(/<img/g) || []).length;
+  // 62B-1a: the logo <img> moved with the Home markup into HomeTab.jsx, so the
+  // shell surface is now App + HomeTab. Meaning is unchanged and NOT weakened:
+  // exactly one application image exists across that surface, it is the local
+  // /tohi-logo.png, and no remote image URL was introduced. RecommendationCard's
+  // ride artwork was never counted here and keeps its own dedicated assertions.
+  const shellSurfaceSource = `${appSource}\n${homeTabSource}`;
+  const imgTags = (shellSurfaceSource.match(/<img/g) || []).length;
   check("only the existing logo image exists", imgTags, 1);
-  check("logo is the repo asset", appSource.includes('src="/tohi-logo.png"'), true);
+  check("logo is the repo asset", shellSurfaceSource.includes('src="/tohi-logo.png"'), true);
   check("no external image URLs", /src="https?:\/\//.test(planPresentationSource), false);
   check("no external images in card component", /https?:\/\//.test(cardSource), false);
 }
@@ -1187,9 +1211,19 @@ console.log("Scope protection");
       (appSource.match(/<BottomTabs[\s>]/g) || []).length === 1,
     true
   );
+  // 62B-1a made this source-aware: the Home hero moved verbatim into
+  // HomeTab.jsx. Meaning is preserved and strengthened — it now checks the
+  // eyebrow, the personalized greeting, and the guidance copy rather than the
+  // eyebrow alone. This phase must still see the existing TODAY'S GAME PLAN
+  // wording; its approved change to TODAY'S PLAN belongs to the day-redesign
+  // phase. Whitespace-tolerant.
   check(
     "Home hero untouched",
-    appSource.includes("TODAY&apos;S GAME PLAN"),
+    /TODAY&apos;S GAME PLAN/.test(homeTabSource) &&
+      /\{homeGreeting\}/.test(homeTabSource) &&
+      /Here&apos;s what matters right now\.\s+TOHI is watching the heat, waits,\s+and walking so your family can keep the day feeling good\./.test(
+        homeTabSource
+      ),
     true
   );
 }
