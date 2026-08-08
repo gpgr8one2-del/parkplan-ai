@@ -355,14 +355,34 @@ console.log("22. App integration (static source checks)");
 {
   const appSource = fs.readFileSync(path.join(frontendRoot, "src", "App.jsx"), "utf8");
 
+  // 62B-1a extracted the Home presentation into HomeTab.jsx. App.jsx still owns
+  // Home's state, handlers, and render gate, so the assertions below that test
+  // App-owned wiring keep reading appSource. The three that test Home *markup*
+  // now read the component that actually contains it.
+  const homeTabSource = fs.readFileSync(
+    path.join(frontendRoot, "src", "components", "HomeTab.jsx"),
+    "utf8"
+  );
+
+  // The park selector block itself, sliced so the two selector assertions below
+  // are scoped to it rather than to the whole component.
+  const selectorStart = homeTabSource.search(/\{PARKS\.map\(/);
+  const selectorBlock =
+    selectorStart >= 0
+      ? homeTabSource.slice(selectorStart, homeTabSource.indexOf("</section>", selectorStart))
+      : "";
+
   check(
     "park selector browses via handleSelectPark",
-    appSource.includes("onClick={() => handleSelectPark(park.id)}"),
+    selectorBlock.length > 0 &&
+      /onClick=\{\(\)\s*=>\s*handleSelectPark\(park\.id\)\}/.test(selectorBlock),
     true
   );
   check(
     "selector no longer switches active park directly",
-    /PARKS\.map\(\(park\) => \([\s\S]{0,600}setActivePark\(park\.id\)/.test(appSource),
+    // Scoped to the real selector block, so this is a genuine negative rather
+    // than a regex that can no longer match because the markup moved files.
+    selectorBlock.length > 0 && /setActivePark\(park\.id\)/.test(selectorBlock),
     false
   );
   check(
@@ -412,7 +432,14 @@ console.log("22. App integration (static source checks)");
   );
   check(
     "prompt card rendered adjacent to park selector",
-    /parkPresencePrompt && \([\s\S]{0,4200}PARKS\.map/.test(appSource),
+    // Direct source-order check: the prompt exists, the selector exists, and the
+    // prompt precedes the selector. The old form depended on an arbitrary
+    // 4,200-character distance, which would break on any unrelated edit that
+    // shifted the gap.
+    /\{parkPresencePrompt\s*&&\s*\(/.test(homeTabSource) &&
+      /\{PARKS\.map\(/.test(homeTabSource) &&
+      homeTabSource.search(/\{parkPresencePrompt\s*&&\s*\(/) <
+        homeTabSource.search(/\{PARKS\.map\(/),
     true
   );
 }
