@@ -82,6 +82,35 @@ const heroBlock =
     ? homeTabCode.slice(heroOpenIdx, heroEndIdx)
     : "";
 
+// The Weather + comfort surface. Starting at the PARK CONDITIONS *text* was a
+// real defect: it began INSIDE the section, so the outer background, border,
+// radius and shadow fell outside the block entirely. Anything asserted about
+// the card's own surface — nesting above all — was therefore measuring only the
+// inner row and could not see a card inside a card.
+//
+// Correct bound: locate PARK CONDITIONS, then walk BACKWARD to the <section>
+// that owns it, so the block is the complete weather surface including its
+// outer styles. It still ends before Right Now View.
+const weatherPillIdx = homeTabCode.indexOf("PARK CONDITIONS");
+const weatherStartIdx =
+  weatherPillIdx > 0 ? homeTabCode.lastIndexOf("<section", weatherPillIdx) : -1;
+const weatherEndIdx = homeTabCode.indexOf("liveParkContext?.showNotice");
+const weatherCardBlock =
+  weatherStartIdx > 0 && weatherEndIdx > weatherStartIdx
+    ? homeTabCode.slice(weatherStartIdx, weatherEndIdx)
+    : "";
+
+// The readings row's own style object, so nesting is judged on the element that
+// actually carried the duplicate card treatment rather than on file-wide counts.
+const readingsRowStyle = (() => {
+  const anchor = weatherCardBlock.indexOf('flex: "1 1 auto", minWidth: 0');
+  if (anchor < 0) return null;
+  const readingsDiv = weatherCardBlock.lastIndexOf("<div", anchor);
+  const rowDiv = weatherCardBlock.lastIndexOf("<div", readingsDiv - 1);
+  if (rowDiv < 0) return null;
+  return weatherCardBlock.slice(rowDiv, readingsDiv);
+})();
+
 console.log("Home header + park hero (62B-2B) — FEATURE-DISCRIMINATING");
 
 featureCheck(
@@ -98,8 +127,14 @@ featureCheck(
 
 featureCheck(
   "Home imports the approved manifest and the exact-mapping resolver",
-  /import\s*\{\s*HOME_PARK_ART\s*\}\s*from\s*"\.\.\/data\/homeArtManifest"/.test(homeTabSource) &&
-    /import\s*\{\s*resolveHomeParkArtKey\s*\}\s*from\s*"\.\.\/utils\/homeArt"/.test(homeTabSource),
+  // 62B-2C added the weather names to these same two import statements, so the
+  // park names are matched within the braces rather than as the whole binding.
+  /import\s*\{[^}]*\bHOME_PARK_ART\b[^}]*\}\s*from\s*"\.\.\/data\/homeArtManifest"/.test(
+    homeTabSource
+  ) &&
+    /import\s*\{[^}]*\bresolveHomeParkArtKey\b[^}]*\}\s*from\s*"\.\.\/utils\/homeArt"/.test(
+      homeTabSource
+    ),
   true
 );
 
@@ -228,7 +263,99 @@ featureCheck(
   true
 );
 
+console.log("Weather + comfort card (62B-2C) — FEATURE-DISCRIMINATING");
+
+featureCheck(
+  "Home imports the weather manifest and the weather-family resolver",
+  /import\s*\{[^}]*\bHOME_WEATHER_ART\b[^}]*\}\s*from\s*"\.\.\/data\/homeArtManifest"/.test(
+    homeTabSource
+  ) &&
+    /import\s*\{[^}]*\bresolveHomeWeatherFamily\b[^}]*\}\s*from\s*"\.\.\/utils\/homeArt"/.test(
+      homeTabSource
+    ),
+  true
+);
+
+featureCheck(
+  "weather artwork is selected via resolveHomeWeatherFamily(weather)",
+  /const weatherArtFamily = resolveHomeWeatherFamily\(\s*weather\s*\)/.test(homeTabCode) &&
+    /HOME_WEATHER_ART\[\s*weatherArtFamily\s*\]\s*\?\.\[\s*HOME_ART_MODE\s*\]/.test(
+      homeTabCode
+    ),
+  true
+);
+
+featureCheck(
+  "the weather family is never derived from contaminated signals in HomeTab",
+  // The resolver is the ONLY input to the artwork choice. summary, weatherMode,
+  // stormMode, rainRisk and advice text conflate current and forecast data, so
+  // HomeTab must not consult them when choosing an illustration. They remain
+  // free to drive the visible readings — hence the scoping to the derivation.
+  (() => {
+    const idx = homeTabCode.indexOf("const weatherArtFamily");
+    const end = homeTabCode.indexOf(";", homeTabCode.indexOf("const weatherArt ="));
+    if (idx < 0 || end < idx) return false;
+    const derivation = homeTabCode.slice(idx, end);
+    return !/summary|weatherMode|stormMode|rainRisk|forecast|advice|getWeatherMode|buildWeatherDisplay/.test(
+      derivation
+    );
+  })(),
+  true
+);
+
+featureCheck(
+  "the weather illustration is a real decorative img, contained, not framed",
+  weatherCardBlock.length > 0 &&
+    /<img\s[\s\S]*?src=\{weatherArt\.src\}/.test(weatherCardBlock) &&
+    /alt=""/.test(weatherCardBlock) &&
+    /objectFit:\s*"contain"/.test(weatherCardBlock) &&
+    // Transparent background preserved: no plate, tint, ring or radius behind it.
+    !/<img[\s\S]{0,400}(background|borderRadius|border:)/.test(
+      weatherCardBlock.slice(weatherCardBlock.indexOf("<img"))
+    ),
+  true
+);
+
+featureCheck(
+  "the illustration stays visually secondary to the temperature",
+  // 66px illustration against a 28px temperature that also carries the heaviest
+  // weight and the accent colour: prominent, but not the primary element.
+  /width: 66,\s*height: 66,/.test(weatherCardBlock) &&
+    /fontSize: 28,/.test(weatherCardBlock),
+  true
+);
+
+featureCheck(
+  "the weather surface is ONE card — the readings row is not a second card",
+  // Feature-discriminating: at the merged 62B-2B base the readings row carried
+  // its own background, border, radius and shadow inside an already-raised
+  // section, so this fails there and passes only after the correction.
+  //
+  // Judged two ways. Exactly one raised surface across the whole weather
+  // section, and the readings row itself declares no card treatment at all.
+  (weatherCardBlock.match(/boxShadow:/g) || []).length === 1 &&
+    readingsRowStyle !== null &&
+    !/background|border|borderRadius|boxShadow/.test(readingsRowStyle) &&
+    // The spacing and layout the row is allowed to keep.
+    /display: "flex"/.test(readingsRowStyle) &&
+    /gap: 12/.test(readingsRowStyle),
+  true
+);
+
+featureCheck(
+  "no artwork means no illustration at all, and the readings reflow",
+  // Gated on weatherArt, and the readings block takes the remaining width so an
+  // omitted illustration leaves no empty column behind.
+  /\{weatherArt \? \(/.test(homeTabCode) &&
+    /\)\s*:\s*null\}/.test(weatherCardBlock) &&
+    /flex: "1 1 auto", minWidth: 0/.test(weatherCardBlock) &&
+    // No placeholder, no generic icon, no remote fallback in the card.
+    !/placeholder|fallbackArt|defaultWeather|https?:\/\//.test(weatherCardBlock),
+  true
+);
+
 console.log("Home capabilities preserved — INVARIANT REGRESSION GUARDS");
+
 
 invariantCheck(
   "greeting and TOHI guidance copy are unchanged",
@@ -271,21 +398,41 @@ invariantCheck(
 );
 
 invariantCheck(
-  "Weather + Comfort card is untouched",
-  /PARK CONDITIONS/.test(homeTabSource) &&
-    /Weather \+ comfort/.test(homeTabSource) &&
-    /weather\?\.tempF != null/.test(homeTabSource) &&
-    /feels like \{weather\.feelsLikeF\}/.test(homeTabSource) &&
-    /\{weather\.humidity\}% humidity/.test(homeTabSource) &&
-    /buildWeatherDisplay\(weather\)/.test(homeTabSource),
+  "every Weather + comfort reading survives the restyle",
+  // 62B-2C restyled this card. The readings themselves are unchanged, and this
+  // guard is what proves the restyle cost none of them.
+  // Scoped to the CARD, not the whole file. buildWeatherDisplay() builds the
+  // same phrases in template literals ( `${weather.humidity}% humidity` ), so a
+  // file-wide match is satisfied by the helper even when the visible JSX
+  // reading has been deleted. Only the rendered card counts here.
+  /Weather \+ comfort/.test(weatherCardBlock) &&
+    /weather\?\.tempF != null/.test(weatherCardBlock) &&
+    /\{weather\.tempF\}°F/.test(weatherCardBlock) &&
+    /feels like \{weather\.feelsLikeF\}°F/.test(weatherCardBlock) &&
+    /\{weather\.humidity\}% humidity/.test(weatherCardBlock) &&
+    /buildWeatherDisplay\(weather\)/.test(weatherCardBlock) &&
+    /\{weather\?\.summary\s*\?\s*weather\.summary/.test(weatherCardBlock),
   true
 );
 
 invariantCheck(
-  "no weather artwork or weather-family resolution enters this phase",
-  !/HOME_WEATHER_ART|resolveHomeWeatherFamily/.test(homeTabSource),
+  "the weather mode pill, comfort guidance, badge and banner all remain",
+  // Card-scoped for the same reason.
+  /weatherMode\?\.mode && weatherMode\.mode !== "normal"/.test(weatherCardBlock) &&
+    /\{weatherMode\.label \|\| "Weather watch"\}/.test(weatherCardBlock) &&
+    /TOHI will favor lower-walking, indoor, shaded, or reset-friendly moves/.test(
+      weatherCardBlock
+    ) &&
+    /<FreshnessBadge[\s\S]{0,120}source=\{weather\?\.source\}/.test(weatherCardBlock) &&
+    /<DataStatusBanner source=\{weather\?\.source\} \/>/.test(weatherCardBlock),
   true
 );
+
+// 62B-2C is the phase that introduces weather artwork, so 62B-2B's scope guard
+// ("no weather artwork enters this phase") has done its job and is replaced by
+// the weather-card assertions in the section below. Nothing is weakened: the
+// forbidden-input protection that guard implicitly provided is now asserted
+// directly and far more precisely against the real selection path.
 
 invariantCheck(
   "Right Now View, hopper context and the planned-park action remain",
@@ -390,8 +537,8 @@ invariantCheck(
 );
 
 console.log("");
-console.log(`  62B-2B feature-discriminating: ${featurePass} passed, ${featureFail} failed`);
-console.log(`  62B-2B invariant regression guards: ${invariantPass} passed, ${invariantFail} failed`);
+console.log(`  62B-2B/2C feature-discriminating: ${featurePass} passed, ${featureFail} failed`);
+console.log(`  62B-2B/2C invariant regression guards: ${invariantPass} passed, ${invariantFail} failed`);
 console.log("");
 console.log(`${passCount} passed, ${failCount} failed`);
 

@@ -5,9 +5,9 @@ import { DataStatusBanner } from "./DataStatusBanner";
 import { FreshnessBadge } from "./FreshnessBadge";
 import { WhileYouWaitCard } from "./WhileYouWaitCard";
 import { PARKS } from "../data/parkAreas";
-import { HOME_PARK_ART } from "../data/homeArtManifest";
+import { HOME_PARK_ART, HOME_WEATHER_ART } from "../data/homeArtManifest";
 import { canConfirmParkPresence, selectBrowsedPark } from "../utils/parkPresence";
-import { resolveHomeParkArtKey } from "../utils/homeArt";
+import { resolveHomeParkArtKey, resolveHomeWeatherFamily } from "../utils/homeArt";
 import { getWeatherMode } from "../utils/weatherAdvice";
 import { colors } from "../theme";
 
@@ -160,6 +160,19 @@ export function HomeTab({
   const heroParkName = activePark
     ? getParkNameById(activePark)
     : parkData?.parkName || "Choose a park";
+
+  // 62B-2C. The illustration family comes ONLY from the resolver. HomeTab never
+  // inspects summary, weatherMode, stormMode, rainRisk, forecast data, or advice
+  // text to pick artwork — those are forecast-contaminated and would put storm
+  // art over a clear sky. The resolver reads current observations only.
+  //
+  // A null family, or a family with no entry for this mode, means no safe
+  // choice exists: the illustration is omitted entirely and the readings take
+  // the full width. No substituted family, no generic icon, no placeholder.
+  const weatherArtFamily = resolveHomeWeatherFamily(weather);
+  const weatherArt = weatherArtFamily
+    ? HOME_WEATHER_ART[weatherArtFamily]?.[HOME_ART_MODE] || null
+    : null;
 
   return (
     <>
@@ -470,16 +483,22 @@ export function HomeTab({
               />
             </div>
 
+            {/* 62B-2C: the readings row carries NO card treatment of its own —
+                no background, border, radius or shadow. The section above is
+                the single raised weather surface; a raised row inside it read
+                as a card within a card. Only spacing remains. */}
             <div
               style={{
                 marginTop: 12,
-                padding: 13,
-                borderRadius: 20,
-                background: "rgba(255, 255, 255, 0.82)",
-                border: `1px solid ${colors.cardBorder}`,
-                boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
               }}
             >
+              {/* Readings first in source order and given the remaining width,
+                  so when no illustration is available they simply fill the card
+                  with no gap left behind. */}
+              <div style={{ flex: "1 1 auto", minWidth: 0 }}>
               <div
                 style={{
                   display: "flex",
@@ -556,6 +575,27 @@ export function HomeTab({
                   ? weather.summary
                   : buildWeatherDisplay(weather)}
               </p>
+              </div>
+
+              {/* Decorative: the temperature, humidity, mode pill and summary
+                  beside it already state the condition, so the illustration
+                  carries alt="". It stays smaller in visual weight than the
+                  temperature, keeps its own transparent background — no white
+                  frame, no tinted plate — and is never stretched or cropped. */}
+              {weatherArt ? (
+                <img
+                  src={weatherArt.src}
+                  alt=""
+                  decoding="async"
+                  style={{
+                    flex: "0 0 auto",
+                    width: 66,
+                    height: 66,
+                    objectFit: "contain",
+                    display: "block",
+                  }}
+                />
+              ) : null}
             </div>
 
             <p
