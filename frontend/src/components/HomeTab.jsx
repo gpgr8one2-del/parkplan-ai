@@ -5,9 +5,17 @@ import { DataStatusBanner } from "./DataStatusBanner";
 import { FreshnessBadge } from "./FreshnessBadge";
 import { WhileYouWaitCard } from "./WhileYouWaitCard";
 import { PARKS } from "../data/parkAreas";
+import { HOME_PARK_ART } from "../data/homeArtManifest";
 import { canConfirmParkPresence, selectBrowsedPark } from "../utils/parkPresence";
+import { resolveHomeParkArtKey } from "../utils/homeArt";
 import { getWeatherMode } from "../utils/weatherAdvice";
 import { colors } from "../theme";
+
+// 62B-2B renders the day artwork only. Home night mode arrives in a later
+// phase, which will replace this constant with the app's existing theme state.
+// Keeping the mode an explicit lookup key — rather than a boolean argument —
+// means that switch needs no change to the resolver API.
+const HOME_ART_MODE = "day";
 
 // 62B-1a: Home presentation extracted verbatim from App.jsx. This component is
 // presentation only — every piece of state, effect, memo, timer, storage,
@@ -135,6 +143,24 @@ export function HomeTab({
   button,
   card,
 }) {
+  // Exact park-id mapping only. An unknown id — a Universal park, a missing
+  // value, anything unmapped — returns null, and a mapped park with no entry
+  // for this mode also returns null. Both land on the composed no-art hero.
+  const homeParkArtKey = resolveHomeParkArtKey(activePark);
+  const heroParkArt = homeParkArtKey
+    ? HOME_PARK_ART[homeParkArtKey]?.[HOME_ART_MODE] || null
+    : null;
+
+  // The hero's name must come from the SAME source as its artwork. parkData is
+  // the last completed fetch, so while a new park's request is in flight it
+  // still holds the previous park — reading parkData?.parkName here would put
+  // the old park's name over the new park's illustration. activePark changes
+  // immediately, so both stay in step. parkData?.parkName remains the fallback
+  // only when there is no activePark at all, where there is nothing to mismatch.
+  const heroParkName = activePark
+    ? getParkNameById(activePark)
+    : parkData?.parkName || "Choose a park";
+
   return (
     <>
         <section
@@ -193,20 +219,8 @@ export function HomeTab({
                 marginBottom: 14,
               }}
             >
-              ✨ TODAY&apos;S GAME PLAN
+              ✨ TODAY&apos;S PLAN
             </div>
-
-            <img
-              src="/tohi-logo.png"
-              alt="TOHI"
-              style={{
-                display: "block",
-                width: 146,
-                maxWidth: "50vw",
-                height: "auto",
-                marginBottom: 16,
-              }}
-            />
 
             <h1
               style={{
@@ -235,70 +249,132 @@ export function HomeTab({
             </p>
           </div>
 
+          {/* Approved wide park hero. The artwork is decorative: the park name
+              beside it carries the meaning, so the image keeps alt="". An
+              unmapped park or a missing entry yields heroParkArt === null and
+              renders the composed no-art hero instead — never another park's
+              illustration. */}
           <div
             style={{
               position: "relative",
-              height: 1,
-              background: "rgba(124, 58, 237, 0.14)",
-              margin: "0 -22px 14px",
-            }}
-          />
-
-          <div
-            style={{
-              position: "relative",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 12,
-              flexWrap: "wrap",
+              marginTop: 4,
+              borderRadius: 24,
+              overflow: "hidden",
+              aspectRatio: "2 / 1",
+              border: "1px solid rgba(124, 58, 237, 0.16)",
+              boxShadow: "0 14px 34px rgba(91, 33, 182, 0.14)",
+              background: heroParkArt
+                ? "rgba(15, 23, 42, 0.06)"
+                : "linear-gradient(150deg, #F3E8FF 0%, #E0F2FE 52%, #FFF4D8 100%)",
             }}
           >
+            {heroParkArt ? (
+              <img
+                src={heroParkArt.src}
+                alt=""
+                // No loading="lazy": this hero is above the fold, so deferring
+                // it would delay the first thing the family sees. Only this one
+                // image loads eagerly — the other park and weather assets stay
+                // untouched and are not preloaded.
+                decoding="async"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  objectPosition: "center",
+                  display: "block",
+                }}
+              />
+            ) : null}
+
+            {/* Restrained scrim so overlaid text stays readable over every
+                approved image, bright daytime skies included. */}
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "linear-gradient(180deg, rgba(15, 23, 42, 0.58) 0%, rgba(15, 23, 42, 0.30) 38%, rgba(15, 23, 42, 0.06) 66%, rgba(15, 23, 42, 0) 100%)",
+              }}
+            />
+
             <div
               style={{
+                position: "relative",
+                height: "100%",
                 display: "flex",
-                alignItems: "center",
-                gap: 8,
-                flexWrap: "wrap",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: 12,
+                padding: 16,
               }}
             >
-              <MapPin size={16} style={{ color: colors.purple }} />
-              <span style={{ fontSize: 14, fontWeight: 800, color: colors.text }}>
-                {parkData?.parkName || "Choose a park"}
-              </span>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 7,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <MapPin size={17} style={{ color: "#E9D5FF", flexShrink: 0 }} />
+                  <span
+                    style={{
+                      color: "#FFFFFF",
+                      fontSize: 21,
+                      fontWeight: 900,
+                      letterSpacing: -0.3,
+                      textShadow: "0 1px 10px rgba(15, 23, 42, 0.55)",
+                    }}
+                  >
+                    {heroParkName}
+                  </span>
+                </div>
 
-              {weather?.tempF != null && (
-                <span style={{ fontSize: 13, color: colors.muted }}>
-                  · {weather.tempF}°F
-                </span>
-              )}
+                {closeTimeLabel && (
+                  <div
+                    style={{
+                      marginTop: 4,
+                      color: "rgba(255, 255, 255, 0.92)",
+                      fontSize: 13,
+                      fontWeight: 750,
+                      textShadow: "0 1px 8px rgba(15, 23, 42, 0.55)",
+                    }}
+                  >
+                    Closes {closeTimeLabel}
+                  </div>
+                )}
 
-              {closeTimeLabel && (
-                <span style={{ fontSize: 13, color: colors.muted }}>
-                  · closes {closeTimeLabel}
-                </span>
-              )}
+                <div style={{ marginTop: 9 }}>
+                  <FreshnessBadge
+                    source={parkData?.source}
+                    ageMs={parkData?.ageMs}
+                    fetchedAt={parkData?.fetchedAt}
+                  />
+                </div>
+              </div>
 
-              <FreshnessBadge
-                source={parkData?.source}
-                ageMs={parkData?.ageMs}
-                fetchedAt={parkData?.fetchedAt}
-              />
+              <button
+                style={{
+                  ...button,
+                  flexShrink: 0,
+                  padding: "6px 11px",
+                  fontSize: 12,
+                  background: "rgba(15, 23, 42, 0.55)",
+                  color: "#FFFFFF",
+                  borderColor: "rgba(255, 255, 255, 0.34)",
+                  boxShadow: "none",
+                }}
+                onClick={() => loadData(true)}
+                disabled={loading}
+              >
+                <RefreshCw size={12} /> {loading ? "Loading" : "Refresh"}
+              </button>
             </div>
-
-            <button
-              style={{
-                ...button,
-                padding: "7px 13px",
-                fontSize: 12,
-                background: "rgba(255, 255, 255, 0.88)",
-                boxShadow: "0 8px 18px rgba(91, 33, 182, 0.10)",
-              }}
-              onClick={() => loadData(true)}
-              disabled={loading}
-            >
-              <RefreshCw size={12} /> {loading ? "Loading" : "Refresh"}
-            </button>
           </div>
 
           {(parkData?.source || error) && (
