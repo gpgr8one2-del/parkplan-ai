@@ -268,9 +268,13 @@ console.log("Artwork rules");
   // and it is now strengthened to reject a public/ path as well, since the hero
   // must be a bundled import. Home's own structure is covered in depth by
   // scripts/homeVisualHarness.cjs.
+  //
+  // 62B-2C: the approved weather illustration is the second image on this
+  // surface, so the expected count moves 1 -> 2. Both remain bundled local
+  // assets and the no-remote-URL protection is unchanged.
   const shellSurfaceSource = `${appSource}\n${homeTabSource}`;
   const imgTags = (shellSurfaceSource.match(/<img/g) || []).length;
-  check("shell surface renders exactly one image", imgTags, 1);
+  check("shell surface renders exactly the two approved images", imgTags, 2);
   check(
     "that image is a bundled local asset, not a remote or public path",
     /<img[\s\S]{0,80}src=\{/.test(homeTabSource) &&
