@@ -256,14 +256,28 @@ console.log("Compact card anatomy (61C-1)");
 console.log("Artwork rules");
 {
   // 62B-1a: the logo <img> moved with the Home markup into HomeTab.jsx, so the
-  // shell surface is now App + HomeTab. Meaning is unchanged and NOT weakened:
-  // exactly one application image exists across that surface, it is the local
-  // /tohi-logo.png, and no remote image URL was introduced. RecommendationCard's
-  // ride artwork was never counted here and keeps its own dedicated assertions.
+  // shell surface is now App + HomeTab. RecommendationCard's ride artwork was
+  // never counted here and keeps its own dedicated assertions.
+  //
+  // 62B-2B: the approved Home redesign removed the TOHI logo and introduced the
+  // park hero, so the one image on this surface is now a DIFFERENT image. The
+  // count alone would still read 1 and would have gone on asserting a logo that
+  // no longer exists, so both assertions are restated to describe what actually
+  // renders. The protection is not weakened — it is still exactly one image on
+  // the shell surface, still a local repository asset, still no remote URL —
+  // and it is now strengthened to reject a public/ path as well, since the hero
+  // must be a bundled import. Home's own structure is covered in depth by
+  // scripts/homeVisualHarness.cjs.
   const shellSurfaceSource = `${appSource}\n${homeTabSource}`;
   const imgTags = (shellSurfaceSource.match(/<img/g) || []).length;
-  check("only the existing logo image exists", imgTags, 1);
-  check("logo is the repo asset", shellSurfaceSource.includes('src="/tohi-logo.png"'), true);
+  check("shell surface renders exactly one image", imgTags, 1);
+  check(
+    "that image is a bundled local asset, not a remote or public path",
+    /<img[\s\S]{0,80}src=\{/.test(homeTabSource) &&
+      !/src="https?:\/\//.test(shellSurfaceSource) &&
+      !/src="\//.test(shellSurfaceSource),
+    true
+  );
   check("no external image URLs", /src="https?:\/\//.test(planPresentationSource), false);
   check("no external images in card component", /https?:\/\//.test(cardSource), false);
 }
@@ -1212,14 +1226,19 @@ console.log("Scope protection");
     true
   );
   // 62B-1a made this source-aware: the Home hero moved verbatim into
-  // HomeTab.jsx. Meaning is preserved and strengthened — it now checks the
-  // eyebrow, the personalized greeting, and the guidance copy rather than the
-  // eyebrow alone. This phase must still see the existing TODAY'S GAME PLAN
-  // wording; its approved change to TODAY'S PLAN belongs to the day-redesign
-  // phase. Whitespace-tolerant.
+  // HomeTab.jsx, and the assertion checks the eyebrow, the personalized
+  // greeting, and the guidance copy rather than the eyebrow alone.
+  //
+  // 62B-2B is the day-redesign phase that comment anticipated: the eyebrow is
+  // now the approved TODAY'S PLAN, so this can no longer be named "untouched".
+  // What Plan's harness legitimately protects is that the redesign did not cost
+  // Home its real greeting or its guidance copy — both must survive verbatim —
+  // and that the old wording is genuinely gone rather than duplicated.
+  // Whitespace-tolerant.
   check(
-    "Home hero untouched",
-    /TODAY&apos;S GAME PLAN/.test(homeTabSource) &&
+    "Home header keeps its greeting and guidance copy",
+    /TODAY&apos;S PLAN/.test(homeTabSource) &&
+      !/TODAY&apos;S GAME PLAN/.test(homeTabSource) &&
       /\{homeGreeting\}/.test(homeTabSource) &&
       /Here&apos;s what matters right now\.\s+TOHI is watching the heat, waits,\s+and walking so your family can keep the day feeling good\./.test(
         homeTabSource
