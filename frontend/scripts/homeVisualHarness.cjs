@@ -25,6 +25,13 @@ const read = (...p) => fs.readFileSync(path.join(frontendRoot, ...p), "utf8");
 const homeTabSource = read("src", "components", "HomeTab.jsx");
 const appSource = read("src", "App.jsx");
 const manifestSource = read("src", "data", "homeArtManifest.js");
+const wywSource = read("src", "components", "WhileYouWaitCard.jsx");
+const badgeSource = read("src", "components", "FreshnessBadge.jsx");
+const bannerSource = read("src", "components", "DataStatusBanner.jsx");
+const wywCode = wywSource
+  .replace(/\/\*[\s\S]*?\*\//g, "")
+  .replace(/\{\s*\/\*[\s\S]*?\*\/\s*\}/g, "")
+  .replace(/^\s*\/\/.*$/gm, "");
 const resolverSource = read("src", "utils", "homeArt.js");
 
 // Comment-stripped view, for checks about code rather than prose.
@@ -178,10 +185,11 @@ featureCheck(
 
 featureCheck(
   "mode is an explicit lookup key, not a boolean helper argument",
-  // A boolean `night` argument would lock the later night phase into an API
-  // change; an explicit mode key does not.
-  /const HOME_ART_MODE = "day";/.test(homeTabSource) &&
-    /\[\s*HOME_ART_MODE\s*\]/.test(homeTabCode) &&
+  // A boolean `night` argument would lock the night phase into an API change;
+  // an explicit mode key does not. 62B-2F-1 is that phase, and the key became a
+  // per-render derivation exactly as designed — the resolver API is untouched.
+  /const homeArtMode = night \? "night" : "day";/.test(homeTabCode) &&
+    /\[\s*homeArtMode\s*\]/.test(homeTabCode) &&
     !/getHomeParkArtwork|getHomeWeatherArtwork/.test(homeTabSource) &&
     !/resolveHomeParkArtKey\([^)]*,\s*(true|false|night)/.test(homeTabCode),
   true
@@ -278,9 +286,14 @@ featureCheck(
   "the no-art hero is composed, not an empty or borrowed frame",
   // When heroParkArt is null the card still paints its own approved treatment,
   // so an unmapped park gets a finished hero rather than a blank rectangle.
-  /background: heroParkArt\s*\?\s*"rgba\([\d\s.,]+\)"\s*:\s*"linear-gradient\(150deg/.test(
+  // Tokenized in 62B-2F-1: both branches now resolve through the Home token set
+  // so the composed state exists in day AND night. The protection is unchanged —
+  // an unmapped park still gets a finished hero, never a blank rectangle.
+  /background: heroParkArt\s*\?\s*t\.heroArtBackground\s*:\s*t\.heroNoArt,/.test(
     homeTabCode
-  ),
+  ) &&
+    /heroNoArt:\s*\n?\s*"linear-gradient\(150deg, #F3E8FF/.test(homeTabSource) &&
+    /heroNoArt:\s*\n?\s*"linear-gradient\(150deg, #1E1B4B/.test(homeTabSource),
   true
 );
 
@@ -310,7 +323,7 @@ featureCheck(
 featureCheck(
   "weather artwork is selected via resolveHomeWeatherFamily(weather)",
   /const weatherArtFamily = resolveHomeWeatherFamily\(\s*weather\s*\)/.test(homeTabCode) &&
-    /HOME_WEATHER_ART\[\s*weatherArtFamily\s*\]\s*\?\.\[\s*HOME_ART_MODE\s*\]/.test(
+    /HOME_WEATHER_ART\[\s*weatherArtFamily\s*\]\s*\?\.\[\s*homeArtMode\s*\]/.test(
       homeTabCode
     ),
   true
@@ -417,7 +430,7 @@ featureCheck(
 featureCheck(
   "each selector card resolves its own artwork from park.id",
   /const selectorArtKey = resolveHomeParkArtKey\(\s*park\.id\s*\)/.test(selectorBlock) &&
-    /HOME_PARK_ART\[\s*selectorArtKey\s*\]\s*\?\.\[\s*HOME_ART_MODE\s*\]/.test(selectorBlock),
+    /HOME_PARK_ART\[\s*selectorArtKey\s*\]\s*\?\.\[\s*homeArtMode\s*\]/.test(selectorBlock),
   true
 );
 
@@ -487,9 +500,174 @@ featureCheck(
     return (
       /display: "inline-flex"/.test(eyebrow) &&
       /borderRadius: 999/.test(eyebrow) &&
-      /background: "rgba\(245, 158, 11, 0\.16\)"/.test(eyebrow)
+      /background: t\.amberPillSoft/.test(eyebrow)
     );
   })(),
+  true
+);
+
+
+console.log("Home night presentation, gate inactive (62B-2F-1) — FEATURE-DISCRIMINATING");
+
+featureCheck(
+  "HomeTab takes one explicit night boolean and invents no theme source",
+  /^\s*night = false,$/m.test(homeTabSource) &&
+    !/getTohiAppShellTheme|parkPresenceTheme|isTohiNightMode|TOHI_THEME_MODES/.test(homeTabSource) &&
+    !/useState|useEffect|useMemo|useRef|matchMedia|setInterval|setTimeout|localStorage|sessionStorage|Date\.now\(|new Date\(\s*\)/.test(
+      homeTabCode
+    ),
+  true
+);
+
+featureCheck(
+  "Home has exactly one theme signal — the prompt uses the same night prop",
+  // Before this phase the park-presence prompt read parkPresenceTheme.isNight
+  // directly, so at night it went dark while the rest of Home stayed white.
+  /PARK CHECK/.test(homeTabSource) &&
+    (homeTabCode.match(/\bnight\b\s*\?/g) || []).length >= 4 &&
+    !/parkPresenceTheme/.test(homeTabSource),
+  true
+);
+
+featureCheck(
+  "artwork mode is derived per render from the same flag",
+  /const homeArtMode = night \? "night" : "day";/.test(homeTabCode) &&
+    (homeTabCode.match(/\?\.\[homeArtMode\]/g) || []).length === 3 &&
+    !/HOME_ART_MODE/.test(homeTabSource),
+  true
+);
+
+featureCheck(
+  "Home resolves a day/night token set whose values are applied locally",
+  /function getHomeTokens\(night\) \{/.test(homeTabCode) &&
+    /const t = getHomeTokens\(night\);/.test(homeTabCode) &&
+    // Applied AFTER the shared day objects so no white fill survives beneath.
+    /\.\.\.card,\s*\.\.\.\(night \?/.test(homeTabCode),
+  true
+);
+
+featureCheck(
+  "every Home surface carries both a day and a night value",
+  [
+    "headerBackground", "headerBorder", "headerShadow", "headerOrbCoral", "headerOrbSky",
+    "eyebrowPill", "eyebrow", "title", "muted",
+    "heroBorder", "heroShadow", "heroArtBackground", "heroNoArt",
+    "weatherBackground", "weatherBorder", "weatherShadow",
+    "skyPill", "skyPillSoft", "skyText", "amberPill", "amberPillSoft", "amberText",
+    "rightNowBackground", "rightNowBorder", "rightNowShadow", "nestedSurface",
+    "activityBorder", "activityBackground", "activityEyebrow",
+    "successText", "errorText", "surface", "borderQuiet", "shadow", "controlBackground",
+  ].every((k) => (homeTabCode.match(new RegExp(`\\b${k}:`, "g")) || []).length === 2),
+  true
+);
+
+featureCheck(
+  "both shared children receive the same night flag at every call site",
+  (homeTabCode.match(/<FreshnessBadge\s+night=\{night\}/g) || []).length === 2 &&
+    (homeTabCode.match(/<DataStatusBanner [^>]*night=\{night\}/g) || []).length === 2 &&
+    /<WhileYouWaitCard\s*\n\s*night=\{night\}/.test(homeTabCode),
+  true
+);
+
+featureCheck(
+  "FreshnessBadge honours night across every existing status variant",
+  /night = false/.test(badgeSource) &&
+    ["live", "cached", "stale", "mock", "unknown"].every((k) =>
+      new RegExp(`${k}: \\{`).test(badgeSource)
+    ) &&
+    // night overrides AFTER the day style spread, so no day fill survives
+    /\.\.\.style,\s*\n[\s\S]{0,220}\.\.\.\(night \? resolveNightBadgeStyle\(source\) : null\)/.test(
+      badgeSource
+    ) &&
+    // label/tooltip/source logic still comes from the shared utility
+    /getFreshnessLabel\(source, ageMs, fetchedAt\)/.test(badgeSource),
+  true
+);
+
+featureCheck(
+  "DataStatusBanner keeps its gate and messages and gains a night presentation",
+  /night = false/.test(bannerSource) &&
+    /source === "live" \|\| source === "cached" \|\| !source/.test(bannerSource) &&
+    /stale: "Using slightly older data while we refresh in the background\."/.test(bannerSource) &&
+    /mock: "Live data is currently unavailable\. Showing best estimates\."/.test(bannerSource) &&
+    /<AlertTriangle size=\{14\}/.test(bannerSource) &&
+    /night \? NIGHT_STATUS_STYLE : DAY_STATUS_STYLE/.test(bannerSource),
+  true
+);
+
+featureCheck(
+  "WhileYouWaitCard gains exactly one new prop: the shared night flag",
+  (() => {
+    const call = (homeTabSource.match(/<WhileYouWaitCard[\s\S]*?\/>/g) || [])[0] || "";
+    return /^\s+night=\{night\}$/m.test(call);
+  })(),
+  true
+);
+
+featureCheck(
+  "WhileYouWaitCard and LineTimeCompanion share one night flag",
+  (wywCode.match(/night = false,/g) || []).length === 2 &&
+    /<LineTimeCompanion\s*\n\s*night=\{night\}/.test(wywCode) &&
+    (wywCode.match(/const w = getWywTokens\(night\);/g) || []).length === 2,
+  true
+);
+
+featureCheck(
+  "all eight mini-game branches survive and are night-treated",
+  [
+    "trivia", "look_around", "family_vote", "would_you_rather",
+    "conversation_starter", "queue_clues", "prediction_game", "family_challenge",
+  ].every((k) => new RegExp(`activeMiniGame\\.type === "${k}"`).test(wywCode)) &&
+    // no day-only literal remains anywhere in the rendered markup
+    !/colors\.(text|muted|card|cardBorder|purpleSoft|purpleDeep|success|successSoft|error|errorSoft)/.test(
+      wywCode.slice(wywCode.indexOf("function LineTimeCompanion"))
+    ),
+  true
+);
+
+featureCheck(
+  "every trivia choice and result state resolves through night-aware tokens",
+  /background: shouldShowCorrect\s*\n\s*\? w\.successSurface\s*\n\s*: shouldShowWrong\s*\n\s*\? w\.errorSurface\s*\n\s*: w\.optionSurface,/.test(
+    wywCode
+  ) &&
+    /color: shouldShowCorrect\s*\n\s*\? w\.successText/.test(wywCode) &&
+    /revealedTriviaAnswer && !isCorrect && !isSelected/.test(wywCode) &&
+    /\$\{w\.errorBorderSoft\}/.test(wywCode) &&
+    /\$\{w\.successBorderSoft\}/.test(wywCode),
+  true
+);
+
+featureCheck(
+  "look_around and family_vote conditional states are night-treated",
+  /lookAroundFound \? w\.successText : w\.title/.test(wywCode) &&
+    /lookAroundFound \? w\.successSurface : w\.optionSurface/.test(wywCode) &&
+    /selected \? w\.selectedSurface : w\.optionSurface/.test(wywCode) &&
+    /selected \? w\.selectedText : w\.title/.test(wywCode) &&
+    /Vote locked in: \{selectedFamilyVoteOption\}/.test(wywCode) &&
+    /color: w\.selectedText,/.test(wywCode),
+  true
+);
+
+featureCheck(
+  "the four picker chips carry active and idle night treatments",
+  /background: isActive\s*\n\s*\? w\.chipActiveBackground\s*\n\s*: w\.chipIdleBackground,/.test(
+    wywCode
+  ) &&
+    /color: isActive \? "white" : w\.chipIdleText,/.test(wywCode) &&
+    /\? w\.chipActiveBorder/.test(wywCode) &&
+    /\? w\.chipActiveShadow/.test(wywCode) &&
+    /CORE_GAME_TYPES\.map/.test(wywCode),
+  true
+);
+
+featureCheck(
+  "no pure black in either token set",
+  !/#000\b|#000000\b|rgba?\(\s*0,\s*0,\s*0\s*[,)]/.test(
+    homeTabCode.slice(0, homeTabCode.indexOf("function formatActivityStartTime"))
+  ) &&
+    !/#000\b|#000000\b|rgba?\(\s*0,\s*0,\s*0\s*[,)]/.test(
+      wywCode.slice(0, wywCode.indexOf("function LineTimeCompanion"))
+    ),
   true
 );
 
@@ -563,7 +741,7 @@ invariantCheck(
       weatherCardBlock
     ) &&
     /<FreshnessBadge[\s\S]{0,120}source=\{weather\?\.source\}/.test(weatherCardBlock) &&
-    /<DataStatusBanner source=\{weather\?\.source\} \/>/.test(weatherCardBlock),
+    /<DataStatusBanner source=\{weather\?\.source\}/.test(weatherCardBlock),
   true
 );
 
@@ -646,10 +824,15 @@ invariantCheck(
 );
 
 invariantCheck(
-  "WhileYouWaitCard keeps all sixteen props",
+  "WhileYouWaitCard keeps all sixteen original props",
   (() => {
     const call = (homeTabSource.match(/<WhileYouWaitCard[\s\S]*?\/>/g) || [])[0] || "";
-    const props = [...call.matchAll(/^\s+(\w+)=/gm)].map((m) => m[1]).sort();
+    // The night flag is this phase's single addition and is asserted separately
+    // as a feature; the sixteen originals are what this guard protects.
+    const props = [...call.matchAll(/^\s+(\w+)=/gm)]
+      .map((m) => m[1])
+      .filter((k) => k !== "night")
+      .sort();
     return props.join(",");
   })(),
   [
@@ -668,6 +851,56 @@ invariantCheck(
   // that is asserted above.
   getSelectableParks().map((p) => p.id).join(","),
   "magic_kingdom,epcot,hollywood,animal_kingdom"
+);
+
+
+
+invariantCheck(
+  "LineTimeCompanion still destructures every prop it is given",
+  // The inner component receives the mini-game state and handlers. Dropping one
+  // here leaves the markup intact but the control dead — it renders identically,
+  // so only a prop-list guard catches it.
+  (() => {
+    const open = wywSource.indexOf("function LineTimeCompanion({");
+    const close = wywSource.indexOf("}) {", open);
+    if (open < 0 || close < 0) return "";
+    return [...wywSource.slice(open, close).matchAll(/^\s*(\w+)[,=]/gm)]
+      .map((m) => m[1])
+      .filter((k) => k !== "night")
+      .sort()
+      .join(",");
+  })(),
+  [
+    "actionButton", "activeMiniGame", "activeMiniGameType", "button",
+    "handleFamilyVote", "handleLookAroundFound", "handleMiniGameTypeChange",
+    "handleNextMiniGame", "handleTriviaChoice", "lookAroundFound",
+    "revealedTriviaAnswer", "selectedFamilyVoteOption", "selectedTriviaChoice",
+    "showTriviaAnswer",
+  ].join(",")
+);
+
+invariantCheck(
+  "WhileYouWaitCard still destructures every prop it is given",
+  // The HomeTab call site is guarded above; this guards the receiving end.
+  // Dropping a handler from the destructuring leaves the markup intact but the
+  // control dead, which renders identically and would otherwise slip through.
+  (() => {
+    const open = wywSource.indexOf("export function WhileYouWaitCard({");
+    const close = wywSource.indexOf("}) {", open);
+    if (open < 0 || close < 0) return "";
+    return [...wywSource.slice(open, close).matchAll(/^\s*(\w+)[,=]/gm)]
+      .map((m) => m[1])
+      .filter((k) => k !== "night")
+      .sort()
+      .join(",");
+  })(),
+  [
+    "actionButton", "activeMiniGame", "activeMiniGameType", "button", "card",
+    "handleFamilyVote", "handleLookAroundFound", "handleMiniGameTypeChange",
+    "handleNextMiniGame", "handleTriviaChoice", "lookAroundFound",
+    "revealedTriviaAnswer", "selectedFamilyVoteOption", "selectedTriviaChoice",
+    "showTriviaAnswer", "whileYouWaitContent",
+  ].join(",")
 );
 
 invariantCheck(
@@ -696,6 +929,29 @@ invariantCheck(
   !/useState|useEffect|useMemo|useCallback|useRef/.test(homeTabSource) &&
     !/localStorage|sessionStorage|setInterval|addEventListener/.test(homeTabSource) &&
     !/\bfetch\s*\(/.test(homeTabSource),
+  true
+);
+
+
+invariantCheck(
+  "Home night is not activated — App passes a literal false and the shell stays Plan-only",
+  // Base-true and true now: before this phase App passed no night prop at all
+  // and planShellNight was Plan-only; after it, the prop is a literal false and
+  // planShellNight is untouched. 62B-2F-2 is what flips this.
+  /const planShellNight\s*=\s*activeTab === "plan"\s*&&\s*planNight;/.test(appSource) &&
+    /night=\{planShellNight\}/.test(appSource) &&
+    (() => {
+      const open = appSource.indexOf("<HomeTab");
+      const close = appSource.indexOf("/>", open);
+      if (open < 0 || close < 0) return false;
+      const el = appSource.slice(open, close);
+      const nightProps = el.match(/night=\{[^}]*\}/g) || [];
+      // Base has no night prop at all; this phase passes a literal false.
+      // Anything else — planNight, parkPresenceTheme.isNight, planShellNight —
+      // means Home night went live, which belongs to 62B-2F-2.
+      return nightProps.length === 0 ||
+        (nightProps.length === 1 && nightProps[0] === "night={false}");
+    })(),
   true
 );
 

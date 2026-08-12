@@ -2,7 +2,124 @@ import React from "react";
 import { CORE_GAME_TYPES } from "../data/miniGames/magicKingdomMiniGames";
 import { colors } from "../theme";
 
+// Day gradients preserved verbatim from the shipped values.
+const DAY_COMPANION_BACKGROUND =
+  "radial-gradient(circle at 92% 8%, rgba(124, 58, 237, 0.18) 0%, rgba(124, 58, 237, 0.04) 36%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #F3E8FF 100%)";
+const DAY_OUTER_BACKGROUND =
+  "radial-gradient(circle at 92% 0%, rgba(56, 189, 248, 0.18) 0%, rgba(56, 189, 248, 0.05) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%)";
+
+// 62B-2F-1. Presentation tokens for the While You Wait surfaces. Day values are
+// exactly what this card already shipped; night reuses the same Plan/Home
+// palette. Behaviour, content, handlers and mini-game selection are untouched —
+// only colours change. No pure black.
+function getWywTokens(night) {
+  return night
+    ? {
+        companionBorder: "1px solid rgba(139, 92, 246, 0.34)",
+        companionBackground:
+          "radial-gradient(circle at 92% 8%, rgba(139, 92, 246, 0.20) 0%, rgba(139, 92, 246, 0.06) 34%, transparent 60%), linear-gradient(150deg, #16203C 0%, #131C36 100%)",
+        companionShadow: "0 14px 34px rgba(2, 6, 23, 0.50)",
+        orbAmber: "rgba(245, 158, 11, 0.14)",
+        orbPurple: "rgba(139, 92, 246, 0.18)",
+        eyebrowPill: "rgba(76, 29, 149, 0.45)",
+        eyebrow: "#C4B5FD",
+        title: "#F5F3FF",
+        muted: "#B6C2E2",
+        innerSurface: "rgba(15, 23, 42, 0.72)",
+        itemSurface: "rgba(15, 23, 42, 0.62)",
+        itemShadow: "0 8px 18px rgba(2, 6, 23, 0.40)",
+        innerBorder: "rgba(99, 102, 241, 0.26)",
+        innerShadow: "0 10px 24px rgba(2, 6, 23, 0.45)",
+        optionSurface: "rgba(30, 41, 59, 0.72)",
+        optionBorder: "rgba(99, 102, 241, 0.26)",
+        optionShadow: "0 6px 14px rgba(2, 6, 23, 0.45)",
+        chipActiveBackground: "linear-gradient(145deg, #6D28D9 0%, #4C1D95 100%)",
+        chipIdleBackground: "rgba(30, 41, 59, 0.72)",
+        chipActiveBorder: "rgba(167, 139, 250, 0.42)",
+        chipIdleBorder: "rgba(99, 102, 241, 0.26)",
+        chipActiveShadow: "0 10px 18px rgba(2, 6, 23, 0.50)",
+        chipIdleShadow: "0 6px 14px rgba(2, 6, 23, 0.40)",
+        chipIdleText: "#C4B5FD",
+        accent: "#C4B5FD",
+        accentBorder: "rgba(139, 92, 246, 0.34)",
+        successText: "#6EE7B7",
+        successSurface: "rgba(6, 78, 59, 0.55)",
+        successBorder: "rgba(52, 211, 153, 0.40)",
+        successBorderSoft: "rgba(52, 211, 153, 0.34)",
+        successShadow: "0 8px 18px rgba(2, 6, 23, 0.45)",
+        errorText: "#FCA5A5",
+        errorSurface: "rgba(69, 10, 10, 0.55)",
+        errorBorder: "rgba(248, 113, 113, 0.38)",
+        errorBorderSoft: "rgba(248, 113, 113, 0.32)",
+        errorShadow: "0 8px 18px rgba(2, 6, 23, 0.45)",
+        selectedSurface: "rgba(76, 29, 149, 0.45)",
+        selectedBorder: "rgba(167, 139, 250, 0.42)",
+        selectedText: "#DDD6FE",
+        selectedShadow: "0 8px 18px rgba(2, 6, 23, 0.45)",
+        promptSurface: "rgba(76, 29, 149, 0.28)",
+        promptBorder: "1px solid rgba(139, 92, 246, 0.34)",
+        controlSurface: "rgba(30, 41, 59, 0.78)",
+        skyPill: "rgba(30, 58, 92, 0.62)",
+        skyText: "#7DD3FC",
+        outerBorder: "1px solid rgba(56, 189, 248, 0.26)",
+        outerBackground:
+          "radial-gradient(circle at 92% 0%, rgba(56, 189, 248, 0.14) 0%, rgba(56, 189, 248, 0.04) 34%, transparent 58%), linear-gradient(145deg, #131C36 0%, #16233F 100%)",
+        outerShadow: "0 16px 38px rgba(2, 6, 23, 0.45)",
+      }
+    : {
+        companionBorder: "1px solid rgba(124, 58, 237, 0.22)",
+        companionBackground: DAY_COMPANION_BACKGROUND,
+        companionShadow: "0 14px 34px rgba(124, 58, 237, 0.10)",
+        orbAmber: "rgba(245, 158, 11, 0.16)",
+        orbPurple: "rgba(124, 58, 237, 0.10)",
+        eyebrowPill: "rgba(124, 58, 237, 0.12)",
+        eyebrow: colors.purpleDeep,
+        title: colors.text,
+        muted: colors.muted,
+        innerSurface: "rgba(255, 255, 255, 0.86)",
+        itemSurface: "rgba(255, 255, 255, 0.82)",
+        itemShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
+        innerBorder: colors.cardBorder,
+        innerShadow: "0 10px 24px rgba(28, 25, 23, 0.06)",
+        optionSurface: colors.card,
+        optionBorder: colors.cardBorder,
+        optionShadow: "0 6px 14px rgba(28, 25, 23, 0.04)",
+        chipActiveBackground: "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
+        chipIdleBackground: "rgba(255, 255, 255, 0.78)",
+        chipActiveBorder: "rgba(124, 58, 237, 0.28)",
+        chipIdleBorder: "rgba(124, 58, 237, 0.18)",
+        chipActiveShadow: "0 10px 18px rgba(124, 58, 237, 0.18)",
+        chipIdleShadow: "0 6px 14px rgba(28, 25, 23, 0.04)",
+        chipIdleText: colors.purpleDeep,
+        accent: colors.purple,
+        accentBorder: "rgba(124, 58, 237, 0.18)",
+        successText: colors.success,
+        successSurface: colors.successSoft,
+        successBorder: "rgba(5, 150, 105, 0.28)",
+        successBorderSoft: "rgba(5, 150, 105, 0.22)",
+        successShadow: "0 8px 18px rgba(5, 150, 105, 0.10)",
+        errorText: colors.error,
+        errorSurface: colors.errorSoft,
+        errorBorder: "rgba(220, 38, 38, 0.25)",
+        errorBorderSoft: "rgba(220, 38, 38, 0.22)",
+        errorShadow: "0 8px 18px rgba(220, 38, 38, 0.08)",
+        selectedSurface: colors.purpleSoft,
+        selectedBorder: "rgba(124, 58, 237, 0.28)",
+        selectedText: colors.purpleDeep,
+        selectedShadow: "0 8px 18px rgba(124, 58, 237, 0.10)",
+        promptSurface: "rgba(124, 58, 237, 0.08)",
+        promptBorder: "1px solid rgba(124, 58, 237, 0.18)",
+        controlSurface: "rgba(255, 255, 255, 0.82)",
+        skyPill: "rgba(56, 189, 248, 0.16)",
+        skyText: "#0369A1",
+        outerBorder: "1px solid rgba(56, 189, 248, 0.26)",
+        outerBackground: DAY_OUTER_BACKGROUND,
+        outerShadow: "0 16px 38px rgba(2, 132, 199, 0.10)",
+      };
+}
+
 function LineTimeCompanion({
+  night = false,
   activeMiniGame,
   activeMiniGameType,
   revealedTriviaAnswer,
@@ -18,6 +135,8 @@ function LineTimeCompanion({
   button,
   actionButton,
 }) {
+  const w = getWywTokens(night);
+
   if (!activeMiniGame) return null;
 
   return (
@@ -26,10 +145,9 @@ function LineTimeCompanion({
         marginTop: 16,
         padding: 14,
         borderRadius: 24,
-        border: "1px solid rgba(124, 58, 237, 0.22)",
-        background:
-          "radial-gradient(circle at 92% 8%, rgba(124, 58, 237, 0.18) 0%, rgba(124, 58, 237, 0.04) 36%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #F3E8FF 100%)",
-        boxShadow: "0 14px 34px rgba(124, 58, 237, 0.10)",
+        border: w.companionBorder,
+        background: w.companionBackground,
+        boxShadow: w.companionShadow,
         overflow: "hidden",
         position: "relative",
       }}
@@ -43,7 +161,7 @@ function LineTimeCompanion({
           borderRadius: "999px",
           right: -34,
           bottom: -42,
-          background: "rgba(245, 158, 11, 0.16)",
+          background: w.orbAmber,
         }}
       />
 
@@ -55,8 +173,8 @@ function LineTimeCompanion({
             gap: 6,
             padding: "5px 9px",
             borderRadius: 999,
-            background: "rgba(124, 58, 237, 0.12)",
-            color: colors.purpleDeep,
+            background: w.eyebrowPill,
+            color: w.eyebrow,
             fontSize: 11,
             fontWeight: 950,
             letterSpacing: 0.7,
@@ -70,7 +188,7 @@ function LineTimeCompanion({
           style={{
             margin: "0 0 6px",
             fontSize: 21,
-            color: colors.text,
+            color: w.title,
             letterSpacing: -0.35,
             lineHeight: 1.15,
           }}
@@ -81,7 +199,7 @@ function LineTimeCompanion({
         <p
           style={{
             margin: "0 0 12px",
-            color: colors.muted,
+            color: w.muted,
             fontSize: 13,
             lineHeight: 1.45,
           }}
@@ -109,15 +227,15 @@ function LineTimeCompanion({
                 style={{
                   ...actionButton,
                   background: isActive
-                    ? "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)"
-                    : "rgba(255, 255, 255, 0.78)",
-                  color: isActive ? "white" : colors.purpleDeep,
+                    ? w.chipActiveBackground
+                    : w.chipIdleBackground,
+                  color: isActive ? "white" : w.chipIdleText,
                   borderColor: isActive
-                    ? "rgba(124, 58, 237, 0.28)"
-                    : "rgba(124, 58, 237, 0.18)",
+                    ? w.chipActiveBorder
+                    : w.chipIdleBorder,
                   boxShadow: isActive
-                    ? "0 10px 18px rgba(124, 58, 237, 0.18)"
-                    : "0 6px 14px rgba(28, 25, 23, 0.04)",
+                    ? w.chipActiveShadow
+                    : w.chipIdleShadow,
                 }}
               >
                 {game.label}
@@ -130,15 +248,15 @@ function LineTimeCompanion({
           style={{
             padding: 14,
             borderRadius: 22,
-            border: `1px solid ${colors.cardBorder}`,
-            background: "rgba(255, 255, 255, 0.86)",
-            boxShadow: "0 10px 24px rgba(28, 25, 23, 0.06)",
+            border: `1px solid ${w.innerBorder}`,
+            background: w.innerSurface,
+            boxShadow: w.innerShadow,
           }}
         >
           <strong
             style={{
               display: "block",
-              color: colors.text,
+              color: w.title,
               fontSize: 16,
               lineHeight: 1.25,
             }}
@@ -151,7 +269,7 @@ function LineTimeCompanion({
               <p
                 style={{
                   margin: "9px 0 10px",
-                  color: colors.text,
+                  color: w.title,
                   fontWeight: 800,
                   lineHeight: 1.4,
                 }}
@@ -179,29 +297,29 @@ function LineTimeCompanion({
                         textAlign: "left",
                         padding: "10px 12px",
                         background: shouldShowCorrect
-                          ? colors.successSoft
+                          ? w.successSurface
                           : shouldShowWrong
-                          ? colors.errorSoft
-                          : colors.card,
+                          ? w.errorSurface
+                          : w.optionSurface,
                         borderColor: shouldShowCorrect
-                          ? "rgba(5, 150, 105, 0.28)"
+                          ? w.successBorder
                           : shouldShowWrong
-                          ? "rgba(220, 38, 38, 0.25)"
-                          : colors.cardBorder,
+                          ? w.errorBorder
+                          : w.optionBorder,
                         color: shouldShowCorrect
-                          ? colors.success
+                          ? w.successText
                           : shouldShowWrong
-                          ? colors.error
-                          : colors.text,
+                          ? w.errorText
+                          : w.title,
                         opacity:
                           revealedTriviaAnswer && !isCorrect && !isSelected
                             ? 0.68
                             : 1,
                         boxShadow: shouldShowCorrect
-                          ? "0 8px 18px rgba(5, 150, 105, 0.10)"
+                          ? w.successShadow
                           : shouldShowWrong
-                          ? "0 8px 18px rgba(220, 38, 38, 0.08)"
-                          : "0 6px 14px rgba(28, 25, 23, 0.04)",
+                          ? w.errorShadow
+                          : w.optionShadow,
                       }}
                     >
                       {choice}
@@ -219,8 +337,9 @@ function LineTimeCompanion({
                   style={{
                     ...button,
                     marginTop: 11,
-                    color: colors.purple,
-                    borderColor: "rgba(124, 58, 237, 0.18)",
+                    color: w.accent,
+                    borderColor: w.accentBorder,
+                    ...(night ? { background: w.controlSurface } : null),
                   }}
                 >
                   Show Answer
@@ -234,13 +353,13 @@ function LineTimeCompanion({
                     background:
                       selectedTriviaChoice &&
                       selectedTriviaChoice !== activeMiniGame.answer
-                        ? colors.errorSoft
-                        : colors.successSoft,
+                        ? w.errorSurface
+                        : w.successSurface,
                     border:
                       selectedTriviaChoice &&
                       selectedTriviaChoice !== activeMiniGame.answer
-                        ? "1px solid rgba(220, 38, 38, 0.22)"
-                        : "1px solid rgba(5, 150, 105, 0.22)",
+                        ? `1px solid ${w.errorBorderSoft}`
+                        : `1px solid ${w.successBorderSoft}`,
                   }}
                 >
                   <strong
@@ -248,8 +367,8 @@ function LineTimeCompanion({
                       color:
                         selectedTriviaChoice &&
                         selectedTriviaChoice !== activeMiniGame.answer
-                          ? colors.error
-                          : colors.success,
+                          ? w.errorText
+                          : w.successText,
                     }}
                   >
                     {selectedTriviaChoice
@@ -263,7 +382,7 @@ function LineTimeCompanion({
                       : activeMiniGame.answer}
                   </strong>
 
-                  <p style={{ margin: "6px 0 0", color: colors.text }}>
+                  <p style={{ margin: "6px 0 0", color: w.title }}>
                     {activeMiniGame.fact}
                   </p>
                 </div>
@@ -276,7 +395,7 @@ function LineTimeCompanion({
               <p
                 style={{
                   margin: "9px 0 8px",
-                  color: colors.text,
+                  color: w.title,
                   fontWeight: 800,
                   lineHeight: 1.4,
                 }}
@@ -287,7 +406,7 @@ function LineTimeCompanion({
               <p
                 style={{
                   margin: "0 0 11px",
-                  color: colors.muted,
+                  color: w.muted,
                   fontSize: 13,
                   lineHeight: 1.45,
                 }}
@@ -300,11 +419,11 @@ function LineTimeCompanion({
                 onClick={handleLookAroundFound}
                 style={{
                   ...button,
-                  color: lookAroundFound ? colors.success : colors.text,
-                  background: lookAroundFound ? colors.successSoft : colors.card,
+                  color: lookAroundFound ? w.successText : w.title,
+                  background: lookAroundFound ? w.successSurface : w.optionSurface,
                   borderColor: lookAroundFound
-                    ? "rgba(5, 150, 105, 0.28)"
-                    : colors.cardBorder,
+                    ? w.successBorder
+                    : w.optionBorder,
                 }}
               >
                 {lookAroundFound ? "Nice find! ✓" : "Found it!"}
@@ -317,7 +436,7 @@ function LineTimeCompanion({
               <p
                 style={{
                   margin: "9px 0 10px",
-                  color: colors.text,
+                color: w.title,
                   fontWeight: 800,
                   lineHeight: 1.4,
                 }}
@@ -339,14 +458,14 @@ function LineTimeCompanion({
                         borderRadius: 16,
                         textAlign: "left",
                         padding: "10px 12px",
-                        background: selected ? colors.purpleSoft : colors.card,
+                        background: selected ? w.selectedSurface : w.optionSurface,
                         borderColor: selected
-                          ? "rgba(124, 58, 237, 0.28)"
-                          : colors.cardBorder,
-                        color: selected ? colors.purpleDeep : colors.text,
+                          ? w.selectedBorder
+                          : w.optionBorder,
+                        color: selected ? w.selectedText : w.title,
                         boxShadow: selected
-                          ? "0 8px 18px rgba(124, 58, 237, 0.10)"
-                          : "0 6px 14px rgba(28, 25, 23, 0.04)",
+                          ? w.selectedShadow
+                          : w.optionShadow,
                       }}
                     >
                       {option}
@@ -360,7 +479,7 @@ function LineTimeCompanion({
                 <p
                   style={{
                     margin: "9px 0 0",
-                    color: colors.purpleDeep,
+                    color: w.selectedText,
                     fontSize: 13,
                     fontWeight: 900,
                   }}
@@ -375,7 +494,7 @@ function LineTimeCompanion({
             <p
               style={{
                 margin: "9px 0 0",
-                color: colors.text,
+                color: w.title,
                 fontWeight: 850,
                 lineHeight: 1.45,
               }}
@@ -388,7 +507,7 @@ function LineTimeCompanion({
             <p
               style={{
                 margin: "9px 0 0",
-                color: colors.text,
+                color: w.title,
                 fontWeight: 850,
                 lineHeight: 1.45,
               }}
@@ -402,7 +521,7 @@ function LineTimeCompanion({
               <p
                 style={{
                   margin: "9px 0 12px",
-                  color: colors.text,
+                  color: w.title,
                   fontWeight: 850,
                   lineHeight: 1.45,
                 }}
@@ -416,14 +535,14 @@ function LineTimeCompanion({
                   padding: "22px 16px",
                   borderRadius: 22,
                   textAlign: "center",
-                  background: "rgba(124, 58, 237, 0.08)",
-                  border: "1px solid rgba(124, 58, 237, 0.18)",
+                  background: w.promptSurface,
+                  border: w.promptBorder,
                 }}
               >
                 <p
                   style={{
                     margin: "0 0 7px",
-                    color: colors.muted,
+                    color: w.muted,
                     fontSize: 12,
                     fontWeight: 900,
                     textTransform: "uppercase",
@@ -435,7 +554,7 @@ function LineTimeCompanion({
                 <p
                   style={{
                     margin: 0,
-                    color: colors.purpleDeep,
+                    color: w.eyebrow,
                     fontSize: 28,
                     fontWeight: 950,
                     lineHeight: 1.1,
@@ -448,7 +567,7 @@ function LineTimeCompanion({
               <p
                 style={{
                   margin: "10px 0 0",
-                  color: colors.muted,
+                  color: w.muted,
                   fontSize: 13,
                   lineHeight: 1.45,
                 }}
@@ -462,7 +581,7 @@ function LineTimeCompanion({
             <p
               style={{
                 margin: "9px 0 0",
-                color: colors.text,
+                color: w.title,
                 fontWeight: 850,
                 lineHeight: 1.45,
               }}
@@ -475,7 +594,7 @@ function LineTimeCompanion({
             <p
               style={{
                 margin: "9px 0 0",
-                color: colors.text,
+                color: w.title,
                 fontWeight: 850,
                 lineHeight: 1.45,
               }}
@@ -490,9 +609,9 @@ function LineTimeCompanion({
             style={{
               ...button,
               marginTop: 13,
-              color: colors.purple,
-              borderColor: "rgba(124, 58, 237, 0.18)",
-              background: "rgba(255, 255, 255, 0.82)",
+              color: w.accent,
+              borderColor: w.accentBorder,
+              background: w.controlSurface,
             }}
           >
             Give us another one
@@ -504,6 +623,7 @@ function LineTimeCompanion({
 }
 
 export function WhileYouWaitCard({
+  night = false,
   whileYouWaitContent,
   activeMiniGame,
   activeMiniGameType,
@@ -521,6 +641,8 @@ export function WhileYouWaitCard({
   button,
   actionButton,
 }) {
+  const w = getWywTokens(night);
+
   const items = whileYouWaitContent?.whileWaiting || [];
 
   if (!items.length) {
@@ -533,10 +655,9 @@ export function WhileYouWaitCard({
         ...card,
         position: "relative",
         overflow: "hidden",
-        border: "1px solid rgba(56, 189, 248, 0.26)",
-        background:
-          "radial-gradient(circle at 92% 0%, rgba(56, 189, 248, 0.18) 0%, rgba(56, 189, 248, 0.05) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%)",
-        boxShadow: "0 16px 38px rgba(2, 132, 199, 0.10)",
+        border: w.outerBorder,
+        background: w.outerBackground,
+        boxShadow: w.outerShadow,
       }}
     >
       <div
@@ -548,7 +669,7 @@ export function WhileYouWaitCard({
           borderRadius: "999px",
           right: -44,
           top: -52,
-          background: "rgba(124, 58, 237, 0.10)",
+          background: w.orbPurple,
         }}
       />
 
@@ -560,8 +681,8 @@ export function WhileYouWaitCard({
             gap: 6,
             padding: "5px 9px",
             borderRadius: 999,
-            background: "rgba(56, 189, 248, 0.16)",
-            color: "#0369A1",
+            background: w.skyPill,
+            color: w.skyText,
             fontSize: 11,
             fontWeight: 950,
             letterSpacing: 0.7,
@@ -575,7 +696,7 @@ export function WhileYouWaitCard({
           style={{
             margin: "0 0 8px",
             fontSize: 22,
-            color: colors.text,
+            color: w.title,
             letterSpacing: -0.4,
             lineHeight: 1.15,
           }}
@@ -590,16 +711,16 @@ export function WhileYouWaitCard({
               style={{
                 padding: 13,
                 borderRadius: 18,
-                border: `1px solid ${colors.cardBorder}`,
-                background: "rgba(255, 255, 255, 0.82)",
-                boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
+                border: `1px solid ${w.innerBorder}`,
+                background: w.itemSurface,
+                boxShadow: w.itemShadow,
               }}
             >
-              <strong style={{ color: colors.text }}>{item.title}</strong>
+              <strong style={{ color: w.title }}>{item.title}</strong>
               <p
                 style={{
                   margin: "6px 0 0",
-                  color: colors.muted,
+                  color: w.muted,
                   lineHeight: 1.45,
                 }}
               >
@@ -610,6 +731,7 @@ export function WhileYouWaitCard({
         </div>
 
         <LineTimeCompanion
+          night={night}
           activeMiniGame={activeMiniGame}
           activeMiniGameType={activeMiniGameType}
           revealedTriviaAnswer={revealedTriviaAnswer}
