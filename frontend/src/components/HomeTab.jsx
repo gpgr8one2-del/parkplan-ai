@@ -11,11 +11,111 @@ import { resolveHomeParkArtKey, resolveHomeWeatherFamily } from "../utils/homeAr
 import { getWeatherMode } from "../utils/weatherAdvice";
 import { colors } from "../theme";
 
-// 62B-2B renders the day artwork only. Home night mode arrives in a later
-// phase, which will replace this constant with the app's existing theme state.
-// Keeping the mode an explicit lookup key — rather than a boolean argument —
-// means that switch needs no change to the resolver API.
-const HOME_ART_MODE = "day";
+// 62B-2F-1. Home's presentation tokens. Day values are exactly the values Home
+// already shipped; night reuses Plan's established palette so the two converted
+// surfaces agree.
+//
+// These are LOCAL overrides applied AFTER the shared `card` / `button` objects
+// are spread. Those objects are module-level constants in App.jsx that Waits
+// also consumes, so they cannot be darkened in place — and merely spreading
+// them onto a night surface would leave their white fills visible underneath.
+//
+// No pure black: the darkest value here is #0F172A.
+function getHomeTokens(night) {
+  return night
+    ? {
+        surface: "#131C36",
+        surfaceSoft: "#0F172A",
+        surfaceTranslucent: "rgba(15, 23, 42, 0.72)",
+        nestedSurface: "rgba(15, 23, 42, 0.62)",
+        title: "#F5F3FF",
+        muted: "#B6C2E2",
+        eyebrow: "#C4B5FD",
+        eyebrowPill: "rgba(76, 29, 149, 0.45)",
+        border: "rgba(139, 92, 246, 0.34)",
+        borderQuiet: "rgba(99, 102, 241, 0.26)",
+        shadow: "0 12px 30px rgba(2, 6, 23, 0.45)",
+        headerBackground:
+          "radial-gradient(circle at 88% 8%, rgba(139, 92, 246, 0.34) 0%, rgba(139, 92, 246, 0.12) 24%, transparent 46%), radial-gradient(circle at 8% 0%, rgba(245, 158, 11, 0.20) 0%, rgba(245, 158, 11, 0.06) 32%, transparent 58%), linear-gradient(150deg, #16203C 0%, #131C36 45%, #1B1740 100%)",
+        headerBorder: "1px solid rgba(139, 92, 246, 0.34)",
+        headerShadow: "0 22px 58px rgba(2, 6, 23, 0.50)",
+        headerOrbCoral: "rgba(251, 113, 133, 0.16)",
+        headerOrbSky: "rgba(56, 189, 248, 0.14)",
+        skyPill: "rgba(30, 58, 92, 0.62)",
+        skyPillSoft: "rgba(30, 58, 92, 0.48)",
+        skyText: "#7DD3FC",
+        amberPill: "rgba(69, 26, 3, 0.55)",
+        amberPillSoft: "rgba(69, 26, 3, 0.45)",
+        amberText: "#FCD34D",
+        successText: "#6EE7B7",
+        successPill: "rgba(6, 78, 59, 0.55)",
+        errorText: "#FCA5A5",
+        errorPill: "rgba(69, 10, 10, 0.55)",
+        heroBorder: "1px solid rgba(139, 92, 246, 0.34)",
+        heroShadow: "0 14px 34px rgba(2, 6, 23, 0.50)",
+        heroArtBackground: "rgba(15, 23, 42, 0.35)",
+        heroNoArt:
+          "linear-gradient(150deg, #1E1B4B 0%, #172554 52%, #3B1E4D 100%)",
+        weatherBackground:
+          "radial-gradient(circle at 92% 0%, rgba(56, 189, 248, 0.14) 0%, rgba(56, 189, 248, 0.04) 34%, transparent 58%), linear-gradient(145deg, #131C36 0%, #16233F 100%)",
+        weatherBorder: "1px solid rgba(56, 189, 248, 0.24)",
+        weatherShadow: "0 16px 38px rgba(2, 6, 23, 0.45)",
+        rightNowBackground:
+          "linear-gradient(145deg, rgba(19, 28, 54, 0.97) 0%, #1C1733 52%, #171A38 100%)",
+        rightNowBorder: "1px solid rgba(251, 191, 36, 0.26)",
+        rightNowShadow: "0 12px 28px rgba(2, 6, 23, 0.45)",
+        activityBorder: "1px solid rgba(139, 92, 246, 0.40)",
+        activityBackground: "rgba(76, 29, 149, 0.32)",
+        activityEyebrow: "#C4B5FD",
+        controlBackground: "rgba(30, 41, 59, 0.78)",
+      }
+    : {
+        surface: "#FFFFFF",
+        surfaceSoft: "#FFF9F1",
+        surfaceTranslucent: "rgba(255, 255, 255, 0.82)",
+        nestedSurface: "rgba(255,255,255,0.72)",
+        title: colors.text,
+        muted: colors.muted,
+        eyebrow: colors.purpleDeep,
+        eyebrowPill: "rgba(124, 58, 237, 0.10)",
+        border: "rgba(124, 58, 237, 0.16)",
+        borderQuiet: colors.cardBorder,
+        shadow: "0 10px 24px rgba(28, 25, 23, 0.06)",
+        headerBackground:
+          "radial-gradient(circle at 88% 8%, rgba(124, 58, 237, 0.34) 0%, rgba(124, 58, 237, 0.12) 24%, transparent 46%), radial-gradient(circle at 8% 0%, rgba(245, 158, 11, 0.30) 0%, rgba(245, 158, 11, 0.10) 32%, transparent 58%), linear-gradient(150deg, #FFFFFF 0%, #FFF4D8 45%, #F3E8FF 100%)",
+        headerBorder: "1px solid rgba(124, 58, 237, 0.16)",
+        headerShadow: "0 22px 58px rgba(91, 33, 182, 0.16)",
+        headerOrbCoral: "rgba(251, 113, 133, 0.18)",
+        headerOrbSky: "rgba(56, 189, 248, 0.16)",
+        skyPill: "rgba(56, 189, 248, 0.16)",
+        skyPillSoft: "rgba(56, 189, 248, 0.12)",
+        skyText: "#0369A1",
+        amberPill: colors.amberSoft,
+        amberPillSoft: "rgba(245, 158, 11, 0.16)",
+        amberText: "#92400E",
+        successText: colors.success,
+        successPill: colors.successSoft,
+        errorText: colors.error,
+        errorPill: colors.errorSoft,
+        heroBorder: "1px solid rgba(124, 58, 237, 0.16)",
+        heroShadow: "0 14px 34px rgba(91, 33, 182, 0.14)",
+        heroArtBackground: "rgba(15, 23, 42, 0.06)",
+        heroNoArt:
+          "linear-gradient(150deg, #F3E8FF 0%, #E0F2FE 52%, #FFF4D8 100%)",
+        weatherBackground:
+          "radial-gradient(circle at 92% 0%, rgba(56, 189, 248, 0.18) 0%, rgba(56, 189, 248, 0.05) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%)",
+        weatherBorder: "1px solid rgba(56, 189, 248, 0.24)",
+        weatherShadow: "0 16px 38px rgba(2, 132, 199, 0.09)",
+        rightNowBackground:
+          "linear-gradient(145deg, rgba(255,255,255,0.97) 0%, #FFF7ED 52%, #F5F3FF 100%)",
+        rightNowBorder: "1px solid rgba(245, 158, 11, 0.24)",
+        rightNowShadow: "0 12px 28px rgba(245, 158, 11, 0.08)",
+        activityBorder: "1px solid #c4b5fd",
+        activityBackground: colors.purpleSoft,
+        activityEyebrow: colors.purple,
+        controlBackground: "rgba(255, 255, 255, 0.88)",
+      };
+}
 
 // 62B-1a: Home presentation extracted verbatim from App.jsx. This component is
 // presentation only — every piece of state, effect, memo, timer, storage,
@@ -95,12 +195,12 @@ export function HomeTab({
   error,
   homeGreeting,
   liveParkContext,
+  night = false,
   loading,
   parkData,
   parkHopperContext,
   parkPresence,
   parkPresencePrompt,
-  parkPresenceTheme,
   planningPark,
   planningParkLabel,
   planningParkSource,
@@ -143,12 +243,21 @@ export function HomeTab({
   button,
   card,
 }) {
+  // 62B-2F-1. ONE theme signal for all of Home. The parent owns the decision;
+  // this component derives no clock, timer, media query, hook, storage value or
+  // alternative theme source of its own.
+  const t = getHomeTokens(night);
+
+  // The explicit lookup key 62B-2B deliberately left in place, now derived per
+  // render. The resolver API, the manifest shape and the keys are unchanged.
+  const homeArtMode = night ? "night" : "day";
+
   // Exact park-id mapping only. An unknown id — a Universal park, a missing
   // value, anything unmapped — returns null, and a mapped park with no entry
   // for this mode also returns null. Both land on the composed no-art hero.
   const homeParkArtKey = resolveHomeParkArtKey(activePark);
   const heroParkArt = homeParkArtKey
-    ? HOME_PARK_ART[homeParkArtKey]?.[HOME_ART_MODE] || null
+    ? HOME_PARK_ART[homeParkArtKey]?.[homeArtMode] || null
     : null;
 
   // The hero's name must come from the SAME source as its artwork. parkData is
@@ -171,7 +280,7 @@ export function HomeTab({
   // the full width. No substituted family, no generic icon, no placeholder.
   const weatherArtFamily = resolveHomeWeatherFamily(weather);
   const weatherArt = weatherArtFamily
-    ? HOME_WEATHER_ART[weatherArtFamily]?.[HOME_ART_MODE] || null
+    ? HOME_WEATHER_ART[weatherArtFamily]?.[homeArtMode] || null
     : null;
 
   return (
@@ -180,13 +289,12 @@ export function HomeTab({
           style={{
             position: "relative",
             overflow: "hidden",
-            background:
-              "radial-gradient(circle at 88% 8%, rgba(124, 58, 237, 0.34) 0%, rgba(124, 58, 237, 0.12) 24%, transparent 46%), radial-gradient(circle at 8% 0%, rgba(245, 158, 11, 0.30) 0%, rgba(245, 158, 11, 0.10) 32%, transparent 58%), linear-gradient(150deg, #FFFFFF 0%, #FFF4D8 45%, #F3E8FF 100%)",
-            border: "1px solid rgba(124, 58, 237, 0.16)",
+            background: t.headerBackground,
+            border: t.headerBorder,
             borderRadius: 32,
             padding: "26px 22px 20px",
             marginBottom: 14,
-            boxShadow: "0 22px 58px rgba(91, 33, 182, 0.16)",
+            boxShadow: t.headerShadow,
           }}
         >
           <div
@@ -196,7 +304,7 @@ export function HomeTab({
               width: 130,
               height: 130,
               borderRadius: "999px",
-              background: "rgba(251, 113, 133, 0.18)",
+              background: t.headerOrbCoral,
               right: -42,
               bottom: -54,
               filter: "blur(2px)",
@@ -209,7 +317,7 @@ export function HomeTab({
               width: 86,
               height: 86,
               borderRadius: "999px",
-              background: "rgba(56, 189, 248, 0.16)",
+              background: t.headerOrbSky,
               right: 38,
               top: 38,
               filter: "blur(1px)",
@@ -224,8 +332,8 @@ export function HomeTab({
                 gap: 6,
                 padding: "6px 10px",
                 borderRadius: 999,
-                background: "rgba(124, 58, 237, 0.10)",
-                color: colors.purpleDeep,
+                background: t.eyebrowPill,
+                color: t.eyebrow,
                 fontSize: 11,
                 fontWeight: 900,
                 letterSpacing: 0.8,
@@ -239,7 +347,7 @@ export function HomeTab({
               style={{
                 margin: 0,
                 fontSize: 28,
-                color: colors.text,
+                color: t.title,
                 letterSpacing: -0.6,
                 lineHeight: 1.18,
                 fontWeight: 900,
@@ -251,7 +359,7 @@ export function HomeTab({
             <p
               style={{
                 margin: "9px 0 18px",
-                color: colors.muted,
+                color: t.muted,
                 fontSize: 15,
                 lineHeight: 1.5,
                 maxWidth: 520,
@@ -274,11 +382,11 @@ export function HomeTab({
               borderRadius: 24,
               overflow: "hidden",
               aspectRatio: "2 / 1",
-              border: "1px solid rgba(124, 58, 237, 0.16)",
-              boxShadow: "0 14px 34px rgba(91, 33, 182, 0.14)",
+              border: t.heroBorder,
+              boxShadow: t.heroShadow,
               background: heroParkArt
-                ? "rgba(15, 23, 42, 0.06)"
-                : "linear-gradient(150deg, #F3E8FF 0%, #E0F2FE 52%, #FFF4D8 100%)",
+                ? t.heroArtBackground
+                : t.heroNoArt,
             }}
           >
             {heroParkArt ? (
@@ -364,6 +472,7 @@ export function HomeTab({
 
                 <div style={{ marginTop: 9 }}>
                   <FreshnessBadge
+                    night={night}
                     source={parkData?.source}
                     ageMs={parkData?.ageMs}
                     fetchedAt={parkData?.fetchedAt}
@@ -392,12 +501,12 @@ export function HomeTab({
 
           {(parkData?.source || error) && (
             <div style={{ marginTop: 10 }}>
-              <DataStatusBanner source={parkData?.source} />
+              <DataStatusBanner source={parkData?.source} night={night} />
 
               {error && (
                 <p
                   style={{
-                    color: colors.error,
+                    color: t.errorText,
                     fontWeight: 700,
                     margin: "6px 0 0",
                     fontSize: 13,
@@ -415,11 +524,10 @@ export function HomeTab({
             ...card,
             position: "relative",
             overflow: "hidden",
-            background:
-              "radial-gradient(circle at 92% 0%, rgba(56, 189, 248, 0.18) 0%, rgba(56, 189, 248, 0.05) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%)",
-            border: "1px solid rgba(56, 189, 248, 0.24)",
+            background: t.weatherBackground,
+            border: t.weatherBorder,
             borderRadius: 28,
-            boxShadow: "0 16px 38px rgba(2, 132, 199, 0.09)",
+            boxShadow: t.weatherShadow,
           }}
         >
           <div
@@ -431,7 +539,7 @@ export function HomeTab({
               borderRadius: "999px",
               right: -42,
               bottom: -48,
-              background: "rgba(124, 58, 237, 0.10)",
+              background: t.eyebrowPill,
             }}
           />
 
@@ -452,8 +560,8 @@ export function HomeTab({
                     gap: 6,
                     padding: "5px 9px",
                     borderRadius: 999,
-                    background: "rgba(56, 189, 248, 0.16)",
-                    color: "#0369A1",
+                    background: t.skyPill,
+                    color: t.skyText,
                     fontSize: 11,
                     fontWeight: 950,
                     letterSpacing: 0.7,
@@ -466,7 +574,7 @@ export function HomeTab({
                 <h3
                   style={{
                     margin: 0,
-                    color: colors.text,
+                    color: t.title,
                     fontSize: 23,
                     letterSpacing: -0.4,
                     lineHeight: 1.15,
@@ -477,6 +585,7 @@ export function HomeTab({
               </div>
 
               <FreshnessBadge
+                night={night}
                 source={weather?.source}
                 ageMs={weather?.ageMs}
                 fetchedAt={weather?.fetchedAt}
@@ -510,7 +619,7 @@ export function HomeTab({
                 {weather?.tempF != null && (
                   <strong
                     style={{
-                      color: "#0369A1",
+                      color: t.skyText,
                       fontSize: 28,
                       lineHeight: 1,
                       letterSpacing: -0.8,
@@ -523,7 +632,7 @@ export function HomeTab({
                 {weather?.feelsLikeF != null && (
                   <span
                     style={{
-                      color: colors.text,
+                      color: t.title,
                       fontSize: 14,
                       fontWeight: 900,
                     }}
@@ -537,8 +646,8 @@ export function HomeTab({
                     style={{
                       padding: "5px 8px",
                       borderRadius: 999,
-                      background: "rgba(56, 189, 248, 0.12)",
-                      color: "#0369A1",
+                      background: t.skyPillSoft,
+                      color: t.skyText,
                       fontSize: 12,
                       fontWeight: 900,
                     }}
@@ -552,8 +661,8 @@ export function HomeTab({
                     style={{
                       padding: "5px 8px",
                       borderRadius: 999,
-                      background: colors.amberSoft,
-                      color: "#92400E",
+                      background: t.amberPill,
+                      color: t.amberText,
                       fontSize: 12,
                       fontWeight: 950,
                     }}
@@ -566,7 +675,7 @@ export function HomeTab({
               <p
                 style={{
                   margin: "8px 0 0",
-                  color: colors.muted,
+                  color: t.muted,
                   fontSize: 13,
                   lineHeight: 1.45,
                 }}
@@ -601,7 +710,7 @@ export function HomeTab({
             <p
               style={{
                 margin: "10px 0 0",
-                color: colors.muted,
+                color: t.muted,
                 fontSize: 13,
                 lineHeight: 1.45,
               }}
@@ -610,7 +719,7 @@ export function HomeTab({
               when heat or storms start working against the family.
             </p>
 
-            <DataStatusBanner source={weather?.source} />
+            <DataStatusBanner source={weather?.source} night={night} />
           </div>
         </section>
 
@@ -623,10 +732,9 @@ export function HomeTab({
               justifyContent: "space-between",
               gap: 12,
               flexWrap: "wrap",
-              background:
-                "linear-gradient(145deg, rgba(255,255,255,0.97) 0%, #FFF7ED 52%, #F5F3FF 100%)",
-              border: "1px solid rgba(245, 158, 11, 0.24)",
-              boxShadow: "0 12px 28px rgba(245, 158, 11, 0.08)",
+              background: t.rightNowBackground,
+              border: t.rightNowBorder,
+              boxShadow: t.rightNowShadow,
             }}
           >
             <div style={{ minWidth: 220, flex: "1 1 340px" }}>
@@ -640,8 +748,8 @@ export function HomeTab({
                   gap: 6,
                   padding: "5px 9px",
                   borderRadius: 999,
-                  background: "rgba(245, 158, 11, 0.16)",
-                  color: "#92400E",
+                  background: t.amberPillSoft,
+                  color: t.amberText,
                   fontSize: 11,
                   fontWeight: 950,
                   letterSpacing: 0.65,
@@ -654,7 +762,7 @@ export function HomeTab({
               <strong
                 style={{
                   display: "block",
-                  color: colors.text,
+                  color: t.title,
                   fontSize: 17,
                   letterSpacing: -0.2,
                   lineHeight: 1.3,
@@ -666,7 +774,7 @@ export function HomeTab({
               <p
                 style={{
                   margin: "5px 0 0",
-                  color: colors.text,
+                  color: t.title,
                   fontSize: 12.5,
                   lineHeight: 1.4,
                 }}
@@ -682,14 +790,14 @@ export function HomeTab({
                       marginTop: 9,
                       padding: 10,
                       borderRadius: 16,
-                      background: "rgba(255,255,255,0.72)",
-                      border: `1px solid ${colors.cardBorder}`,
+                      background: t.nestedSurface,
+                      border: `1px solid ${t.borderQuiet}`,
                     }}
                   >
                     <strong
                       style={{
                         display: "block",
-                        color: colors.text,
+                        color: t.title,
                         fontSize: 12.5,
                         lineHeight: 1.3,
                       }}
@@ -700,7 +808,7 @@ export function HomeTab({
                     <p
                       style={{
                         margin: "5px 0 0",
-                        color: colors.muted,
+                        color: t.muted,
                         fontSize: 12,
                         lineHeight: 1.35,
                       }}
@@ -715,7 +823,7 @@ export function HomeTab({
                 <p
                   style={{
                     margin: "7px 0 0",
-                    color: colors.muted,
+                    color: t.muted,
                     fontSize: 12,
                     lineHeight: 1.35,
                   }}
@@ -760,8 +868,8 @@ export function HomeTab({
                 }}
                 style={{
                   ...button,
-                  background: colors.purpleDeep,
-                  borderColor: colors.purpleDeep,
+                  background: night ? "#6D28D9" : colors.purpleDeep,
+                  borderColor: night ? "#6D28D9" : colors.purpleDeep,
                   color: "white",
                   flexShrink: 0,
                 }}
@@ -776,11 +884,11 @@ export function HomeTab({
           <section
             style={{
               ...card,
-              border: "1px solid #c4b5fd",
-              background: colors.purpleSoft,
+              border: t.activityBorder,
+              background: t.activityBackground,
             }}
           >
-            <div style={{ fontSize: 12, color: colors.purple, fontWeight: 900 }}>
+            <div style={{ fontSize: 12, color: t.activityEyebrow, fontWeight: 900 }}>
               CURRENTLY IN LINE
             </div>
 
@@ -788,7 +896,7 @@ export function HomeTab({
               {currentActivity.rideName}
             </h3>
 
-            <p style={{ margin: "0 0 8px", color: colors.muted }}>
+            <p style={{ margin: "0 0 8px", color: t.muted }}>
               {currentActivity.postedWaitAtStart != null
                 ? `Posted wait when you joined: ${currentActivity.postedWaitAtStart} min`
                 : "You marked this as your current line."}
@@ -798,7 +906,7 @@ export function HomeTab({
               {formatElapsedInLineBadge(currentActivityContext?.elapsedMinutesInLine)}
             </p>
 
-            <p style={{ margin: "0 0 12px", color: colors.text }}>
+            <p style={{ margin: "0 0 12px", color: t.title }}>
               I’ll stop recommending this against itself while you’re waiting. Mark it
               done when you finish, or cancel if you leave the line.
             </p>
@@ -806,14 +914,14 @@ export function HomeTab({
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button
                 onClick={() => handleDone(currentActivity.rideId)}
-                style={{ ...button, color: colors.success, borderColor: colors.successSoft }}
+                style={{ ...button, color: t.successText, borderColor: colors.successSoft, ...(night ? { background: t.controlBackground, borderColor: "rgba(52, 211, 153, 0.42)" } : null) }}
               >
                 ✓ Mark Done
               </button>
 
               <button
                 onClick={handleCancelCurrentActivity}
-                style={{ ...button, color: colors.muted }}
+                style={{ ...button, color: t.muted, ...(night ? { background: t.controlBackground, borderColor: t.borderQuiet } : null) }}
               >
                 Cancel
               </button>
@@ -823,6 +931,7 @@ export function HomeTab({
 
         {currentActivity?.type === "in_line" && (
           <WhileYouWaitCard
+            night={night}
             whileYouWaitContent={whileYouWaitContent}
             activeMiniGame={activeMiniGame}
             activeMiniGameType={activeMiniGameType}
@@ -848,13 +957,13 @@ export function HomeTab({
               ...card,
               position: "relative",
               overflow: "hidden",
-              background: parkPresenceTheme.isNight
+              background: night
                 ? "linear-gradient(150deg, #0F172A 0%, #1E1B4B 100%)"
                 : "linear-gradient(150deg, #FFFFFF 0%, #FFF9F1 55%, #F3E8FF 100%)",
-              border: parkPresenceTheme.isNight
+              border: night
                 ? "1px solid rgba(139, 92, 246, 0.45)"
                 : "1px solid rgba(124, 58, 237, 0.20)",
-              boxShadow: parkPresenceTheme.isNight
+              boxShadow: night
                 ? "0 14px 34px rgba(76, 29, 149, 0.35)"
                 : "0 14px 34px rgba(91, 33, 182, 0.10)",
             }}
@@ -865,7 +974,7 @@ export function HomeTab({
                 fontWeight: 950,
                 letterSpacing: 0.7,
                 marginBottom: 6,
-                color: parkPresenceTheme.isNight ? "#C4B5FD" : colors.purpleDeep,
+                color: night ? "#C4B5FD" : colors.purpleDeep,
               }}
             >
               PARK CHECK
@@ -876,7 +985,7 @@ export function HomeTab({
                 margin: "0 0 6px",
                 fontSize: 20,
                 letterSpacing: -0.3,
-                color: parkPresenceTheme.isNight ? "#F5F3FF" : colors.text,
+                color: night ? "#F5F3FF" : colors.text,
               }}
             >
               {parkPresencePrompt.type === "detected_arrival"
@@ -889,7 +998,7 @@ export function HomeTab({
                 margin: "0 0 12px",
                 fontSize: 13,
                 lineHeight: 1.45,
-                color: parkPresenceTheme.isNight ? "#C7D2FE" : colors.muted,
+                color: night ? "#C7D2FE" : colors.muted,
               }}
             >
               {parkPresencePrompt.type === "detected_arrival"
@@ -903,8 +1012,8 @@ export function HomeTab({
                 onClick={() => handleConfirmParkPresence(parkPresencePrompt.parkId)}
                 style={{
                   ...button,
-                  background: colors.purpleDeep,
-                  borderColor: colors.purpleDeep,
+                  background: night ? "#6D28D9" : colors.purpleDeep,
+                  borderColor: night ? "#6D28D9" : colors.purpleDeep,
                   color: "white",
                 }}
               >
@@ -918,7 +1027,7 @@ export function HomeTab({
                 onClick={handleDismissParkPresencePrompt}
                 style={{
                   ...button,
-                  ...(parkPresenceTheme.isNight
+                  ...(night
                     ? {
                         background: "rgba(30, 27, 75, 0.6)",
                         color: "#C7D2FE",
@@ -933,7 +1042,7 @@ export function HomeTab({
           </section>
         )}
 
-        <section style={card}>
+        <section style={{ ...card, ...(night ? { background: t.surface, border: `1px solid ${t.borderQuiet}`, boxShadow: t.shadow } : null) }}>
           {/* 62B-2D. getSelectableParks() is the single source of truth for what
               Home offers. It filters on the existing `selectable` flag, so the
               Universal parks marked coming soon can never render here as active
@@ -954,7 +1063,7 @@ export function HomeTab({
               // text-only card below — never another park's illustration.
               const selectorArtKey = resolveHomeParkArtKey(park.id);
               const selectorArt = selectorArtKey
-                ? HOME_PARK_ART[selectorArtKey]?.[HOME_ART_MODE] || null
+                ? HOME_PARK_ART[selectorArtKey]?.[homeArtMode] || null
                 : null;
               const isSelected = browsedParkId === park.id;
 
@@ -975,13 +1084,13 @@ export function HomeTab({
                     overflow: "hidden",
                     cursor: "pointer",
                     textAlign: "left",
-                    background: colors.card,
+                    background: t.surface,
                     border: isSelected
-                      ? `2px solid ${colors.purple}`
-                      : `1px solid ${colors.cardBorder}`,
+                      ? `2px solid ${night ? "#A78BFA" : colors.purple}`
+                      : `1px solid ${t.borderQuiet}`,
                     boxShadow: isSelected
-                      ? "0 10px 22px rgba(124, 58, 237, 0.22)"
-                      : "0 6px 14px rgba(28, 25, 23, 0.05)",
+                      ? (night ? "0 10px 22px rgba(2, 6, 23, 0.55)" : "0 10px 22px rgba(124, 58, 237, 0.22)")
+                      : (night ? "0 6px 14px rgba(2, 6, 23, 0.45)" : "0 6px 14px rgba(28, 25, 23, 0.05)"),
                   }}
                 >
                   {selectorArt ? (
@@ -1005,8 +1114,7 @@ export function HomeTab({
                       aria-hidden="true"
                       style={{
                         height: 62,
-                        background:
-                          "linear-gradient(150deg, #F3E8FF 0%, #E0F2FE 60%, #FFF4D8 100%)",
+                        background: t.heroNoArt,
                       }}
                     />
                   )}
@@ -1014,8 +1122,8 @@ export function HomeTab({
                   <div
                     style={{
                       padding: "7px 9px 8px",
-                      background: isSelected ? colors.purpleSoft : colors.card,
-                      color: isSelected ? colors.purpleDeep : colors.text,
+                      background: isSelected ? (night ? "rgba(76, 29, 149, 0.55)" : colors.purpleSoft) : t.surface,
+                      color: isSelected ? (night ? "#DDD6FE" : colors.purpleDeep) : t.title,
                       fontSize: 12,
                       fontWeight: 900,
                       lineHeight: 1.25,

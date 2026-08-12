@@ -4491,7 +4491,10 @@ function App() {
               parkHopperContext={parkHopperContext}
               parkPresence={parkPresence}
               parkPresencePrompt={parkPresencePrompt}
-              parkPresenceTheme={parkPresenceTheme}
+              // 62B-2F-1 SAFETY GATE. Home is fully converted for night but must
+              // not activate yet, so this is a literal false rather than any
+              // live theme value. The activation phase replaces it.
+              night={false}
               planningPark={planningPark}
               planningParkLabel={planningParkLabel}
               planningParkSource={planningParkSource}
