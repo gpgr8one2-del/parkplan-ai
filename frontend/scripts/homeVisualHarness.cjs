@@ -100,6 +100,37 @@ const weatherCardBlock =
     ? homeTabCode.slice(weatherStartIdx, weatherEndIdx)
     : "";
 
+// The park selector, bounded from its owning <section> to the end of the
+// component, so selector assertions cannot match markup elsewhere in Home.
+//
+// Anchored on handleSelectPark — the one thing true of the selector both before
+// and after 62B-2D. Anchoring on getSelectableParks().map would make the block
+// EMPTY at the base commit, which would silently turn every negative assertion
+// below into a vacuous pass and would force base-true invariants to fail.
+const selectorHandlerIdx = homeTabCode.indexOf("handleSelectPark(park.id)");
+const selectorStartIdx =
+  selectorHandlerIdx > 0 ? homeTabCode.lastIndexOf("<section", selectorHandlerIdx) : -1;
+const selectorBlock =
+  selectorStartIdx > 0 ? homeTabCode.slice(selectorStartIdx) : "";
+
+// The Right Now View block, bounded from its section to the current-activity
+// card that follows it.
+const rightNowIdx = homeTabCode.indexOf("RIGHT NOW VIEW");
+const rightNowStartIdx =
+  rightNowIdx > 0 ? homeTabCode.lastIndexOf("<section", rightNowIdx) : -1;
+const rightNowEndIdx = homeTabCode.indexOf('currentActivity?.type === "in_line"');
+const rightNowBlock =
+  rightNowStartIdx > 0 && rightNowEndIdx > rightNowStartIdx
+    ? homeTabCode.slice(rightNowStartIdx, rightNowEndIdx)
+    : "";
+
+// The real selectable-park records, read from the shipping data utility rather
+// than restated here, so the harness cannot drift from the app's own list.
+const parkAreasSource = read("src", "data", "parkAreas.js");
+const { PARKS: ALL_PARKS, getSelectableParks } = new Function(
+  `${parkAreasSource.replace(/^export\s+/gm, "")}\nreturn { PARKS, getSelectableParks };`
+)();
+
 // The readings row's own style object, so nesting is judged on the element that
 // actually carried the duplicate card treatment rather than on file-wide counts.
 const readingsRowStyle = (() => {
@@ -354,6 +385,114 @@ featureCheck(
   true
 );
 
+console.log("Illustrated park selector + Right Now View (62B-2D) — FEATURE-DISCRIMINATING");
+
+featureCheck(
+  "the selector is supplied by getSelectableParks(), and PARKS.map is gone",
+  /import\s*\{[^}]*\bgetSelectableParks\b[^}]*\}\s*from\s*"\.\.\/data\/parkAreas"/.test(
+    homeTabSource
+  ) &&
+    /\{getSelectableParks\(\)\.map\(\(park\) => \{/.test(homeTabCode) &&
+    !/PARKS\.map/.test(homeTabCode) &&
+    // No second park list is introduced anywhere in Home.
+    !/\[\s*"magic_kingdom"|SELECTABLE_PARKS\s*=|const PARK_LIST/.test(homeTabCode),
+  true
+);
+
+featureCheck(
+  "no Universal park can reach the selector",
+  // Behavioural against the real data, PLUS the iteration change that actually
+  // enforces it. The data half is base-true — parkAreas.js is untouched — so
+  // the discriminating half is that the selector now iterates the FILTERED
+  // utility. Before 62B-2D it mapped the full PARKS list and rendered all three
+  // coming-soon parks as active buttons.
+  ALL_PARKS.filter((p) => p.status === "coming_soon").every(
+    (p) => !getSelectableParks().some((s) => s.id === p.id)
+  ) &&
+    /\{getSelectableParks\(\)\.map\(/.test(selectorBlock) &&
+    !/PARKS\.map/.test(selectorBlock),
+  true
+);
+
+featureCheck(
+  "each selector card resolves its own artwork from park.id",
+  /const selectorArtKey = resolveHomeParkArtKey\(\s*park\.id\s*\)/.test(selectorBlock) &&
+    /HOME_PARK_ART\[\s*selectorArtKey\s*\]\s*\?\.\[\s*HOME_ART_MODE\s*\]/.test(selectorBlock),
+  true
+);
+
+featureCheck(
+  "selector images are decorative, cover, centred, lazy and async",
+  /<img\s[\s\S]*?src=\{selectorArt\.src\}/.test(selectorBlock) &&
+    /alt=""/.test(selectorBlock) &&
+    /loading="lazy"/.test(selectorBlock) &&
+    /decoding="async"/.test(selectorBlock) &&
+    /objectFit:\s*"cover"/.test(selectorBlock) &&
+    /objectPosition:\s*"center"/.test(selectorBlock),
+  true
+);
+
+featureCheck(
+  "selector artwork is bundled-local — no remote URL, public path or CSS background-image",
+  // The positive conjunct keeps the negatives from passing vacuously on a
+  // selector that has no images at all.
+  /src=\{selectorArt\.src\}/.test(selectorBlock) &&
+    !/backgroundImage/.test(selectorBlock) &&
+    !/src="https?:\/\//.test(selectorBlock) &&
+    !/src="\//.test(selectorBlock),
+  true
+);
+
+featureCheck(
+  "a park with no artwork stays selectable and gets a finished text card",
+  // The image is conditional; the name and the button are not. A missing entry
+  // must never remove the park or borrow another park's illustration.
+  /\{selectorArt \? \(/.test(selectorBlock) &&
+    /\{park\.name\}/.test(selectorBlock) &&
+    selectorBlock.indexOf("selectorArt ? (") < selectorBlock.indexOf("{park.name}") &&
+    !/HOME_PARK_ART\.magicKingdom|HOME_PARK_ART\["/.test(selectorBlock),
+  true
+);
+
+featureCheck(
+  "selected state and aria-pressed follow browsedParkId, never activePark",
+  /const isSelected = browsedParkId === park\.id;/.test(selectorBlock) &&
+    /aria-pressed=\{isSelected\}/.test(selectorBlock) &&
+    !/activePark/.test(selectorBlock) &&
+    // A clear purple selected outline.
+    /border: isSelected[\s\S]{0,80}colors\.purple/.test(selectorBlock),
+  true
+);
+
+featureCheck(
+  "the card is one button, scrollable, with a comfortable tap target",
+  (selectorBlock.match(/<button/g) || []).length === 1 &&
+    /overflowX: "auto"/.test(selectorBlock) &&
+    /width: 112,/.test(selectorBlock) &&
+    /height: 62,/.test(selectorBlock),
+  true
+);
+
+featureCheck(
+  "the Right Now View eyebrow is restyled to the approved pill",
+  // Element-anchored rather than distance-anchored: walk back from the eyebrow
+  // text to the element that owns it and inspect that element's own style, so
+  // adding or reordering style properties cannot break the assertion.
+  (() => {
+    const label = rightNowBlock.indexOf("RIGHT NOW VIEW");
+    if (label < 0) return false;
+    const open = rightNowBlock.lastIndexOf("<div", label);
+    if (open < 0) return false;
+    const eyebrow = rightNowBlock.slice(open, label);
+    return (
+      /display: "inline-flex"/.test(eyebrow) &&
+      /borderRadius: 999/.test(eyebrow) &&
+      /background: "rgba\(245, 158, 11, 0\.16\)"/.test(eyebrow)
+    );
+  })(),
+  true
+);
+
 console.log("Home capabilities preserved — INVARIANT REGRESSION GUARDS");
 
 
@@ -435,13 +574,63 @@ invariantCheck(
 // directly and far more precisely against the real selection path.
 
 invariantCheck(
-  "Right Now View, hopper context and the planned-park action remain",
-  /RIGHT NOW VIEW/.test(homeTabSource) &&
-    /liveParkContext\?\.showNotice/.test(homeTabSource) &&
-    /viewing_second_park/.test(homeTabSource) &&
-    /viewing_different_park/.test(homeTabSource) &&
-    /Use \{planningParkLabel\} waits/.test(homeTabSource) &&
-    /live_park_switched_from_planned_park_notice/.test(homeTabSource),
+  "Right Now View keeps its gate, label, guidance and both status branches",
+  /liveParkContext\?\.showNotice && \(/.test(homeTabSource) &&
+    /\{liveParkContext\.label \|\|/.test(rightNowBlock) &&
+    /\{liveParkContext\.guidance \|\|/.test(rightNowBlock) &&
+    /liveParkContext\?\.status === "viewing_second_park"/.test(rightNowBlock) &&
+    /parkHopperContext\?\.secondParkMustDos\?\.count/.test(rightNowBlock) &&
+    /liveParkContext\?\.status === "viewing_different_park"/.test(rightNowBlock) &&
+    /\{todayPlannedParkLabel \|\| planningParkLabel\}/.test(rightNowBlock) &&
+    /Use \{planningParkLabel\} waits/.test(rightNowBlock),
+  true
+);
+
+invariantCheck(
+  "the planned-park action keeps all three branches in order",
+  // confirm presence when allowed -> otherwise browse -> otherwise set active.
+  (() => {
+    const confirm = rightNowBlock.indexOf("canConfirmParkPresence(parkPresence, planningPark)");
+    const browse = rightNowBlock.indexOf("selectBrowsedPark(current, planningPark)");
+    const setActive = rightNowBlock.indexOf("setActivePark(planningPark)");
+    return (
+      confirm > 0 &&
+      browse > confirm &&
+      setActive > browse &&
+      /handleConfirmParkPresence\(planningPark\)/.test(rightNowBlock) &&
+      /planningPark && activePark !== planningPark/.test(rightNowBlock)
+    );
+  })(),
+  true
+);
+
+invariantCheck(
+  "the Right Now analytics call keeps its event, source and full metadata",
+  /trackAppEvent\("live_park_switched_from_planned_park_notice", \{/.test(rightNowBlock) &&
+    /source: "right_now_live_park_context_notice"/.test(rightNowBlock) &&
+    [
+      "previousActivePark",
+      "nextActivePark",
+      "planningPark",
+      "planningParkSource",
+      "scheduledParkForToday",
+      "scheduledSecondaryParkForToday",
+      "scheduledParkPlanLabel",
+      "hopperContextStatus",
+      "shouldConsiderSecondPark",
+      "liveParkContextStatus",
+      "isLiveParkMismatch",
+      "scheduledParkDayNumber",
+      // `key:` or bare `key,` — planningPark and planningParkSource are ES6
+      // shorthand properties and carry no colon.
+    ].every((k) => new RegExp(`\\b${k}\\s*[:,]`).test(rightNowBlock)),
+  true
+);
+
+invariantCheck(
+  "buildLiveParkContext stays in App.jsx and is not reimplemented in Home",
+  /const buildLiveParkContext|function buildLiveParkContext/.test(appSource) &&
+    !/buildLiveParkContext/.test(homeTabSource),
   true
 );
 
@@ -473,21 +662,32 @@ invariantCheck(
 );
 
 invariantCheck(
+  "the existing data utility yields exactly the four selectable Disney parks",
+  // Base-true: parkAreas.js is untouched by this phase. Classified as a guard,
+  // not a discriminator — what 62B-2D changed is which list Home iterates, and
+  // that is asserted above.
+  getSelectableParks().map((p) => p.id).join(","),
+  "magic_kingdom,epcot,hollywood,animal_kingdom"
+);
+
+invariantCheck(
   "park-presence prompt remains and still precedes the selector",
+  // Selector located by its handler, so this reads identically before and after
+  // 62B-2D and stays a genuine base-true guard rather than being padded with
+  // this phase's new landmark.
   /PARK CHECK/.test(homeTabSource) &&
     /handleConfirmParkPresence\(parkPresencePrompt\.parkId\)/.test(homeTabSource) &&
     /onClick=\{handleDismissParkPresencePrompt\}/.test(homeTabSource) &&
-    homeTabSource.search(/\{parkPresencePrompt\s*&&\s*\(/) <
-      homeTabSource.search(/\{PARKS\.map\(/),
+    selectorStartIdx > 0 &&
+    homeTabCode.search(/\{parkPresencePrompt\s*&&\s*\(/) < selectorStartIdx,
   true
 );
 
 invariantCheck(
-  "park selector and its handler remain unchanged",
-  /\{PARKS\.map\(\(park\) => \(/.test(homeTabSource) &&
-    /onClick=\{\(\)\s*=>\s*handleSelectPark\(park\.id\)\}/.test(homeTabSource) &&
+  "the selector still browses, and never switches the active park",
+  /onClick=\{\(\)\s*=>\s*handleSelectPark\(park\.id\)\}/.test(homeTabSource) &&
     /browsedParkId === park\.id/.test(homeTabSource) &&
-    !/setActivePark\(park\.id\)/.test(homeTabSource),
+    !/setActivePark\(park\.id\)/.test(selectorBlock),
   true
 );
 
