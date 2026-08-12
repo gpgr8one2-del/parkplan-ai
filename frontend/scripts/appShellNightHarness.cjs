@@ -90,7 +90,7 @@ const appSourceWithoutComments = appSource.replace(/^\s*\/\/.*$/gm, "");
 // Render branch of each tab that 62A deliberately leaves day-styled, so a
 // night value leaking into one of them can be detected directly.
 const mainEnd = appSource.indexOf("</main>");
-const unconvertedTabBranches = ["home", "waits", "tohi", "profile"]
+const unconvertedTabBranches = ["waits", "tohi", "profile"]
   .map((key) => {
     const start = appSource.indexOf(`{activeTab === "${key}" &&`);
     if (start < 0) return "";
@@ -115,19 +115,76 @@ const bottomTabsCall =
 console.log("Phase 62A app shell night — FEATURE-DISCRIMINATING");
 
 featureCheck(
-  "App derives a Plan-only shell-night flag",
-  /const planShellNight\s*=\s*activeTab === "plan"\s*&&\s*planNight;/.test(appSource) &&
+  "App derives one Home-or-Plan shell-night flag from activeTab and planNight",
+  // 62B-2F-2 superseded the Plan-only form: Home joined once every Home surface
+  // had a night presentation. The name moved with the meaning — planShellNight
+  // would now be a lie. What is protected is unchanged and slightly stronger:
+  // exactly one flag, derived from nothing but activeTab and the existing
+  // planNight signal.
+  /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\| activeTab === "home"\)\s*&&\s*planNight;/.test(
+    appSource
+  ) &&
+    /const planNight = parkPresenceTheme\.isNight;/.test(appSource) &&
+    !/const planShellNight/.test(appSource) &&
     // derived only — no stored state, effect, timer, storage, or media query
-    !/useState\([^)]*planShellNight/.test(appSource) &&
-    !/planShellNight[\s\S]{0,120}(localStorage|setInterval|setTimeout|matchMedia)/.test(
+    !/useState\([^)]*shellNight/.test(appSource) &&
+    !/shellNight[\s\S]{0,120}(localStorage|setInterval|setTimeout|matchMedia)/.test(
       appSource
     ),
   true
 );
 
 featureCheck(
+  "both converted tabs, and only those, drive the shell",
+  (() => {
+    const m = appSource.match(
+      /const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*planNight;/
+    );
+    if (!m) return false;
+    const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)].map((x) => x[1]).sort();
+    return tabs.join(",") === "home,plan";
+  })(),
+  true
+);
+
+featureCheck(
+  "HomeTab is activated through that same flag, and the temporary gate is gone",
+  // Scoped to the HomeTab element: Plan's own components legitimately receive
+  // night={planNight}, so a file-wide negative would be wrong.
+  (() => {
+    const open = appSource.indexOf("<HomeTab");
+    const close = appSource.indexOf("/>", open);
+    if (open < 0 || close < 0) return false;
+    const el = appSource.slice(open, close);
+    const nightProps = el.match(/night=\{[^}]*\}/g) || [];
+    return nightProps.length === 1 && nightProps[0] === "night={shellNight}";
+  })() &&
+    !/night=\{false\}/.test(appSource),
+  true
+);
+
+
+featureCheck(
+  "no second night-mode mechanism is introduced anywhere in App",
+  // The activation must add no clock, media query, storage value or preference.
+  // Counts are pinned rather than merely pattern-matched, because an UNUSED
+  // extra clock introduces no behaviour today and would otherwise sit in the
+  // file until someone wires it up. Both existing getHours() calls are pure
+  // time helpers (day-phase and minutes-of-day), neither decides a theme.
+  (appSource.match(/getTohiAppShellTheme\(/g) || []).length === 3 &&
+    (appSource.match(/getHours\(\)/g) || []).length === 2 &&
+    !/matchMedia|prefers-color-scheme/.test(appSource) &&
+    !/isTohiNightMode|TOHI_NIGHT_SHELL/.test(appSource) &&
+    !/(localStorage|sessionStorage)[^\n]*(night|dark|theme)/i.test(appSource) &&
+    // exactly one night flag is derived, and one place derives it
+    (appSource.match(/const shellNight\s*=/g) || []).length === 1 &&
+    (appSource.match(/const planNight\s*=/g) || []).length === 1,
+  true
+);
+
+featureCheck(
   "the main page receives the dark shell only through that flag",
-  /const pageStyle\s*=\s*planShellNight\s*\n?\s*\?\s*\{[\s\S]{0,400}?\}\s*:\s*page;/.test(
+  /const pageStyle\s*=\s*shellNight\s*\n?\s*\?\s*\{[\s\S]{0,400}?\}\s*:\s*page;/.test(
     appSource
   ) &&
     /background:\s*shellTokens\.pageBackground/.test(appSource) &&
@@ -139,7 +196,7 @@ featureCheck(
 
 featureCheck(
   "BottomTabs receives the explicit night prop from App",
-  bottomTabsCall.length > 0 && /\bnight=\{planShellNight\}/.test(bottomTabsCall),
+  bottomTabsCall.length > 0 && /\bnight=\{shellNight\}/.test(bottomTabsCall),
   true
 );
 
@@ -209,11 +266,11 @@ featureCheck(
 
 featureCheck(
   "the Plan-gated night condition stays active while Plan Tools is open",
-  // planShellNight depends only on activeTab, which stays "plan" for the
-  // sub-view, so opening Plan Tools cannot turn the shell back to day.
-  /const planShellNight\s*=\s*activeTab === "plan"\s*&&\s*planNight;/.test(appSource) &&
-    !/planShellNight[^\n]*planToolsOpen/.test(appSource) &&
-    !/planToolsOpen[^\n]*planShellNight/.test(appSource) &&
+  // shellNight depends only on activeTab, which stays "plan" for the sub-view,
+  // so opening Plan Tools cannot turn the shell back to day.
+  /activeTab === "plan"/.test(appSource) &&
+    !/shellNight[^\n]*planToolsOpen/.test(appSource) &&
+    !/planToolsOpen[^\n]*shellNight/.test(appSource) &&
     /const \[planToolsOpen, setPlanToolsOpen\]\s*=\s*useState\(false\)/.test(appSource),
   true
 );
@@ -223,7 +280,7 @@ featureCheck(
   // page falls back to the untouched module-level object by identity...
   /:\s*page;/.test(appSource) &&
     // ...and the shell lookup itself forces day whenever the flag is false
-    /forceMode:\s*planShellNight\s*\?\s*TOHI_THEME_MODES\.NIGHT\s*:\s*TOHI_THEME_MODES\.DAY/.test(
+    /forceMode:\s*shellNight\s*\?\s*TOHI_THEME_MODES\.NIGHT\s*:\s*TOHI_THEME_MODES\.DAY/.test(
       appSource
     ) &&
     /forceMode:\s*night\s*\?\s*TOHI_THEME_MODES\.NIGHT\s*:\s*TOHI_THEME_MODES\.DAY/.test(
@@ -337,21 +394,34 @@ invariantCheck(
 
 invariantCheck(
   "no night styling reaches an unconverted tab's content",
-  // Slice each unconverted tab's render branch and prove no shell-night value
-  // is used inside it. True at base (where none of these identifiers exist)
-  // and true now, and it fails the moment someone darkens Home, Waits, TOHI,
-  // or Profile content through the shell.
-  unconvertedTabBranches.length === 4 &&
+  // Slice each unconverted tab's render branch and prove no shell-night value is
+  // used inside it. Waits, TOHI and Profile are the tabs that remain unconverted;
+  // Home is no longer one of them — it became a converted night-mode tab in
+  // 62B-2F-2 and legitimately receives night={shellNight}.
+  //
+  // The forbidden list now includes shellNight. Without it this guard was blind
+  // to the rename: `planShellNight` does not match `shellNight`, so a darkened
+  // Waits, TOHI or Profile branch would have passed unnoticed. That blindness
+  // was real — the Home branch carried shellNight while the old expression
+  // still reported clean.
+  //
+  // True at base (where none of these identifiers exist) and true now, and it
+  // fails the moment someone darkens an unconverted tab's content.
+  unconvertedTabBranches.length === 3 &&
     unconvertedTabBranches.every(
       (branch) =>
-        branch.length > 0 && !/planShellNight|shellTokens|pageStyle/.test(branch)
+        branch.length > 0 &&
+        !/planShellNight|shellNight|shellTokens|pageStyle/.test(branch)
     ),
   true
 );
 
 invariantCheck(
   "Plan recommendations, Plan Tools contents, and RecommendationCard are untouched by the shell",
-  !/planShellNight|shellTokens/.test(cardSource) &&
+  // shellNight listed alongside planShellNight for the same reason as above: the
+  // renamed flag must be forbidden here too, or the rename would silently open a
+  // hole. Every existing check is preserved unchanged.
+  !/planShellNight|shellNight|shellTokens/.test(cardSource) &&
     /if\s*\(\s*el\.clientHeight\s*===\s*0\s*\)\s*return;/.test(cardSource) &&
     /new\s+window\.ResizeObserver\s*\(\s*measureReason\s*\)/.test(cardSource) &&
     /<PlanRecommendations/.test(appSource) &&
