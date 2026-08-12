@@ -933,36 +933,46 @@ invariantCheck(
 );
 
 
-invariantCheck(
-  "Home night is not activated — App passes a literal false and the shell stays Plan-only",
-  // Base-true and true now: before this phase App passed no night prop at all
-  // and planShellNight was Plan-only; after it, the prop is a literal false and
-  // planShellNight is untouched. 62B-2F-2 is what flips this.
-  /const planShellNight\s*=\s*activeTab === "plan"\s*&&\s*planNight;/.test(appSource) &&
-    /night=\{planShellNight\}/.test(appSource) &&
-    (() => {
-      const open = appSource.indexOf("<HomeTab");
-      const close = appSource.indexOf("/>", open);
-      if (open < 0 || close < 0) return false;
-      const el = appSource.slice(open, close);
-      const nightProps = el.match(/night=\{[^}]*\}/g) || [];
-      // Base has no night prop at all; this phase passes a literal false.
-      // Anything else — planNight, parkPresenceTheme.isNight, planShellNight —
-      // means Home night went live, which belongs to 62B-2F-2.
-      return nightProps.length === 0 ||
-        (nightProps.length === 1 && nightProps[0] === "night={false}");
-    })(),
+featureCheck(
+  "Home night is activated through the shared shell flag",
+  // 62B-2F-1's inactive-gate assertion is superseded — this is the phase it was
+  // waiting for. Nothing is weakened: it still pins exactly one night value on
+  // HomeTab, and it now additionally requires that value to be the same flag the
+  // page background and BottomTabs read, so Home cannot switch independently.
+  (() => {
+    const open = appSource.indexOf("<HomeTab");
+    const close = appSource.indexOf("/>", open);
+    if (open < 0 || close < 0) return false;
+    const el = appSource.slice(open, close);
+    const nightProps = el.match(/night=\{[^}]*\}/g) || [];
+    return nightProps.length === 1 && nightProps[0] === "night={shellNight}";
+  })() &&
+    !/night=\{false\}/.test(appSource) &&
+    /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\| activeTab === "home"\)\s*&&\s*planNight;/.test(
+      appSource
+    ),
+  true
+);
+
+featureCheck(
+  "Home, the page background and BottomTabs all read one flag in the same render",
+  /const pageStyle = shellNight/.test(appSource) &&
+    /forceMode: shellNight \?/.test(appSource) &&
+    /night=\{shellNight\}/.test(appSource) &&
+    (appSource.match(/night=\{shellNight\}/g) || []).length === 2,
   true
 );
 
 invariantCheck(
-  "Home night mode is still not activated",
-  // parkPresenceTheme.isNight already styles the park-presence prompt and is
-  // pre-existing, so it is not what this guards. What must NOT appear is the
-  // shell's night machinery reaching Home, and the Plan-only night gate in App
-  // must still be Plan-only.
-  !/planShellNight|shellTokens|getTohiAppShellTheme|forceMode|pageStyle/.test(homeTabSource) &&
-    /const planShellNight\s*=\s*activeTab === "plan"\s*&&\s*planNight;/.test(appSource),
+  "HomeTab still owns no shell machinery of its own",
+  // Base-true and true now. Activation happens in App; HomeTab keeps taking a
+  // single boolean and never reaches for the shell, the theme or a clock. This
+  // is deliberately NOT padded with the activation expression — that claim is a
+  // feature assertion above.
+  !/shellNight|shellTokens|getTohiAppShellTheme|forceMode|pageStyle|parkPresenceTheme/.test(
+    homeTabSource
+  ) &&
+    /^\s*night = false,$/m.test(homeTabSource),
   true
 );
 

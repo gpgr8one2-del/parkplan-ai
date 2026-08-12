@@ -1226,7 +1226,7 @@ console.log("Scope protection");
     6
   );
   // 62A superseded the exact-string form of this check: the BottomTabs call is
-  // now multi-line and carries night={planShellNight}. The protected meaning is
+  // now multi-line and carries night={shellNight}. The protected meaning is
   // unchanged — App still drives BottomTabs with activeTab and setActiveTab —
   // and the form is now whitespace- and prop-order-tolerant.
   check(
@@ -1659,7 +1659,7 @@ console.log("Extraction integrity");
   invariantCheck(
     "Plan Tools never becomes a router or tab value",
     // 62A supersedes the exact-string BottomTabs pin: the call now spans
-    // multiple lines and carries night={planShellNight}, which is permitted.
+    // multiple lines and carries night={shellNight}, which is permitted.
     // Every protected meaning is preserved — BottomTabs still receives
     // activeTab and setActiveTab, Plan Tools is still not a router value, not a
     // screen, and not a sixth tab — and the form is now whitespace- and
@@ -1891,26 +1891,52 @@ console.log("Extraction integrity");
     true
   );
   nightInvariantCheck(
-    // 62A supersedes the original "no app-wide theme or BottomTabs change"
-    // form. A shell/navigation night treatment now exists deliberately, but it
-    // is gated to Plan. The protected meaning is carried forward and
-    // strengthened: the five-tab order is unchanged, the night shell is gated
-    // to Plan only, no night styling reaches an unconverted tab's content, and
-    // the 61E Plan content corrections are still in place.
-    "night styling stays gated to Plan and never reaches an unconverted tab",
+    // 62A superseded the original "no app-wide theme or BottomTabs change" form:
+    // a shell/navigation night treatment now exists deliberately.
+    //
+    // 62B-2F-2 supersedes the Plan-only wording. Home became a converted
+    // night-mode tab once every Home surface had a night presentation, so the
+    // shell is now gated to Home OR Plan. That is a widening of the approved
+    // set, not a loss of protection — Waits, TOHI, Profile and onboarding remain
+    // day-only, which is what this guard actually exists to defend.
+    //
+    // The protected meaning is carried forward intact: the five-tab order is
+    // unchanged, whichever shell-night flag exists is gated to exactly the
+    // converted tabs, BottomTabs never decides night for itself, no night
+    // styling reaches an unconverted tab's content, and the 61E Plan content
+    // corrections are still in place.
+    "night styling stays gated to the converted Home and Plan tabs",
     [...bottomTabsSource.matchAll(/key:\s*"(\w+)"/g)].map((m) => m[1]).join(",") ===
       "home,waits,plan,tohi,profile" &&
-      // If a shell-night flag exists at all, it must be Plan-gated. Stated as
-      // a conditional so this remains a true invariant rather than a
-      // new-feature assertion: it holds before 62A, holds now, and fails the
-      // moment someone ungates it. The positive existence claim belongs to
-      // appShellNightHarness, not here.
+      // Both flags are stated as conditionals so this stays a true invariant
+      // rather than a new-feature assertion: each holds before its phase, holds
+      // after, and fails the moment someone ungates it. The positive existence
+      // claims belong to appShellNightHarness, not here.
+      //
+      // Pre-62B-2F-2 flag: if planShellNight still exists it must be Plan-gated.
       (!/const planShellNight/.test(appSource) ||
         /const planShellNight\s*=\s*activeTab === "plan"\s*&&\s*planNight;/.test(appSource)) &&
+      // Post-62B-2F-2 flag: if shellNight exists it must be derived from exactly
+      // Home or Plan, plus the existing planNight signal — nothing else.
+      (!/const shellNight/.test(appSource) ||
+        (() => {
+          const m = appSource.match(
+            /const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*planNight;/
+          );
+          if (!m) return false;
+          const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)]
+            .map((x) => x[1])
+            .sort();
+          return (
+            tabs.join(",") === "home,plan" &&
+            !/waits|tohi|profile/.test(m[1]) &&
+            /const planNight\s*=/.test(appSource)
+          );
+        })()) &&
       // BottomTabs never decides night for itself
       !/isNight|prefers-color-scheme|new Date\(|getHours/.test(bottomTabsSource) &&
-      // no per-tab night styling for the unconverted tabs
-      !/activeTab === "(home|waits|tohi|profile)"[^\n]*night/i.test(appSource) &&
+      // no per-tab night styling for the tabs that are still unconverted
+      !/activeTab === "(waits|tohi|profile)"[^\n]*night/i.test(appSource) &&
       // 61E Plan content corrections intact
       (planTabSource.match(
         /color:\s*getChipAccent\("#(92400E|5B21B6|0369A1|E11D48)",\s*palette\)/g

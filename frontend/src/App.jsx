@@ -159,7 +159,7 @@ function dbFmt(v) {
 // 62A: this module-level style is the day/onboarding page. It is resolved with
 // forced day mode so that merely importing App at night can never restyle
 // onboarding or an unconverted tab. Night is applied per-render, and only for
-// Plan, via planShellNight below.
+// Plan and Home, via shellNight below.
 const appShellTheme = getTohiAppShellTheme({ forceMode: TOHI_THEME_MODES.DAY });
 
 const page = {
@@ -2259,22 +2259,26 @@ function App() {
   // restrained lavender. Night: deep navy with muted purple borders.
   const planNight = parkPresenceTheme.isNight;
 
-  // 62A: the one explicit, parent-controlled shell decision. The dark shell and
-  // dark navigation apply only while Plan is the active tab, because Home,
-  // Waits, TOHI, and Profile still render day content and a dark shell behind
-  // day surfaces would read as a bug. Plan Tools inherits true because it is a
-  // sub-view of Plan — activeTab stays "plan" while it is open. Derived from
-  // existing state only: no stored state, effects, timers, storage, or
-  // media-query listeners, and planNight itself is untouched.
-  const planShellNight = activeTab === "plan" && planNight;
+  // 62A/62B-2F-2: the one explicit, parent-controlled shell decision. The dark
+  // shell and dark navigation apply while EITHER converted tab is active. Home
+  // joined Plan in 62B-2F-2, once every Home surface had a night presentation —
+  // Waits, TOHI, Profile and onboarding still render day content, and a dark
+  // shell behind day surfaces would read as a bug. Plan Tools inherits true
+  // because it is a sub-view of Plan: activeTab stays "plan" while it is open.
+  //
+  // Renamed from planShellNight, which stopped being accurate the moment Home
+  // joined. Derived from existing state only: no stored state, effects, timers,
+  // storage, or media-query listeners, and planNight itself is untouched.
+  const shellNight =
+    (activeTab === "plan" || activeTab === "home") && planNight;
   const shellTokens = getTohiAppShellTheme({
-    forceMode: planShellNight ? TOHI_THEME_MODES.NIGHT : TOHI_THEME_MODES.DAY,
+    forceMode: shellNight ? TOHI_THEME_MODES.NIGHT : TOHI_THEME_MODES.DAY,
   }).shellTokens;
 
-  // Both the page background and BottomTabs read planShellNight in the same
+  // The page background, BottomTabs and HomeTab all read shellNight in the same
   // render, so a tab switch flips them together in one commit. Day resolves to
   // the untouched module-level page object by identity.
-  const pageStyle = planShellNight
+  const pageStyle = shellNight
     ? {
         ...page,
         background: shellTokens.pageBackground,
@@ -4491,10 +4495,9 @@ function App() {
               parkHopperContext={parkHopperContext}
               parkPresence={parkPresence}
               parkPresencePrompt={parkPresencePrompt}
-              // 62B-2F-1 SAFETY GATE. Home is fully converted for night but must
-              // not activate yet, so this is a literal false rather than any
-              // live theme value. The activation phase replaces it.
-              night={false}
+              // 62B-2F-2 activation. The same flag the page background and
+              // BottomTabs read, so Home and its shell switch in one render.
+              night={shellNight}
               planningPark={planningPark}
               planningParkLabel={planningParkLabel}
               planningParkSource={planningParkSource}
@@ -5783,7 +5786,7 @@ function App() {
       <BottomTabs
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        night={planShellNight}
+        night={shellNight}
       />
     </>
   );
