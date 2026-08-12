@@ -366,7 +366,18 @@ console.log("22. App integration (static source checks)");
 
   // The park selector block itself, sliced so the two selector assertions below
   // are scoped to it rather than to the whole component.
-  const selectorStart = homeTabSource.search(/\{PARKS\.map\(/);
+  //
+  // 62B-2D: the selector iterates getSelectableParks() instead of PARKS. The
+  // RULE this harness protects is unchanged — the presence prompt must come
+  // before the selector, and the selector must browse through handleSelectPark
+  // rather than switching the active park.
+  //
+  // Anchored on handleSelectPark, which is true of the selector in both the old
+  // and new markup, so this harness stays landmark-agnostic and does not have
+  // to be rewritten every time the selector's iteration source changes.
+  const selectorHandlerIdx = homeTabSource.indexOf("handleSelectPark(park.id)");
+  const selectorStart =
+    selectorHandlerIdx > 0 ? homeTabSource.lastIndexOf("<section", selectorHandlerIdx) : -1;
   const selectorBlock =
     selectorStart >= 0
       ? homeTabSource.slice(selectorStart, homeTabSource.indexOf("</section>", selectorStart))
@@ -436,10 +447,13 @@ console.log("22. App integration (static source checks)");
     // prompt precedes the selector. The old form depended on an arbitrary
     // 4,200-character distance, which would break on any unrelated edit that
     // shifted the gap.
+    //
+    // 62B-2D: located by the selector's handler rather than by whichever list
+    // it iterates, so the rule is expressed independently of that choice and
+    // reads identically before and after this phase.
     /\{parkPresencePrompt\s*&&\s*\(/.test(homeTabSource) &&
-      /\{PARKS\.map\(/.test(homeTabSource) &&
-      homeTabSource.search(/\{parkPresencePrompt\s*&&\s*\(/) <
-        homeTabSource.search(/\{PARKS\.map\(/),
+      selectorStart > 0 &&
+      homeTabSource.search(/\{parkPresencePrompt\s*&&\s*\(/) < selectorStart,
     true
   );
 }

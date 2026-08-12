@@ -272,9 +272,16 @@ console.log("Artwork rules");
   // 62B-2C: the approved weather illustration is the second image on this
   // surface, so the expected count moves 1 -> 2. Both remain bundled local
   // assets and the no-remote-URL protection is unchanged.
+  //
+  // 62B-2D adds the selector thumbnail, moving the count 2 -> 3. This counts
+  // image TEMPLATES IN SOURCE, not elements rendered at runtime: the three are
+  // the park hero, the weather illustration, and the selector thumbnail. The
+  // selector template sits inside getSelectableParks().map, so it renders once
+  // per selectable park — four times today — while remaining a single <img> in
+  // the source. The bundled-local and no-remote protections are unchanged.
   const shellSurfaceSource = `${appSource}\n${homeTabSource}`;
   const imgTags = (shellSurfaceSource.match(/<img/g) || []).length;
-  check("shell surface renders exactly the two approved images", imgTags, 2);
+  check("shell surface declares exactly the three approved image templates", imgTags, 3);
   check(
     "that image is a bundled local asset, not a remote or public path",
     /<img[\s\S]{0,80}src=\{/.test(homeTabSource) &&

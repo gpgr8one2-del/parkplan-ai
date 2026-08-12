@@ -4,7 +4,7 @@ import { CloudSun, MapPin, RefreshCw } from "lucide-react";
 import { DataStatusBanner } from "./DataStatusBanner";
 import { FreshnessBadge } from "./FreshnessBadge";
 import { WhileYouWaitCard } from "./WhileYouWaitCard";
-import { PARKS } from "../data/parkAreas";
+import { getSelectableParks } from "../data/parkAreas";
 import { HOME_PARK_ART, HOME_WEATHER_ART } from "../data/homeArtManifest";
 import { canConfirmParkPresence, selectBrowsedPark } from "../utils/parkPresence";
 import { resolveHomeParkArtKey, resolveHomeWeatherFamily } from "../utils/homeArt";
@@ -619,7 +619,7 @@ export function HomeTab({
             style={{
               ...card,
               display: "flex",
-              alignItems: "center",
+              alignItems: "flex-start",
               justifyContent: "space-between",
               gap: 12,
               flexWrap: "wrap",
@@ -630,13 +630,22 @@ export function HomeTab({
             }}
           >
             <div style={{ minWidth: 220, flex: "1 1 340px" }}>
+              {/* Eyebrow restyled to the pill used by the rest of the approved
+                  Home hierarchy. The gate, label, guidance, status branches,
+                  action and analytics below are untouched. */}
               <div
                 style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "5px 9px",
+                  borderRadius: 999,
+                  background: "rgba(245, 158, 11, 0.16)",
                   color: "#92400E",
                   fontSize: 11,
                   fontWeight: 950,
                   letterSpacing: 0.65,
-                  marginBottom: 5,
+                  marginBottom: 8,
                 }}
               >
                 RIGHT NOW VIEW
@@ -646,8 +655,9 @@ export function HomeTab({
                 style={{
                   display: "block",
                   color: colors.text,
-                  fontSize: 15,
-                  lineHeight: 1.35,
+                  fontSize: 17,
+                  letterSpacing: -0.2,
+                  lineHeight: 1.3,
                 }}
               >
                 {liveParkContext.label || `Viewing ${getParkNameById(activePark)} live waits`}
@@ -924,22 +934,98 @@ export function HomeTab({
         )}
 
         <section style={card}>
-          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
-            {PARKS.map((park) => (
-              <button
-                key={park.id}
-                onClick={() => handleSelectPark(park.id)}
-                style={{
-                  ...button,
-                  background: browsedParkId === park.id ? colors.purple : colors.card,
-                  color: browsedParkId === park.id ? "white" : colors.text,
-                  borderColor: browsedParkId === park.id ? colors.purple : colors.cardBorder,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {park.name}
-              </button>
-            ))}
+          {/* 62B-2D. getSelectableParks() is the single source of truth for what
+              Home offers. It filters on the existing `selectable` flag, so the
+              Universal parks marked coming soon can never render here as active
+              buttons — previously PARKS.map put all seven on screen. No second
+              park list is introduced. */}
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              overflowX: "auto",
+              paddingBottom: 4,
+              WebkitOverflowScrolling: "touch",
+            }}
+          >
+            {getSelectableParks().map((park) => {
+              // Exact mapping per park id. An unmapped park, or one whose entry
+              // is missing for this mode, yields null and renders the finished
+              // text-only card below — never another park's illustration.
+              const selectorArtKey = resolveHomeParkArtKey(park.id);
+              const selectorArt = selectorArtKey
+                ? HOME_PARK_ART[selectorArtKey]?.[HOME_ART_MODE] || null
+                : null;
+              const isSelected = browsedParkId === park.id;
+
+              return (
+                <button
+                  key={park.id}
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() => handleSelectPark(park.id)}
+                  style={{
+                    // Sized so roughly three cards sit within a phone width and
+                    // the fourth is reachable by scrolling. 112px plus padding
+                    // keeps the tap target comfortably above 44px.
+                    flex: "0 0 auto",
+                    width: 112,
+                    padding: 0,
+                    borderRadius: 18,
+                    overflow: "hidden",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    background: colors.card,
+                    border: isSelected
+                      ? `2px solid ${colors.purple}`
+                      : `1px solid ${colors.cardBorder}`,
+                    boxShadow: isSelected
+                      ? "0 10px 22px rgba(124, 58, 237, 0.22)"
+                      : "0 6px 14px rgba(28, 25, 23, 0.05)",
+                  }}
+                >
+                  {selectorArt ? (
+                    <img
+                      src={selectorArt.src}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        height: 62,
+                        objectFit: "cover",
+                        objectPosition: "center",
+                      }}
+                    />
+                  ) : (
+                    // Finished no-art card: a composed band of the same height,
+                    // so the park stays selectable and the row stays even.
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        height: 62,
+                        background:
+                          "linear-gradient(150deg, #F3E8FF 0%, #E0F2FE 60%, #FFF4D8 100%)",
+                      }}
+                    />
+                  )}
+
+                  <div
+                    style={{
+                      padding: "7px 9px 8px",
+                      background: isSelected ? colors.purpleSoft : colors.card,
+                      color: isSelected ? colors.purpleDeep : colors.text,
+                      fontSize: 12,
+                      fontWeight: 900,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {park.name}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </section>
     </>
