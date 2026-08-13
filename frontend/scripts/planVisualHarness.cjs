@@ -5,6 +5,17 @@ const path = require("path");
 
 const frontendRoot = path.resolve(__dirname, "..");
 const appSource = fs.readFileSync(path.join(frontendRoot, "src", "App.jsx"), "utf8");
+// 63B-1 extracted the Waits presentation from App.jsx into WaitsTab.jsx, so the
+// Waits surface is now App + WaitsTab. The three Waits assertions below are
+// source-aware for that reason. Meaning is unchanged and NOT weakened: Waits
+// still passes no night option, and it still suppresses actions and showtimes
+// while browsing another park. The form is simply independent of which of the
+// two files holds the markup.
+const waitsTabPath = path.join(frontendRoot, "src", "components", "WaitsTab.jsx");
+const waitsTabSource = fs.existsSync(waitsTabPath)
+  ? fs.readFileSync(waitsTabPath, "utf8")
+  : "";
+const waitsSurfaceSource = `${appSource}\n${waitsTabSource}`;
 const cardSource = fs.readFileSync(
   path.join(frontendRoot, "src", "components", "RecommendationCard.jsx"),
   "utf8"
@@ -1073,7 +1084,8 @@ console.log("Night coverage for every Plan fallback and control");
   );
   check(
     "waits tab ride actions remain day-styled",
-    appSource.includes("browsingAnotherPark ? () => null : renderRideActions"),
+    waitsSurfaceSource.includes("browsingAnotherPark ? () => null : renderRideActions") &&
+      !/renderRideActions\(ride, \{[^}]*night: true/.test(waitsSurfaceSource),
     true
   );
   check(
@@ -1278,7 +1290,8 @@ console.log("Night chip coverage");
   );
   check(
     "waits showtime stays day-styled",
-    appSource.includes("browsingAnotherPark ? () => null : renderShowtimeInfo"),
+    waitsSurfaceSource.includes("browsingAnotherPark ? () => null : renderShowtimeInfo") &&
+      !/renderShowtimeInfo\(ride, \{[^}]*night: true/.test(waitsSurfaceSource),
     true
   );
 }
@@ -1757,7 +1770,7 @@ console.log("Extraction integrity");
       !/renderRideActions|renderShowtimeInfo/.test(planToolsCallSite) &&
       /renderRideActions=\{renderRideActions\}/.test(appSource) &&
       /renderShowtimeInfo=\{renderShowtimeInfo\}/.test(appSource) &&
-      /browsingAnotherPark \? \(\) => null : renderRideActions/.test(appSource),
+      /browsingAnotherPark \? \(\) => null : renderRideActions/.test(waitsSurfaceSource),
     true
   );
   invariantCheck(

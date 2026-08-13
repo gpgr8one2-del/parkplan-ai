@@ -235,69 +235,56 @@ check(
   true
 );
 
-/* ------------------------------------------------- production untouched -- */
+/* ------------------------------------------------ blueprint integrity -- */
 
-console.log("Phase scope — documentation only");
+console.log("Blueprint integrity");
 
-// 63A must not touch production code. Compare the working tree against main.
-let changed = [];
-try {
-  changed = require("child_process")
-    .execFileSync("git", ["diff", "--name-only", "main...HEAD", "--", "."], {
-      cwd: repoRoot,
-      encoding: "utf8",
-    })
-    .split("\n")
-    .filter(Boolean);
-  const status = require("child_process")
-    .execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], {
-      cwd: repoRoot,
-      encoding: "utf8",
-    })
-    .split("\n")
-    .filter(Boolean)
-    .map((line) => line.slice(3));
-  changed = [...new Set([...changed, ...status])];
-} catch (err) {
-  failCount += 1;
-  console.log(`  FAIL could not read the working diff — ${err.message}`);
-}
+// 63A originally gated on the whole working diff ("no production-code changes",
+// "only the six documentation files are in scope"). Those were phase-scoped
+// assertions: correct during 63A, but guaranteed to fail in every later Waits
+// phase, which legitimately changes production code. They are replaced here by
+// two durable guards that protect what this harness actually exists to protect —
+// the blueprint itself — and that hold in any phase.
 
-const PRODUCTION_PATTERNS = [
-  /^frontend\/src\//,
-  /^backend\//,
-  /^frontend\/public\//,
-  /^public\//,
-  /package(-lock)?\.json$/,
-  /yarn\.lock$/,
-  /pnpm-lock\.yaml$/,
-  /^CLAUDE\.md$/,
-];
-
-const productionTouched = changed.filter((f) => PRODUCTION_PATTERNS.some((re) => re.test(f)));
-
-check("the working diff contains no production-code changes", productionTouched.length, 0);
-if (productionTouched.length) {
-  for (const f of productionTouched) console.log(`       offending: ${f}`);
-}
-
-const ALLOWED = [
-  "frontend/docs/design/waits/waits-approved-healthy-day.png",
-  "frontend/docs/design/waits/waits-approved-healthy-night.png",
-  "frontend/docs/design/waits/waits-approved-states-day.png",
-  "frontend/docs/design/waits/waits-approved-states-night.png",
-  "frontend/docs/design/waits/README.md",
-  "frontend/scripts/waitsBlueprintHarness.cjs",
-];
+const BLUEPRINT_COMMIT = "5bb967325f3d00034f98fd0da7d7f367edbc4cf9";
 
 check(
-  "only the six documentation files are in scope for this phase",
-  changed.every((f) => ALLOWED.includes(f)),
+  "every blueprint file is byte-identical to the commit that approved it",
+  (() => {
+    const { execFileSync } = require("child_process");
+    try {
+      return [...EXPECTED_PNGS, "README.md"].every((name) => {
+        const rel = `frontend/docs/design/waits/${name}`;
+        const now = execFileSync("git", ["hash-object", rel], {
+          cwd: repoRoot,
+          encoding: "utf8",
+        }).trim();
+        const approved = execFileSync("git", ["rev-parse", `${BLUEPRINT_COMMIT}:${rel}`], {
+          cwd: repoRoot,
+          encoding: "utf8",
+        }).trim();
+        if (now !== approved) console.log(`       drifted: ${name}`);
+        return now === approved;
+      });
+    } catch (err) {
+      console.log(`       could not compare: ${err.message}`);
+      return false;
+    }
+  })(),
   true
 );
-for (const f of changed.filter((x) => !ALLOWED.includes(x))) {
-  console.log(`       out of scope: ${f}`);
-}
+
+check(
+  "the blueprint directory holds only the five approved documentation files",
+  (() => {
+    const entries = fs.readdirSync(BLUEPRINT_DIR).sort();
+    const expected = [...EXPECTED_PNGS, "README.md"].sort();
+    const same = entries.join(",") === expected.join(",");
+    if (!same) console.log(`       found: ${entries.join(", ")}`);
+    return same;
+  })(),
+  true
+);
 
 console.log("");
 console.log(`${passCount} passed, ${failCount} failed`);

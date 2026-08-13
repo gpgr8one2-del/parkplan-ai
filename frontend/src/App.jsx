@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CloudSun, MapPin, MessageCircle, RefreshCw, Send } from "lucide-react";
+import { CloudSun, MapPin, MessageCircle, Send } from "lucide-react";
 import { fetchParkData, fetchWeather, sendChatMessage, sendTohiPickReview, trackEvent } from "./api";
 import { FreshnessBadge } from "./components/FreshnessBadge";
 import { DataStatusBanner } from "./components/DataStatusBanner";
@@ -84,7 +84,7 @@ import { getResortOptions } from "./resortProfiles";
 import { detectNearestLocationZone, getCurrentPosition } from "./utils/locationDetection";
 import { OnboardingFlow } from "./components/OnboardingFlow";
 import { PlanRecommendations } from "./components/PlanRecommendations";
-import { WaitTimesList } from "./components/WaitTimesList";
+import { WaitsTab } from "./components/WaitsTab";
 import { WhileYouWaitCard } from "./components/WhileYouWaitCard";
 import { HomeTab } from "./components/HomeTab";
 import { PlanTab, PlanToolsView, PlanCheckCompactRow } from "./components/PlanTab";
@@ -4535,85 +4535,21 @@ function App() {
           )}
 
           {activeTab === "waits" && (
-            <>
-              <section style={card}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: 12,
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 900,
-                        color: "#7C3AED",
-                      }}
-                    >
-                      WAITS
-                    </div>
-                    <h2 style={{ margin: "6px 0 4px", color: "#1C1917" }}>
-                      Live Wait Times
-                    </h2>
-                    <p
-                      style={{
-                        margin: 0,
-                        color: colors.muted,
-                        fontSize: 13,
-                        lineHeight: 1.45,
-                      }}
-                    >
-                      Browse all visible attractions, refresh live data, and use ride actions
-                      without cluttering the Home dashboard.
-                    </p>
-                  </div>
-
-                  <button style={button} onClick={() => loadData(true)} disabled={loading}>
-                    <RefreshCw size={14} /> {loading ? "Loading" : "Refresh"}
-                  </button>
-                </div>
-
-                <p
-                  style={{
-                    margin: "10px 0 0",
-                    color: colors.muted,
-                    fontSize: 12,
-                    lineHeight: 1.4,
-                  }}
-                >
-                  Live wait data can lag the official park app during reopenings or
-                  weather delays. Verify headliner status before walking across the park.
-                </p>
-
-                {browsingAnotherPark && (
-                  <p
-                    style={{
-                      margin: "8px 0 0",
-                      color: colors.purpleDeep,
-                      fontSize: 12,
-                      fontWeight: 750,
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    Browsing {browsedParkLabel}. Your day stays anchored at{" "}
-                    {confirmedActiveParkLabel}.
-                  </p>
-                )}
-              </section>
-
-              <WaitTimesList
-                rides={sortedRides}
-                activeRideId={activeRideId}
-                activePark={waitListParkId}
-                card={card}
-                formatLandLabel={formatLandLabel}
-                renderShowtimeInfo={browsingAnotherPark ? () => null : renderShowtimeInfo}
-                renderRideActions={browsingAnotherPark ? () => null : renderRideActions}
-              />
-            </>
+            <WaitsTab
+              activeRideId={activeRideId}
+              browsedParkLabel={browsedParkLabel}
+              browsingAnotherPark={browsingAnotherPark}
+              confirmedActiveParkLabel={confirmedActiveParkLabel}
+              loading={loading}
+              sortedRides={sortedRides}
+              waitListParkId={waitListParkId}
+              loadData={loadData}
+              formatLandLabel={formatLandLabel}
+              renderRideActions={renderRideActions}
+              renderShowtimeInfo={renderShowtimeInfo}
+              button={button}
+              card={card}
+            />
           )}
 
           {activeTab === "plan" && (
