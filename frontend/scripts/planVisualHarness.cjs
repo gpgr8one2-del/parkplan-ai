@@ -1100,6 +1100,71 @@ console.log("PlanTab night compatibility");
     "utf8"
   );
   check("night palette defined", planTabSource.includes("PLAN_TAB_NIGHT_PALETTE"), true);
+
+  // ---- 62B-2G: legacy decorative circle removed from "Today's plan at a glance"
+  //
+  // Scoped strictly to DayGamePlanSection. Deliberately NOT a file-wide ban on
+  // circles or borderRadius: 999 — the Morning Briefing card keeps its own coral
+  // radial layer, and pills, controls and other Plan cards legitimately use
+  // circular forms. Only this one section is asserted clean.
+  {
+    const dgpStart = planTabSource.indexOf("function DayGamePlanSection(");
+    const dgpEnd = planTabSource.indexOf("\nfunction ", dgpStart + 10);
+    const dgp =
+      dgpStart >= 0
+        ? planTabSource.slice(dgpStart, dgpEnd > dgpStart ? dgpEnd : undefined)
+        : "";
+
+    check(
+      "DayGamePlanSection: the 124x124 decorative overlay is gone",
+      dgp.length > 0 &&
+        !/width:\s*124,\s*height:\s*124,/.test(dgp) &&
+        !/aria-hidden="true"/.test(dgp) &&
+        !/rgba\(124, 58, 237, 0\.09\)/.test(dgp),
+      true
+    );
+
+    check(
+      "DayGamePlanSection: no circular radial layer remains in its background",
+      dgp.length > 0 && !/radial-gradient\(circle/.test(dgp),
+      true
+    );
+
+    check(
+      "DayGamePlanSection: its exact linear day gradient is preserved",
+      /background: "linear-gradient\(145deg, #FFFFFF 0%, #E0F2FE 100%\)",/.test(dgp) &&
+        /border: "1px solid rgba\(14, 165, 233, 0\.22\)",/.test(dgp) &&
+        /boxShadow: "0 16px 38px rgba\(14, 165, 233, 0\.10\)",/.test(dgp),
+      true
+    );
+
+    check(
+      "DayGamePlanSection: palette.shell still supplies the night override",
+      /\.\.\.\(palette\.shell \|\| \{\}\),/.test(dgp),
+      true
+    );
+
+    check(
+      "DayGamePlanSection: title, preview, collapse, rolling plan and logic remain",
+      /Today’s plan at a glance/.test(dgp) &&
+        /\{preview\}/.test(dgp) &&
+        /<CollapseButton palette=\{palette\}/.test(dgp) &&
+        /rollingWindow\.label\.toUpperCase\(\)/.test(dgp) &&
+        /rollingWindow\.description/.test(dgp) &&
+        /<DayGamePlanItemCard palette=\{palette\}/.test(dgp) &&
+        /getRollingGamePlanWindow\(/.test(planTabSource),
+      true
+    );
+
+    check(
+      "Morning Briefing keeps its own decoration — this change is scoped",
+      // Its coral radial layer is a different motif and was not in scope.
+      /radial-gradient\(circle at 92% 0%, rgba\(251, 113, 133, 0\.20\)/.test(planTabSource),
+      true
+    );
+  }
+
+
   check("night prop accepted", planTabSource.includes("night = false,"), true);
   check(
     "all section shells pick up night surfaces",

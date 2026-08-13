@@ -63,6 +63,68 @@ function render(cwd, night) {
   });
 }
 
+
+/* --------------------------------- 62B-2G approved-decoration normalization -- */
+
+// Phase 62B-2G removed the legacy decorative-circle motif from the Home header
+// and the Home Weather + comfort card. That is an APPROVED day-mode visual
+// change, so the byte-for-byte comparison legitimately detects it.
+//
+// The pinned baseline is NOT moved and the comparison is NOT weakened. Instead
+// the five exact removed fragments are normalized out of BOTH renders, so the
+// check keeps proving that every other day byte is identical.
+//
+// Each entry is an exact rendered string, not a pattern. The two background
+// entries are scoped by the Home card's own border alpha (0.24) so they cannot
+// touch WhileYouWaitCard's outer surface, which renders a byte-identical radial
+// layer with border alpha 0.26 and is out of scope for this phase.
+const APPROVED_62B2G_REMOVALS = [
+  {
+    name: "Home header 130x130 orb",
+    from:
+      '<div aria-hidden="true" style="position:absolute;width:130px;height:130px;border-radius:999px;background:rgba(251, 113, 133, 0.18);right:-42px;bottom:-54px;filter:blur(2px)"></div>',
+    to: "",
+  },
+  {
+    name: "Home header 86x86 orb",
+    from:
+      '<div aria-hidden="true" style="position:absolute;width:86px;height:86px;border-radius:999px;background:rgba(56, 189, 248, 0.16);right:38px;top:38px;filter:blur(1px)"></div>',
+    to: "",
+  },
+  {
+    name: "Home weather 104x104 orb",
+    from:
+      '<div aria-hidden="true" style="position:absolute;width:104px;height:104px;border-radius:999px;right:-42px;bottom:-48px;background:rgba(124, 58, 237, 0.10)"></div>',
+    to: "",
+  },
+  {
+    name: "Home header circular radial layers",
+    from:
+      "background:radial-gradient(circle at 88% 8%, rgba(124, 58, 237, 0.34) 0%, rgba(124, 58, 237, 0.12) 24%, transparent 46%), radial-gradient(circle at 8% 0%, rgba(245, 158, 11, 0.30) 0%, rgba(245, 158, 11, 0.10) 32%, transparent 58%), linear-gradient(150deg, #FFFFFF 0%, #FFF4D8 45%, #F3E8FF 100%)",
+    to: "background:linear-gradient(150deg, #FFFFFF 0%, #FFF4D8 45%, #F3E8FF 100%)",
+  },
+  {
+    name: "Home weather circular radial layer",
+    from:
+      "background:radial-gradient(circle at 92% 0%, rgba(56, 189, 248, 0.18) 0%, rgba(56, 189, 248, 0.05) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%);border:1px solid rgba(56, 189, 248, 0.24)",
+    to:
+      "background:linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%);border:1px solid rgba(56, 189, 248, 0.24)",
+  },
+];
+
+const countOf = (haystack, needle) => haystack.split(needle).length - 1;
+
+// The out-of-scope surface that renders a byte-identical radial layer. It must
+// survive normalization in BOTH renders, which is what proves the scoping works.
+const WYW_OUTER_RADIAL =
+  "rgba(56, 189, 248, 0.05) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%);border:1px solid rgba(56, 189, 248, 0.26)";
+
+function normalizeApprovedRemovals(html) {
+  let out = html;
+  for (const r of APPROVED_62B2G_REMOVALS) out = out.split(r.from).join(r.to);
+  return out;
+}
+
 console.log("Home day/night render parity (62B-2F-1)");
 
 const currentDay = render(frontendRoot, false);
@@ -133,15 +195,42 @@ try {
     true
   );
 
+  // The pinned base must still contain every approved decoration, and the
+  // current render must contain none of them. Asserting both directions is what
+  // stops this normalization from quietly hiding an unrelated regression: it
+  // only ever removes fragments that are provably present before and provably
+  // absent after.
   check(
-    `every day value is byte-identical to the merged base (${BASE_REF})`,
-    baseDay === currentDay,
+    "pinned base still contains every approved 62B-2G decoration",
+    APPROVED_62B2G_REMOVALS.every((r) => countOf(baseDay, r.from) === 7),
     true
   );
 
-  if (baseDay !== currentDay) {
-    const a = baseDay.split("\n");
-    const b = currentDay.split("\n");
+  check(
+    "current render contains none of the approved 62B-2G decorations",
+    APPROVED_62B2G_REMOVALS.every((r) => countOf(currentDay, r.from) === 0),
+    true
+  );
+
+  check(
+    "the out-of-scope WhileYouWaitCard radial layer is untouched in both renders",
+    countOf(baseDay, WYW_OUTER_RADIAL) === 14 &&
+      countOf(currentDay, WYW_OUTER_RADIAL) === 14,
+    true
+  );
+
+  const baseNormalized = normalizeApprovedRemovals(baseDay);
+  const currentNormalized = normalizeApprovedRemovals(currentDay);
+
+  check(
+    `every other day value is byte-identical to the merged base (${BASE_REF})`,
+    baseNormalized === currentNormalized,
+    true
+  );
+
+  if (baseNormalized !== currentNormalized) {
+    const a = baseNormalized.split("\n");
+    const b = currentNormalized.split("\n");
     for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
       if (a[i] !== b[i]) {
         console.log(`       first differing section near line ${i + 1}`);
