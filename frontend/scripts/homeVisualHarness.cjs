@@ -549,7 +549,10 @@ featureCheck(
 featureCheck(
   "every Home surface carries both a day and a night value",
   [
-    "headerBackground", "headerBorder", "headerShadow", "headerOrbCoral", "headerOrbSky",
+    // 62B-2G removed the decorative circle motif, so headerOrbCoral and
+    // headerOrbSky no longer exist in either mode. Their absence is asserted
+    // positively below rather than left implicit here.
+    "headerBackground", "headerBorder", "headerShadow",
     "eyebrowPill", "eyebrow", "title", "muted",
     "heroBorder", "heroShadow", "heroArtBackground", "heroNoArt",
     "weatherBackground", "weatherBorder", "weatherShadow",
@@ -671,7 +674,97 @@ featureCheck(
   true
 );
 
+
+console.log("Legacy decorative-circle motif removed (62B-2G) — FEATURE-DISCRIMINATING");
+
+featureCheck(
+  "the header orb tokens are gone from both modes",
+  !/headerOrbCoral|headerOrbSky/.test(homeTabSource),
+  true
+);
+
+featureCheck(
+  "both header overlay elements are gone",
+  // The 130x130 bottom-right and 86x86 upper-right aria-hidden circles.
+  // Whitespace-tolerant: an overlay re-added on a single line must not evade
+  // this. Also pins the exact fills, so the element cannot return under a
+  // different size.
+  !/width:\s*130,\s*height:\s*130,/.test(homeTabCode) &&
+    !/width:\s*86,\s*height:\s*86,/.test(homeTabCode) &&
+    !/t\.headerOrbCoral|t\.headerOrbSky/.test(homeTabCode) &&
+    !/rgba\(251, 113, 133, 0\.1[68]\)/.test(homeTabCode) &&
+    (homeTabCode.match(/aria-hidden="true"/g) || []).length === 2,
+  true
+);
+
+featureCheck(
+  "the weather overlay element is gone",
+  // The 104x104 bottom-right aria-hidden circle that used the eyebrow pill fill.
+  !/width:\s*104,\s*height:\s*104,/.test(homeTabCode) &&
+    // eyebrowPill itself survives — it still styles the real eyebrow pills.
+    /eyebrowPill/.test(homeTabCode),
+  true
+);
+
+featureCheck(
+  "no circular radial layer remains in either headerBackground",
+  (homeTabCode.match(/headerBackground:/g) || []).length === 2 &&
+    !/headerBackground:[\s\S]{0,40}radial-gradient\(circle/.test(homeTabCode),
+  true
+);
+
+featureCheck(
+  "no circular radial layer remains in either weatherBackground",
+  (homeTabCode.match(/weatherBackground:/g) || []).length === 2 &&
+    !/weatherBackground:[\s\S]{0,40}radial-gradient\(circle/.test(homeTabCode),
+  true
+);
+
+featureCheck(
+  "the four preserved linear gradients are exactly unchanged",
+  /headerBackground:\s*\n?\s*"linear-gradient\(150deg, #16203C 0%, #131C36 45%, #1B1740 100%\)",/.test(
+    homeTabCode
+  ) &&
+    /headerBackground:\s*\n?\s*"linear-gradient\(150deg, #FFFFFF 0%, #FFF4D8 45%, #F3E8FF 100%\)",/.test(
+      homeTabCode
+    ) &&
+    /weatherBackground:\s*\n?\s*"linear-gradient\(145deg, #131C36 0%, #16233F 100%\)",/.test(
+      homeTabCode
+    ) &&
+    /weatherBackground:\s*\n?\s*"linear-gradient\(145deg, #FFFFFF 0%, #E0F2FE 100%\)",/.test(
+      homeTabCode
+    ),
+  true
+);
+
+featureCheck(
+  "the real weather artwork and its resolver wiring are untouched",
+  // The crescent moon and stars are approved artwork, not the circle motif.
+  /import \{[^}]*\bHOME_WEATHER_ART\b[^}]*\} from "\.\.\/data\/homeArtManifest"/.test(
+    homeTabSource
+  ) &&
+    /const weatherArtFamily = resolveHomeWeatherFamily\(\s*weather\s*\)/.test(homeTabCode) &&
+    /HOME_WEATHER_ART\[\s*weatherArtFamily\s*\]\s*\?\.\[\s*homeArtMode\s*\]/.test(
+      homeTabCode
+    ) &&
+    /<img\s[\s\S]*?src=\{weatherArt\.src\}/.test(weatherCardBlock) &&
+    /objectFit:\s*"contain"/.test(weatherCardBlock),
+  true
+);
+
+
 console.log("Home capabilities preserved — INVARIANT REGRESSION GUARDS");
+
+invariantCheck(
+  "legitimate rounded pills and controls are still allowed",
+  // Deliberately NOT a file-wide ban on circles: the eyebrow, humidity, mode and
+  // freshness pills, the hero scrim and the selector no-art band all remain.
+  (homeTabCode.match(/borderRadius: 999,/g) || []).length >= 4 &&
+    /aria-hidden="true"/.test(homeTabCode) &&
+    /linear-gradient\(180deg, rgba\(15, 23, 42/.test(homeTabCode),
+  true
+);
+
 
 
 invariantCheck(

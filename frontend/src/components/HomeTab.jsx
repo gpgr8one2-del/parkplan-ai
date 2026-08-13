@@ -36,11 +36,9 @@ function getHomeTokens(night) {
         borderQuiet: "rgba(99, 102, 241, 0.26)",
         shadow: "0 12px 30px rgba(2, 6, 23, 0.45)",
         headerBackground:
-          "radial-gradient(circle at 88% 8%, rgba(139, 92, 246, 0.34) 0%, rgba(139, 92, 246, 0.12) 24%, transparent 46%), radial-gradient(circle at 8% 0%, rgba(245, 158, 11, 0.20) 0%, rgba(245, 158, 11, 0.06) 32%, transparent 58%), linear-gradient(150deg, #16203C 0%, #131C36 45%, #1B1740 100%)",
+          "linear-gradient(150deg, #16203C 0%, #131C36 45%, #1B1740 100%)",
         headerBorder: "1px solid rgba(139, 92, 246, 0.34)",
         headerShadow: "0 22px 58px rgba(2, 6, 23, 0.50)",
-        headerOrbCoral: "rgba(251, 113, 133, 0.16)",
-        headerOrbSky: "rgba(56, 189, 248, 0.14)",
         skyPill: "rgba(30, 58, 92, 0.62)",
         skyPillSoft: "rgba(30, 58, 92, 0.48)",
         skyText: "#7DD3FC",
@@ -56,8 +54,7 @@ function getHomeTokens(night) {
         heroArtBackground: "rgba(15, 23, 42, 0.35)",
         heroNoArt:
           "linear-gradient(150deg, #1E1B4B 0%, #172554 52%, #3B1E4D 100%)",
-        weatherBackground:
-          "radial-gradient(circle at 92% 0%, rgba(56, 189, 248, 0.14) 0%, rgba(56, 189, 248, 0.04) 34%, transparent 58%), linear-gradient(145deg, #131C36 0%, #16233F 100%)",
+        weatherBackground: "linear-gradient(145deg, #131C36 0%, #16233F 100%)",
         weatherBorder: "1px solid rgba(56, 189, 248, 0.24)",
         weatherShadow: "0 16px 38px rgba(2, 6, 23, 0.45)",
         rightNowBackground:
@@ -82,11 +79,9 @@ function getHomeTokens(night) {
         borderQuiet: colors.cardBorder,
         shadow: "0 10px 24px rgba(28, 25, 23, 0.06)",
         headerBackground:
-          "radial-gradient(circle at 88% 8%, rgba(124, 58, 237, 0.34) 0%, rgba(124, 58, 237, 0.12) 24%, transparent 46%), radial-gradient(circle at 8% 0%, rgba(245, 158, 11, 0.30) 0%, rgba(245, 158, 11, 0.10) 32%, transparent 58%), linear-gradient(150deg, #FFFFFF 0%, #FFF4D8 45%, #F3E8FF 100%)",
+          "linear-gradient(150deg, #FFFFFF 0%, #FFF4D8 45%, #F3E8FF 100%)",
         headerBorder: "1px solid rgba(124, 58, 237, 0.16)",
         headerShadow: "0 22px 58px rgba(91, 33, 182, 0.16)",
-        headerOrbCoral: "rgba(251, 113, 133, 0.18)",
-        headerOrbSky: "rgba(56, 189, 248, 0.16)",
         skyPill: "rgba(56, 189, 248, 0.16)",
         skyPillSoft: "rgba(56, 189, 248, 0.12)",
         skyText: "#0369A1",
@@ -102,8 +97,7 @@ function getHomeTokens(night) {
         heroArtBackground: "rgba(15, 23, 42, 0.06)",
         heroNoArt:
           "linear-gradient(150deg, #F3E8FF 0%, #E0F2FE 52%, #FFF4D8 100%)",
-        weatherBackground:
-          "radial-gradient(circle at 92% 0%, rgba(56, 189, 248, 0.18) 0%, rgba(56, 189, 248, 0.05) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%)",
+        weatherBackground: "linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%)",
         weatherBorder: "1px solid rgba(56, 189, 248, 0.24)",
         weatherShadow: "0 16px 38px rgba(2, 132, 199, 0.09)",
         rightNowBackground:
@@ -297,33 +291,6 @@ export function HomeTab({
             boxShadow: t.headerShadow,
           }}
         >
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              width: 130,
-              height: 130,
-              borderRadius: "999px",
-              background: t.headerOrbCoral,
-              right: -42,
-              bottom: -54,
-              filter: "blur(2px)",
-            }}
-          />
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              width: 86,
-              height: 86,
-              borderRadius: "999px",
-              background: t.headerOrbSky,
-              right: 38,
-              top: 38,
-              filter: "blur(1px)",
-            }}
-          />
-
           <div style={{ position: "relative" }}>
             <div
               style={{
@@ -530,19 +497,6 @@ export function HomeTab({
             boxShadow: t.weatherShadow,
           }}
         >
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              width: 104,
-              height: 104,
-              borderRadius: "999px",
-              right: -42,
-              bottom: -48,
-              background: t.eyebrowPill,
-            }}
-          />
-
           <div style={{ position: "relative" }}>
             <div
               style={{

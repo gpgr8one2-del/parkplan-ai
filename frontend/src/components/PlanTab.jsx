@@ -1162,26 +1162,12 @@ function DayGamePlanSection({ palette = PLAN_TAB_DAY_PALETTE, card, dayGamePlan 
         position: "relative",
         overflow: "hidden",
         padding: 18,
-        background:
-          "radial-gradient(circle at 92% 0%, rgba(14, 165, 233, 0.20) 0%, rgba(14, 165, 233, 0.05) 34%, transparent 58%), linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%)",
+        background: "linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%)",
         border: "1px solid rgba(14, 165, 233, 0.22)",
         boxShadow: "0 16px 38px rgba(14, 165, 233, 0.10)",
               ...(palette.shell || {}),
       }}
     >
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          width: 124,
-          height: 124,
-          borderRadius: "999px",
-          right: -50,
-          top: -54,
-          background: "rgba(124, 58, 237, 0.09)",
-        }}
-      />
-
       <div style={{ position: "relative" }}>
         <div
           style={{
