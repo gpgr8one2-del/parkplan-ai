@@ -159,7 +159,19 @@ featureCheck(
     const nightProps = el.match(/night=\{[^}]*\}/g) || [];
     return nightProps.length === 1 && nightProps[0] === "night={shellNight}";
   })() &&
-    !/night=\{false\}/.test(appSource),
+    // The "temporary gate is gone" half, scoped to the HomeTab element rather
+    // than the whole file. 63C-1 introduced a legitimate night={false} on
+    // <WaitsTab />: Waits gained a complete night presentation that is
+    // deliberately inactive until 63C-2. A file-wide negative would now forbid
+    // any future tab from using the same prepare-then-activate pattern, which
+    // is not what this guard is for. What it protects is unchanged: HomeTab
+    // itself must carry no hardcoded gate.
+    (() => {
+      const open = appSource.indexOf("<HomeTab");
+      const close = appSource.indexOf("/>", open);
+      if (open < 0 || close < 0) return false;
+      return !/night=\{false\}/.test(appSource.slice(open, close));
+    })(),
   true
 );
 

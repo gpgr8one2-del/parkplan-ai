@@ -1040,7 +1040,16 @@ featureCheck(
     const nightProps = el.match(/night=\{[^}]*\}/g) || [];
     return nightProps.length === 1 && nightProps[0] === "night={shellNight}";
   })() &&
-    !/night=\{false\}/.test(appSource) &&
+    // Scoped to the HomeTab element rather than the whole file. 63C-1 added a
+    // legitimate night={false} on <WaitsTab />, where a complete night
+    // presentation is prepared but deliberately inactive until 63C-2. What this
+    // guards is unchanged: HOME must carry no inactive gate of its own.
+    (() => {
+      const open = appSource.indexOf("<HomeTab");
+      const close = appSource.indexOf("/>", open);
+      if (open < 0 || close < 0) return false;
+      return !/night=\{false\}/.test(appSource.slice(open, close));
+    })() &&
     /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\| activeTab === "home"\)\s*&&\s*planNight;/.test(
       appSource
     ),

@@ -130,7 +130,9 @@ featureCheck(
 featureCheck(
   "Refresh still shows Loading versus Refresh",
   /\{loading \? "Loading" : "Refresh"\}/.test(waitsTabCode) &&
-    /<RefreshCw size=\{16\}/.test(waitsTabCode) &&
+    // 63C-1 wrapped the icon over several lines to add its night colour. The
+    // control, its size and its copy are unchanged.
+    /<RefreshCw\s+size=\{16\}/.test(waitsTabCode) &&
     /import \{ RefreshCw[^}]*\} from "lucide-react";/.test(waitsTabSource) &&
     // RefreshCw was only used by the Waits block, so App no longer imports it
     !/RefreshCw/.test(appSource),
@@ -149,10 +151,12 @@ featureCheck(
 
 featureCheck(
   "browsing another park still suppresses actions",
-  /renderShowtimeInfo=\{browsingAnotherPark \? \(\) => null : renderShowtimeInfo\}/.test(
+  // The gate remains browsingAnotherPark alone. 63C-1 changed only the
+  // non-browsing arm, to pass the explicit night value through.
+  /renderShowtimeInfo=\{\s*browsingAnotherPark \? \(\) => null : \(ride\) => renderShowtimeInfo\(ride, \{ night \}\)\s*\}/.test(
     waitsTabCode
   ) &&
-    /renderRideActions=\{browsingAnotherPark \? \(\) => null : renderRideActions\}/.test(
+    /renderRideActions=\{\s*browsingAnotherPark \? \(\) => null : \(ride\) => renderRideActions\(ride, \{ night \}\)\s*\}/.test(
       waitsTabCode
     ),
   true
@@ -161,7 +165,9 @@ featureCheck(
 featureCheck(
   "browsing another park still suppresses showtimes",
   // Same gate, asserted from the showtime side so either half failing is caught.
-  /browsingAnotherPark \? \(\) => null : renderShowtimeInfo/.test(waitsTabCode) &&
+  /browsingAnotherPark \? \(\) => null : \(ride\) => renderShowtimeInfo\(ride, \{ night \}\)/.test(
+    waitsTabCode
+  ) &&
     /browsingAnotherPark=\{browsingAnotherPark\}/.test(appCode),
   true
 );
@@ -268,11 +274,16 @@ invariantCheck(
 );
 
 invariantCheck(
-  "Waits presentation takes no night prop and stays day-only",
-  // Comment-blind: the file legitimately documents that night is deferred.
-  !/\bnight\b/.test(waitsTabCode) &&
-    !/night=/.test(waitsBranch) &&
-    !/#131C36|#0F172A|#F5F3FF|#B6C2E2|#C4B5FD/.test(waitsTabCode),
+  "Waits presentation stays day-only in production — night is inactive",
+  // 63C-1 delivered a complete night presentation, so pinning the absence of
+  // the prop would now assert the opposite of the product. What still holds is
+  // the property that keeps production day-only: the ONLY night value in the
+  // Waits branch is the literal false App supplies, and WaitsTab derives no
+  // mode of its own.
+  (waitsBranch.match(/\bnight=\{[^}]*\}/g) || []).join() === "night={false}" &&
+    !/shellNight|shellTokens|getTohiAppShellTheme|planNight|localStorage|matchMedia|new Date|getHours/.test(
+      waitsTabCode
+    ),
   true
 );
 

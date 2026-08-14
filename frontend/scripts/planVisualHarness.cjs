@@ -1090,7 +1090,13 @@ console.log("Night coverage for every Plan fallback and control");
   );
   check(
     "waits tab ride actions remain day-styled",
-    waitsSurfaceSource.includes("browsingAnotherPark ? () => null : renderRideActions") &&
+    // 63C-1 gave Waits a night presentation that is prepared but inactive: the
+    // actions now take an explicit night value from WaitsTab, and WaitsTab's
+    // own value is the literal false App passes. The browsing gate is unchanged,
+    // and no night:true is hardcoded anywhere on the Waits surface.
+    waitsSurfaceSource.includes(
+      "browsingAnotherPark ? () => null : (ride) => renderRideActions(ride, { night })"
+    ) &&
       !/renderRideActions\(ride, \{[^}]*night: true/.test(waitsSurfaceSource),
     true
   );
@@ -1296,7 +1302,11 @@ console.log("Night chip coverage");
   );
   check(
     "waits showtime stays day-styled",
-    waitsSurfaceSource.includes("browsingAnotherPark ? () => null : renderShowtimeInfo") &&
+    // Same as the actions above: explicit night value, unchanged browsing gate,
+    // and no hardcoded night:true on the Waits surface.
+    waitsSurfaceSource.includes(
+      "browsingAnotherPark ? () => null : (ride) => renderShowtimeInfo(ride, { night })"
+    ) &&
       !/renderShowtimeInfo\(ride, \{[^}]*night: true/.test(waitsSurfaceSource),
     true
   );
@@ -1776,7 +1786,11 @@ console.log("Extraction integrity");
       !/renderRideActions|renderShowtimeInfo/.test(planToolsCallSite) &&
       /renderRideActions=\{renderRideActions\}/.test(appSource) &&
       /renderShowtimeInfo=\{renderShowtimeInfo\}/.test(appSource) &&
-      /browsingAnotherPark \? \(\) => null : renderRideActions/.test(waitsSurfaceSource),
+      // 63C-1 only added the explicit night value to the non-browsing arm; the
+      // browsing gate that this guard depends on is unchanged.
+      /browsingAnotherPark \? \(\) => null : \(ride\) => renderRideActions\(ride, \{ night \}\)/.test(
+        waitsSurfaceSource
+      ),
     true
   );
   invariantCheck(
