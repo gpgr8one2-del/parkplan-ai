@@ -211,8 +211,10 @@ featureCheck(
 
 featureCheck(
   "initial loading renders card-shaped skeletons with a 2x2 action area",
-  /function WaitsSkeletonList\(\)/.test(waitsTabCode) &&
-    /\{view\.showSkeletons && <WaitsSkeletonList \/>\}/.test(waitsTabCode) &&
+  // 63C-1 gave the skeleton list an explicit night prop. The gate is unchanged:
+  // still view.showSkeletons, still the same component, still the same geometry.
+  /function WaitsSkeletonList\(\{ night = false \}\)/.test(waitsTabCode) &&
+    /\{view\.showSkeletons && <WaitsSkeletonList night=\{night\} \/>\}/.test(waitsTabCode) &&
     /borderRadius: 26,/.test(waitsTabCode) &&
     /padding: 20,/.test(waitsTabCode) &&
     /gridTemplateColumns: "1fr 1fr"/.test(waitsTabCode) &&
@@ -238,7 +240,9 @@ featureCheck(
 featureCheck(
   "stale reuses DataStatusBanner rather than duplicating its copy",
   /import \{ DataStatusBanner \} from "\.\/DataStatusBanner"/.test(waitsTabSource) &&
-    /view\.status === WAITS_VIEW_STATES\.STALE && \(\s*\n\s*<DataStatusBanner source=\{waitListParkData\?\.source\} \/>/.test(
+    // Still the shared component, still gated on STALE. 63C-1 forwards night to
+    // it rather than forking a Waits-specific stale banner.
+    /view\.status === WAITS_VIEW_STATES\.STALE && \(\s*\n\s*<DataStatusBanner source=\{waitListParkData\?\.source\} night=\{night\} \/>/.test(
       waitsTabCode
     ),
   true
@@ -307,10 +311,13 @@ invariantCheck(
 
 invariantCheck(
   "browsing still hides all four actions and showtime detail",
-  /renderRideActions=\{browsingAnotherPark \? \(\) => null : renderRideActions\}/.test(
+  // All three gates are still keyed on browsingAnotherPark alone. Only the
+  // non-browsing arm changed, to carry the explicit night value; night is
+  // deliberately not part of any of these conditions.
+  /renderRideActions=\{\s*browsingAnotherPark \? \(\) => null : \(ride\) => renderRideActions\(ride, \{ night \}\)\s*\}/.test(
     waitsTabCode
   ) &&
-    /renderShowtimeInfo=\{browsingAnotherPark \? \(\) => null : renderShowtimeInfo\}/.test(
+    /renderShowtimeInfo=\{\s*browsingAnotherPark \? \(\) => null : \(ride\) => renderShowtimeInfo\(ride, \{ night \}\)\s*\}/.test(
       waitsTabCode
     ) &&
     /hasShowtimeSchedule=\{browsingAnotherPark \? \(\) => false : hasShowtimeSchedule\}/.test(
@@ -369,10 +376,24 @@ invariantCheck(
 );
 
 invariantCheck(
-  "Waits remains day-only",
-  !/\bnight\b/.test(waitsTabCode) &&
-    !/\bnight\b/.test(listCode) &&
-    !/#131C36|#0F172A|#F5F3FF|#B6C2E2|#C4B5FD/.test(waitsSurface) &&
+  "Waits remains day-only in production — night is prepared but inactive",
+  // 63C-1 delivered the night presentation, so asserting the absence of night
+  // tokens would now assert the opposite of the product. The property that
+  // still holds, and is what actually protects production, is that no night
+  // value can reach Waits: App supplies a literal false and it is the only
+  // night value at the call site, the components derive nothing themselves, and
+  // Waits is still outside shellNight.
+  (() => {
+    const open = appCode.indexOf("<WaitsTab");
+    const close = appCode.indexOf("\n            />", open);
+    if (open < 0 || close < 0) return false;
+    return (
+      (appCode.slice(open, close).match(/\bnight=\{[^}]*\}/g) || []).join() === "night={false}"
+    );
+  })() &&
+    !/shellNight|shellTokens|getTohiAppShellTheme|planNight|activeTab|localStorage|matchMedia|new Date|getHours/.test(
+      waitsSurface
+    ) &&
     /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\| activeTab === "home"\)\s*&&\s*planNight;/.test(
       appCode
     ),

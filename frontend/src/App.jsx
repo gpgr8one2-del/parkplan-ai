@@ -3329,6 +3329,17 @@ function App() {
           fontWeight: 850,
           whiteSpace: "nowrap",
           minWidth: 0,
+          // 63C-1: the approved Waits night action sits on the blueprint's
+          // raised navy, a step lighter than the #131C36 card beneath it so the
+          // 2x2 grid still reads as four controls in the dark. Scoped to the
+          // Waits variant, so the default and Plan-compact night surfaces above
+          // are untouched.
+          ...(night
+            ? {
+                background: "#1A2444",
+                border: "1px solid rgba(129, 140, 248, 0.28)",
+              }
+            : null),
         }
       : themedActionButton;
 
@@ -3356,7 +3367,16 @@ function App() {
           disabled={isActiveRide}
           style={{
             ...sizedActionButton,
-            color: isActiveRide ? "#94a3b8" : night ? "#C4B5FD" : "#6d28d9",
+            // In Line Now is the disabled state of this same action. Night
+            // lifts the slate so "disabled" still reads as deliberate rather
+            // than as unreadable text on the raised navy.
+            color: isActiveRide
+              ? night
+                ? "#A8B4CC"
+                : "#94a3b8"
+              : night
+              ? "#C4B5FD"
+              : "#6d28d9",
             borderColor: isActiveRide
               ? night
                 ? "rgba(148, 163, 184, 0.30)"
@@ -3420,14 +3440,21 @@ function App() {
     const waits = options.variant === "waits";
 
     if (waits) {
+      // 63C-1 night tokens, measured off the approved blueprints: the sky panel
+      // becomes a deep sky-navy, the pills a recessed navy, and the sky accent
+      // moves onto the text. Still recognisably the "scheduled show" surface,
+      // and still without Best target or Arrival buffer — those stay on the
+      // default renderer Plan uses.
       return (
         <div
           style={{
             marginTop: 14,
             padding: "15px 16px",
             borderRadius: 20,
-            border: "1px solid rgba(56, 189, 248, 0.28)",
-            background: "#E0F2FE",
+            border: night
+              ? "1px solid rgba(56, 189, 248, 0.30)"
+              : "1px solid rgba(56, 189, 248, 0.28)",
+            background: night ? "#192D4B" : "#E0F2FE",
           }}
         >
           <div
@@ -3436,7 +3463,7 @@ function App() {
               fontWeight: 900,
               letterSpacing: 1.3,
               textTransform: "uppercase",
-              color: "#0369A1",
+              color: night ? "#7DD3FC" : "#0369A1",
             }}
           >
             Typical showtimes
@@ -3456,11 +3483,13 @@ function App() {
                 style={{
                   padding: "6px 12px",
                   borderRadius: 999,
-                  background: "rgba(255, 255, 255, 0.85)",
-                  border: "1px solid rgba(56, 189, 248, 0.24)",
+                  background: night ? "#132139" : "rgba(255, 255, 255, 0.85)",
+                  border: night
+                    ? "1px solid rgba(56, 189, 248, 0.26)"
+                    : "1px solid rgba(56, 189, 248, 0.24)",
                   fontSize: 12.5,
                   fontWeight: 700,
-                  color: colors.muted,
+                  color: night ? "#CBD5F0" : colors.muted,
                 }}
               >
                 {time}
@@ -3472,7 +3501,14 @@ function App() {
               verification warning only. The two extra guidance lines are not in
               the blueprint; they remain on the default renderer Plan uses. */}
           {showProfile.verifyDailySchedule && (
-            <p style={{ margin: "10px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.4 }}>
+            <p
+              style={{
+                margin: "10px 0 0",
+                color: night ? "#CBD5F0" : colors.muted,
+                fontSize: 12,
+                lineHeight: 1.4,
+              }}
+            >
               Verify in My Disney Experience. Showtimes can change by day.
             </p>
           )}
@@ -4729,8 +4765,21 @@ function App() {
               getParkNameById={getParkNameById}
               hasShowtimeSchedule={hasShowtimeSchedule}
               waitListParkData={waitListParkData}
-              renderRideActions={(ride) => renderRideActions(ride, { variant: "waits" })}
-              renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { variant: "waits" })}
+              // 63C-1: Waits now has a complete night presentation, and it is
+              // deliberately INACTIVE. This literal false is the gate — not a
+              // derived flag, a clock, a stored value or a media query. Waits is
+              // also still left out of the app-shell night decision, so a dark
+              // Waits surface behind day page chrome cannot happen. 63C-2 flips
+              // this literal and joins that decision in the same change.
+              night={false}
+              // WaitsTab owns the night value for this whole surface and passes
+              // it back in, so the header and the cards can never disagree.
+              renderRideActions={(ride, options) =>
+                renderRideActions(ride, { ...options, variant: "waits" })
+              }
+              renderShowtimeInfo={(ride, options) =>
+                renderShowtimeInfo(ride, { ...options, variant: "waits" })
+              }
               button={button}
             />
           )}

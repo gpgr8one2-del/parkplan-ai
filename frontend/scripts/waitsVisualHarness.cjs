@@ -217,10 +217,13 @@ featureCheck(
 
 featureCheck(
   "the Waits surface requests the Waits action and showtime variants",
-  /renderRideActions=\{\(ride\) => renderRideActions\(ride, \{ variant: "waits" \}\)\}/.test(
+  // 63C-1 added an options passthrough so WaitsTab can supply the explicit
+  // night value. The rule asserted here is unchanged and still exact: both
+  // renderers are called with variant "waits", from the WaitsTab call site.
+  /renderRideActions=\{\(ride, options\) =>\s*\n?\s*renderRideActions\(ride, \{ \.\.\.options, variant: "waits" \}\)\s*\n?\s*\}/.test(
     appCode
   ) &&
-    /renderShowtimeInfo=\{\(ride\) => renderShowtimeInfo\(ride, \{ variant: "waits" \}\)\}/.test(
+    /renderShowtimeInfo=\{\(ride, options\) =>\s*\n?\s*renderShowtimeInfo\(ride, \{ \.\.\.options, variant: "waits" \}\)\s*\n?\s*\}/.test(
       appCode
     ),
   true
@@ -405,9 +408,12 @@ invariantCheck(
 
 /* ---------------------------------------------------------- browsing -- */
 
+// The gate is still `browsingAnotherPark ? () => null :` in both cases. Only
+// the non-browsing arm changed, to carry the explicit night value through.
+// Night is deliberately NOT part of either condition.
 invariantCheck(
   "browsing another park still hides all four actions",
-  /renderRideActions=\{browsingAnotherPark \? \(\) => null : renderRideActions\}/.test(
+  /renderRideActions=\{\s*browsingAnotherPark \? \(\) => null : \(ride\) => renderRideActions\(ride, \{ night \}\)\s*\}/.test(
     waitsTabCode
   ),
   true
@@ -415,7 +421,7 @@ invariantCheck(
 
 invariantCheck(
   "browsing another park still hides showtime detail",
-  /renderShowtimeInfo=\{browsingAnotherPark \? \(\) => null : renderShowtimeInfo\}/.test(
+  /renderShowtimeInfo=\{\s*browsingAnotherPark \? \(\) => null : \(ride\) => renderShowtimeInfo\(ride, \{ night \}\)\s*\}/.test(
     waitsTabCode
   ),
   true
@@ -424,11 +430,25 @@ invariantCheck(
 /* ------------------------------------------------------------ scope -- */
 
 invariantCheck(
-  "Waits remains day-only and consumes no night prop",
-  !/\bnight\b/.test(waitsTabCode) &&
-    !/\bnight\b/.test(listCode) &&
-    !/night: true/.test(
-      appCode.slice(appCode.indexOf("<WaitsTab"), appCode.indexOf("<WaitsTab") + 1200)
+  "Waits renders day-only in production — night is prepared but inactive",
+  // 63C-1 gave Waits a complete night presentation. Pinning the ABSENCE of the
+  // prop would now assert the opposite of the product, so what is protected is
+  // the stronger and still-true property: no night value can reach the Waits
+  // render. App passes a literal false, and it is the only night value at the
+  // call site. Waits also stays out of shellNight, exactly as before.
+  (() => {
+    // Scoped to the <WaitsTab .../> element itself. A fixed-length slice would
+    // run past it into the Plan branch, where night={planNight} is legitimate.
+    const open = appCode.indexOf("<WaitsTab");
+    if (open < 0) return false;
+    const close = appCode.indexOf("\n            />", open);
+    if (close < 0) return false;
+    const el = appCode.slice(open, close);
+    return (el.match(/\bnight=\{[^}]*\}/g) || []).join() === "night={false}";
+  })() &&
+    // and the components still derive nothing themselves
+    !/planNight|shellNight|getTohiAppShellTheme|activeTab|localStorage|matchMedia|new Date|getHours/.test(
+      `${waitsTabCode}\n${listCode}`
     ) &&
     /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\| activeTab === "home"\)\s*&&\s*planNight;/.test(
       appCode
@@ -479,14 +499,19 @@ invariantCheck(
 );
 
 invariantCheck(
-  "night is the only remaining deferral",
-  // 63B-2 deferred the exceptional states; 63B-3 delivered them, so pinning
-  // their absence would now assert the opposite of the product. What is still
-  // deferred is night, and that is what this guards. The approved secondary
-  // states have their own harnesses.
-  !/\bnight\b/.test(waitsSurface) &&
-    !/#131C36|#0F172A|#F5F3FF|#B6C2E2|#C4B5FD/.test(waitsSurface) &&
-    !/shellNight|shellTokens|getTohiAppShellTheme/.test(waitsSurface),
+  "night ACTIVATION is the only remaining deferral",
+  // 63B-2 deferred the exceptional states; 63B-3 delivered them. 63C-1 then
+  // delivered the night presentation itself, so pinning the absence of night
+  // tokens would now assert the opposite of the product too. What remains
+  // deferred to 63C-2 is ACTIVATION, and that is what this guards: the Waits
+  // surface still reads no shell signal and derives no mode of its own, so the
+  // only way night can turn on is the parent flipping its literal.
+  !/shellNight|shellTokens|getTohiAppShellTheme|planNight/.test(waitsSurface) &&
+    !/activeTab|localStorage|sessionStorage|matchMedia|prefers-color-scheme/.test(
+      waitsSurface
+    ) &&
+    // the prop is a plain boolean with a day default in both components
+    (waitsSurface.match(/\bnight = false,/g) || []).length === 2,
   true
 );
 

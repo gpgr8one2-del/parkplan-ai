@@ -14,75 +14,102 @@ import { colors } from "../theme";
 //
 // This file is presentation only. Ride order, filtering, active-ride identity,
 // land formatting, showtime data and every action still come from App.
+//
+// 63C-1 added the approved night card presentation. `night` is an explicit
+// boolean supplied by WaitsTab and is never derived here. Structure, geometry
+// and every label are shared by both modes — only tokens change — so the locked
+// measurements above hold identically in day and night.
 
-// Existing wait-tone thresholds, unchanged.
-function getWaitTone(ride, isActiveRide) {
+// The approved night card palette, measured off the committed blueprint pairs:
+// each value is what the night sheet renders where the day sheet renders the
+// day token named beside it. Semantics survive the switch — green still reads
+// as calm, amber as moderate, coral as busy, sky as scheduled — without any of
+// them turning neon.
+const NIGHT = {
+  surface: "#131C36", //          <- colors.card         #FFFFFF
+  activeSurface: "linear-gradient(145deg, #131C36 0%, #1F214A 100%)",
+  border: "#282E66",
+  activeBorder: "rgba(139, 92, 246, 0.42)",
+  // Offsets and blurs match day exactly; only the shadow colour deepens. Day
+  // and night are locked to identical structure and spacing.
+  shadow: "0 10px 30px rgba(2, 6, 23, 0.45)",
+  activeShadow: "0 12px 32px rgba(2, 6, 23, 0.50)",
+  title: "#F5F3FF", //            <- colors.text         #241C15
+  muted: "#B6C2E2", //            <- colors.muted        #7A6F63
+};
+
+// Existing wait-tone thresholds, unchanged. Night only re-tokenises each tone;
+// the ordering, the boundaries (20 / 45) and every label are identical.
+function getWaitTone(ride, isActiveRide, night = false) {
   if (isActiveRide) {
     return {
       label: "In Line Now",
-      color: colors.purpleDeep,
-      bg: colors.purpleSoft,
-      border: "rgba(124, 58, 237, 0.30)",
+      color: night ? "#C4B5FD" : colors.purpleDeep,
+      bg: night ? "#281757" : colors.purpleSoft,
+      border: night ? "rgba(139, 92, 246, 0.42)" : "rgba(124, 58, 237, 0.30)",
     };
   }
 
   if (!ride.isOpen) {
     return {
       label: "Closed",
-      color: colors.muted,
-      bg: colors.backgroundSoft,
-      border: "rgba(234, 220, 200, 0.90)",
+      color: night ? NIGHT.muted : colors.muted,
+      bg: night ? "#0A1022" : colors.backgroundSoft,
+      border: night ? "rgba(129, 140, 248, 0.30)" : "rgba(234, 220, 200, 0.90)",
     };
   }
 
   if (ride.waitTime == null) {
     return {
       label: "Wait unavailable",
-      color: colors.muted,
-      bg: colors.backgroundSoft,
-      border: "rgba(234, 220, 200, 0.90)",
+      color: night ? NIGHT.muted : colors.muted,
+      bg: night ? "#0A1022" : colors.backgroundSoft,
+      border: night ? "rgba(129, 140, 248, 0.30)" : "rgba(234, 220, 200, 0.90)",
     };
   }
 
   if (ride.waitTime <= 20) {
     return {
       label: "Low wait",
-      color: colors.success,
-      bg: colors.successSoft,
-      border: "rgba(5, 150, 105, 0.22)",
+      color: night ? "#6EE7B7" : colors.success,
+      bg: night ? "#0C3539" : colors.successSoft,
+      border: night ? "rgba(52, 211, 153, 0.34)" : "rgba(5, 150, 105, 0.22)",
     };
   }
 
   if (ride.waitTime <= 45) {
     return {
       label: "Manageable",
-      color: "#92400E",
-      bg: colors.amberSoft,
-      border: "rgba(245, 158, 11, 0.30)",
+      color: night ? "#FCD34D" : "#92400E",
+      bg: night ? "#2F1B1A" : colors.amberSoft,
+      border: night ? "rgba(251, 191, 36, 0.34)" : "rgba(245, 158, 11, 0.30)",
     };
   }
 
   return {
     label: "High wait",
-    color: "#E11D48",
-    bg: colors.coralSoft,
-    border: "rgba(251, 113, 133, 0.28)",
+    color: night ? "#FB7185" : "#E11D48",
+    bg: night ? "#2E1128" : colors.coralSoft,
+    border: night ? "rgba(251, 113, 133, 0.40)" : "rgba(251, 113, 133, 0.28)",
   };
 }
 
 // A scheduled show has a published schedule instead of a queue, so the approved
 // card gives it its own status and no numeric wait.
-const SHOW_TONE = {
-  label: "Showtimes",
-  color: "#0369A1",
-  bg: colors.skySoft,
-  border: "rgba(56, 189, 248, 0.28)",
-};
+function getShowTone(night = false) {
+  return {
+    label: "Showtimes",
+    color: night ? "#7DD3FC" : "#0369A1",
+    bg: night ? "#192D4B" : colors.skySoft,
+    border: night ? "rgba(56, 189, 248, 0.38)" : "rgba(56, 189, 248, 0.28)",
+  };
+}
 
 export function WaitTimesList({
   rides,
   activeRideId,
   activePark,
+  night = false,
   formatLandLabel,
   hasShowtimeSchedule,
   renderShowtimeInfo,
@@ -101,22 +128,38 @@ export function WaitTimesList({
           hasShowtimeSchedule(ride);
         // The active ride keeps its In Line Now emphasis even when it is a show.
         const tone =
-          isScheduledShow && !isActiveRide ? SHOW_TONE : getWaitTone(ride, isActiveRide);
+          isScheduledShow && !isActiveRide
+            ? getShowTone(night)
+            : getWaitTone(ride, isActiveRide, night);
 
         return (
           <article
             key={ride.id}
             style={{
               background: isActiveRide
-                ? "linear-gradient(145deg, #FFFFFF 0%, #F6EEFF 100%)"
+                ? night
+                  ? NIGHT.activeSurface
+                  : "linear-gradient(145deg, #FFFFFF 0%, #F6EEFF 100%)"
+                : night
+                ? NIGHT.surface
                 : colors.card,
               border: `1px solid ${
-                isActiveRide ? "rgba(124, 58, 237, 0.30)" : "rgba(234, 220, 200, 0.45)"
+                isActiveRide
+                  ? night
+                    ? NIGHT.activeBorder
+                    : "rgba(124, 58, 237, 0.30)"
+                  : night
+                  ? NIGHT.border
+                  : "rgba(234, 220, 200, 0.45)"
               }`,
               borderRadius: 26,
               padding: 20,
               boxShadow: isActiveRide
-                ? "0 12px 32px rgba(124, 58, 237, 0.12)"
+                ? night
+                  ? NIGHT.activeShadow
+                  : "0 12px 32px rgba(124, 58, 237, 0.12)"
+                : night
+                ? NIGHT.shadow
                 : "0 10px 30px rgba(28, 25, 23, 0.055)",
             }}
           >
@@ -142,7 +185,7 @@ export function WaitTimesList({
                     fontWeight: 900,
                     lineHeight: 1.22,
                     letterSpacing: -0.3,
-                    color: colors.text,
+                    color: night ? NIGHT.title : colors.text,
                   }}
                 >
                   {ride.name}
@@ -152,7 +195,7 @@ export function WaitTimesList({
                   style={{
                     fontSize: 13,
                     fontWeight: 650,
-                    color: colors.muted,
+                    color: night ? NIGHT.muted : colors.muted,
                   }}
                 >
                   {formatLandLabel(activePark, ride.land)} ·{" "}
@@ -212,7 +255,7 @@ export function WaitTimesList({
                       fontWeight: 900,
                       letterSpacing: 0.9,
                       textTransform: "uppercase",
-                      color: colors.muted,
+                      color: night ? NIGHT.muted : colors.muted,
                     }}
                   >
                     {ride.waitTime != null ? "min" : "wait"}
