@@ -173,18 +173,32 @@ featureCheck(
 );
 
 featureCheck(
-  "3. App passes a LITERAL false to WaitsTab — not a variable, not a derivation",
+  "3. App passes WaitsTab the shared shell flag, and no literal gate remains",
+  // 63C-2 activation. 63C-1 pinned a literal false here while the presentation
+  // was prepared but inactive; that gate is gone, and Waits now reads the same
+  // single flag as Home, Plan, the page background and BottomTabs. Exactly one
+  // night prop, so a second contradicting source cannot be slipped in.
   waitsTabCall.length > 0 &&
-    /night=\{false\}/.test(waitsTabCall) &&
-    (waitsTabCall.match(/\bnight=\{[^}]*\}/g) || []).length === 1,
+    (waitsTabCall.match(/\bnight=\{[^}]*\}/g) || []).join() === "night={shellNight}" &&
+    !/night=\{false\}/.test(appCode),
   true
 );
 
 featureCheck(
-  "24. night is prepared but INACTIVE — no night value can reach the Waits render",
-  // The literal gate above, plus proof that the day render is what ships: the
-  // rendered day output carries none of the night palette.
-  /night=\{false\}/.test(waitsTabCall) &&
+  "24. Waits night is ACTIVE, and only through the shared flag",
+  // The activation is real: the flag exists, covers exactly the three converted
+  // tabs, and Waits reads it. Day rendering is unaffected — the day render still
+  // carries none of the night palette, which is what keeps day mode identical
+  // after activation.
+  (() => {
+    const m = appCode.match(
+      /const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*\n?\s*planNight;/
+    );
+    if (!m) return false;
+    const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)].map((x) => x[1]).sort();
+    return tabs.join(",") === "home,plan,waits";
+  })() &&
+    /night=\{shellNight\}/.test(waitsTabCall) &&
     !/#131C36|#1A2444|#281757|#1E2650|#2A0B1F|#192D4B|#0A1022|#2F1B1A|#2E1128|#0C3539/.test(
       DAY_HTML
     ),
@@ -548,20 +562,32 @@ console.log("Behaviour, state, copy, day, Plan and shell preserved — INVARIANT
 
 /* --- 4-5. the shell decision is untouched ------------------------------- */
 
-invariantCheck(
-  "4. Waits is still EXCLUDED from shellNight",
-  /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\| activeTab === "home"\)\s*&&\s*planNight;/.test(
-    appCode
-  ) &&
-    (() => {
-      const m = appCode.match(/const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*planNight;/);
-      if (!m) return false;
-      const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)].map((x) => x[1]).sort();
-      return tabs.join(",") === "home,plan";
-    })() &&
-    // and nothing in the Waits branch reads the shell
-    !/shellNight|shellTokens|pageStyle/.test(waitsTabCall) &&
-    !/shellNight|shellTokens|getTohiAppShellTheme/.test(waitsSurface),
+// A FEATURE assertion, not an invariant: 63C-2 inverted it from "Waits is
+// excluded from shellNight", so it is false at both the pre-night baseline and
+// the prepared-but-inactive one, and true only after activation.
+featureCheck(
+  "4. Waits joins shellNight and cannot produce a mixed shell",
+  // What this protects is the property that made exclusion necessary in the
+  // first place: Waits content and the page chrome behind it can never disagree.
+  // They cannot, because there is ONE flag, it is read in the same render by the
+  // page background, BottomTabs and WaitsTab, and it covers exactly the
+  // converted tabs.
+  (() => {
+    const m = appCode.match(
+      /const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*\n?\s*planNight;/
+    );
+    if (!m) return false;
+    const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)].map((x) => x[1]).sort();
+    return tabs.join(",") === "home,plan,waits";
+  })() &&
+    (appCode.match(/const shellNight\s*=/g) || []).length === 1 &&
+    // the page chrome, the navigation and the Waits content all read that flag
+    /const pageStyle\s*=\s*shellNight/.test(appCode) &&
+    /<BottomTabs[\s\S]{0,200}night=\{shellNight\}/.test(appCode) &&
+    /night=\{shellNight\}/.test(waitsTabCall) &&
+    // and the Waits components still derive nothing of their own, so the parent
+    // remains the single authority
+    !/shellNight|shellTokens|getTohiAppShellTheme|planNight|activeTab/.test(waitsSurface),
   true
 );
 

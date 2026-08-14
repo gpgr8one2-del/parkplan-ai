@@ -87,10 +87,17 @@ function readTokenBlock(source, name) {
 // Line comments stripped, for checks that count real code usage.
 const appSourceWithoutComments = appSource.replace(/^\s*\/\/.*$/gm, "");
 
-// Render branch of each tab that 62A deliberately leaves day-styled, so a
-// night value leaking into one of them can be detected directly.
+// Render branch of each tab that remains deliberately day-styled, so a night
+// value leaking into one of them can be detected directly.
+//
+// Waits left this list in 63C-2, the phase that activated it, exactly as Home
+// left it in 62B-2F-2. Both were removed only once every surface on the tab had
+// a night presentation and the tab had joined the shared shell flag. TOHI and
+// Profile are the tabs that remain unconverted, and the guard below still fails
+// the moment either of them is darkened.
 const mainEnd = appSource.indexOf("</main>");
-const unconvertedTabBranches = ["waits", "tohi", "profile"]
+const UNCONVERTED_TABS = ["tohi", "profile"];
+const unconvertedTabBranches = UNCONVERTED_TABS
   .map((key) => {
     const start = appSource.indexOf(`{activeTab === "${key}" &&`);
     if (start < 0) return "";
@@ -115,13 +122,13 @@ const bottomTabsCall =
 console.log("Phase 62A app shell night — FEATURE-DISCRIMINATING");
 
 featureCheck(
-  "App derives one Home-or-Plan shell-night flag from activeTab and planNight",
-  // 62B-2F-2 superseded the Plan-only form: Home joined once every Home surface
-  // had a night presentation. The name moved with the meaning — planShellNight
-  // would now be a lie. What is protected is unchanged and slightly stronger:
-  // exactly one flag, derived from nothing but activeTab and the existing
-  // planNight signal.
-  /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\| activeTab === "home"\)\s*&&\s*planNight;/.test(
+  "App derives one converted-tab shell-night flag from activeTab and planNight",
+  // 62B-2F-2 superseded the Plan-only form when Home joined; 63C-2 superseded
+  // the Home-or-Plan form when Waits joined. Each tab was added only once every
+  // one of its surfaces had a night presentation. What is protected is unchanged
+  // and slightly stronger: exactly one flag, derived from nothing but activeTab
+  // and the existing planNight signal.
+  /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\| activeTab === "home" \|\| activeTab === "waits"\)\s*&&\s*\n?\s*planNight;/.test(
     appSource
   ) &&
     /const planNight = parkPresenceTheme\.isNight;/.test(appSource) &&
@@ -135,43 +142,53 @@ featureCheck(
 );
 
 featureCheck(
-  "both converted tabs, and only those, drive the shell",
+  "the three converted tabs, and only those, drive the shell",
+  // Exact set, not a substring match: adding an unconverted tab fails here, and
+  // so does dropping a converted one.
   (() => {
     const m = appSource.match(
-      /const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*planNight;/
+      /const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*\n?\s*planNight;/
     );
     if (!m) return false;
     const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)].map((x) => x[1]).sort();
-    return tabs.join(",") === "home,plan";
-  })(),
+    return tabs.join(",") === "home,plan,waits";
+  })() &&
+    // and the tabs that are NOT converted are provably absent from it
+    UNCONVERTED_TABS.every(
+      (t) =>
+        !new RegExp(
+          `const shellNight[\\s\\S]*?activeTab === "${t}"[\\s\\S]*?planNight;`
+        ).test(appSource)
+    ),
   true
 );
 
-featureCheck(
-  "HomeTab is activated through that same flag, and the temporary gate is gone",
-  // Scoped to the HomeTab element: Plan's own components legitimately receive
-  // night={planNight}, so a file-wide negative would be wrong.
-  (() => {
-    const open = appSource.indexOf("<HomeTab");
-    const close = appSource.indexOf("/>", open);
-    if (open < 0 || close < 0) return false;
-    const el = appSource.slice(open, close);
-    const nightProps = el.match(/night=\{[^}]*\}/g) || [];
-    return nightProps.length === 1 && nightProps[0] === "night={shellNight}";
-  })() &&
-    // The "temporary gate is gone" half, scoped to the HomeTab element rather
-    // than the whole file. 63C-1 introduced a legitimate night={false} on
-    // <WaitsTab />: Waits gained a complete night presentation that is
-    // deliberately inactive until 63C-2. A file-wide negative would now forbid
-    // any future tab from using the same prepare-then-activate pattern, which
-    // is not what this guard is for. What it protects is unchanged: HomeTab
-    // itself must carry no hardcoded gate.
+// Both converted content tabs are activated through the SAME flag, each pinned
+// to exactly one night prop. Scoped per element: Plan's own components
+// legitimately receive night={planNight}, so a file-wide positive would be wrong.
+for (const tag of ["HomeTab", "WaitsTab"]) {
+  featureCheck(
+    `${tag} is activated through that same flag`,
     (() => {
-      const open = appSource.indexOf("<HomeTab");
+      const open = appSource.indexOf(`<${tag}`);
+      if (open < 0) return false;
       const close = appSource.indexOf("/>", open);
-      if (open < 0 || close < 0) return false;
-      return !/night=\{false\}/.test(appSource.slice(open, close));
+      if (close < 0) return false;
+      const el = appSource.slice(open, close);
+      const nightProps = el.match(/night=\{[^}]*\}/g) || [];
+      return nightProps.length === 1 && nightProps[0] === "night={shellNight}";
     })(),
+    true
+  );
+}
+
+featureCheck(
+  "no temporary night gate survives anywhere in App",
+  // 63C-1 parked a deliberate night={false} on <WaitsTab /> while the Waits
+  // night presentation was prepared but inactive. 63C-2 activated it, so the
+  // file-wide negative this check originally carried is restored — stronger
+  // than the element-scoped form it needed while the gate existed.
+  !/night=\{false\}/.test(appSource),
   true
 );
 
@@ -407,19 +424,19 @@ invariantCheck(
 invariantCheck(
   "no night styling reaches an unconverted tab's content",
   // Slice each unconverted tab's render branch and prove no shell-night value is
-  // used inside it. Waits, TOHI and Profile are the tabs that remain unconverted;
-  // Home is no longer one of them — it became a converted night-mode tab in
-  // 62B-2F-2 and legitimately receives night={shellNight}.
+  // used inside it. TOHI and Profile are the tabs that remain unconverted; Home
+  // stopped being one in 62B-2F-2 and Waits in 63C-2, and both now legitimately
+  // receive night={shellNight}.
   //
-  // The forbidden list now includes shellNight. Without it this guard was blind
-  // to the rename: `planShellNight` does not match `shellNight`, so a darkened
-  // Waits, TOHI or Profile branch would have passed unnoticed. That blindness
-  // was real — the Home branch carried shellNight while the old expression
-  // still reported clean.
+  // The forbidden list includes shellNight. Without it this guard was blind to
+  // the rename: `planShellNight` does not match `shellNight`, so a darkened
+  // unconverted branch would have passed unnoticed. That blindness was real —
+  // the Home branch carried shellNight while the old expression still reported
+  // clean.
   //
   // True at base (where none of these identifiers exist) and true now, and it
   // fails the moment someone darkens an unconverted tab's content.
-  unconvertedTabBranches.length === 3 &&
+  unconvertedTabBranches.length === UNCONVERTED_TABS.length &&
     unconvertedTabBranches.every(
       (branch) =>
         branch.length > 0 &&

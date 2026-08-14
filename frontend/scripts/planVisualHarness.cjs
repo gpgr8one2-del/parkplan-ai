@@ -2003,7 +2003,7 @@ console.log("Extraction integrity");
     // converted tabs, BottomTabs never decides night for itself, no night
     // styling reaches an unconverted tab's content, and the 61E Plan content
     // corrections are still in place.
-    "night styling stays gated to the converted Home and Plan tabs",
+    "night styling stays gated to the converted tabs",
     [...bottomTabsSource.matchAll(/key:\s*"(\w+)"/g)].map((m) => m[1]).join(",") ===
       "home,waits,plan,tohi,profile" &&
       // Both flags are stated as conditionals so this stays a true invariant
@@ -2014,27 +2014,29 @@ console.log("Extraction integrity");
       // Pre-62B-2F-2 flag: if planShellNight still exists it must be Plan-gated.
       (!/const planShellNight/.test(appSource) ||
         /const planShellNight\s*=\s*activeTab === "plan"\s*&&\s*planNight;/.test(appSource)) &&
-      // Post-62B-2F-2 flag: if shellNight exists it must be derived from exactly
-      // Home or Plan, plus the existing planNight signal — nothing else.
+      // Post-62B-2F-2 flag: if shellNight exists it must be derived from the
+      // converted tabs plus the existing planNight signal — nothing else. Waits
+      // joined the converted set in 63C-2, once its night presentation was
+      // complete; TOHI and Profile stay out.
       (!/const shellNight/.test(appSource) ||
         (() => {
           const m = appSource.match(
-            /const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*planNight;/
+            /const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*\n?\s*planNight;/
           );
           if (!m) return false;
           const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)]
             .map((x) => x[1])
             .sort();
           return (
-            tabs.join(",") === "home,plan" &&
-            !/waits|tohi|profile/.test(m[1]) &&
+            tabs.join(",") === "home,plan,waits" &&
+            !/tohi|profile/.test(m[1]) &&
             /const planNight\s*=/.test(appSource)
           );
         })()) &&
       // BottomTabs never decides night for itself
       !/isNight|prefers-color-scheme|new Date\(|getHours/.test(bottomTabsSource) &&
       // no per-tab night styling for the tabs that are still unconverted
-      !/activeTab === "(waits|tohi|profile)"[^\n]*night/i.test(appSource) &&
+      !/activeTab === "(tohi|profile)"[^\n]*night/i.test(appSource) &&
       // 61E Plan content corrections intact
       (planTabSource.match(
         /color:\s*getChipAccent\("#(92400E|5B21B6|0369A1|E11D48)",\s*palette\)/g

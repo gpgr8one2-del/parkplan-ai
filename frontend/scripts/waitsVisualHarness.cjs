@@ -430,12 +430,11 @@ invariantCheck(
 /* ------------------------------------------------------------ scope -- */
 
 invariantCheck(
-  "Waits renders day-only in production — night is prepared but inactive",
-  // 63C-1 gave Waits a complete night presentation. Pinning the ABSENCE of the
-  // prop would now assert the opposite of the product, so what is protected is
-  // the stronger and still-true property: no night value can reach the Waits
-  // render. App passes a literal false, and it is the only night value at the
-  // call site. Waits also stays out of shellNight, exactly as before.
+  "Waits night is driven only by the shared shell flag",
+  // 63C-1 gave Waits a night presentation behind a literal false; 63C-2
+  // activated it. Through both phases the protected property is the same: the
+  // parent is the ONLY source of the mode. Exactly one night prop at the call
+  // site, and neither Waits component derives anything itself.
   (() => {
     // Scoped to the <WaitsTab .../> element itself. A fixed-length slice would
     // run past it into the Plan branch, where night={planNight} is legitimate.
@@ -444,13 +443,13 @@ invariantCheck(
     const close = appCode.indexOf("\n            />", open);
     if (close < 0) return false;
     const el = appCode.slice(open, close);
-    return (el.match(/\bnight=\{[^}]*\}/g) || []).join() === "night={false}";
+    return (el.match(/\bnight=\{[^}]*\}/g) || []).join() === "night={shellNight}";
   })() &&
     // and the components still derive nothing themselves
     !/planNight|shellNight|getTohiAppShellTheme|activeTab|localStorage|matchMedia|new Date|getHours/.test(
       `${waitsTabCode}\n${listCode}`
     ) &&
-    /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\| activeTab === "home"\)\s*&&\s*planNight;/.test(
+    /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\| activeTab === "home" \|\| activeTab === "waits"\)\s*&&\s*\n?\s*planNight;/.test(
       appCode
     ),
   true

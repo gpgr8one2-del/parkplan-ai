@@ -265,22 +265,28 @@ invariantCheck(
 );
 
 invariantCheck(
-  "shellNight still gates only Home and Plan — Waits stays day-only",
-  /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\| activeTab === "home"\)\s*&&\s*planNight;/.test(
-    appCode
-  ) &&
-    !/activeTab === "waits"[^\n]*night/i.test(appCode),
+  "shellNight gates exactly the three converted tabs",
+  // 63C-2 added Waits, as 62B-2F-2 added Home. The exact set is asserted, so
+  // adding an unconverted tab or dropping a converted one both fail here.
+  (() => {
+    const m = appCode.match(
+      /const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*\n?\s*planNight;/
+    );
+    if (!m) return false;
+    const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)].map((x) => x[1]).sort();
+    return tabs.join(",") === "home,plan,waits";
+  })() &&
+    (appCode.match(/const shellNight\s*=/g) || []).length === 1,
   true
 );
 
 invariantCheck(
-  "Waits presentation stays day-only in production — night is inactive",
-  // 63C-1 delivered a complete night presentation, so pinning the absence of
-  // the prop would now assert the opposite of the product. What still holds is
-  // the property that keeps production day-only: the ONLY night value in the
-  // Waits branch is the literal false App supplies, and WaitsTab derives no
-  // mode of its own.
-  (waitsBranch.match(/\bnight=\{[^}]*\}/g) || []).join() === "night={false}" &&
+  "Waits night is supplied by the parent, never derived in the presentation",
+  // 63C-1 delivered the night presentation behind a literal false; 63C-2
+  // activated it through the shared flag. What has held across both, and is
+  // what keeps the extraction honest, is that WaitsTab receives exactly one
+  // night value from App and computes no mode of its own.
+  (waitsBranch.match(/\bnight=\{[^}]*\}/g) || []).join() === "night={shellNight}" &&
     !/shellNight|shellTokens|getTohiAppShellTheme|planNight|localStorage|matchMedia|new Date|getHours/.test(
       waitsTabCode
     ),

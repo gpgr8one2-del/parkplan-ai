@@ -1040,28 +1040,39 @@ featureCheck(
     const nightProps = el.match(/night=\{[^}]*\}/g) || [];
     return nightProps.length === 1 && nightProps[0] === "night={shellNight}";
   })() &&
-    // Scoped to the HomeTab element rather than the whole file. 63C-1 added a
-    // legitimate night={false} on <WaitsTab />, where a complete night
-    // presentation is prepared but deliberately inactive until 63C-2. What this
-    // guards is unchanged: HOME must carry no inactive gate of its own.
+    // 63C-1 needed this scoped to the HomeTab element, because it had parked a
+    // deliberate night={false} on <WaitsTab /> while the Waits night
+    // presentation was prepared but inactive. 63C-2 activated Waits, so the
+    // file-wide negative is restored — stronger than the scoped form.
+    !/night=\{false\}/.test(appSource) &&
+    // Home is still one of the tabs driving that flag, and the converted set is
+    // still exactly the three activated tabs — asserted as an exact set, not a
+    // membership test, so this is not weaker than the expression it replaced.
     (() => {
-      const open = appSource.indexOf("<HomeTab");
-      const close = appSource.indexOf("/>", open);
-      if (open < 0 || close < 0) return false;
-      return !/night=\{false\}/.test(appSource.slice(open, close));
-    })() &&
-    /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\| activeTab === "home"\)\s*&&\s*planNight;/.test(
-      appSource
-    ),
+      const m = appSource.match(
+        /const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*\n?\s*planNight;/
+      );
+      if (!m) return false;
+      const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)].map((x) => x[1]).sort();
+      return tabs.join(",") === "home,plan,waits" && /const planNight\s*=/.test(appSource);
+    })(),
   true
 );
 
 featureCheck(
   "Home, the page background and BottomTabs all read one flag in the same render",
+  // The count grew from 2 to 3 in 63C-2, when Waits joined Home and BottomTabs
+  // as a consumer of the same flag. Counting alone would be brittle, so each of
+  // the three consumers is named: a swap of one for another cannot pass.
   /const pageStyle = shellNight/.test(appSource) &&
     /forceMode: shellNight \?/.test(appSource) &&
-    /night=\{shellNight\}/.test(appSource) &&
-    (appSource.match(/night=\{shellNight\}/g) || []).length === 2,
+    ["HomeTab", "WaitsTab", "BottomTabs"].every((tag) => {
+      const open = appSource.indexOf(`<${tag}`);
+      if (open < 0) return false;
+      const close = appSource.indexOf("/>", open);
+      return close > open && /night=\{shellNight\}/.test(appSource.slice(open, close));
+    }) &&
+    (appSource.match(/night=\{shellNight\}/g) || []).length === 3,
   true
 );
 

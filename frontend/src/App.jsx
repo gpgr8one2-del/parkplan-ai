@@ -2276,18 +2276,24 @@ function App() {
   // restrained lavender. Night: deep navy with muted purple borders.
   const planNight = parkPresenceTheme.isNight;
 
-  // 62A/62B-2F-2: the one explicit, parent-controlled shell decision. The dark
-  // shell and dark navigation apply while EITHER converted tab is active. Home
-  // joined Plan in 62B-2F-2, once every Home surface had a night presentation —
-  // Waits, TOHI, Profile and onboarding still render day content, and a dark
-  // shell behind day surfaces would read as a bug. Plan Tools inherits true
-  // because it is a sub-view of Plan: activeTab stays "plan" while it is open.
+  // 62A/62B-2F-2/63C-2: the one explicit, parent-controlled shell decision. The
+  // dark shell and dark navigation apply while ANY converted tab is active.
+  // Home joined Plan in 62B-2F-2 and Waits joined in 63C-2, each only once every
+  // surface on that tab had a night presentation — TOHI, Profile and onboarding
+  // still render day content, and a dark shell behind day surfaces would read as
+  // a bug. Plan Tools inherits true because it is a sub-view of Plan: activeTab
+  // stays "plan" while it is open.
+  //
+  // Because the page background, BottomTabs and each converted tab's content all
+  // read this single value in the same render, a tab switch can never leave dark
+  // cards on a day page or day cards on a dark page.
   //
   // Renamed from planShellNight, which stopped being accurate the moment Home
   // joined. Derived from existing state only: no stored state, effects, timers,
   // storage, or media-query listeners, and planNight itself is untouched.
   const shellNight =
-    (activeTab === "plan" || activeTab === "home") && planNight;
+    (activeTab === "plan" || activeTab === "home" || activeTab === "waits") &&
+    planNight;
   const shellTokens = getTohiAppShellTheme({
     forceMode: shellNight ? TOHI_THEME_MODES.NIGHT : TOHI_THEME_MODES.DAY,
   }).shellTokens;
@@ -4765,13 +4771,11 @@ function App() {
               getParkNameById={getParkNameById}
               hasShowtimeSchedule={hasShowtimeSchedule}
               waitListParkData={waitListParkData}
-              // 63C-1: Waits now has a complete night presentation, and it is
-              // deliberately INACTIVE. This literal false is the gate — not a
-              // derived flag, a clock, a stored value or a media query. Waits is
-              // also still left out of the app-shell night decision, so a dark
-              // Waits surface behind day page chrome cannot happen. 63C-2 flips
-              // this literal and joins that decision in the same change.
-              night={false}
+              // 63C-2 activation: Waits now reads the same shell decision as
+              // Home, Plan, the page background and BottomTabs, so all four flip
+              // together in one render. 63C-1's temporary literal false is gone.
+              // No new night mechanism was added — this is the existing flag.
+              night={shellNight}
               // WaitsTab owns the night value for this whole surface and passes
               // it back in, so the header and the cards can never disagree.
               renderRideActions={(ride, options) =>

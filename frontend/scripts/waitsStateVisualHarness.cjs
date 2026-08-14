@@ -376,25 +376,25 @@ invariantCheck(
 );
 
 invariantCheck(
-  "Waits remains day-only in production — night is prepared but inactive",
-  // 63C-1 delivered the night presentation, so asserting the absence of night
-  // tokens would now assert the opposite of the product. The property that
-  // still holds, and is what actually protects production, is that no night
-  // value can reach Waits: App supplies a literal false and it is the only
-  // night value at the call site, the components derive nothing themselves, and
-  // Waits is still outside shellNight.
+  "Waits night comes from the shared shell flag and nowhere else",
+  // 63C-1 delivered the night presentation behind a literal false; 63C-2
+  // activated it by pointing that prop at the shared flag. Across both phases
+  // the property worth guarding is unchanged: the parent owns the mode, there
+  // is exactly one night value at the call site, and the Waits components
+  // derive nothing of their own.
   (() => {
     const open = appCode.indexOf("<WaitsTab");
     const close = appCode.indexOf("\n            />", open);
     if (open < 0 || close < 0) return false;
     return (
-      (appCode.slice(open, close).match(/\bnight=\{[^}]*\}/g) || []).join() === "night={false}"
+      (appCode.slice(open, close).match(/\bnight=\{[^}]*\}/g) || []).join() ===
+      "night={shellNight}"
     );
   })() &&
     !/shellNight|shellTokens|getTohiAppShellTheme|planNight|activeTab|localStorage|matchMedia|new Date|getHours/.test(
       waitsSurface
     ) &&
-    /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\| activeTab === "home"\)\s*&&\s*planNight;/.test(
+    /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\| activeTab === "home" \|\| activeTab === "waits"\)\s*&&\s*\n?\s*planNight;/.test(
       appCode
     ),
   true
