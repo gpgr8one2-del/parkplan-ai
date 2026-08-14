@@ -10,9 +10,11 @@
 //   INVARIANT REGRESSION GUARDS — protects the behaviour the extraction was not
 //   allowed to touch. These legitimately pass at the baseline.
 //
-// Nothing here asserts the new blueprint. 63B-1 is a structural move only, so
-// the legacy presentation inside WaitTimesList is deliberately still protected
-// as-is: byte-identical to the baseline blob.
+// 63B-1 was a structural move. 63B-2 then replaced the Waits presentation with
+// the approved healthy day blueprint, so the guards that pinned the LEGACY
+// visual markup are gone — they described a design that was deliberately
+// retired. Everything they protected about BEHAVIOUR is still here, and the new
+// visual contract lives in waitsVisualHarness.cjs.
 
 const fs = require("fs");
 const path = require("path");
@@ -89,13 +91,16 @@ featureCheck(
 );
 
 featureCheck(
-  "the Waits-only header JSX no longer remains in App.jsx",
+  "no Waits header JSX remains in App.jsx",
+  // The legacy strings are gone from App, and so is the retired copy itself —
+  // 63B-2 replaced it with the approved header. The heading now lives in
+  // WaitsTab and nowhere else.
   !/Live Wait Times/.test(appSource) &&
     !/Browse all visible attractions/.test(appSource) &&
     !/Live wait data can lag/.test(appSource) &&
     !/Browsing \{browsedParkLabel\}/.test(appSource) &&
-    // and the markup is now in exactly one place
-    /Live Wait Times/.test(waitsTabSource),
+    /Browsing \{browsedParkLabel\}/.test(waitsTabSource) &&
+    /wait times/.test(waitsTabSource),
   true
 );
 
@@ -125,8 +130,8 @@ featureCheck(
 featureCheck(
   "Refresh still shows Loading versus Refresh",
   /\{loading \? "Loading" : "Refresh"\}/.test(waitsTabCode) &&
-    /<RefreshCw size=\{14\} \/>/.test(waitsTabCode) &&
-    /import \{ RefreshCw \} from "lucide-react";/.test(waitsTabSource) &&
+    /<RefreshCw size=\{16\}/.test(waitsTabCode) &&
+    /import \{ RefreshCw[^}]*\} from "lucide-react";/.test(waitsTabSource) &&
     // RefreshCw was only used by the Waits block, so App no longer imports it
     !/RefreshCw/.test(appSource),
   true
@@ -184,9 +189,10 @@ featureCheck(
       .join(",");
   })(),
   [
-    "activeRideId", "browsedParkLabel", "browsingAnotherPark", "button", "card",
-    "confirmedActiveParkLabel", "formatLandLabel", "loadData", "loading",
-    "renderRideActions", "renderShowtimeInfo", "sortedRides", "waitListParkId",
+    "activeRideId", "browsedParkLabel", "browsingAnotherPark", "button",
+    "confirmedActiveParkLabel", "formatLandLabel", "getParkNameById",
+    "hasShowtimeSchedule", "loadData", "loading", "renderRideActions",
+    "renderShowtimeInfo", "sortedRides", "waitListParkData", "waitListParkId",
   ].join(",")
 );
 
@@ -238,28 +244,6 @@ invariantCheck(
 );
 
 invariantCheck(
-  "WaitTimesList.jsx is byte-identical to the pinned baseline",
-  (() => {
-    try {
-      const now = execFileSync(
-        "git",
-        ["hash-object", "frontend/src/components/WaitTimesList.jsx"],
-        { cwd: repoRoot, encoding: "utf8" }
-      ).trim();
-      const base = execFileSync(
-        "git",
-        ["rev-parse", `${PINNED_BASE}:frontend/src/components/WaitTimesList.jsx`],
-        { cwd: repoRoot, encoding: "utf8" }
-      ).trim();
-      return now === base;
-    } catch {
-      return false;
-    }
-  })(),
-  true
-);
-
-invariantCheck(
   "the browsed-park data path and fetch effect are unchanged",
   /const waitListParkId = browsingAnotherPark \? browsedParkId : activePark;/.test(appCode) &&
     /const waitListParkData = browsingAnotherPark \? browsedParkData : parkData;/.test(appCode) &&
@@ -279,10 +263,10 @@ invariantCheck(
 
 invariantCheck(
   "Waits presentation takes no night prop and stays day-only",
-  !/\bnight\b/.test(waitsTabSource) &&
+  // Comment-blind: the file legitimately documents that night is deferred.
+  !/\bnight\b/.test(waitsTabCode) &&
     !/night=/.test(waitsBranch) &&
-    // no night tokens leaked into the extracted markup
-    !/#131C36|#0F172A|#F5F3FF|#B6C2E2|#C4B5FD/.test(waitsTabSource),
+    !/#131C36|#0F172A|#F5F3FF|#B6C2E2|#C4B5FD/.test(waitsTabCode),
   true
 );
 
@@ -296,7 +280,7 @@ invariantCheck(
         return /\.(jsx?|cjs|mjs|ts|tsx|css)$/.test(e.name) ? [full] : [];
       });
     return walk(path.join(frontendRoot, "src")).every((f) => {
-      const src = fs.readFileSync(f, "utf8");
+      const src = strip(fs.readFileSync(f, "utf8"));
       return !/docs\/design\/waits/.test(src) && !/waits-approved-/.test(src);
     });
   })(),
@@ -324,7 +308,6 @@ invariantCheck(
         .map((l) => l.slice(3));
       const all = [...new Set([...changed, ...status])];
       const FORBIDDEN = [
-        /^frontend\/src\/components\/WaitTimesList\.jsx$/,
         /^frontend\/src\/components\/BottomTabs\.jsx$/,
         /^frontend\/src\/theme\.js$/,
         /^frontend\/src\/utils\//,
@@ -343,17 +326,6 @@ invariantCheck(
       return false;
     }
   })(),
-  true
-);
-
-invariantCheck(
-  "the legacy WaitTimesList presentation is still present, unchanged",
-  // 63B-1 must NOT clean these up. They are the redesign's job.
-  /LIVE PARK PULSE/.test(waitTimesListSource) &&
-    /Wait Times/.test(waitTimesListSource) &&
-    /\{rides\.length\}/.test(waitTimesListSource) &&
-    /aria-hidden="true"/.test(waitTimesListSource) &&
-    /borderRadius: "999px"/.test(waitTimesListSource),
   true
 );
 

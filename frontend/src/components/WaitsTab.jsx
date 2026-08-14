@@ -1,23 +1,23 @@
 import React from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, TriangleAlert } from "lucide-react";
 
+import { FreshnessBadge } from "./FreshnessBadge";
 import { WaitTimesList } from "./WaitTimesList";
 import { colors } from "../theme";
 
-// 63B-1: Waits presentation extracted verbatim from App.jsx ahead of the
-// approved Waits redesign. This is a structural safety move only — the markup
-// below is the block that shipped, character for character, so the screen looks
-// and behaves exactly as it did before.
+// 63B-1 extracted this presentation verbatim from App.jsx.
+// 63B-2 rebuilt the healthy day presentation to the approved healthy day
+// blueprint committed under the Waits design documentation.
 //
-// This component is presentation only. Every piece of state, every fetch,
-// effect, timer, storage read, park-presence decision, sort, filter and action
-// handler stays in App.jsx and arrives here as an explicit prop. WaitsTab
-// creates no state, no effects and no replacement handlers.
+// Still presentation only: every piece of state, every fetch, effect, sort,
+// filter, park-presence decision and action handler stays in App.jsx and
+// arrives here as an explicit prop. This component creates no state, no
+// effects and no replacement handlers.
 //
-// The legacy presentation this block carries — the second Waits header inside
-// WaitTimesList, the attraction-count tile, the decorative row circles, the
-// wrapping action row, the day-only palette — is INTENTIONALLY preserved here.
-// Those are replaced in the later blueprint phases, not in this one.
+// Deliberately NOT in this phase: night styling, skeleton loading, the
+// refresh-error, error-with-no-data and empty presentations, and separate
+// browsed-park loading/error state. Those keep their current behaviour until
+// their own phase.
 export function WaitsTab({
   // data + derived state
   activeRideId,
@@ -26,96 +26,157 @@ export function WaitsTab({
   confirmedActiveParkLabel,
   loading,
   sortedRides,
+  waitListParkData,
   waitListParkId,
 
   // handlers owned by App
   loadData,
 
-  // renderers owned by App
+  // resolvers and renderers owned by App
   formatLandLabel,
+  getParkNameById,
+  hasShowtimeSchedule,
   renderRideActions,
   renderShowtimeInfo,
 
   // shared style objects owned by App
   button,
-  card,
 }) {
+  // The heading names the park the list is actually showing, so the title and
+  // the rides below can never describe different parks.
+  const waitsParkName = waitListParkId ? getParkNameById(waitListParkId) : "";
+
   return (
     <>
-      <section style={card}>
+      {/* Approved page header. Open on the page ground — no card, no border,
+          no decorative shapes — and the only Waits heading on the screen. */}
+      <header
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+          padding: "10px 2px 0",
+          marginBottom: 26,
+        }}
+      >
+        <span
+          style={{
+            alignSelf: "flex-start",
+            display: "inline-flex",
+            alignItems: "center",
+            padding: "7px 13px",
+            borderRadius: 999,
+            background: colors.purpleSoft,
+            color: colors.purpleDeep,
+            fontSize: 11,
+            fontWeight: 900,
+            letterSpacing: 1.1,
+          }}
+        >
+          LIVE WAITS
+        </span>
+
+        <h1
+          style={{
+            margin: 0,
+            fontSize: 31,
+            lineHeight: 1.12,
+            letterSpacing: -0.8,
+            fontWeight: 900,
+            color: colors.text,
+            maxWidth: 320,
+          }}
+        >
+          {waitsParkName ? `${waitsParkName} wait times` : "Wait times"}
+        </h1>
+
         <div
           style={{
             display: "flex",
-            justifyContent: "space-between",
             alignItems: "center",
-            gap: 12,
+            gap: 10,
+            flexWrap: "wrap",
           }}
         >
-          <div>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 900,
-                color: "#7C3AED",
-              }}
-            >
-              WAITS
-            </div>
-            <h2 style={{ margin: "6px 0 4px", color: "#1C1917" }}>
-              Live Wait Times
-            </h2>
-            <p
-              style={{
-                margin: 0,
-                color: colors.muted,
-                fontSize: 13,
-                lineHeight: 1.45,
-              }}
-            >
-              Browse all visible attractions, refresh live data, and use ride actions
-              without cluttering the Home dashboard.
-            </p>
-          </div>
+          {/* Real freshness, from the same park payload the list is built from. */}
+          <FreshnessBadge
+            source={waitListParkData?.source}
+            ageMs={waitListParkData?.ageMs}
+            fetchedAt={waitListParkData?.fetchedAt}
+          />
 
-          <button style={button} onClick={() => loadData(true)} disabled={loading}>
-            <RefreshCw size={14} /> {loading ? "Loading" : "Refresh"}
+          <button
+            style={{
+              ...button,
+              minHeight: 44,
+              padding: "10px 18px",
+              fontSize: 13.5,
+              fontWeight: 850,
+              boxShadow: "0 10px 30px rgba(28, 25, 23, 0.055)",
+            }}
+            onClick={() => loadData(true)}
+            disabled={loading}
+          >
+            <RefreshCw size={16} style={{ color: colors.purple }} />{" "}
+            {loading ? "Loading" : "Refresh"}
           </button>
         </div>
 
         <p
           style={{
-            margin: "10px 0 0",
+            margin: 0,
             color: colors.muted,
-            fontSize: 12,
-            lineHeight: 1.4,
+            fontSize: 14.5,
+            lineHeight: 1.55,
+            maxWidth: "33ch",
           }}
         >
-          Live wait data can lag the official park app during reopenings or
-          weather delays. Verify headliner status before walking across the park.
+          Check current waits and mark what your family is doing.
+        </p>
+
+        <p
+          style={{
+            margin: 0,
+            display: "flex",
+            gap: 9,
+            alignItems: "flex-start",
+            color: colors.muted,
+            fontSize: 12.5,
+            lineHeight: 1.45,
+            maxWidth: "34ch",
+          }}
+        >
+          <TriangleAlert
+            size={15}
+            style={{ flexShrink: 0, marginTop: 2, color: "#B58A3C" }}
+          />
+          Wait data can lag during reopenings or weather delays.
         </p>
 
         {browsingAnotherPark && (
           <p
             style={{
-              margin: "8px 0 0",
+              margin: 0,
               color: colors.purpleDeep,
-              fontSize: 12,
+              fontSize: 12.5,
               fontWeight: 750,
-              lineHeight: 1.4,
+              lineHeight: 1.45,
             }}
           >
             Browsing {browsedParkLabel}. Your day stays anchored at{" "}
             {confirmedActiveParkLabel}.
           </p>
         )}
-      </section>
+      </header>
 
       <WaitTimesList
         rides={sortedRides}
         activeRideId={activeRideId}
         activePark={waitListParkId}
-        card={card}
         formatLandLabel={formatLandLabel}
+        // Browsing another park stays informational: showtime detail and every
+        // action are withheld, exactly as before this redesign.
+        hasShowtimeSchedule={browsingAnotherPark ? () => false : hasShowtimeSchedule}
         renderShowtimeInfo={browsingAnotherPark ? () => null : renderShowtimeInfo}
         renderRideActions={browsingAnotherPark ? () => null : renderRideActions}
       />

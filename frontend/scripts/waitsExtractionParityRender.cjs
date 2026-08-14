@@ -1,21 +1,16 @@
 #!/usr/bin/env node
 
-// 63B-1 parity renderer.
+// Waits parity renderer.
 //
 // Renders the Waits tab presentation to static HTML for a fixed set of existing
-// states. waitsExtractionParityHarness.cjs runs this file in BOTH the pinned
-// pre-extraction baseline worktree and the extracted tree, then compares the
-// output byte for byte.
+// states, so waitsExtractionParityHarness.cjs can assert BEHAVIOUR against real
+// output rather than against source text.
 //
-// The extraction is only safe if the screen is unchanged. Reading the diff
-// cannot prove that — a moved brace or a dropped conditional still reads fine.
-// Rendering proves it: every attribute React actually emits is in the output.
-//
-// In the baseline tree there is no WaitsTab component: the markup lives inside
-// App.jsx. So when WaitsTab.jsx is absent this file lifts the exact
-// `activeTab === "waits"` JSX block out of App.jsx, wraps it in a component with
-// the same prop names, and renders that. Same markup, same inputs, same
-// comparison — no hand-copied baseline.
+// 63B-1 used this to prove the extraction was byte-identical to the
+// pre-extraction baseline. 63B-2 intentionally replaced the presentation, so
+// the harness now checks behaviour — real ride data, real ordering, real active
+// ride, real showtime data, action wiring, browsing suppression and day-only
+// scope — instead of pinning markup that the product deliberately changed.
 
 process.env.NODE_ENV = process.env.NODE_ENV || "development";
 
@@ -27,7 +22,6 @@ const babel = require("@babel/core");
 const frontendRoot = path.resolve(__dirname, "..");
 const COMPONENTS = path.join(frontendRoot, "src", "components");
 const WAITS_TAB = path.join(COMPONENTS, "WaitsTab.jsx");
-const SHIM = path.join(COMPONENTS, "__waitsParityBaselineShim.jsx");
 
 const origJs = Module._extensions[".js"];
 function compileJsx(module, filename) {
@@ -55,57 +49,7 @@ const { renderToStaticMarkup } = require("react-dom/server");
 
 /* ------------------------------------------------- component under test -- */
 
-const PROP_LIST = [
-  "activeRideId",
-  "browsedParkLabel",
-  "browsingAnotherPark",
-  "confirmedActiveParkLabel",
-  "loading",
-  "sortedRides",
-  "waitListParkId",
-  "loadData",
-  "formatLandLabel",
-  "renderRideActions",
-  "renderShowtimeInfo",
-  "button",
-  "card",
-];
-
-let createdShim = false;
-
-function loadWaitsTab() {
-  if (fs.existsSync(WAITS_TAB)) {
-    return require(WAITS_TAB).WaitsTab;
-  }
-
-  // Baseline tree: lift the block out of App.jsx verbatim.
-  const app = fs.readFileSync(path.join(frontendRoot, "src", "App.jsx"), "utf8");
-  const start = app.indexOf('{activeTab === "waits" && (');
-  const end = app.indexOf('{activeTab === "plan" && (', start);
-  if (start < 0 || end < 0) {
-    throw new Error("could not locate the Waits block in the baseline App.jsx");
-  }
-  let block = app.slice(start, end);
-  // strip the tab gate wrapper, keeping the JSX it guarded
-  block = block.slice(block.indexOf("(") + 1);
-  block = block.slice(0, block.lastIndexOf(")}"));
-
-  const source = `import React from "react";
-import { RefreshCw } from "lucide-react";
-import { WaitTimesList } from "./WaitTimesList";
-import { colors } from "../theme";
-export function WaitsTab({ ${PROP_LIST.join(", ")} }) {
-  return (
-${block}
-  );
-}
-`;
-  fs.writeFileSync(SHIM, source);
-  createdShim = true;
-  return require(SHIM).WaitsTab;
-}
-
-const WaitsTab = loadWaitsTab();
+const { WaitsTab } = require(WAITS_TAB);
 
 /* --------------------------------------------------------------- fixtures -- */
 
@@ -152,6 +96,15 @@ const RIDES = {
   mid: { id: 103, name: "Rock 'n' Roller Coaster Starring The Muppets", land: "sunset_boulevard", isOpen: true, waitTime: 35 },
   closed: { id: 104, name: "Mickey & Minnie's Runaway Railway", land: "hollywood_boulevard", isOpen: false, waitTime: null },
   unavailable: { id: 105, name: "Tower of Terror", land: "sunset_boulevard", isOpen: true, waitTime: null },
+  // Closed, but metadata still carries a schedule. The card must stay Closed.
+  closedShow: {
+    id: 107,
+    name: "Fantasmic!",
+    land: "sunset_boulevard",
+    isOpen: false,
+    waitTime: null,
+    showProfile: { showtimes: ["8:00 PM", "10:30 PM"], verifyDailySchedule: true },
+  },
   show: {
     id: 106,
     name: "Beauty and the Beast Live on Stage",
@@ -161,6 +114,10 @@ const RIDES = {
     showProfile: { showtimes: ["11:00 AM", "1:00 PM"], recommendedShowtimes: ["11:00 AM"] },
   },
 };
+
+const getParkNameById = (id) =>
+  ({ hollywood: "Hollywood Studios", epcot: "EPCOT" }[id] || id || "the park");
+const hasShowtimeSchedule = (ride) => Boolean(ride?.showProfile?.showtimes?.length);
 
 function props(over = {}) {
   return {
@@ -173,10 +130,12 @@ function props(over = {}) {
     waitListParkId: "hollywood",
     loadData: noop,
     formatLandLabel,
+    getParkNameById,
+    hasShowtimeSchedule,
+    waitListParkData: { source: "live", ageMs: 42000, fetchedAt: "2026-08-13T14:00:00.000Z" },
     renderRideActions,
     renderShowtimeInfo,
     button,
-    card,
     ...over,
   };
 }
@@ -194,9 +153,12 @@ const SCENARIOS = [
     props({
       browsingAnotherPark: true,
       waitListParkId: "epcot",
+      browsedParkLabel: "EPCOT",
+      confirmedActiveParkLabel: "Hollywood Studios",
       sortedRides: [RIDES.high, RIDES.show],
     }),
   ],
+  ["closed-show-with-schedule", props({ sortedRides: [RIDES.closedShow] })],
   ["empty-ride-array", props({ sortedRides: [] })],
 ];
 
@@ -209,12 +171,6 @@ for (const [name, p] of SCENARIOS) {
     html = `RENDER_ERROR: ${err.message}`;
   }
   out.push(`===== ${name} =====\n${html}`);
-}
-
-if (createdShim) {
-  try {
-    fs.unlinkSync(SHIM);
-  } catch {}
 }
 
 process.stdout.write(out.join("\n\n"));
