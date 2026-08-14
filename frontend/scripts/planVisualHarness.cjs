@@ -203,9 +203,15 @@ console.log("Compact card anatomy (61C-1)");
   );
   check(
     "compact buttons keep a 36px minimum touch height",
-    /const sizedActionButton = compact\n      \? \{[\s\S]*?minHeight: 36,\n        \}\n      : themedActionButton;/.test(
+    // 63B-2 added a Waits branch to the same ternary chain. The compact branch
+    // itself is untouched, so the assertion no longer pins what follows it —
+    // it still requires compact to yield minHeight 36 and the chain to fall
+    // back to the unmodified themedActionButton.
+    /const sizedActionButton = compact\n      \? \{[\s\S]*?minHeight: 36,\n        \}/.test(
       rideActionsSlice
-    ),
+    ) &&
+      /:\s*themedActionButton;/.test(rideActionsSlice) &&
+      /padding: "6px 9px",\n          fontSize: 11,/.test(rideActionsSlice),
     true
   );
   const cardShowtimeIndex = cardSource.indexOf("{renderShowtimeInfo?.(ride)}");

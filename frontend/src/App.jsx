@@ -3216,6 +3216,10 @@ function App() {
     // Compact styling is opt-in for Plan recommendation cards (61C-1). Callers
     // that do not pass it keep the existing padding, type, wrap, and labels.
     const compact = options.compact === true;
+    // 63B-2: the approved Waits layout is a 2x2 grid with 48px actions and the
+    // full "Report Issue" label. Opt-in per surface, exactly like compact — the
+    // default presentation and Plan's compact presentation are untouched.
+    const waits = options.variant === "waits";
     const themedActionButton = night
       ? {
           ...actionButton,
@@ -3233,17 +3237,37 @@ function App() {
           minWidth: 0,
           minHeight: 36,
         }
+      : waits
+      ? {
+          ...themedActionButton,
+          minHeight: 48,
+          borderRadius: 16,
+          padding: "0 12px",
+          fontSize: 14,
+          fontWeight: 850,
+          whiteSpace: "nowrap",
+          minWidth: 0,
+        }
       : themedActionButton;
 
     return (
       <div
-        style={{
-          display: "flex",
-          gap: compact ? 6 : 8,
-          justifyContent: "flex-end",
-          marginTop: compact ? 8 : 10,
-          flexWrap: compact ? "nowrap" : "wrap",
-        }}
+        style={
+          waits
+            ? {
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 9,
+                marginTop: 16,
+              }
+            : {
+                display: "flex",
+                gap: compact ? 6 : 8,
+                justifyContent: "flex-end",
+                marginTop: compact ? 8 : 10,
+                flexWrap: compact ? "nowrap" : "wrap",
+              }
+        }
       >
         <button
           onClick={() => handleInLine(ride)}
@@ -3292,6 +3316,15 @@ function App() {
     );
   }
 
+  // 63B-2: does this attraction have a real published schedule? Resolved the
+  // same way renderShowtimeInfo resolves it, so a card can never show the
+  // Showtimes treatment for an attraction that renders no showtimes.
+  function hasShowtimeSchedule(ride) {
+    const meta = getRideMetaForDisplay(activePark, ride);
+    const showProfile = ride?.showProfile || meta?.showProfile;
+    return Boolean(showProfile?.showtimes?.length);
+  }
+
   function renderShowtimeInfo(ride, options = {}) {
     const meta = getRideMetaForDisplay(activePark, ride);
     const showProfile = ride?.showProfile || meta?.showProfile;
@@ -3299,6 +3332,71 @@ function App() {
     if (!showProfile?.showtimes?.length) return null;
 
     const night = options.night === true;
+    // 63B-2: the approved Waits showtime panel. Same real showProfile data and
+    // the same verifyDailySchedule caution — only the presentation differs.
+    // Every other caller keeps the existing panel below.
+    const waits = options.variant === "waits";
+
+    if (waits) {
+      return (
+        <div
+          style={{
+            marginTop: 14,
+            padding: "15px 16px",
+            borderRadius: 20,
+            border: "1px solid rgba(56, 189, 248, 0.28)",
+            background: "#E0F2FE",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 900,
+              letterSpacing: 1.3,
+              textTransform: "uppercase",
+              color: "#0369A1",
+            }}
+          >
+            Typical showtimes
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 7,
+              marginTop: 11,
+            }}
+          >
+            {showProfile.showtimes.map((time) => (
+              <span
+                key={time}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  background: "rgba(255, 255, 255, 0.85)",
+                  border: "1px solid rgba(56, 189, 248, 0.24)",
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  color: colors.muted,
+                }}
+              >
+                {time}
+              </span>
+            ))}
+          </div>
+
+          {/* The approved Waits panel carries the times pills and the
+              verification warning only. The two extra guidance lines are not in
+              the blueprint; they remain on the default renderer Plan uses. */}
+          {showProfile.verifyDailySchedule && (
+            <p style={{ margin: "10px 0 0", color: colors.muted, fontSize: 12, lineHeight: 1.4 }}>
+              Verify in My Disney Experience. Showtimes can change by day.
+            </p>
+          )}
+        </div>
+      );
+    }
 
     return (
       <div
@@ -4545,10 +4643,12 @@ function App() {
               waitListParkId={waitListParkId}
               loadData={loadData}
               formatLandLabel={formatLandLabel}
-              renderRideActions={renderRideActions}
-              renderShowtimeInfo={renderShowtimeInfo}
+              getParkNameById={getParkNameById}
+              hasShowtimeSchedule={hasShowtimeSchedule}
+              waitListParkData={waitListParkData}
+              renderRideActions={(ride) => renderRideActions(ride, { variant: "waits" })}
+              renderShowtimeInfo={(ride) => renderShowtimeInfo(ride, { variant: "waits" })}
               button={button}
-              card={card}
             />
           )}
 
