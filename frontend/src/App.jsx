@@ -80,6 +80,7 @@ import { formatCloseTimeLabel, getParkHoursForDate } from "./parkHours";
 import { getRideExperienceContent } from "./rideExperienceContent";
 import { getRideMeta, getParkRides } from "./rideMetadata";
 import { shouldShowRideInWaitList } from "./attractionDisplayFilters";
+import { shouldApplyBrowsedResponse } from "./utils/waitsViewState";
 import { getResortOptions } from "./resortProfiles";
 import { detectNearestLocationZone, getCurrentPosition } from "./utils/locationDetection";
 import { OnboardingFlow } from "./components/OnboardingFlow";
@@ -2146,7 +2147,23 @@ function App() {
   ]);
 
   const [parkPresence, setParkPresence] = useState(null);
-  const [browsedParkData, setBrowsedParkData] = useState(null);
+  // 63B-3: the browsed park owns its own request state. Previously every
+  // failure collapsed to null, which is indistinguishable from "not requested
+  // yet" — so a failed browse looked like an empty park. parkId tags the state
+  // so a late response can never land under a different park's heading, and so
+  // the active park's error is never reused as the browsed park's error.
+  const [browsedParkRequest, setBrowsedParkRequest] = useState({
+    parkId: null,
+    data: null,
+    loading: false,
+    error: "",
+  });
+  const browsedParkData = browsedParkRequest.data;
+  // Monotonic request generation. Park identity alone cannot separate two
+  // in-flight requests for the SAME park — leave EPCOT, come back, refresh, and
+  // the older response would still match on parkId. Only the newest request may
+  // write, so a stale response is dropped rather than overwriting fresh data.
+  const browsedRequestIdRef = useRef(0);
 
   useEffect(() => {
     if (!timeContext?.orlandoDate) return;
@@ -2311,29 +2328,94 @@ function App() {
   // the confirmed park's data (recommendations, weather, TOHI Pick) is never
   // replaced by a park the family is merely looking at. Refetches ride along
   // with the confirmed park's own refresh cycle via the parkData dependency.
-  useEffect(() => {
-    if (!browsingAnotherPark || !browsedParkId) {
-      setBrowsedParkData(null);
-      return undefined;
-    }
+  // Two layers of late-response protection: the cancelled flag for this effect
+  // run, and a parkId identity check inside every setter. A response that
+  // arrives after the family has moved to another park is dropped rather than
+  // written under the new park's heading.
+  const loadBrowsedParkData = useCallback((parkId, options = {}) => {
+    if (!parkId) return undefined;
 
+    const { force = false } = options;
+    const requestId = browsedRequestIdRef.current + 1;
+    browsedRequestIdRef.current = requestId;
     let cancelled = false;
 
-    fetchParkData(browsedParkId)
+    // Same park: keep usable data on screen while the request runs.
+    // Different park: start clean, so the previous park's rides can never sit
+    // under the new park's heading.
+    setBrowsedParkRequest((current) =>
+      current.parkId === parkId
+        ? { ...current, loading: true, error: "" }
+        : { parkId, data: null, loading: true, error: "" }
+    );
+
+    fetchParkData(parkId, { force })
       .then((data) => {
-        if (!cancelled) setBrowsedParkData(data);
+        if (cancelled) return;
+        setBrowsedParkRequest((current) =>
+          shouldApplyBrowsedResponse({
+            requestId,
+            currentRequestId: browsedRequestIdRef.current,
+            parkId,
+            currentParkId: current.parkId,
+          })
+            ? { parkId, data, loading: false, error: "" }
+            : current
+        );
       })
-      .catch(() => {
-        if (!cancelled) setBrowsedParkData(null);
+      .catch((err) => {
+        if (cancelled) return;
+        setBrowsedParkRequest((current) =>
+          shouldApplyBrowsedResponse({
+            requestId,
+            currentRequestId: browsedRequestIdRef.current,
+            parkId,
+            currentParkId: current.parkId,
+          })
+            ? {
+                ...current,
+                loading: false,
+                error: err?.message || "Could not load browsed park wait times.",
+              }
+            : current
+        );
       });
 
+    // Retained as an additional guard for the effect's own lifecycle.
     return () => {
       cancelled = true;
     };
-  }, [browsingAnotherPark, browsedParkId, parkData]);
+  }, []);
+
+  useEffect(() => {
+    if (!browsingAnotherPark || !browsedParkId) {
+      // Leaving browse mode invalidates every outstanding browsed request and
+      // clears browsed-only state entirely.
+      browsedRequestIdRef.current += 1;
+      setBrowsedParkRequest({ parkId: null, data: null, loading: false, error: "" });
+      return undefined;
+    }
+
+    return loadBrowsedParkData(browsedParkId);
+  }, [browsingAnotherPark, browsedParkId, parkData, loadBrowsedParkData]);
+
+  // The Waits Refresh button refreshes the park Waits is actually showing.
+  // Browsing another park must never force a refresh of the confirmed park.
+  function handleWaitsRefresh() {
+    if (browsingAnotherPark && browsedParkId) {
+      loadBrowsedParkData(browsedParkId, { force: true });
+      return;
+    }
+
+    loadData(true);
+  }
 
   const waitListParkId = browsingAnotherPark ? browsedParkId : activePark;
   const waitListParkData = browsingAnotherPark ? browsedParkData : parkData;
+  // The displayed park's own request state. An active-park error is never read
+  // while browsing, and vice versa.
+  const waitsLoading = browsingAnotherPark ? browsedParkRequest.loading : loading;
+  const waitsError = browsingAnotherPark ? browsedParkRequest.error : error;
 
   function handleSelectPark(parkId) {
     trackAppEvent("park_selected", {
@@ -4638,10 +4720,11 @@ function App() {
               browsedParkLabel={browsedParkLabel}
               browsingAnotherPark={browsingAnotherPark}
               confirmedActiveParkLabel={confirmedActiveParkLabel}
-              loading={loading}
+              loading={waitsLoading}
+              waitsError={waitsError}
               sortedRides={sortedRides}
               waitListParkId={waitListParkId}
-              loadData={loadData}
+              loadData={handleWaitsRefresh}
               formatLandLabel={formatLandLabel}
               getParkNameById={getParkNameById}
               hasShowtimeSchedule={hasShowtimeSchedule}

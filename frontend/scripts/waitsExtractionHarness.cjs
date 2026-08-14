@@ -193,6 +193,7 @@ featureCheck(
     "confirmedActiveParkLabel", "formatLandLabel", "getParkNameById",
     "hasShowtimeSchedule", "loadData", "loading", "renderRideActions",
     "renderShowtimeInfo", "sortedRides", "waitListParkData", "waitListParkId",
+    "waitsError",
   ].join(",")
 );
 
@@ -244,11 +245,16 @@ invariantCheck(
 );
 
 invariantCheck(
-  "the browsed-park data path and fetch effect are unchanged",
+  "the browsed-park data path stays separate from the confirmed park",
+  // 63B-3 replaced the browsed fetch with explicit request state, so pinning
+  // setBrowsedParkData would pin a retired implementation. The RULE is
+  // unchanged and still asserted: the Waits list reads the browsed payload only
+  // while browsing, and the confirmed park's own data is never replaced by it.
   /const waitListParkId = browsingAnotherPark \? browsedParkId : activePark;/.test(appCode) &&
     /const waitListParkData = browsingAnotherPark \? browsedParkData : parkData;/.test(appCode) &&
-    /\[browsingAnotherPark, browsedParkId, parkData\]/.test(appCode) &&
-    /setBrowsedParkData/.test(appCode),
+    /\[browsingAnotherPark, browsedParkId, parkData/.test(appCode) &&
+    // browsed data reaches the wait list and nothing else
+    (appCode.match(/browsedParkData/g) || []).length === 2,
   true
 );
 
@@ -308,9 +314,11 @@ invariantCheck(
         .map((l) => l.slice(3));
       const all = [...new Set([...changed, ...status])];
       const FORBIDDEN = [
+        // 63B-3 adds src/utils/waitsViewState.js, which is Waits' own pure
+        // resolver. Every other util remains off limits.
+        /^frontend\/src\/utils\/(?!waitsViewState\.js$)/,
         /^frontend\/src\/components\/BottomTabs\.jsx$/,
         /^frontend\/src\/theme\.js$/,
-        /^frontend\/src\/utils\//,
         /^frontend\/src\/data\//,
         /^frontend\/src\/assets\//,
         /^frontend\/docs\/design\/waits\//,

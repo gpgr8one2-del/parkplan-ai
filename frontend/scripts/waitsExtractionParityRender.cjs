@@ -159,6 +159,19 @@ const SCENARIOS = [
     }),
   ],
   ["closed-show-with-schedule", props({ sortedRides: [RIDES.closedShow] })],
+  // The very first frame: no data, no error, and the effect has not yet set
+  // loading. This must not render blank or claim the park is empty.
+  ["first-render-before-effect", props({ sortedRides: [], waitListParkData: null })],
+  [
+    "browsed-first-render-before-effect",
+    props({
+      browsingAnotherPark: true,
+      waitListParkId: "epcot",
+      browsedParkLabel: "EPCOT",
+      sortedRides: [],
+      waitListParkData: null,
+    }),
+  ],
   ["empty-ride-array", props({ sortedRides: [] })],
 ];
 

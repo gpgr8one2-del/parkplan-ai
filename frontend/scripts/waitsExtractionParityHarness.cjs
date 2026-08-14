@@ -61,6 +61,8 @@ const SCENARIOS = [
   "showtime-attraction",
   "browsing-another-park",
   "closed-show-with-schedule",
+  "first-render-before-effect",
+  "browsed-first-render-before-effect",
   "empty-ride-array",
 ];
 
@@ -251,6 +253,45 @@ check(
   (() => {
     const s = S["loading-refresh-button"] || "";
     return s.includes("Loading") && !s.includes(">Refresh<") && /disabled=""/.test(s);
+  })(),
+  true
+);
+
+/* ------------------------------------------- first frame is never blank -- */
+
+check(
+  "the first pre-effect render shows skeletons, not a blank screen or empty copy",
+  (() => {
+    const s = S["first-render-before-effect"] || "";
+    return (
+      s.includes('data-tohi-waits-skeleton="true"') &&
+      !s.includes("No attractions to show") &&
+      !s.includes("Wait times unavailable") &&
+      !s.includes("data-actions-for")
+    );
+  })(),
+  true
+);
+
+check(
+  "the first pre-effect browsed render shows the quiet loading line",
+  (() => {
+    const s = S["browsed-first-render-before-effect"] || "";
+    return (
+      s.includes("Loading EPCOT wait times…") &&
+      !s.includes('data-tohi-waits-skeleton="true"') &&
+      !s.includes("No attractions to show")
+    );
+  })(),
+  true
+);
+
+check(
+  "no freshness pill renders before any data exists",
+  (() => {
+    const a = S["first-render-before-effect"] || "";
+    const b = S["browsed-first-render-before-effect"] || "";
+    return !/Live|Cached|Status unknown/.test(a) && !/Live|Cached|Status unknown/.test(b);
   })(),
   true
 );
