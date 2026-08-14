@@ -433,7 +433,35 @@ console.log("22. App integration (static source checks)");
   );
   check(
     "browsed data never replaces confirmed parkData",
-    appSource.includes("setBrowsedParkData"),
+    // 63B-3 replaced setBrowsedParkData with explicit browsed request state, so
+    // pinning that setter name would pin a retired implementation. The RULE is
+    // unchanged and asserted more strongly than before: browsed results are
+    // owned by their own state, the browsed loader writes nothing belonging to
+    // the confirmed park, and the wait list is the only consumer.
+    //
+    // Stated as a conditional on the loader so it remains a true invariant: it
+    // holds before 63B-3, where no such loader exists, and after.
+    (() => {
+      const browsedStateOwned =
+        /const \[browsedParkRequest, setBrowsedParkRequest\]/.test(appSource) ||
+        /setBrowsedParkData/.test(appSource);
+
+      const start = appSource.indexOf("const loadBrowsedParkData = useCallback(");
+      if (start < 0) return browsedStateOwned;
+
+      const end = appSource.indexOf("useEffect(() => {", start);
+      const loader = appSource.slice(start, end > start ? end : undefined);
+
+      return (
+        browsedStateOwned &&
+        !/setParkData\(/.test(loader) &&
+        !/setWeather\(/.test(loader) &&
+        !/setError\(/.test(loader) &&
+        !/setActivePark\(/.test(loader) &&
+        // the confirmed park's own loader is the only writer of parkData
+        (appSource.match(/setParkData\(/g) || []).length === 1
+      );
+    })(),
     true
   );
   check(

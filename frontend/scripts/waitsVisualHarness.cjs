@@ -479,13 +479,14 @@ invariantCheck(
 );
 
 invariantCheck(
-  "exceptional states are deferred, not half-built",
-  // No skeleton, no error surface, no empty-state copy, no browsed-park
-  // loading/error state has been introduced ahead of its phase.
-  !/skeleton|Skeleton/.test(waitsSurface) &&
-    !/Wait times unavailable|No attractions to show/.test(waitsSurface) &&
-    !/Couldn’t refresh wait times/.test(waitsSurface) &&
-    !/Loading EPCOT|VIEWING ONLY/.test(waitsSurface),
+  "night is the only remaining deferral",
+  // 63B-2 deferred the exceptional states; 63B-3 delivered them, so pinning
+  // their absence would now assert the opposite of the product. What is still
+  // deferred is night, and that is what this guards. The approved secondary
+  // states have their own harnesses.
+  !/\bnight\b/.test(waitsSurface) &&
+    !/#131C36|#0F172A|#F5F3FF|#B6C2E2|#C4B5FD/.test(waitsSurface) &&
+    !/shellNight|shellTokens|getTohiAppShellTheme/.test(waitsSurface),
   true
 );
 
