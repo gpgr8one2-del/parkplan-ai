@@ -9,8 +9,12 @@ recreated, reinterpreted, cropped, resized, or recompressed.
 |---|---|---|---|
 | `tohi-approved-healthy-day.png` | Healthy TOHI chat, active conversation | Day | 1010 × 1124 |
 | `tohi-approved-healthy-night.png` | Healthy TOHI chat, active conversation | Night | 1010 × 1124 |
-| `tohi-approved-states-day.png` | Secondary-state reference sheet, ten states | Day | 1010 × 5435 |
-| `tohi-approved-states-night.png` | Secondary-state reference sheet, ten states | Night | 1010 × 5435 |
+| `tohi-approved-states-day.png` | Secondary-state reference sheet, ten states | Day | 1010 × 5486 |
+| `tohi-approved-states-night.png` | Secondary-state reference sheet, ten states | Night | 1010 × 5486 |
+
+The healthy sheets remain 1010 × 1124. The state sheets are now 1010 × 5486,
+which is 51px taller than the original approval: the branded header plate below
+is taller than the text badge it replaced, and the state sheets stack ten frames.
 
 The two healthy sheets are a single simulated phone screen each. The two state
 sheets are specification sheets covering the ten secondary states:
@@ -58,6 +62,39 @@ redesign does not move any product feature between tabs.
 - Night reuses the palette already approved for Waits, so TOHI reads as the same
   application rather than a separate product.
 
+## Branded header
+
+The approved header carries the **official committed wordmark**,
+`frontend/public/tohi-logo.png` (874 × 286, RGBA), as the branded element
+directly above the `Ask TOHI` heading.
+
+| Property | Value |
+|---|---|
+| Source logo | `frontend/public/tohi-logo.png`, 874 × 286 RGBA |
+| Displayed logo | 80 × ~26.17px, intrinsic aspect ratio preserved |
+| Brand plate | ~106 × 42.17px, identical geometry in both modes |
+| Day plate | `#F3E8FF` |
+| Night plate | `#E9E3FB` |
+
+- **The official logo must never be redrawn, recoloured, traced, distorted,
+  cropped, or replaced.** It is used exactly as committed and only displayed at
+  a smaller size.
+- **The pale night plate is intentional.** The wordmark ink measures `#7742D2`
+  and may not be recoloured. Directly against the navy shell that is roughly
+  2.8–3.0:1, which is not readable. The pale lavender plate carries it at about
+  4.8:1 while staying clearly not white, so it does not glare on the dark shell.
+  Day reaches about 5.1:1 on the same geometry.
+- **The `TOHI COMPANION` text badge is no longer part of the approved design.**
+  The wordmark replaces it in the same position.
+- **No generic MessageCircle or chat icon appears in the redesigned header.**
+  The wordmark stands alone; nothing sits beside it.
+- **The full wordmark is not used in BottomTabs.** Navigation keeps its existing
+  compact TOHI sparkle icon.
+- **Production accessibility requirement: the header logo uses `alt=""`.** The
+  adjacent `Ask TOHI` heading already identifies the feature, so alt text on the
+  logo would be a duplicate announcement. The mark is decorative in this
+  position and is not the accessible name of anything.
+
 ## Locked visual direction
 
 The current TOHI tab carries several treatments that must **not** carry forward:
@@ -70,7 +107,8 @@ The current TOHI tab carries several treatments that must **not** carry forward:
   behavior behind them.
 - **No persistent decorative scrollbar.** The transcript scrolls natively. The
   only additional-content affordance is a quiet non-interactive edge fade.
-- **No emoji in the eyebrow.** The eyebrow reads `TOHI COMPANION`.
+- **No emoji in the header.** The current `✨` is removed. The header carries the
+  official wordmark described above, not an emoji and not a text badge.
 - **No loud gradients.** No radial card glow, no bright multi-stop gradient as
   the visual identity, and no full purple gradient user bubbles.
 - **No translucent white layers**, which cannot translate to night.
@@ -125,6 +163,19 @@ addressed by these blueprints. They remain unchanged:
 - backend `/api/ai-chat` response behavior, including the 500-path reply the
   frontend currently discards
 - chat persistence
+
+## The logo correction does not authorize production code
+
+Replacing the wordmark in these sheets is a **documentation correction only**. It
+does not change the running application and does not authorize a production-code
+change on its own. The header still ships the existing text badge until a later
+approved phase implements the redesign.
+
+Every previously locked decision stands unchanged — behavioural, extraction,
+state, keyboard, and sequencing. In particular the extraction rule at the bottom
+of this file is untouched: 64B-1 was byte-identical to production, the inline
+`TOHI:` and `You:` prefixes survive extraction, and moving message identity into
+separate speaker labels still belongs to the later day-redesign phase.
 
 ## These blueprints are a visual target, not authorization
 
