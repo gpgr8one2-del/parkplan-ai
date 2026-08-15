@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Send } from "lucide-react";
 
 import { colors } from "../theme";
@@ -72,6 +72,63 @@ const SUGGESTED_PROMPTS = [
 
 const LOADING_COPY = "TOHI is checking your park-day context…";
 
+// 64B-2C. How much the visual viewport must shrink before we call it a software
+// keyboard rather than ordinary browser chrome moving.
+//
+// The two things we must tell apart differ by roughly a factor of three:
+//   - iOS Safari's collapsing URL bar / toolbars shrink the visual viewport by
+//     about 44–88px depending on orientation and Safari version.
+//   - A software keyboard takes roughly 250–340px in portrait, and still around
+//     200px in landscape on the smallest phones.
+//
+// 150px sits comfortably in the gap: well above the largest toolbar movement we
+// expect, and well below the smallest real keyboard. A percentage alone would be
+// unreliable because landscape viewports are short enough that a toolbar can be
+// a large fraction of them.
+const KEYBOARD_MIN_VIEWPORT_SHRINK_PX = 150;
+
+// 64B-2C. The whole keyboard decision, as one pure function.
+//
+// It is exported so the rule can be exercised directly with real numbers rather
+// than inferred from the source or from a simulated browser. The effect below is
+// the only caller in production; it supplies the live values and does nothing
+// with the answer except report it upward.
+//
+// Every "no" case is spelled out because each protects a different user:
+//   - no focus            -> a viewport change from browser chrome alone
+//   - no access           -> locked TOHI has no composer at all
+//   - no viewport height  -> visualViewport is unsupported, so fail safe
+// Only a focused composer paired with a keyboard-sized shrink returns true.
+export function isComposerKeyboardOpen({
+  composerFocused,
+  hasAccess,
+  innerHeight,
+  viewportHeight,
+}) {
+  if (!composerFocused) return false;
+  if (!hasAccess) return false;
+  if (typeof innerHeight !== "number" || typeof viewportHeight !== "number") return false;
+  return innerHeight - viewportHeight >= KEYBOARD_MIN_VIEWPORT_SHRINK_PX;
+}
+
+// Scrolling and keyboard-follow both honour the user's motion preference. Read
+// at call time rather than cached, so a preference change mid-session applies.
+function prefersReducedMotion() {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+function scrollElementIntoView(element, block) {
+  if (!element || typeof element.scrollIntoView !== "function") return;
+  element.scrollIntoView({
+    behavior: prefersReducedMotion() ? "auto" : "smooth",
+    block,
+  });
+}
+
 // A small uppercase speaker label sits above each message, replacing the inline
 // "You: " / "TOHI: " prefixes. Clarification turns carry the QUICK CHECK chip,
 // driven only by the existing msg.isLiveStateQuestion value that App already
@@ -127,6 +184,10 @@ export function TohiTab({
   // Preview branch and setActiveScreen wiring stay in one place
   renderLockedFeatureCard,
 
+  // 64B-2C: reports ONLY whether this composer's software keyboard is open. App
+  // decides what to do with it. No other component observes the viewport.
+  onComposerKeyboardChange,
+
   // shared style objects owned by App
   card,
   button,
@@ -136,6 +197,89 @@ export function TohiTab({
   // only stops the control inviting a submit that App would discard.
   const trimmedMessage = typeof message === "string" ? message.trim() : "";
   const sendDisabled = chatLoading || trimmedMessage === "";
+
+  // 64B-2C DOM refs. These exist for scrolling, focused-composer detection and
+  // viewport observation only. No chat data, submission logic, validation or
+  // access decision lives here — all of that is still App's.
+  const transcriptEndRef = useRef(null);
+  const composerRef = useRef(null);
+  const composerFocusedRef = useRef(false);
+  const keyboardOpenRef = useRef(false);
+  const evaluateKeyboardRef = useRef(() => {});
+
+  // The callback is held in a ref so the viewport effect does not re-subscribe
+  // on every render if a caller passes an inline function.
+  const notifyKeyboardRef = useRef(onComposerKeyboardChange);
+  notifyKeyboardRef.current = onComposerKeyboardChange;
+
+  // --- keep the newest activity visible -------------------------------------
+  // Keyed on the transcript length and the loading flag, so a submitted message,
+  // the loading surface, a reply and a connection notice each bring themselves
+  // into view. The target is a stable end sentinel — nothing is located by
+  // matching message text. Native page scrolling is untouched; there is no
+  // separate scrolling panel.
+  useEffect(() => {
+    if (chat.length === 0 && !chatLoading) return undefined;
+    const frame = requestAnimationFrame(() => {
+      scrollElementIntoView(transcriptEndRef.current, "end");
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [chat.length, chatLoading]);
+
+  // --- software-keyboard detection ------------------------------------------
+  // This effect owns only the plumbing: it reads the live focus and viewport
+  // values, hands them to isComposerKeyboardOpen above, and reports the answer
+  // upward. The rule itself lives in that pure function, so it can be exercised
+  // directly rather than through a simulated browser.
+  //
+  // Both viewport events are observed because iOS fires resize when the keyboard
+  // animates in and scroll when the page settles underneath it.
+  useEffect(() => {
+    const viewport =
+      typeof window !== "undefined" && window.visualViewport ? window.visualViewport : null;
+
+    const report = (open) => {
+      if (open === keyboardOpenRef.current) return;
+      keyboardOpenRef.current = open;
+      if (typeof notifyKeyboardRef.current === "function") {
+        notifyKeyboardRef.current(open);
+      }
+    };
+
+    const evaluate = () => {
+      const open = isComposerKeyboardOpen({
+        composerFocused: composerFocusedRef.current,
+        hasAccess: hasPersonalizedAccess,
+        innerHeight: typeof window !== "undefined" ? window.innerHeight : null,
+        // null when visualViewport is unsupported, which the rule treats as
+        // "no keyboard" so navigation simply stays visible.
+        viewportHeight: viewport ? viewport.height : null,
+      });
+      report(open);
+      if (open) {
+        // Keep the whole composer inside the reduced viewport.
+        scrollElementIntoView(composerRef.current, "end");
+      }
+    };
+
+    evaluateKeyboardRef.current = evaluate;
+
+    if (viewport) {
+      viewport.addEventListener("resize", evaluate);
+      viewport.addEventListener("scroll", evaluate);
+    }
+    evaluate();
+
+    return () => {
+      if (viewport) {
+        viewport.removeEventListener("resize", evaluate);
+        viewport.removeEventListener("scroll", evaluate);
+      }
+      evaluateKeyboardRef.current = () => {};
+      // Unmount, leaving TOHI, or losing access all restore normal navigation.
+      report(false);
+    };
+  }, [hasPersonalizedAccess]);
 
   // 64B-2B: the approved locked state keeps the branded header and integrates
   // the personalized-feature card beneath it, so a gated TOHI tab still reads as
@@ -263,7 +407,23 @@ export function TohiTab({
         </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* 64B-2C: the transcript is an accessible log holding the conversation
+          entries and nothing else. aria-relevant="additions" is what stops a new
+          reply re-announcing the whole conversation — only the added entry is
+          spoken. aria-busy reflects the real chatLoading value, so assistive
+          tech knows a reply is on its way.
+
+          The loading surface is deliberately NOT in here. A region cannot
+          reliably announce its own contents while it is marked busy, so the
+          temporary loading copy lives in its own status region below. */}
+      <div
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-busy={chatLoading}
+        aria-label="TOHI conversation"
+        style={{ display: "flex", flexDirection: "column", gap: 14 }}
+      >
         {chat.length === 0 && (
           <div
             style={{
@@ -367,55 +527,77 @@ export function TohiTab({
             </div>
           );
         })}
-
-        {/* Sending. The submitted message stays above this; no assistant reply
-            is invented, and nothing is removed from the transcript. */}
-        {chatLoading && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-start" }}>
-            <SpeakerLabel who="TOHI" />
-            <div
-              data-tohi-loading="true"
-              style={{
-                maxWidth: "92%",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                borderRadius: 20,
-                padding: "12px 14px",
-                background: DAY.goldFill,
-                border: `1px solid ${DAY.goldLine}`,
-                color: DAY.goldInk,
-                fontSize: 13,
-                fontWeight: 650,
-                lineHeight: 1.4,
-              }}
-            >
-              <span
-                aria-hidden="true"
-                style={{ display: "inline-flex", gap: 4, flex: "0 0 auto" }}
-              >
-                {[0, 1, 2].map((i) => (
-                  <span
-                    key={i}
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: 999,
-                      background: "currentColor",
-                      opacity: 0.35,
-                      animation: `tohiChatPulse 1.25s ease-in-out ${i * 0.18}s infinite`,
-                    }}
-                  />
-                ))}
-              </span>
-              {LOADING_COPY}
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Sending. The submitted message stays above this; no assistant reply is
+          invented, and nothing is removed from the transcript.
+
+          This sits OUTSIDE the busy log, as its own status region, so the
+          loading copy has exactly one announcement path. aria-atomic groups the
+          speaker label and the copy into a single utterance rather than letting
+          them be read as two unrelated fragments. role="status" is already
+          implicitly polite, so no second aria-live is declared anywhere.
+
+          Its visual position is unchanged: the parent <section> is the same
+          14-gap column as the log, so this renders exactly where it did as the
+          log's last child, with the same styling. */}
+      {chatLoading && (
+        <div
+          role="status"
+          aria-atomic="true"
+          style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-start" }}
+        >
+          <SpeakerLabel who="TOHI" />
+          <div
+            data-tohi-loading="true"
+            style={{
+              maxWidth: "92%",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              borderRadius: 20,
+              padding: "12px 14px",
+              background: DAY.goldFill,
+              border: `1px solid ${DAY.goldLine}`,
+              color: DAY.goldInk,
+              fontSize: 13,
+              fontWeight: 650,
+              lineHeight: 1.4,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{ display: "inline-flex", gap: 4, flex: "0 0 auto" }}
+            >
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: 999,
+                    background: "currentColor",
+                    opacity: 0.35,
+                    animation: `tohiChatPulse 1.25s ease-in-out ${i * 0.18}s infinite`,
+                  }}
+                />
+              ))}
+            </span>
+            {LOADING_COPY}
+          </div>
+        </div>
+      )}
+
+      {/* Stable scroll target, kept after the loading region so bringing it into
+          view also reveals whichever of the two rendered last. The newest
+          activity is scrolled to via this sentinel, never by locating an element
+          from its message text. It is an empty flex child of the same 14-gap
+          column it previously occupied inside the log, so spacing is unchanged. */}
+      <div ref={transcriptEndRef} aria-hidden="true" />
 
       {/* Approved composer. Same form callback, same setter, same placeholder. */}
       <form
+        ref={composerRef}
         onSubmit={onChatSubmit}
         style={{
           ...card,
@@ -448,6 +630,17 @@ export function TohiTab({
             data-tohi-focus="true"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
+            // Focus is one half of the keyboard test; the viewport shrink is the
+            // other. Neither alone reports a keyboard. No autoFocus is used —
+            // the field is never focused on the user's behalf.
+            onFocus={() => {
+              composerFocusedRef.current = true;
+              evaluateKeyboardRef.current();
+            }}
+            onBlur={() => {
+              composerFocusedRef.current = false;
+              evaluateKeyboardRef.current();
+            }}
             placeholder="Ask TOHI..."
             style={{
               flex: 1,

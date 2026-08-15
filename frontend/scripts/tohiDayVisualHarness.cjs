@@ -725,10 +725,16 @@ console.log("Behaviour, trust and scope preserved — INVARIANT REGRESSION GUARD
 /* ------------------------------------------------------------- invariants -- */
 
 invariantCheck(
-  "TohiTab is presentation only — no state, effects, networking or storage",
-  !/useState|useEffect|useMemo|useRef|useCallback/.test(tohiSource) &&
+  "TohiTab is presentation only — it owns no business state",
+  // 64B-2C narrowed this instead of dropping it. Effects and refs are now
+  // authorised for scrolling, focused-composer detection, viewport observation
+  // and accessibility. Component state, networking, storage and clocks stay
+  // forbidden, and matchMedia is allowed for prefers-reduced-motion ONLY.
+  !/useState|useReducer|useMemo|useCallback/.test(tohiSource) &&
     !/fetch\(|axios|sendChatMessage|trackAppEvent|trackEvent/.test(tohiCode) &&
-    !/localStorage|sessionStorage|matchMedia|new Date|Date\.now|getHours/.test(tohiCode),
+    !/localStorage|sessionStorage|new Date|Date\.now|getHours/.test(tohiCode) &&
+    (tohiCode.match(/matchMedia\(/g) || []).length ===
+      (tohiCode.match(/matchMedia\("\(prefers-reduced-motion: reduce\)"\)/g) || []).length,
   true
 );
 
@@ -833,15 +839,21 @@ invariantCheck(
 
 invariantCheck(
   "no later-phase behaviour arrived early",
-  // 64B-2B delivered the connection-failure surface, so forbidding it would now
-  // assert the opposite of the product. Everything still deferred stays listed.
-  !/scrollIntoView|autoFocus/.test(tohiCode) &&          // autoscroll
-    !/aria-live|role="log"/.test(tohiCode) &&            // live region
-    !/Start Over|Retry|Try again/i.test(tohiCode) &&     // retry / start over
-    !/visualViewport/.test(tohiCode) &&                  // keyboard nav suppression
+  // 64B-2C delivered autoscroll, the live region and TOHI keyboard suppression,
+  // so those three prohibitions are superseded. They are REPLACED by narrower
+  // guards rather than dropped: the approved behaviour is permitted, its
+  // forbidden expansions are not. Everything still deferred is kept verbatim.
+  !/Start Over|Retry|Try again/i.test(tohiCode) &&       // retry / start over
     !/localStorage|sessionStorage/.test(tohiCode) &&     // persistence
     !/\bnight\b/.test(tohiCode) &&                       // night support
-    !/timestamp|reaction|onEdit/i.test(tohiCode),
+    !/timestamp|reaction|onEdit|contentEditable/i.test(tohiCode) &&
+    // autoscroll is approved, but it may never focus the field for the user
+    !/autoFocus/.test(tohiCode) &&
+    // the viewport is observed, never written to, and no global layout lock is
+    // installed on the document
+    !/document\.body\.style|position:\s*"fixed"/.test(tohiCode) &&
+    // the live region must stay polite — assertive would interrupt the user
+    !/aria-live="assertive"/.test(tohiCode),
   true
 );
 

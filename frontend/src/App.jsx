@@ -1702,6 +1702,12 @@ function App() {
   // A ref is written synchronously, so the second event sees the latch already
   // held and returns before any message, tracking event or request happens.
   const chatInFlightRef = useRef(false);
+  // 64B-2C. Whether the TOHI composer's software keyboard is currently open.
+  // TohiTab is the only thing that sets it, and it only ever reports true when
+  // that composer has focus AND the visual viewport has shrunk by a
+  // keyboard-sized amount. Nothing else observes the viewport, and no other tab
+  // reads this value.
+  const [tohiComposerKeyboardOpen, setTohiComposerKeyboardOpen] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationMessage, setLocationMessage] = useState("");
   const [locationError, setLocationError] = useState("");
@@ -5302,6 +5308,7 @@ function App() {
               setMessage={setMessage}
               onChatSubmit={handleChatSubmit}
               renderLockedFeatureCard={renderLockedFeatureCard}
+              onComposerKeyboardChange={setTohiComposerKeyboardOpen}
               card={card}
               button={button}
             />
@@ -5820,11 +5827,21 @@ function App() {
       </div>
       </main>
 
-      <BottomTabs
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        night={shellNight}
-      />
+      {/* 64B-2C: the navigation is suppressed ONLY while the TOHI composer's
+          software keyboard is open, so it cannot cover the field being typed
+          into. Both halves of the condition matter — the activeTab check keeps
+          this scoped to TOHI, and the flag is only ever true for that composer.
+          Every other tab, and locked TOHI (which has no composer), keeps the
+          navigation exactly as before. BottomTabs itself is unchanged: when the
+          keyboard closes it remounts with its existing portal, positioning and
+          appearance. */}
+      {!(activeTab === "tohi" && tohiComposerKeyboardOpen) && (
+        <BottomTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          night={shellNight}
+        />
+      )}
     </>
   );
 }
