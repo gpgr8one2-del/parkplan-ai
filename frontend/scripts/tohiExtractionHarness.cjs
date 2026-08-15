@@ -203,22 +203,29 @@ featureCheck(
   true
 );
 
+// 64B-2A: unchanged rule, updated for the redesign. The import surface is still
+// pinned to exactly three modules; MessageCircle is gone because the approved
+// header has no generic chat icon, so lucide now supplies only the Send mark.
 featureCheck(
-  "TohiTab imports only React, the two icons, and colors",
+  "TohiTab imports only React, lucide, and colors — and only Send from lucide",
   (() => {
     const imports = [...tohiSource.matchAll(/^import .*?from "([^"]+)";$/gm)].map((m) => m[1]).sort();
-    return imports.join(",") === ["react", "lucide-react", "../theme"].sort().join(",");
+    return (
+      imports.join(",") === ["react", "lucide-react", "../theme"].sort().join(",") &&
+      /^import \{ Send \} from "lucide-react";$/m.test(tohiSource)
+    );
   })(),
   true
 );
 
+// 64B-2A: the approved header carries the official wordmark and NO generic chat
+// icon, so MessageCircle is retired from the whole surface. Send stays as the
+// composer mark. App still holds neither.
 featureCheck(
-  "the two icons moved with the presentation and left App's import",
-  /import \{ MessageCircle, Send \} from "lucide-react";/.test(tohiSource) &&
-    /<MessageCircle size=\{20\} \/>/.test(tohiCode) &&
-    /<Send size=\{14\} \/>/.test(tohiCode) &&
+  "no generic chat icon survives; Send remains the composer mark",
+  !/\bMessageCircle\b/.test(tohiSource) &&
     !/\bMessageCircle\b/.test(appCode) &&
-    // App keeps only the literal tracking label, never the icon element
+    /<Send size=\{15\} \/>/.test(tohiCode) &&
     !/<Send\b/.test(appCode),
   true
 );
@@ -335,39 +342,59 @@ invariantCheck(
   true
 );
 
-invariantCheck(
-  "the inline You: and TOHI: prefixes remain — speaker labels are a later phase",
-  /<strong>\{isUser \? "You" : "TOHI"\}: <\/strong>/.test(presentation) &&
-    // the approved redesign labels must NOT have arrived early
-    !/QUICK CHECK/.test(presentation) &&
-    !/Your question/.test(presentation),
+// 64B-2A REPLACES this. It previously pinned the inline prefixes and forbade the
+// speaker labels, because 64B-1 had to be byte-identical. That phase is done and
+// the labels are now approved, so the rule inverts: identity lives in separate
+// uppercase labels and the inline prefixes must be gone.
+featureCheck(
+  "message identity uses separate YOU and TOHI labels, not inline prefixes",
+  /<SpeakerLabel who=\{isUser \? "YOU" : "TOHI"\}/.test(presentation) &&
+    !/<strong>/.test(presentation) &&
+    !/"You" : "TOHI"\}: /.test(presentation),
   true
 );
 
-invariantCheck(
-  "the emoji eyebrow remains",
-  /✨ TOHI COMPANION/.test(presentation),
+// 64B-2A REPLACES this. The emoji text badge is retired by the approved design;
+// the official wordmark takes its place.
+featureCheck(
+  "the official wordmark replaces the emoji text badge",
+  /src="\/tohi-logo\.png"/.test(presentation) &&
+    !/✨/.test(presentation) &&
+    !/TOHI COMPANION/.test(presentation),
   true
 );
 
-invariantCheck(
-  "both decorative corner circles remain",
-  (presentation.match(/aria-hidden="true"/g) || []).length === 2 &&
-    /width: 112,/.test(presentation) &&
-    /width: 96,/.test(presentation) &&
-    /radial-gradient\(circle at 92% 4%/.test(presentation),
+// 64B-2A REPLACES this. The approved direction removes both corner circles, the
+// radial card glow, the multi-stop gradient wash, and the full-purple gradient
+// user bubble.
+featureCheck(
+  "the legacy decoration is gone",
+  !/width: 112,/.test(presentation) &&
+    !/width: 96,/.test(presentation) &&
+    !/radial-gradient/.test(presentation) &&
+    !/linear-gradient\(155deg/.test(presentation) &&
+    !/linear-gradient\(145deg, #7C3AED/.test(presentation),
   true
 );
 
-invariantCheck(
-  "the composer keeps its current semantics and disabled rule",
-  /<form\s+onSubmit=\{(onChatSubmit|handleChatSubmit)\}/.test(presentation) &&
+// 64B-2A REPLACES this. Form semantics, the submit callback and the placeholder
+// are unchanged and still asserted. What inverts is the disabled rule: the
+// approved design disables Send when a request is in flight OR the message is
+// blank, and the "..." label is replaced by the inline loading surface.
+featureCheck(
+  "the composer keeps its semantics and gains the approved disabled rule",
+  /<form\s+onSubmit=\{onChatSubmit\}/.test(presentation) &&
     /type="submit"/.test(presentation) &&
-    /disabled=\{chatLoading\}/.test(presentation) &&
-    /\{chatLoading \? "\.\.\." : "Send"\}/.test(presentation) &&
     /placeholder="Ask TOHI\.\.\."/.test(presentation) &&
-    // the redesign's blank-input disabling must not have arrived early
-    !/message\.trim\(\)/.test(presentation),
+    /const trimmedMessage = typeof message === "string" \? message\.trim\(\) : "";/.test(
+      presentation
+    ) &&
+    /const sendDisabled = chatLoading \|\| trimmedMessage === "";/.test(presentation) &&
+    /disabled=\{sendDisabled\}/.test(presentation) &&
+    // the visible label replaces the placeholder-only field
+    /<label\s*\n?\s*htmlFor="tohi-question"/.test(presentation) &&
+    /Your question/.test(presentation) &&
+    /id="tohi-question"/.test(presentation),
   true
 );
 
@@ -377,14 +404,19 @@ invariantCheck(
   true
 );
 
+// 64B-2A REPLACES this. Paragraph preservation, the visible label and the focus
+// treatment are now approved and delivered, so forbidding them would assert the
+// opposite of the product. The rule keeps its purpose — nothing from a LATER
+// phase may arrive early — with the list narrowed to what is still deferred.
 invariantCheck(
-  "no redesign behaviour arrived early",
-  // Each of these is approved for a later phase and must be absent here.
-  !/white-space|whiteSpace/.test(presentation) &&      // paragraph preservation
-    !/scrollIntoView|autoFocus/.test(presentation) &&  // autoscroll / focus
-    !/aria-live|role="log"/.test(presentation) &&      // live region
-    !/<label/.test(presentation) &&                    // visible composer label
-    !/outline:\s*"2px|focus-visible/.test(presentation), // focus ring correction
+  "no later-phase behaviour arrived early",
+  !/scrollIntoView|autoFocus/.test(presentation) &&        // autoscroll
+    !/aria-live|role="log"/.test(presentation) &&          // live region
+    !/localStorage|sessionStorage/.test(presentation) &&   // chat persistence
+    !/Start Over|Retry|Try again/i.test(presentation) &&   // retry / start over
+    !/visualViewport/.test(presentation) &&                // keyboard nav suppression
+    !/couldn.t connect|CONNECTION/i.test(presentation) &&  // failure surface
+    !/\bnight\b/.test(presentation),                      // night support
   true
 );
 
