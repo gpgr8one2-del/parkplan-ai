@@ -551,6 +551,38 @@ function cleanAssistantReply(text = "", userMessage = "") {
   return cleaned;
 }
 
+// 64B-2B. Approved connection-status copy, verbatim.
+const TOHI_CHAT_CONNECTION_FAILURE_COPY =
+  "TOHI couldn’t connect right now. Your plan and recommendations haven’t changed. You can try sending your question again.";
+
+// One construction path for BOTH failure kinds — a rejected request and a
+// success whose reply is unusable. Having a single builder is what stops the
+// copy or the marker drifting apart between the two branches.
+//
+// isConnectionFailure is explicit metadata, not something the presentation
+// infers by matching text. TohiTab reads this flag and nothing else, and
+// handleChatSubmit strips these entries out of the conversation history it
+// sends, so a failure notice is never replayed to the model as if TOHI had
+// said it.
+function buildChatConnectionFailureEntry() {
+  return {
+    role: "assistant",
+    content: TOHI_CHAT_CONNECTION_FAILURE_COPY,
+    isConnectionFailure: true,
+  };
+}
+
+// A reply is usable only if it is a real string that still has content after the
+// existing cleaning step. Missing, non-string, whitespace-only and cleaned-to-
+// empty all fail this and become the connection-status entry, so an empty
+// bubble can never render and an object can never be stringified into one.
+function resolveAssistantReplyText(res, userMessage) {
+  const raw = res && typeof res.reply === "string" ? res.reply : "";
+  if (!raw.trim()) return "";
+  const cleaned = cleanAssistantReply(raw, userMessage);
+  return typeof cleaned === "string" && cleaned.trim() ? cleaned : "";
+}
+
 
 function getRideMetaForDisplay(parkId, ride) {
   return getRideMeta(parkId, ride?.id ?? ride?.name) || getRideMeta(parkId, ride?.name);
@@ -1665,6 +1697,11 @@ function App() {
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
   const [chatLoading, setChatLoading] = useState(false);
+  // 64B-2B duplicate-submission guard. chatLoading is React state, so two submit
+  // events dispatched in the same tick both read the old value and both proceed.
+  // A ref is written synchronously, so the second event sees the latch already
+  // held and returns before any message, tracking event or request happens.
+  const chatInFlightRef = useRef(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationMessage, setLocationMessage] = useState("");
   const [locationError, setLocationError] = useState("");
@@ -3230,16 +3267,38 @@ function App() {
     );
   }
 
+  // 64B-2B added an opt-in `variant`. It is OPT-IN on purpose: every NON-TOHI
+  // caller omits it and keeps byte-identical default rendering, so the Plan
+  // locked card is untouched. Only the TOHI tab opts into variant: "tohi",
+  // which restyles this card to the approved locked blueprint.
+  // lockedCardStyle itself is not modified, so nothing global changes.
+  //
+  // The actions stay here in App either way. setActiveScreen and
+  // setDevPreviewFullApp are never handed to a presentation component, so the
+  // Dev Preview gate keeps its single home.
   function renderLockedFeatureCard({
     title,
     body,
     actionLabel = "Finish trip setup",
     night = false,
+    variant = "default",
   }) {
+    const tohi = variant === "tohi";
+
     return (
       <section
         style={{
           ...lockedCardStyle,
+          ...(tohi
+            ? {
+                background: "#FFFFFF",
+                border: "1px solid rgba(234, 220, 200, 0.55)",
+                borderRadius: 24,
+                padding: 18,
+                boxShadow: "0 10px 30px rgba(28, 25, 23, 0.055)",
+                marginBottom: 0,
+              }
+            : {}),
           ...(night
             ? {
                 background: "#131C36",
@@ -3249,22 +3308,38 @@ function App() {
             : {}),
         }}
       >
-        <div style={{ fontSize: 12, fontWeight: 900, color: night ? "#C4B5FD" : colors.purple }}>
+        <div
+          style={{
+            fontSize: tohi ? 11 : 12,
+            fontWeight: tohi ? 800 : 900,
+            letterSpacing: tohi ? 1.1 : undefined,
+            color: night ? "#C4B5FD" : tohi ? colors.purpleDeep : colors.purple,
+          }}
+        >
           PERSONALIZED FEATURE
         </div>
-        <h3 style={{ margin: "6px 0 6px", color: night ? "#F5F3FF" : undefined }}>{title}</h3>
+        <h3
+          style={{
+            margin: tohi ? "8px 0 6px" : "6px 0 6px",
+            color: night ? "#F5F3FF" : tohi ? colors.text : undefined,
+            fontSize: tohi ? 17 : undefined,
+            lineHeight: tohi ? 1.25 : undefined,
+          }}
+        >
+          {title}
+        </h3>
         <p
           style={{
             margin: 0,
             color: night ? "#B6C2E2" : colors.muted,
-            fontSize: 14,
-            lineHeight: 1.45,
+            fontSize: tohi ? 13.5 : 14,
+            lineHeight: tohi ? 1.5 : 1.45,
           }}
         >
           {body}
         </p>
 
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: tohi ? 14 : 12 }}>
           <button
             type="button"
             onClick={() => setActiveScreen("family_profile")}
@@ -3272,6 +3347,15 @@ function App() {
               ...button,
               background: colors.purpleDeep,
               color: "white",
+              ...(tohi
+                ? {
+                    minHeight: 48,
+                    borderRadius: 16,
+                    padding: "0 18px",
+                    fontSize: 14,
+                    borderColor: "rgba(124, 58, 237, 0.20)",
+                  }
+                : {}),
             }}
           >
             {actionLabel}
@@ -3285,6 +3369,9 @@ function App() {
                 ...button,
                 color: colors.purple,
                 borderColor: colors.purpleSoft,
+                ...(tohi
+                  ? { minHeight: 48, borderRadius: 16, padding: "0 18px", fontSize: 14 }
+                  : {}),
               }}
             >
               Dev Preview
@@ -3585,159 +3672,188 @@ function App() {
     const trimmed = message.trim();
     if (!trimmed) return;
 
-    trackAppEvent("ai_chat_sent", {
-      source: "ai_chat",
-      action: {
-        type: "send_chat",
-        label: "Send",
-      },
-      metadata: {
-        messageLength: trimmed.length,
-        hasCurrentActivity: Boolean(currentActivityContext),
-      },
-    });
-
-    const nextChat = [...chat, { role: "user", content: trimmed }];
-    setChat(nextChat);
-    setMessage("");
-
-    const freshTimeContext = getCurrentTimeContext({
-      activePark,
-      familyProfile: familyProfileSummary,
-    });
-
-    const freshPlanningTimeContext = getCurrentTimeContext({
-      activePark: planningPark,
-      familyProfile: familyProfileSummary,
-    });
-
-    const freshCurrentActivityContext = buildCurrentActivityContext(currentActivity);
-
-    const dataFreshness = {
-      computedAt: freshTimeContext?.nowIso || new Date().toISOString(),
-      waits: {
-        source: parkData?.source || "",
-        ageMs: parkData?.ageMs ?? null,
-        fetchedAt: parkData?.fetchedAt || "",
-        clientLastUpdatedAt: lastAutoUpdateAt || "",
-        hasData: Array.isArray(parkData?.rides) && parkData.rides.length > 0,
-      },
-      weather: {
-        source: weather?.source || "",
-        ageMs: weather?.ageMs ?? null,
-        fetchedAt: weather?.fetchedAt || "",
-        clientLastUpdatedAt: lastAutoUpdateAt || "",
-        hasData: Boolean(weather),
-      },
-      tripPlan: {
-        status: tripPlanFreshness?.status || "",
-        isStale: Boolean(tripPlanFreshness?.isStale),
-        severity: tripPlanFreshness?.severity || "",
-        ageMinutes: tripPlanFreshness?.ageMinutes ?? null,
-        reasons: Array.isArray(tripPlanFreshness?.reasons)
-          ? tripPlanFreshness.reasons.slice(0, 5)
-          : [],
-      },
-    };
-
-    if (shouldAskFrontendLiveStateQuestion(trimmed, chat)) {
-      const clarifyingQuestion = getLiveStateClarifyingQuestionForContext({
-        familyProfile: familyProfileSummary,
-        timeContext: freshTimeContext,
-      });
-
-      setChat([
-        ...nextChat,
-        {
-          role: "assistant",
-          content: clarifyingQuestion,
-          isLiveStateQuestion: true,
-        },
-      ]);
-
-      trackAppEvent("tohi_live_state_question_asked", {
-        source: "tohi_chat",
-        metadata: {
-          reason: "open_ended_next_move",
-          interceptedBeforeAi: true,
-          dayPhase: freshTimeContext?.dayPhase,
-          planningMode: freshTimeContext?.planningMode,
-        },
-      });
-
-      return;
-    }
-
-    setChatLoading(true);
+    // Latch acquired BEFORE the user message, the tracking event and the
+    // request, so a rapid second submit produces none of them. Everything after
+    // this point runs inside a try/finally that always releases, including the
+    // clarification early-return and any throw while preparing context — the
+    // composer can never be left permanently locked.
+    if (chatInFlightRef.current) return;
+    chatInFlightRef.current = true;
 
     try {
-      const res = await sendChatMessage(trimmed, {
-        activePark,
-        activeParkLabel: getParkNameById(activePark),
-        activeLandLabel:
-          locationContextForDecisions?.landLabel ||
-          (currentLand ? formatLandLabel(activePark, currentLand) : ""),
-        latestFamilyState: inferLatestLiveFamilyState(trimmed, chat),
-        chatResponseMode: isLiveModeQuestion(trimmed) ? "live" : "planning",
-        chatFieldTestIntent: isPlanningModeQuestion(trimmed) ? "planning_detail" : "live_next_move",
-        planningPark,
-        planningParkLabel,
-        planningParkSource,
-        planningParkManualOverride: Boolean(manualPlanningParkOverride),
-        scheduledParkForToday,
-        scheduledParkPlanLabel: todayPlannedParkLabel,
-        todayPlannedParkLabel,
-        scheduledSecondaryParkForToday: scheduledParkForToday?.secondaryParkId || "",
-        scheduledSecondaryParkLabel,
-        parkDayScheduleStatus,
-        parkHopperContext,
-        liveParkContext,
-        planTabState,
-        planningTimeContext: freshPlanningTimeContext,
-        tripPlan: tripPlanState,
-        mustDoExperiences: tripPlanState?.mustDoExperiences || [],
-        dayGamePlan,
-        weather,
-        weatherMode,
-        recommendations,
-        conversationHistory: nextChat.slice(-6),
-        liveStateClarificationPending: isAwaitingLiveStateAnswer(chat),
-        completedRideIds,
-        activityLog,
-        skippedRideIds,
-        reportedRideIssueIds,
-        currentLand,
-        familyProfile: {
-          ...familyProfileSummary,
-          isSetupComplete: profileCompletion.isComplete,
+      trackAppEvent("ai_chat_sent", {
+        source: "ai_chat",
+        action: {
+          type: "send_chat",
+          label: "Send",
         },
-        timeContext: freshTimeContext,
-        dataFreshness,
-        locationContext: locationContextForDecisions,
-        currentActivity: freshCurrentActivityContext,
-        currentActivityContext: freshCurrentActivityContext,
+        metadata: {
+          messageLength: trimmed.length,
+          hasCurrentActivity: Boolean(currentActivityContext),
+        },
       });
 
-      setChat([...nextChat, { role: "assistant", content: cleanAssistantReply(res.reply, trimmed) }]);
-    } catch {
-      setChat([
-        ...nextChat,
-        {
-          role: "assistant",
-          content: cleanAssistantReply(
-            buildLocalChatFallback({
-              activePark,
-              weatherMode,
-              currentActivityContext: freshCurrentActivityContext,
-              familyProfile: familyProfileSummary,
-              recommendations,
-            }),
-            trimmed
-          ),
+      const nextChat = [...chat, { role: "user", content: trimmed }];
+      setChat(nextChat);
+      setMessage("");
+
+      // One finalization path for BOTH failure kinds — a rejected request and a
+      // resolved one whose reply is unusable. Keeping the two actions together
+      // here is what stops the marked entry and the restored question drifting
+      // apart between branches.
+      //
+      // The restore is a FUNCTIONAL update on purpose. The composer stays usable
+      // while the request runs, so by the time this fires the user may already
+      // be typing something new. A plain setMessage(trimmed) would evaluate the
+      // value captured at submission and clobber that newer draft; the updater
+      // reads the latest value and only fills the field when it is still blank
+      // or whitespace.
+      const finalizeChatFailure = () => {
+        setChat([...nextChat, buildChatConnectionFailureEntry()]);
+        setMessage((current) =>
+          typeof current === "string" && current.trim() ? current : trimmed
+        );
+      };
+
+      const freshTimeContext = getCurrentTimeContext({
+        activePark,
+        familyProfile: familyProfileSummary,
+      });
+
+      const freshPlanningTimeContext = getCurrentTimeContext({
+        activePark: planningPark,
+        familyProfile: familyProfileSummary,
+      });
+
+      const freshCurrentActivityContext = buildCurrentActivityContext(currentActivity);
+
+      const dataFreshness = {
+        computedAt: freshTimeContext?.nowIso || new Date().toISOString(),
+        waits: {
+          source: parkData?.source || "",
+          ageMs: parkData?.ageMs ?? null,
+          fetchedAt: parkData?.fetchedAt || "",
+          clientLastUpdatedAt: lastAutoUpdateAt || "",
+          hasData: Array.isArray(parkData?.rides) && parkData.rides.length > 0,
         },
-      ]);
+        weather: {
+          source: weather?.source || "",
+          ageMs: weather?.ageMs ?? null,
+          fetchedAt: weather?.fetchedAt || "",
+          clientLastUpdatedAt: lastAutoUpdateAt || "",
+          hasData: Boolean(weather),
+        },
+        tripPlan: {
+          status: tripPlanFreshness?.status || "",
+          isStale: Boolean(tripPlanFreshness?.isStale),
+          severity: tripPlanFreshness?.severity || "",
+          ageMinutes: tripPlanFreshness?.ageMinutes ?? null,
+          reasons: Array.isArray(tripPlanFreshness?.reasons)
+            ? tripPlanFreshness.reasons.slice(0, 5)
+            : [],
+        },
+      };
+
+      if (shouldAskFrontendLiveStateQuestion(trimmed, chat)) {
+        const clarifyingQuestion = getLiveStateClarifyingQuestionForContext({
+          familyProfile: familyProfileSummary,
+          timeContext: freshTimeContext,
+        });
+
+        setChat([
+          ...nextChat,
+          {
+            role: "assistant",
+            content: clarifyingQuestion,
+            isLiveStateQuestion: true,
+          },
+        ]);
+
+        trackAppEvent("tohi_live_state_question_asked", {
+          source: "tohi_chat",
+          metadata: {
+            reason: "open_ended_next_move",
+            interceptedBeforeAi: true,
+            dayPhase: freshTimeContext?.dayPhase,
+            planningMode: freshTimeContext?.planningMode,
+          },
+        });
+
+        return;
+      }
+
+      setChatLoading(true);
+
+      try {
+        const res = await sendChatMessage(trimmed, {
+          activePark,
+          activeParkLabel: getParkNameById(activePark),
+          activeLandLabel:
+            locationContextForDecisions?.landLabel ||
+            (currentLand ? formatLandLabel(activePark, currentLand) : ""),
+          latestFamilyState: inferLatestLiveFamilyState(trimmed, chat),
+          chatResponseMode: isLiveModeQuestion(trimmed) ? "live" : "planning",
+          chatFieldTestIntent: isPlanningModeQuestion(trimmed) ? "planning_detail" : "live_next_move",
+          planningPark,
+          planningParkLabel,
+          planningParkSource,
+          planningParkManualOverride: Boolean(manualPlanningParkOverride),
+          scheduledParkForToday,
+          scheduledParkPlanLabel: todayPlannedParkLabel,
+          todayPlannedParkLabel,
+          scheduledSecondaryParkForToday: scheduledParkForToday?.secondaryParkId || "",
+          scheduledSecondaryParkLabel,
+          parkDayScheduleStatus,
+          parkHopperContext,
+          liveParkContext,
+          planTabState,
+          planningTimeContext: freshPlanningTimeContext,
+          tripPlan: tripPlanState,
+          mustDoExperiences: tripPlanState?.mustDoExperiences || [],
+          dayGamePlan,
+          weather,
+          weatherMode,
+          recommendations,
+          // Connection-status entries are app notices, not things TOHI said, so
+          // they are filtered out before the history is sent. Replaying one would
+          // teach the model it had answered when it had not.
+          conversationHistory: nextChat
+            .filter((msg) => msg.isConnectionFailure !== true)
+            .slice(-6),
+          liveStateClarificationPending: isAwaitingLiveStateAnswer(chat),
+          completedRideIds,
+          activityLog,
+          skippedRideIds,
+          reportedRideIssueIds,
+          currentLand,
+          familyProfile: {
+            ...familyProfileSummary,
+            isSetupComplete: profileCompletion.isComplete,
+          },
+          timeContext: freshTimeContext,
+          dataFreshness,
+          locationContext: locationContextForDecisions,
+          currentActivity: freshCurrentActivityContext,
+          currentActivityContext: freshCurrentActivityContext,
+        });
+
+        // A resolved request is not automatically a usable answer. A missing,
+        // non-string, whitespace-only or cleaned-to-empty reply converges on the
+        // same marked entry the rejection path uses.
+        const replyText = resolveAssistantReplyText(res, trimmed);
+
+        if (replyText) {
+          setChat([...nextChat, { role: "assistant", content: replyText }]);
+        } else {
+          finalizeChatFailure();
+        }
+      } catch {
+        finalizeChatFailure();
+      } finally {
+        setChatLoading(false);
+      }
     } finally {
-      setChatLoading(false);
+      chatInFlightRef.current = false;
     }
   }
 

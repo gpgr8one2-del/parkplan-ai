@@ -96,6 +96,12 @@ const CLARIFY = {
 };
 const MULTI_PARA = "First paragraph about the heat.\n\nSecond paragraph about the resort break.";
 
+// 64B-2B: a connection notice is stored assistant-role but carries explicit
+// metadata. The presentation must key off the flag, never off this copy.
+const FAILURE_COPY =
+  "TOHI couldn’t connect right now. Your plan and recommendations haven’t changed. You can try sending your question again.";
+const FAILURE = { role: "assistant", content: FAILURE_COPY, isConnectionFailure: true };
+
 function props(over = {}) {
   return {
     chat: [],
@@ -133,11 +139,25 @@ const R = {
   picked: render({ message: "Should we take a break or keep going?" }),
   typed: render({ message: "Is the monorail still the fastest way back?" }),
   blank: render({ chat: [USER("hi"), TOHI("hello")], message: "   " }),
-  convo: render({ chat: [USER("It's 2pm and everyone is hot."), TOHI(MULTI_PARA)] }),
+  convo: render({ chat: [USER("It is 2pm and everyone is hot."), TOHI(MULTI_PARA)] }),
   loading: render({ chat: [USER("What should we do next?")], chatLoading: true }),
   clarify: render({ chat: [USER("What should we do next?"), CLARIFY] }),
   locked: render({ hasPersonalizedAccess: false }),
+  // Approved state 4: after a failure the submitted question is restored to the
+  // composer with Send enabled, and it also remains in the transcript. The
+  // message prop here models what App now actually sets.
+  failure: render({
+    chat: [USER("It is 2pm and everyone is hot."), TOHI(MULTI_PARA), USER("Is the monorail fastest?"), FAILURE],
+    message: "Is the monorail fastest?",
+  }),
 };
+
+// Draft-preservation case: a failure arrived while the user was already typing
+// something else, so the composer holds the newer draft, not the failed question.
+R.failureWithNewDraft = render({
+  chat: [USER("It is 2pm and everyone is hot."), USER("Is the monorail fastest?"), FAILURE],
+  message: "Actually, what about the parade?",
+});
 
 const ALL = Object.values(R).join("\n");
 
@@ -421,6 +441,285 @@ invariantCheck(
   true
 );
 
+/* ------------------------------------------- 64B-2B deliberate states -- */
+
+featureCheck(
+  "a marked failure renders the distinct connection status, not a TOHI answer",
+  R.failure.includes("data-tohi-connection") &&
+    R.failure.includes(">CONNECTION</span>") &&
+    R.failure.includes(`background:${"#FFF1F3"}`) &&
+    // it must NOT be dressed as a speaker turn
+    (() => {
+      const seg = R.failure.slice(R.failure.indexOf("data-tohi-connection"));
+      return !seg.includes(">TOHI</span>") && !seg.includes("QUICK CHECK");
+    })(),
+  true
+);
+
+featureCheck(
+  "the exact approved copy renders inside the connection surface",
+  // Scoped to the surface: at the pre-feature baseline the copy still appeared,
+  // just inside an ordinary assistant bubble, so an unscoped check would not
+  // discriminate.
+  (() => {
+    const start = R.failure.indexOf("data-tohi-connection");
+    if (start < 0) return false;
+    const seg = R.failure.slice(start, R.failure.indexOf("</div>", start) + 6);
+    return seg.includes(FAILURE_COPY);
+  })(),
+  true
+);
+
+featureCheck(
+  "the conversation and the submitted user message survive alongside the status",
+  // The retention half alone is true at the baseline too, so it is paired with
+  // the presence of the status surface — the combination is what is new.
+  R.failure.includes("data-tohi-connection") &&
+    R.failure.includes("It is 2pm and everyone is hot.") &&
+    R.failure.includes("First paragraph about the heat.") &&
+    // Satisfied by the TRANSCRIPT user message, independently of the composer.
+    R.failure.includes("Is the monorail fastest?") &&
+    R.failure.includes('id="tohi-question"'),
+  true
+);
+
+featureCheck(
+  "no Retry or dismiss control is added to the failure surface",
+  (() => {
+    const start = R.failure.indexOf("data-tohi-connection");
+    if (start < 0) return false;
+    const seg = R.failure.slice(start, R.failure.indexOf("</div>", start) + 6);
+    // Scoped to the failure surface. A whole-render scan would false-positive on
+    // React's own <link rel="preload"> for the logo.
+    return (
+      !seg.includes("<button") &&
+      !seg.includes("<a ") &&
+      !/Retry|Try again|Dismiss/i.test(seg)
+    );
+  })(),
+  true
+);
+
+featureCheck(
+  "the failure surface is driven by explicit metadata, never by copy matching",
+  /msg\.isConnectionFailure === true/.test(tohiCode) &&
+    !tohiCode.includes("couldn’t connect") &&
+    !/content\s*\.\s*(includes|startsWith|match|indexOf)/.test(tohiCode),
+  true
+);
+
+featureCheck(
+  "only a marked entry gets the status surface — ordinary replies do not",
+  // Stated as a contrast so it discriminates: the flagged scenario must have the
+  // surface and the unflagged one must not. Half of this is trivially true
+  // before the feature exists.
+  R.failure.includes("data-tohi-connection") &&
+    !R.convo.includes("data-tohi-connection") &&
+    !R.convo.includes(">CONNECTION</span>"),
+  true
+);
+
+/* -------------------------------- 64B-2B failure finalization + restore -- */
+
+featureCheck(
+  "one shared finalization path appends the marked entry AND restores the question",
+  /const finalizeChatFailure = \(\) => \{/.test(appCode) &&
+    /setChat\(\[\.\.\.nextChat, buildChatConnectionFailureEntry\(\)\]\);/.test(appCode) &&
+    /setMessage\(\(current\) =>/.test(appCode),
+  true
+);
+
+featureCheck(
+  "both the rejection and the malformed-reply branch call that one path",
+  // Exactly two call sites, and neither branch rebuilds the entry inline.
+  (appCode.match(/finalizeChatFailure\(\);/g) || []).length === 2 &&
+    /\} catch \{\s*\n\s*finalizeChatFailure\(\);/.test(appCode) &&
+    /\} else \{\s*\n\s*finalizeChatFailure\(\);/.test(appCode) &&
+    // the success branch must NOT finalize as a failure
+    /if \(replyText\) \{\s*\n\s*setChat\(\[\.\.\.nextChat, \{ role: "assistant", content: replyText \}\]\);/.test(
+      appCode
+    ),
+  true
+);
+
+featureCheck(
+  "restoration uses a functional state update, not the captured value",
+  // A plain setMessage(trimmed) would read the value captured at submission and
+  // clobber anything typed since. The updater reads the latest value.
+  /setMessage\(\(current\) =>\s*\n?\s*typeof current === "string" && current\.trim\(\) \? current : trimmed\s*\n?\s*\);/.test(
+    appCode
+  ) && !/setMessage\(trimmed\)/.test(appCode),
+  true
+);
+
+featureCheck(
+  "a newer non-blank draft is preserved; a blank composer receives the question",
+  // Both arms of the updater are asserted: current wins when it has content,
+  // trimmed wins when it does not.
+  (() => {
+    const m = appCode.match(
+      /setMessage\(\(current\) =>\s*\n?\s*typeof current === "string" && (current\.trim\(\)) \? (current) : (trimmed)\s*\n?\s*\);/
+    );
+    return Boolean(m) && m[2] === "current" && m[3] === "trimmed";
+  })(),
+  true
+);
+
+featureCheck(
+  "the failure scenario renders the restored question in the composer",
+  // Paired with the status surface: the composer value alone is supplied by the
+  // fixture and is therefore true before the feature exists. What is new is the
+  // combination — a failure state whose composer holds the question.
+  R.failure.includes("data-tohi-connection") &&
+    (/<input[^>]*id="tohi-question"[^>]*value="Is the monorail fastest\?"/.test(R.failure) ||
+      /<input[^>]*value="Is the monorail fastest\?"[^>]*id="tohi-question"/.test(R.failure)),
+  true
+);
+
+featureCheck(
+  "Send is enabled once the question has been restored",
+  R.failure.includes("data-tohi-connection") &&
+    (() => {
+      const start = R.failure.indexOf('type="submit"');
+      if (start < 0) return false;
+      const seg = R.failure.slice(start, start + 400);
+      return !seg.includes('disabled=""');
+    })(),
+  true
+);
+
+featureCheck(
+  "the restored question also remains visible in the transcript",
+  // Both places, not one instead of the other: the transcript user bubble and
+  // the composer value.
+  R.failure.includes("data-tohi-connection") &&
+    (R.failure.match(/Is the monorail fastest\?/g) || []).length >= 2 &&
+    R.failure.includes("max-width:85%"),
+  true
+);
+
+featureCheck(
+  "a newer draft is shown instead of the failed question when one exists",
+  R.failureWithNewDraft.includes('value="Actually, what about the parade?"') &&
+    // the failed question is still in the transcript, just not in the composer
+    R.failureWithNewDraft.includes("data-tohi-connection") &&
+    !/<input[^>]*value="Is the monorail fastest\?"/.test(R.failureWithNewDraft),
+  true
+);
+
+/* ---------------------------------------------- App-level state handling -- */
+
+featureCheck(
+  "App appends an explicitly marked connection entry with the approved copy",
+  /const TOHI_CHAT_CONNECTION_FAILURE_COPY =/.test(appCode) &&
+    appCode.includes(FAILURE_COPY) &&
+    /function buildChatConnectionFailureEntry\(\)/.test(appCode) &&
+    /isConnectionFailure: true,/.test(appCode),
+  true
+);
+
+featureCheck(
+  "the marked entry is constructed in exactly one place",
+  // Stronger than before: the builder is now invoked from a single site inside
+  // finalizeChatFailure, so neither failure branch can construct an entry of
+  // its own and let the copy or the marker drift.
+  (() => {
+    const calls = appCode.match(/buildChatConnectionFailureEntry\(\)/g) || [];
+    // one definition + one call site
+    return (
+      calls.length === 2 &&
+      /function buildChatConnectionFailureEntry\(\)/.test(appCode) &&
+      /const finalizeChatFailure = \(\) => \{\s*\n\s*setChat\(\[\.\.\.nextChat, buildChatConnectionFailureEntry\(\)\]\);/.test(
+        appCode
+      )
+    );
+  })(),
+  true
+);
+
+featureCheck(
+  "a reply is only accepted when it survives cleaning as a non-empty string",
+  /function resolveAssistantReplyText\(res, userMessage\)/.test(appCode) &&
+    /typeof res\.reply === "string"/.test(appCode) &&
+    /if \(!raw\.trim\(\)\) return "";/.test(appCode) &&
+    /typeof cleaned === "string" && cleaned\.trim\(\) \? cleaned : ""/.test(appCode) &&
+    // The accept/reject fork now routes the reject arm through the shared
+    // finalizer rather than building an entry inline.
+    /if \(replyText\) \{\s*\n\s*setChat\(\[\.\.\.nextChat, \{ role: "assistant", content: replyText \}\]\);\s*\n\s*\} else \{\s*\n\s*finalizeChatFailure\(\);/.test(
+      appCode
+    ),
+  true
+);
+
+featureCheck(
+  "connection entries are excluded from the AI conversation history",
+  /conversationHistory: nextChat\s*\n?\s*\.filter\(\(msg\) => msg\.isConnectionFailure !== true\)\s*\n?\s*\.slice\(-6\)/.test(
+    appCode
+  ),
+  true
+);
+
+featureCheck(
+  "a synchronous ref latch guards against duplicate submission",
+  /const chatInFlightRef = useRef\(false\);/.test(appCode) &&
+    /if \(chatInFlightRef\.current\) return;/.test(appCode) &&
+    /chatInFlightRef\.current = true;/.test(appCode) &&
+    /chatInFlightRef\.current = false;/.test(appCode),
+  true
+);
+
+featureCheck(
+  "the latch is acquired before the message, tracking and request",
+  (() => {
+    const acquire = appCode.indexOf("chatInFlightRef.current = true;");
+    const track = appCode.indexOf('trackAppEvent("ai_chat_sent"');
+    const userMsg = appCode.indexOf('const nextChat = [...chat, { role: "user", content: trimmed }];');
+    const req = appCode.indexOf("await sendChatMessage(trimmed");
+    return acquire > 0 && acquire < track && acquire < userMsg && acquire < req;
+  })(),
+  true
+);
+
+featureCheck(
+  "the latch releases on every path, including the clarification early return",
+  // The release sits in a finally that wraps everything after acquisition, so a
+  // throw while preparing context cannot leave the composer locked.
+  /\} finally \{\s*\n\s*chatInFlightRef\.current = false;\s*\n\s*\}/.test(appCode) &&
+    (() => {
+      const acquire = appCode.indexOf("chatInFlightRef.current = true;");
+      const clarifyReturn = appCode.indexOf("interceptedBeforeAi: true", acquire);
+      const release = appCode.indexOf("chatInFlightRef.current = false;", acquire);
+      return clarifyReturn > acquire && release > clarifyReturn;
+    })(),
+  true
+);
+
+featureCheck(
+  "the blank-input guard still runs before the latch is taken",
+  (() => {
+    const guard = appCode.indexOf("if (!trimmed) return;");
+    const acquire = appCode.indexOf("chatInFlightRef.current = true;");
+    return guard > 0 && guard < acquire;
+  })(),
+  true
+);
+
+featureCheck(
+  "the approved locked variant is opt-in and leaves other callers untouched",
+  /variant = "default",/.test(appCode) &&
+    /const tohi = variant === "tohi";/.test(appCode) &&
+    /variant: "tohi",/.test(tohiCode) &&
+    // the Plan caller must NOT pass a variant
+    (() => {
+      const planCall = appCode.slice(
+        appCode.indexOf("Personalized Best Move is locked until setup is finished") - 200,
+        appCode.indexOf("Personalized Best Move is locked until setup is finished") + 400
+      );
+      return !planCall.includes("variant");
+    })(),
+  true
+);
+
 console.log("Behaviour, trust and scope preserved — INVARIANT REGRESSION GUARDS");
 
 /* ------------------------------------------------------------- invariants -- */
@@ -442,21 +741,50 @@ invariantCheck(
 );
 
 invariantCheck(
-  "the locked state is still delegated to App's renderer, unchanged",
+  "the locked card and its real actions remain delegated to App",
+  // 64B-2B restyled this card through an opt-in variant, so the renderer is no
+  // longer "unchanged" — but WHO OWNS IT is unchanged, and that is what this
+  // guards. TohiTab asks for the card; it never renders the card's chrome and
+  // never holds the navigation or Dev Preview handlers.
   /renderLockedFeatureCard\(\{/.test(tohiCode) &&
     R.locked.includes("LOCKED CARD FROM APP") &&
-    // the approved locked-card redesign belongs to a later phase
+    // the card's own chrome stays an App-renderer responsibility
     !/PERSONALIZED FEATURE/.test(tohiCode) &&
     !/Dev Preview/.test(tohiCode) &&
-    !/setActiveScreen|setDevPreviewFullApp|lockedCardStyle/.test(tohiCode),
+    // and its real actions never move into the presentation
+    !/setActiveScreen|setDevPreviewFullApp|lockedCardStyle/.test(tohiCode) &&
+    !/DEV_ALLOW_FULL_APP_WITHOUT_PROFILE/.test(tohiCode) &&
+    /function renderLockedFeatureCard\(\{/.test(appCode) &&
+    /setActiveScreen\("family_profile"\)/.test(appCode) &&
+    /DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && \(/.test(appCode) &&
+    /setDevPreviewFullApp\(true\)/.test(appCode),
+  true
+);
+
+// 64B-2B REPLACES this. It previously required the locked state to show NO
+// branded header, because 64B-2A deliberately left the locked card generic. The
+// approved locked blueprint (state 6) integrates the branded header ABOVE the
+// card, so the rule inverts for the header and keeps its real purpose for the
+// chat surface: no composer, prompts or transcript may leak into a gated tab.
+featureCheck(
+  "the locked state shows the branded TOHI header above the approved locked card",
+  R.locked.includes('src="/tohi-logo.png"') &&
+    R.locked.includes("Ask TOHI</h2>") &&
+    R.locked.includes("LOCKED CARD FROM APP") &&
+    (() => {
+      const logo = R.locked.indexOf("/tohi-logo.png");
+      const cardAt = R.locked.indexOf("LOCKED CARD FROM APP");
+      return logo >= 0 && cardAt > logo;
+    })(),
   true
 );
 
 invariantCheck(
-  "the locked branch renders nothing else — no chat surface leaks through",
-  !R.locked.includes("Ask TOHI") &&
-    !R.locked.includes("/tohi-logo.png") &&
-    !R.locked.includes("Your question"),
+  "no chat surface leaks into the locked state",
+  !R.locked.includes("Your question") &&
+    !R.locked.includes('id="tohi-question"') &&
+    !R.locked.includes("What if storms hit this afternoon?") &&
+    !R.locked.includes("TOHI is checking your park-day context…"),
   true
 );
 
@@ -483,7 +811,8 @@ invariantCheck(
   "message ordering, index keys and transcript retention are unchanged",
   /\{chat\.map\(\(msg, idx\) => \{/.test(tohiCode) &&
     /key=\{idx\}/.test(tohiCode) &&
-    R.convo.indexOf("It's 2pm and everyone is hot.") <
+    R.convo.indexOf("It is 2pm and everyone is hot.") >= 0 &&
+    R.convo.indexOf("It is 2pm and everyone is hot.") <
       R.convo.indexOf("First paragraph about the heat."),
   true
 );
@@ -504,12 +833,14 @@ invariantCheck(
 
 invariantCheck(
   "no later-phase behaviour arrived early",
-  // Each is approved for a later phase and must be absent from this one.
+  // 64B-2B delivered the connection-failure surface, so forbidding it would now
+  // assert the opposite of the product. Everything still deferred stays listed.
   !/scrollIntoView|autoFocus/.test(tohiCode) &&          // autoscroll
     !/aria-live|role="log"/.test(tohiCode) &&            // live region
     !/Start Over|Retry|Try again/i.test(tohiCode) &&     // retry / start over
     !/visualViewport/.test(tohiCode) &&                  // keyboard nav suppression
-    !/couldn.t connect|CONNECTION/i.test(tohiCode) &&    // failure surface
+    !/localStorage|sessionStorage/.test(tohiCode) &&     // persistence
+    !/\bnight\b/.test(tohiCode) &&                       // night support
     !/timestamp|reaction|onEdit/i.test(tohiCode),
   true
 );

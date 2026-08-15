@@ -247,12 +247,18 @@ invariantCheck(
   // buildLocalChatFallback and cleanAssistantReply are both defined at module
   // scope inside App.jsx, not imported, so the assertion is that they are
   // DEFINED and CALLED there — and that none of them followed the presentation.
+  // 64B-2B: the reply is now cleaned inside resolveAssistantReplyText, and TOHI
+  // chat no longer calls buildLocalChatFallback because a failure renders as a
+  // marked connection entry instead of a fabricated answer. The helper is left
+  // in place rather than cleaned up, so the assertion is that it still EXISTS —
+  // deleting it would be out-of-scope tidying.
   /sendChatMessage\(trimmed, \{/.test(appCode) &&
     /import \{[^}]*sendChatMessage[^}]*\} from "\.\/api";/.test(appSource) &&
     /function cleanAssistantReply\(/.test(appCode) &&
-    /cleanAssistantReply\(res\.reply, trimmed\)/.test(appCode) &&
+    // Not pinned to a call signature: that would make this an assertion about
+    // 64B-2B's new helper rather than a durable guard about ownership.
+    /cleanAssistantReply\(/.test(appCode) &&
     /function buildLocalChatFallback\(/.test(appCode) &&
-    /buildLocalChatFallback\(\{/.test(appCode) &&
     !/sendChatMessage|cleanAssistantReply|buildLocalChatFallback/.test(tohiCode),
   true
 );
@@ -410,12 +416,13 @@ invariantCheck(
 // phase may arrive early — with the list narrowed to what is still deferred.
 invariantCheck(
   "no later-phase behaviour arrived early",
+  // 64B-2B delivered the connection-failure surface, so it is removed from the
+  // forbidden list. Everything still deferred remains.
   !/scrollIntoView|autoFocus/.test(presentation) &&        // autoscroll
     !/aria-live|role="log"/.test(presentation) &&          // live region
     !/localStorage|sessionStorage/.test(presentation) &&   // chat persistence
     !/Start Over|Retry|Try again/i.test(presentation) &&   // retry / start over
     !/visualViewport/.test(presentation) &&                // keyboard nav suppression
-    !/couldn.t connect|CONNECTION/i.test(presentation) &&  // failure surface
     !/\bnight\b/.test(presentation),                      // night support
   true
 );

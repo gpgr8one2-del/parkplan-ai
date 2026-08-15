@@ -6,23 +6,34 @@ import { colors } from "../theme";
 // 64B-1 extracted this presentation verbatim from App.jsx.
 // 64B-2A rebuilt the DAY presentation to the approved TOHI blueprints committed
 // under the TOHI design documentation.
+// 64B-2B added the approved deliberate states.
 //
 // Still presentation only: every piece of state, the whole of handleChatSubmit,
 // the chat network call, the clarification interception, the reply cleaning, the
-// local failure fallback, tracking, and access derivation all stay in App.jsx and
-// arrive here as explicit props. This component creates no state, no effects, no
-// network calls and no replacement handlers.
+// response validation, the connection-failure entry construction, the
+// duplicate-submission latch, tracking, access derivation, and the locked card's
+// real actions all stay in App.jsx and arrive here as explicit props. This
+// component creates no state, no effects, no network calls and no replacement
+// handlers.
 //
 // Gone with the redesign: both decorative corner circles, the radial card glow,
 // the three-stop gradient wash, the full-purple gradient user bubble, the emoji
 // text badge, the generic chat icon, and the inline "You: " / "TOHI: " prefixes.
 //
-// Deliberately NOT in this phase, and each one is approved for a later one:
-// the distinct connection-failure surface, the malformed-response fallback, a
-// duplicate-submit guard, autoscroll, keyboard-open navigation suppression, chat
-// persistence, Start Over, the locked-card redesign, and night support. A
-// failure state is not inferred by matching reply copy — this phase has no
-// honest failure metadata to read.
+// DELIVERED in 64B-2B:
+//   - the distinct inline connection-status surface, rendered from the explicit
+//     isConnectionFailure flag App sets — never inferred by matching reply copy
+//   - malformed/missing-reply protection, which reaches this component as that
+//     same marked entry rather than as an empty bubble
+//   - a real duplicate-submission guard (an App-owned synchronous ref latch;
+//     this component only reflects the resulting disabled state)
+//   - the approved locked TOHI presentation: the branded header stays, and the
+//     personalized-feature card is requested from App's renderer through an
+//     opt-in variant rather than being reimplemented here
+//
+// Still deferred, each approved for a later phase: autoscroll, TOHI-only
+// keyboard and navigation suppression, accessibility live-region work, chat
+// persistence, Start Over, and night support.
 
 // Approved day tokens, taken from the committed day blueprints.
 const DAY = {
@@ -43,6 +54,9 @@ const DAY = {
   goldInk: "#92400E",
   goldFill: colors.amberSoft,
   goldLine: "rgba(245, 158, 11, 0.32)",
+  coralInk: "#9F1239",
+  coralFill: "#FFF1F3",
+  coralLine: "rgba(225, 29, 72, 0.26)",
   shadow: "0 10px 30px rgba(28, 25, 23, 0.055)",
   disabledFill: "#F1EDE7",
   disabledInk: "#A9A297",
@@ -123,26 +137,15 @@ export function TohiTab({
   const trimmedMessage = typeof message === "string" ? message.trim() : "";
   const sendDisabled = chatLoading || trimmedMessage === "";
 
-  return hasPersonalizedAccess ? (
-    <section style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {/* Focus rings and the loading pulse need selectors that inline styles
-          cannot express. This follows the same inline <style> pattern WaitsTab
-          already uses rather than introducing the first stylesheet. */}
-      <style>{`
-        [data-tohi-focus]:focus-visible {
-          outline: 2px solid ${DAY.accent};
-          outline-offset: 2px;
-        }
-        @keyframes tohiChatPulse { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
-        @media (prefers-reduced-motion: reduce) {
-          [data-tohi-loading] span { animation: none !important; opacity: .7 !important; }
-        }
-      `}</style>
-
-      {/* Approved branded header: the official committed wordmark on a compact
-          plate, with the heading directly beneath. No emoji, no text badge, and
-          no generic chat icon. */}
-      <header style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+  // 64B-2B: the approved locked state keeps the branded header and integrates
+  // the personalized-feature card beneath it, so a gated TOHI tab still reads as
+  // TOHI rather than as a bare generic card. The header markup is therefore
+  // shared by both states rather than duplicated.
+  const brandedHeader = (
+    /* Approved branded header: the official committed wordmark on a compact
+       plate, with the heading directly beneath. No emoji, no text badge, and
+       no generic chat icon. */
+    <header style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div
           style={{
             alignSelf: "flex-start",
@@ -190,6 +193,38 @@ export function TohiTab({
           break is realistic, or how to keep the day calm without overdoing it.
         </p>
       </header>
+  );
+
+  return (
+    <section style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* Focus rings and the loading pulse need selectors that inline styles
+          cannot express. This follows the same inline <style> pattern WaitsTab
+          already uses rather than introducing the first stylesheet. */}
+      <style>{`
+        [data-tohi-focus]:focus-visible {
+          outline: 2px solid ${DAY.accent};
+          outline-offset: 2px;
+        }
+        @keyframes tohiChatPulse { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
+        @media (prefers-reduced-motion: reduce) {
+          [data-tohi-loading] span { animation: none !important; opacity: .7 !important; }
+        }
+      `}</style>
+
+      {brandedHeader}
+
+      {!hasPersonalizedAccess ? (
+        // The card, its Finish trip setup navigation and its Dev Preview gate
+        // all stay in App. TohiTab only asks for the TOHI variant.
+        renderLockedFeatureCard({
+          title: "TOHI guidance needs your trip setup",
+          body:
+            "TOHI needs your trip setup so it can answer with your family, resort, height, and park context.",
+          actionLabel: "Finish trip setup",
+          variant: "tohi",
+        })
+      ) : (
+        <>
 
       {chat.length === 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -249,6 +284,53 @@ export function TohiTab({
         {chat.map((msg, idx) => {
           const isUser = msg.role === "user";
           const quickCheck = !isUser && msg.isLiveStateQuestion === true;
+
+          // A connection notice is stored with an assistant role so the
+          // transcript stays one ordered list, but it is NOT something TOHI
+          // said. It gets its own status surface with a CONNECTION label
+          // instead of a speaker bubble, driven only by the explicit flag App
+          // sets — never by matching the copy. No Retry control is added; the
+          // composer's existing Send is the retry.
+          if (msg.isConnectionFailure === true) {
+            return (
+              <div
+                key={idx}
+                data-tohi-connection="true"
+                style={{
+                  maxWidth: "92%",
+                  alignSelf: "flex-start",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 5,
+                  borderRadius: 20,
+                  padding: "12px 14px",
+                  background: DAY.coralFill,
+                  border: `1px solid ${DAY.coralLine}`,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 800,
+                    letterSpacing: 1.2,
+                    color: DAY.coralInk,
+                  }}
+                >
+                  CONNECTION
+                </span>
+                <span
+                  style={{
+                    color: DAY.coralInk,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {msg.content}
+                </span>
+              </div>
+            );
+          }
 
           return (
             <div
@@ -404,14 +486,9 @@ export function TohiTab({
           </button>
         </div>
       </form>
+        </>
+      )}
     </section>
-  ) : (
-    renderLockedFeatureCard({
-      title: "TOHI guidance needs your trip setup",
-      body:
-        "TOHI needs your trip setup so it can answer with your family, resort, height, and park context.",
-      actionLabel: "Finish trip setup",
-    })
   );
 }
 
