@@ -44,7 +44,7 @@ const EXPECTED = [
     pair: "healthy",
     width: 1010,
     height: 1124,
-    sha256: "02163d9f3bcd60ccb76dddeea7fc66309f08dbf209dc040ac7d1d0fead541d80",
+    sha256: "13105206a27691ce859199c877861a61ee33768e918a50f46a16cec683339399",
   },
   {
     name: "tohi-approved-healthy-night.png",
@@ -52,23 +52,23 @@ const EXPECTED = [
     pair: "healthy",
     width: 1010,
     height: 1124,
-    sha256: "483678737596de34ec557777dbeb694ec171f686e437ec9ace28b2d5947402b8",
+    sha256: "49068159b8ea0082f3f59eee3664465a393678900e55de9745353beacb04a6ed",
   },
   {
     name: "tohi-approved-states-day.png",
     mode: "day",
     pair: "states",
     width: 1010,
-    height: 5435,
-    sha256: "dd6393e21082dacadaa5afab48f482aee50798ce611c519b5eb2e74138fc0099",
+    height: 5486,
+    sha256: "7042da618f92ebabd7fd0b9257a0d39941ec2db196a0d62be0983554f8be0f03",
   },
   {
     name: "tohi-approved-states-night.png",
     mode: "night",
     pair: "states",
     width: 1010,
-    height: 5435,
-    sha256: "c9ec22a9183f2c5559c08680be66f646c91f11e8d9ae353b6ee7314f16b8c777",
+    height: 5486,
+    sha256: "f84e289b22bf3d8138a32254cc6edfd7fec5678fd42b300f768628e3e242ff72",
   },
 ];
 
@@ -229,6 +229,67 @@ check(
   true
 );
 
+/* ------------------------------------------------------ the official logo -- */
+
+// The blueprints render the official committed wordmark. That file is a shipped
+// production asset, NOT a blueprint: it is pinned here so the sheets cannot
+// silently start depicting a logo the repository no longer contains, and so a
+// later phase cannot recolour or replace the mark and call the sheets current.
+console.log("Official logo asset");
+
+const LOGO_PATH = path.join(frontendRoot, "public", "tohi-logo.png");
+const LOGO_SHA = "62102bfa0fd7230cbe12f007d9b07c08e8e5316b918f74a2af4c93f07bfd0b83";
+const logo = readPng(LOGO_PATH);
+
+check("the official logo exists and is a valid PNG", logo !== null, true);
+
+check(
+  "the official logo is exactly 874x286",
+  logo ? `${logo.width}x${logo.height}` : "missing",
+  "874x286"
+);
+
+check(
+  "the official logo is RGBA (colour type 6)",
+  (() => {
+    if (!fs.existsSync(LOGO_PATH)) return false;
+    const fd = fs.openSync(LOGO_PATH, "r");
+    const head = Buffer.alloc(26);
+    fs.readSync(fd, head, 0, 26, 0);
+    fs.closeSync(fd);
+    // byte 24 is bit depth, byte 25 is colour type; 6 = truecolour + alpha
+    return head[24] === 8 && head[25] === 6;
+  })(),
+  true
+);
+
+check("the official logo matches its committed SHA-256", logo ? logo.sha256 : "missing", LOGO_SHA);
+
+// The logo is a production asset and this is a documentation-only correction, so
+// the commit that changes the blueprints must leave it untouched.
+check(
+  "the official logo is unchanged against origin/main",
+  (() => {
+    const { execFileSync } = require("child_process");
+    try {
+      const now = execFileSync("git", ["hash-object", "frontend/public/tohi-logo.png"], {
+        cwd: repoRoot,
+        encoding: "utf8",
+      }).trim();
+      const base = execFileSync("git", ["rev-parse", "origin/main:frontend/public/tohi-logo.png"], {
+        cwd: repoRoot,
+        encoding: "utf8",
+      }).trim();
+      if (now !== base) console.log(`       working ${now} vs origin/main ${base}`);
+      return now === base;
+    } catch (err) {
+      console.log(`       could not compare: ${err.message}`);
+      return false;
+    }
+  })(),
+  true
+);
+
 /* -------------------------------------------------------------- readme --- */
 
 console.log("README record");
@@ -247,9 +308,54 @@ check("README records the approval artifact URL", readme.includes(ARTIFACT_URL),
 
 check(
   "README records the exact dimensions of both sheet pairs",
-  /1010 × 1124/.test(readme) && /1010 × 5435/.test(readme),
+  /1010 × 1124/.test(readme) && /1010 × 5486/.test(readme),
   true
 );
+
+console.log("Branded header record");
+
+// The logo correction is only durable if the README keeps the facts that make it
+// reproducible: which file, at what size, on which plate, and why night is pale.
+const LOGO_RULES = [
+  [/frontend\/public\/tohi-logo\.png/, "the official logo path"],
+  [/874 × 286/, "the source logo dimensions"],
+  [/80 × ~?26\.17px/, "the displayed logo size"],
+  [/~?106 × 42\.17px/, "the brand plate size"],
+  [/intrinsic aspect ratio preserved/i, "the aspect ratio is preserved"],
+  [/#F3E8FF/, "the day plate colour"],
+  [/#E9E3FB/, "the night plate colour"],
+  [/#7742D2/, "the measured wordmark ink"],
+  [/pale night plate is intentional/i, "the pale-night-plate decision"],
+  [/2\.8–3\.0:1/, "the failing contrast against the navy shell"],
+  [/4\.8:1/, "the passing contrast on the pale plate"],
+  [
+    /`TOHI COMPANION` text badge is no longer part of the approved design/i,
+    "the old text badge is retired",
+  ],
+  [
+    /No generic MessageCircle or chat icon appears in the redesigned header/i,
+    "no generic chat icon in the header",
+  ],
+  [
+    /full wordmark is not used in BottomTabs/i,
+    "the full wordmark does not replace the navigation sparkle",
+  ],
+  [/compact TOHI sparkle icon/i, "navigation keeps its compact sparkle icon"],
+  [/uses `alt=""`/, "the alt=\"\" requirement"],
+  [/would be a duplicate announcement/i, "the non-duplicative alt rationale"],
+  [
+    /never be redrawn, recoloured, traced, distorted,\s*\n?\s*cropped, or replaced/i,
+    "the logo may not be redrawn, recoloured, distorted or replaced",
+  ],
+  [
+    /does not authorize a production-code\s*\n?\s*change on its own/i,
+    "the correction does not authorize production code",
+  ],
+];
+
+for (const [re, label] of LOGO_RULES) {
+  check(`README records ${label}`, re.test(readme), true);
+}
 
 // Every string below is a locked decision this phase committed to. Losing one
 // means a later phase can no longer tell what was approved.
@@ -257,7 +363,6 @@ const LOCKED_COPY = [
   "TOHI couldn’t connect right now. Your plan and recommendations haven’t changed. You can try sending your question again.",
   "TOHI is checking your park-day context…",
   "QUICK CHECK",
-  "TOHI COMPANION",
   "Your question",
 ];
 
@@ -276,7 +381,11 @@ const LOCKED_RULES = [
   [/No decorative corner circles/i, "no decorative corner circles"],
   [/No fake overflow, menu, settings, bell/i, "no fake overflow or menu control"],
   [/No persistent decorative scrollbar/i, "no persistent decorative scrollbar"],
-  [/No emoji in the eyebrow/i, "no emoji eyebrow"],
+  // Reworded by the logo correction: the header no longer has an "eyebrow" to
+  // put an emoji in. The rule itself is unchanged and slightly stronger — it now
+  // also requires the specific ✨ currently shipping to be named as removed.
+  [/No emoji in the header/i, "no emoji in the header"],
+  [/The current `✨` is removed/, "the shipping emoji is named as removed"],
   [/No loud gradients/i, "no loud gradients"],
   [/does not ship controls with no\s*\n?\s*behavior behind them/i, "no fake controls"],
   [/never rendered as an ordinary TOHI answer/i, "failure is a distinct inline status"],
