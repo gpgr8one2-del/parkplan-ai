@@ -87,28 +87,69 @@ const LOADING_COPY = "TOHI is checking your park-day context…";
 // a large fraction of them.
 const KEYBOARD_MIN_VIEWPORT_SHRINK_PX = 150;
 
-// 64B-2C. The whole keyboard decision, as one pure function.
+// 64B-2D. Scroll clearance kept beneath the composer while the keyboard is open.
+//
+// iPhone Safari floats its address/toolbar bar ABOVE the software keyboard, and
+// that bar is not part of the visual viewport it reports. So scrolling the
+// composer flush to the bottom of the reduced viewport is not enough — Safari's
+// own bar then sits on top of the Send button and the input. Real-device QA saw
+// exactly that.
+//
+// The floating bar measures roughly 50–56pt, and sits a little above the
+// keyboard rather than flush against it. 96px clears the bar itself plus the
+// gap, with room left for the taller layout Safari uses in landscape.
+//
+// This is applied as scroll-margin, NOT padding or a spacer. scroll-margin only
+// changes where scrollIntoView decides to stop; it contributes nothing to layout
+// and is invisible when the keyboard is closed.
+const COMPOSER_TOOLBAR_CLEARANCE_PX = 96;
+
+// 64B-2C, revised in 64B-2D. The whole keyboard decision, as one pure function.
 //
 // It is exported so the rule can be exercised directly with real numbers rather
 // than inferred from the source or from a simulated browser. The effect below is
 // the only caller in production; it supplies the live values and does nothing
 // with the answer except report it upward.
 //
-// Every "no" case is spelled out because each protects a different user:
-//   - no focus            -> a viewport change from browser chrome alone
+// 64B-2D made it state-aware, because on a real iPhone the keyboard does not
+// close at the instant focus is lost. Safari drops focus first and restores the
+// visual viewport a moment later, so the previous focus-only rule reported
+// "closed" while the viewport was still keyboard-sized. BottomTabs then remounted
+// inside the shrunken viewport and appeared halfway up the screen before settling.
+//
+// So opening and staying open are deliberately different questions:
+//   - OPENING requires both a focused composer and a keyboard-sized shrink. A
+//     shrink alone must never open it, or browser chrome would hide navigation.
+//   - STAYING OPEN requires only that the viewport is still keyboard-sized.
+//     Losing focus mid-dismissal is not evidence the keyboard has gone.
+//
+// It closes when the viewport genuinely comes back, which Safari tells us via
+// the resize/scroll events the effect already listens to. There is no timer and
+// no guess about how long a dismissal takes.
+//
+// The remaining "no" cases each protect a different user:
 //   - no access           -> locked TOHI has no composer at all
 //   - no viewport height  -> visualViewport is unsupported, so fail safe
-// Only a focused composer paired with a keyboard-sized shrink returns true.
 export function isComposerKeyboardOpen({
+  wasOpen,
   composerFocused,
   hasAccess,
   innerHeight,
   viewportHeight,
 }) {
-  if (!composerFocused) return false;
   if (!hasAccess) return false;
   if (typeof innerHeight !== "number" || typeof viewportHeight !== "number") return false;
-  return innerHeight - viewportHeight >= KEYBOARD_MIN_VIEWPORT_SHRINK_PX;
+
+  const keyboardSizedShrink =
+    innerHeight - viewportHeight >= KEYBOARD_MIN_VIEWPORT_SHRINK_PX;
+
+  // The viewport came back: the keyboard is really gone, whatever focus says.
+  if (!keyboardSizedShrink) return false;
+  // Already open and still shrunk — hold, even through the focus loss that
+  // begins a dismissal.
+  if (wasOpen) return true;
+  // Opening from closed still needs the composer to be the reason.
+  return Boolean(composerFocused);
 }
 
 // Scrolling and keyboard-follow both honour the user's motion preference. Read
@@ -228,12 +269,15 @@ export function TohiTab({
 
   // --- software-keyboard detection ------------------------------------------
   // This effect owns only the plumbing: it reads the live focus and viewport
-  // values, hands them to isComposerKeyboardOpen above, and reports the answer
-  // upward. The rule itself lives in that pure function, so it can be exercised
-  // directly rather than through a simulated browser.
+  // values plus the current open state, hands them to isComposerKeyboardOpen
+  // above, and reports the answer upward. The rule itself lives in that pure
+  // function, so it can be exercised directly rather than through a simulated
+  // browser.
   //
   // Both viewport events are observed because iOS fires resize when the keyboard
-  // animates in and scroll when the page settles underneath it.
+  // animates in and scroll when the page settles underneath it. Since 64B-2D
+  // those same events are also what CLOSES the state: the rule holds open until
+  // Safari actually restores the viewport, so no timer is needed.
   useEffect(() => {
     const viewport =
       typeof window !== "undefined" && window.visualViewport ? window.visualViewport : null;
@@ -248,6 +292,10 @@ export function TohiTab({
 
     const evaluate = () => {
       const open = isComposerKeyboardOpen({
+        // 64B-2D: the rule needs to know whether it is already open, so a focus
+        // loss during dismissal cannot close it while the viewport is still
+        // keyboard-sized. This is the same ref report() maintains.
+        wasOpen: keyboardOpenRef.current,
         composerFocused: composerFocusedRef.current,
         hasAccess: hasPersonalizedAccess,
         innerHeight: typeof window !== "undefined" ? window.innerHeight : null,
@@ -257,7 +305,9 @@ export function TohiTab({
       });
       report(open);
       if (open) {
-        // Keep the whole composer inside the reduced viewport.
+        // Keep the whole composer inside the reduced viewport. The form carries
+        // scrollMarginBottom, so this stops short of Safari's floating toolbar
+        // rather than tucking the composer underneath it.
         scrollElementIntoView(composerRef.current, "end");
       }
     };
@@ -595,7 +645,10 @@ export function TohiTab({
           column it previously occupied inside the log, so spacing is unchanged. */}
       <div ref={transcriptEndRef} aria-hidden="true" />
 
-      {/* Approved composer. Same form callback, same setter, same placeholder. */}
+      {/* Approved composer. Same form callback, same setter, same placeholder.
+          64B-2D adds scroll-margin only: it is what stops iPhone Safari's
+          floating address bar covering the input and Send button when the
+          keyboard-follow scroll runs. It changes no visible spacing. */}
       <form
         ref={composerRef}
         onSubmit={onChatSubmit}
@@ -610,6 +663,9 @@ export function TohiTab({
           padding: 12,
           boxShadow: DAY.shadow,
           marginBottom: 0,
+          // Affects where scrollIntoView stops, never layout. See
+          // COMPOSER_TOOLBAR_CLEARANCE_PX for why the room is needed.
+          scrollMarginBottom: COMPOSER_TOOLBAR_CLEARANCE_PX,
         }}
       >
         <label
