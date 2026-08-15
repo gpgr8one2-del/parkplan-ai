@@ -1,28 +1,102 @@
 import React from "react";
-import { MessageCircle, Send } from "lucide-react";
+import { Send } from "lucide-react";
 
 import { colors } from "../theme";
 
 // 64B-1 extracted this presentation verbatim from App.jsx.
+// 64B-2A rebuilt the DAY presentation to the approved TOHI blueprints committed
+// under the TOHI design documentation.
 //
-// Presentation only: every piece of state, the whole of handleChatSubmit, the
-// chat network call, the clarification interception, the reply cleaning, the
-// local failure fallback, tracking, and access derivation all stay in App.jsx
-// and arrive here as explicit props. This component creates no state, no
-// effects, no network calls and no replacement handlers.
+// Still presentation only: every piece of state, the whole of handleChatSubmit,
+// the chat network call, the clarification interception, the reply cleaning, the
+// local failure fallback, tracking, and access derivation all stay in App.jsx and
+// arrive here as explicit props. This component creates no state, no effects, no
+// network calls and no replacement handlers.
 //
-// This phase is byte-identical to the pre-extraction output, proven by
-// tohiExtractionParityHarness.cjs against a pinned baseline commit. Nothing was
-// redesigned, corrected, or tidied on the way across — the approved blueprints
-// committed under the TOHI design documentation are a LATER phase's target, not
-// this one's.
+// Gone with the redesign: both decorative corner circles, the radial card glow,
+// the three-stop gradient wash, the full-purple gradient user bubble, the emoji
+// text badge, the generic chat icon, and the inline "You: " / "TOHI: " prefixes.
 //
-// Deliberately NOT in this phase, and each one is approved for the redesign:
-// separate YOU/TOHI speaker labels (the inline "You: " / "TOHI: " prefixes
-// below must survive extraction), QUICK CHECK styling, a distinct failure
-// surface, an inline loading surface, paragraph preservation, autoscroll, a
-// visible composer label, focus-ring correction, blank-input disabling,
-// duplicate-submit guarding, and night support.
+// Deliberately NOT in this phase, and each one is approved for a later one:
+// the distinct connection-failure surface, the malformed-response fallback, a
+// duplicate-submit guard, autoscroll, keyboard-open navigation suppression, chat
+// persistence, Start Over, the locked-card redesign, and night support. A
+// failure state is not inferred by matching reply copy — this phase has no
+// honest failure metadata to read.
+
+// Approved day tokens, taken from the committed day blueprints.
+const DAY = {
+  surface: "#FFFFFF",
+  surfaceQuiet: "#FFF9F1",
+  line: "rgba(234, 220, 200, 0.55)",
+  title: colors.text,
+  muted: colors.muted,
+  accent: colors.purple,
+  accentDeep: colors.purpleDeep,
+  accentLine: "rgba(124, 58, 237, 0.20)",
+  brandPlate: colors.purpleSoft,
+  brandPlateLine: "rgba(124, 58, 237, 0.16)",
+  userFill: "#F6F1FF",
+  skyInk: "#0369A1",
+  skyFill: colors.skySoft,
+  skyLine: "rgba(56, 189, 248, 0.30)",
+  goldInk: "#92400E",
+  goldFill: colors.amberSoft,
+  goldLine: "rgba(245, 158, 11, 0.32)",
+  shadow: "0 10px 30px rgba(28, 25, 23, 0.055)",
+  disabledFill: "#F1EDE7",
+  disabledInk: "#A9A297",
+  disabledLine: "rgba(234, 220, 200, 0.85)",
+};
+
+// The three approved prompts. Order is part of the contract.
+const SUGGESTED_PROMPTS = [
+  "What should we do next without wearing everyone out?",
+  "Should we take a break or keep going?",
+  "What if storms hit this afternoon?",
+];
+
+const LOADING_COPY = "TOHI is checking your park-day context…";
+
+// A small uppercase speaker label sits above each message, replacing the inline
+// "You: " / "TOHI: " prefixes. Clarification turns carry the QUICK CHECK chip,
+// driven only by the existing msg.isLiveStateQuestion value that App already
+// sets — this component never infers it from copy.
+function SpeakerLabel({ who, quickCheck }) {
+  return (
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 7,
+        fontSize: 10,
+        fontWeight: 800,
+        letterSpacing: 1.2,
+        color: who === "YOU" ? DAY.muted : DAY.accentDeep,
+      }}
+    >
+      <span>{who}</span>
+      {quickCheck && (
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            padding: "2px 8px",
+            borderRadius: 999,
+            background: DAY.skyFill,
+            color: DAY.skyInk,
+            border: `1px solid ${DAY.skyLine}`,
+            fontSize: 9.5,
+            fontWeight: 800,
+            letterSpacing: 1,
+          }}
+        >
+          QUICK CHECK
+        </span>
+      )}
+    </div>
+  );
+}
 
 export function TohiTab({
   // data + derived state
@@ -39,267 +113,297 @@ export function TohiTab({
   // Preview branch and setActiveScreen wiring stay in one place
   renderLockedFeatureCard,
 
-  // shared style objects owned by App. Passed rather than recreated because
-  // React emits inline style properties in insertion order, so rebuilding them
-  // locally would change the output even with identical values.
+  // shared style objects owned by App
   card,
   button,
 }) {
-  return hasPersonalizedAccess ? (
-    <section
-      style={{
-        ...card,
-        position: "relative",
-        overflow: "hidden",
-        background:
-          "radial-gradient(circle at 92% 4%, rgba(124, 58, 237, 0.20) 0%, rgba(124, 58, 237, 0.05) 30%, transparent 54%), linear-gradient(155deg, #FFFFFF 0%, #FFF7ED 48%, #F3E8FF 100%)",
-        border: "1px solid rgba(124, 58, 237, 0.18)",
-        borderRadius: 28,
-        boxShadow: "0 18px 46px rgba(91, 33, 182, 0.12)",
-      }}
-    >
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          width: 112,
-          height: 112,
-          borderRadius: "999px",
-          right: -38,
-          top: -44,
-          background: "rgba(56, 189, 248, 0.14)",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          width: 96,
-          height: 96,
-          borderRadius: "999px",
-          left: -42,
-          bottom: -46,
-          background: "rgba(245, 158, 11, 0.14)",
-        }}
-      />
+  // Send is unavailable while a request is in flight, and while there is nothing
+  // to send. The trim guard in App is unchanged and still authoritative; this
+  // only stops the control inviting a submit that App would discard.
+  const trimmedMessage = typeof message === "string" ? message.trim() : "";
+  const sendDisabled = chatLoading || trimmedMessage === "";
 
-      <div style={{ position: "relative" }}>
+  return hasPersonalizedAccess ? (
+    <section style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* Focus rings and the loading pulse need selectors that inline styles
+          cannot express. This follows the same inline <style> pattern WaitsTab
+          already uses rather than introducing the first stylesheet. */}
+      <style>{`
+        [data-tohi-focus]:focus-visible {
+          outline: 2px solid ${DAY.accent};
+          outline-offset: 2px;
+        }
+        @keyframes tohiChatPulse { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
+        @media (prefers-reduced-motion: reduce) {
+          [data-tohi-loading] span { animation: none !important; opacity: .7 !important; }
+        }
+      `}</style>
+
+      {/* Approved branded header: the official committed wordmark on a compact
+          plate, with the heading directly beneath. No emoji, no text badge, and
+          no generic chat icon. */}
+      <header style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div
           style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: 12,
-            marginBottom: 14,
+            alignSelf: "flex-start",
+            display: "inline-flex",
+            alignItems: "center",
+            padding: "7px 12px",
+            borderRadius: 999,
+            background: DAY.brandPlate,
+            border: `1px solid ${DAY.brandPlateLine}`,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: 16,
-                display: "grid",
-                placeItems: "center",
-                background:
-                  "linear-gradient(145deg, rgba(124,58,237,0.16), rgba(245,158,11,0.14))",
-                border: "1px solid rgba(124, 58, 237, 0.16)",
-                color: colors.purple,
-                boxShadow: "0 10px 24px rgba(124, 58, 237, 0.10)",
-              }}
-            >
-              <MessageCircle size={20} />
-            </div>
-
-            <div>
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "5px 9px",
-                  borderRadius: 999,
-                  background: "rgba(124, 58, 237, 0.10)",
-                  color: colors.purpleDeep,
-                  fontSize: 11,
-                  fontWeight: 950,
-                  letterSpacing: 0.7,
-                }}
-              >
-                ✨ TOHI COMPANION
-              </div>
-              <h2
-                style={{
-                  margin: "8px 0 0",
-                  color: colors.text,
-                  fontSize: 26,
-                  letterSpacing: -0.5,
-                  lineHeight: 1.15,
-                }}
-              >
-                Ask TOHI
-              </h2>
-            </div>
-          </div>
+          {/* alt="" on purpose: the "Ask TOHI" heading immediately below already
+              names the feature, so alt text here would be a duplicate
+              announcement. The mark is decorative in this position. */}
+          <img
+            src="/tohi-logo.png"
+            alt=""
+            style={{ display: "block", width: 80, height: "auto" }}
+          />
         </div>
+
+        <h2
+          style={{
+            margin: 0,
+            color: DAY.title,
+            fontSize: 26,
+            fontWeight: 800,
+            letterSpacing: -0.5,
+            lineHeight: 1.15,
+          }}
+        >
+          Ask TOHI
+        </h2>
 
         <p
           style={{
-            margin: "0 0 14px",
-            color: colors.muted,
-            fontSize: 14,
+            margin: 0,
+            color: DAY.muted,
+            fontSize: 13.5,
             lineHeight: 1.5,
-            maxWidth: 620,
+            maxWidth: "34ch",
           }}
         >
           Ask what to do next, how to handle heat or storms, whether a resort
           break is realistic, or how to keep the day calm without overdoing it.
         </p>
+      </header>
 
-        {chat.length === 0 && (
-          <div
-            style={{
-              display: "grid",
-              gap: 8,
-              marginBottom: 14,
-            }}
-          >
-            {[
-              "What should we do next without wearing everyone out?",
-              "Should we take a break or keep going?",
-              "What if storms hit this afternoon?",
-            ].map((prompt) => (
+      {chat.length === 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {SUGGESTED_PROMPTS.map((prompt) => {
+            // Selection is derived purely from an exact match with the current
+            // composer value. Nothing is stored, and tapping still only fills
+            // the input.
+            const picked = message === prompt;
+
+            return (
               <button
                 key={prompt}
                 type="button"
+                data-tohi-focus="true"
                 onClick={() => setMessage(prompt)}
                 style={{
                   ...button,
                   justifyContent: "flex-start",
                   textAlign: "left",
-                  borderRadius: 18,
-                  padding: "10px 12px",
-                  background: "rgba(255, 255, 255, 0.72)",
-                  borderColor: "rgba(124, 58, 237, 0.14)",
-                  color: colors.text,
-                  boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
+                  minHeight: 48,
+                  borderRadius: 16,
+                  padding: "12px 14px",
+                  background: picked ? DAY.userFill : DAY.surface,
+                  border: `1px solid ${picked ? DAY.accentLine : DAY.line}`,
+                  color: DAY.title,
+                  fontSize: 13.5,
+                  fontWeight: 650,
+                  lineHeight: 1.35,
+                  boxShadow: DAY.shadow,
                 }}
               >
                 {prompt}
               </button>
-            ))}
-          </div>
-        )}
-
-        <div
-          style={{
-            marginTop: 12,
-            display: "grid",
-            gap: 10,
-          }}
-        >
-          {chat.length === 0 && (
-            <div
-              style={{
-                padding: 13,
-                borderRadius: 18,
-                border: `1px solid ${colors.cardBorder}`,
-                background: "rgba(255, 255, 255, 0.68)",
-                color: colors.muted,
-                fontSize: 13,
-                lineHeight: 1.45,
-              }}
-            >
-              TOHI uses your park, weather, family setup, current activity,
-              and recommendations to answer with real trip context.
-            </div>
-          )}
-
-          {chat.map((msg, idx) => {
-            const isUser = msg.role === "user";
-
-            return (
-              <div
-                key={idx}
-                style={{
-                  display: "flex",
-                  justifyContent: isUser ? "flex-end" : "flex-start",
-                }}
-              >
-                <div
-                  style={{
-                    maxWidth: "88%",
-                    padding: "11px 12px",
-                    borderRadius: isUser
-                      ? "18px 18px 6px 18px"
-                      : "18px 18px 18px 6px",
-                    background: isUser
-                      ? "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)"
-                      : "rgba(255, 255, 255, 0.82)",
-                    border: isUser
-                      ? "1px solid rgba(124, 58, 237, 0.26)"
-                      : `1px solid ${colors.cardBorder}`,
-                    color: isUser ? "white" : colors.text,
-                    boxShadow: isUser
-                      ? "0 12px 24px rgba(124, 58, 237, 0.16)"
-                      : "0 10px 22px rgba(28, 25, 23, 0.05)",
-                    fontSize: 14,
-                    lineHeight: 1.45,
-                  }}
-                >
-                  <strong>{isUser ? "You" : "TOHI"}: </strong>
-                  {msg.content}
-                </div>
-              </div>
             );
           })}
         </div>
+      )}
 
-        <form
-          onSubmit={onChatSubmit}
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {chat.length === 0 && (
+          <div
+            style={{
+              borderRadius: 20,
+              padding: "13px 14px",
+              background: DAY.surfaceQuiet,
+              border: `1px solid ${DAY.line}`,
+              color: DAY.muted,
+              fontSize: 13,
+              lineHeight: 1.45,
+            }}
+          >
+            TOHI uses your park, weather, family setup, current activity,
+            and recommendations to answer with real trip context.
+          </div>
+        )}
+
+        {chat.map((msg, idx) => {
+          const isUser = msg.role === "user";
+          const quickCheck = !isUser && msg.isLiveStateQuestion === true;
+
+          return (
+            <div
+              key={idx}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 5,
+                alignItems: isUser ? "flex-end" : "flex-start",
+              }}
+            >
+              <SpeakerLabel who={isUser ? "YOU" : "TOHI"} quickCheck={quickCheck} />
+
+              <div
+                style={{
+                  maxWidth: isUser ? "85%" : "92%",
+                  borderRadius: 20,
+                  padding: "12px 14px",
+                  background: isUser ? DAY.userFill : DAY.surface,
+                  border: `1px solid ${isUser ? DAY.accentLine : DAY.line}`,
+                  color: DAY.title,
+                  boxShadow: DAY.shadow,
+                  fontSize: 14,
+                  lineHeight: 1.5,
+                  // Replies arrive as plain text with real newlines. pre-wrap
+                  // keeps the paragraph breaks the model wrote, without parsing
+                  // or injecting any markup.
+                  whiteSpace: "pre-wrap",
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {msg.content}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Sending. The submitted message stays above this; no assistant reply
+            is invented, and nothing is removed from the transcript. */}
+        {chatLoading && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-start" }}>
+            <SpeakerLabel who="TOHI" />
+            <div
+              data-tohi-loading="true"
+              style={{
+                maxWidth: "92%",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                borderRadius: 20,
+                padding: "12px 14px",
+                background: DAY.goldFill,
+                border: `1px solid ${DAY.goldLine}`,
+                color: DAY.goldInk,
+                fontSize: 13,
+                fontWeight: 650,
+                lineHeight: 1.4,
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{ display: "inline-flex", gap: 4, flex: "0 0 auto" }}
+              >
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: 999,
+                      background: "currentColor",
+                      opacity: 0.35,
+                      animation: `tohiChatPulse 1.25s ease-in-out ${i * 0.18}s infinite`,
+                    }}
+                  />
+                ))}
+              </span>
+              {LOADING_COPY}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Approved composer. Same form callback, same setter, same placeholder. */}
+      <form
+        onSubmit={onChatSubmit}
+        style={{
+          ...card,
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          background: DAY.surface,
+          border: `1px solid ${DAY.line}`,
+          borderRadius: 24,
+          padding: 12,
+          boxShadow: DAY.shadow,
+          marginBottom: 0,
+        }}
+      >
+        <label
+          htmlFor="tohi-question"
           style={{
-            display: "flex",
-            gap: 8,
-            marginTop: 14,
-            padding: 8,
-            borderRadius: 999,
-            background: "rgba(255, 255, 255, 0.76)",
-            border: `1px solid ${colors.cardBorder}`,
-            boxShadow: "0 12px 24px rgba(28, 25, 23, 0.06)",
+            fontSize: 10.5,
+            fontWeight: 800,
+            letterSpacing: 1.1,
+            color: DAY.muted,
           }}
         >
+          Your question
+        </label>
+
+        <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
           <input
+            id="tohi-question"
+            data-tohi-focus="true"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Ask TOHI..."
             style={{
               flex: 1,
               minWidth: 0,
-              border: "none",
-              outline: "none",
-              borderRadius: 999,
-              padding: "9px 10px",
-              color: colors.text,
-              background: "transparent",
-              fontWeight: 700,
+              minHeight: 48,
+              borderRadius: 16,
+              padding: "12px 13px",
+              background: DAY.surface,
+              border: `1px solid ${DAY.line}`,
+              color: DAY.title,
+              fontSize: 14,
+              lineHeight: 1.35,
+              fontFamily: "inherit",
             }}
           />
+
           <button
             type="submit"
+            data-tohi-focus="true"
+            disabled={sendDisabled}
             style={{
               ...button,
-              background:
-                "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
-              color: "white",
-              borderColor: "rgba(124, 58, 237, 0.26)",
-              boxShadow: "0 10px 20px rgba(124, 58, 237, 0.18)",
+              flex: "0 0 auto",
+              minHeight: 48,
+              borderRadius: 16,
+              padding: "0 18px",
+              fontSize: 14,
+              fontWeight: 800,
+              background: sendDisabled ? DAY.disabledFill : DAY.accent,
+              border: `1px solid ${sendDisabled ? DAY.disabledLine : DAY.accentLine}`,
+              color: sendDisabled ? DAY.disabledInk : "#FFFFFF",
+              cursor: sendDisabled ? "not-allowed" : "pointer",
             }}
-            disabled={chatLoading}
           >
-            <Send size={14} /> {chatLoading ? "..." : "Send"}
+            <Send size={15} /> Send
           </button>
-        </form>
-      </div>
+        </div>
+      </form>
     </section>
   ) : (
     renderLockedFeatureCard({
