@@ -1,12 +1,18 @@
 #!/usr/bin/env node
 
-// TOHI mobile behaviour and accessibility (64B-2C).
+// TOHI mobile behaviour and accessibility (64B-2C, extended by 64B-2D).
 //
-// Proves the four connected behaviours this phase delivers:
+// Proves the four connected behaviours 64B-2C delivers:
 //   A. new activity is scrolled into view via a stable target
 //   B. the composer stays visible when the software keyboard opens
 //   C. BottomTabs is suppressed ONLY for the TOHI composer's keyboard
 //   D. the transcript is an accessible log tied to real loading state
+//
+// Plus the two real-device corrections from 64B-2D, marked 2D-* below:
+//   1. the composer keeps scroll clearance for iPhone Safari's floating
+//      address/toolbar bar, which is not part of the visual viewport
+//   2. the keyboard state is state-aware, so losing focus mid-dismissal does not
+//      remount BottomTabs inside a still-keyboard-sized viewport
 //
 // HOW EACH CLAIM IS ESTABLISHED — stated plainly so no assertion below reads as
 // stronger than it is:
@@ -74,6 +80,11 @@ const appCode = strip(appSource);
 
 const LOADING_COPY = "TOHI is checking your park-day context…";
 
+// The keyboard effect, sliced out so wiring claims stay scoped to it.
+const KEYBOARD_EFFECT = (tohiCode.match(
+  /const viewport =[\s\S]*?\}, \[hasPersonalizedAccess\]\);/
+) || [""])[0];
+
 let passCount = 0;
 let failCount = 0;
 let featurePass = 0;
@@ -121,11 +132,13 @@ const KEYBOARD_RULE = (() => {
 })();
 const RULE_AVAILABLE = typeof KEYBOARD_RULE === "function";
 
-// A focused composer on a 844pt phone with a 336pt keyboard, unless overridden.
-// null (never true, never false) when the helper does not exist.
+// A focused composer on a 844pt phone with a 336pt keyboard, starting from the
+// closed state, unless overridden. null (never true, never false) when the
+// helper does not exist.
 function keyboardOpen(over) {
   if (!RULE_AVAILABLE) return null;
   return KEYBOARD_RULE({
+    wasOpen: false,
     composerFocused: true,
     hasAccess: true,
     innerHeight: 844,
@@ -134,7 +147,7 @@ function keyboardOpen(over) {
   });
 }
 
-console.log("TOHI mobile behaviour and accessibility (64B-2C) — FEATURE-DISCRIMINATING");
+console.log("TOHI mobile behaviour and accessibility (64B-2C/2D) — FEATURE-DISCRIMINATING");
 
 check(
   "the exported keyboard rule is loadable (scenarios below really executed it)",
@@ -278,16 +291,144 @@ featureCheck(
 featureCheck(
   "locked access can never report a keyboard — there is no composer",
   keyboardOpen({ hasAccess: false }) === false &&
+    keyboardOpen({ wasOpen: true, hasAccess: false }) === false &&
     /hasAccess: hasPersonalizedAccess/.test(tohiCode),
   true
 );
 
-/* ------------------------------ the effect that drives the rule (structural) -- */
+/* ------------- 64B-2D. the rule is state-aware through a real dismissal ------- */
 
-// Slice out the keyboard effect so the wiring claims below are scoped to it.
-const KEYBOARD_EFFECT = (tohiCode.match(
-  /const viewport =[\s\S]*?\}, \[hasPersonalizedAccess\]\);/
-) || [""])[0];
+// Real-device QA: Safari drops composer focus BEFORE it restores the visual
+// viewport. A focus-only rule therefore reported closed while the viewport was
+// still keyboard-sized, and BottomTabs remounted halfway up the screen. Opening
+// and staying open are now separate questions, and every case below is executed
+// against the production helper.
+
+invariantCheck(
+  "2D-1. closed + focus + keyboard-sized shrink -> opens (preserved from 2C)",
+  keyboardOpen({ wasOpen: false, composerFocused: true }) === true,
+  true
+);
+
+invariantCheck(
+  "2D-2. closed + NO focus + keyboard-sized shrink -> stays closed (preserved)",
+  // The protection that predates this phase: a shrink alone must never hide
+  // navigation, or browser chrome would trigger it.
+  keyboardOpen({ wasOpen: false, composerFocused: false }) === false,
+  true
+);
+
+featureCheck(
+  "2D-3. already open + focus lost + viewport still shrunk -> STAYS OPEN",
+  // The actual fix. Paired with 2D-2 so it cannot pass by the rule simply
+  // ignoring focus: same absent focus, opposite answer, decided by wasOpen.
+  keyboardOpen({ wasOpen: true, composerFocused: false }) === true &&
+    keyboardOpen({ wasOpen: false, composerFocused: false }) === false,
+  true
+);
+
+featureCheck(
+  "2D-4. already open + focus lost + viewport restored -> closes",
+  // What actually ends the open state: the viewport coming back, not the focus
+  // going away. Checked both at full restoration and just below the threshold.
+  keyboardOpen({ wasOpen: true, composerFocused: false, viewportHeight: 844 }) === false &&
+    keyboardOpen({ wasOpen: true, composerFocused: false, viewportHeight: 784 }) === false &&
+    // paired: same absent focus, still-shrunk viewport -> held open. Without
+    // this clause the two above would pass against the old focus-only rule.
+    keyboardOpen({ wasOpen: true, composerFocused: false }) === true,
+  true
+);
+
+featureCheck(
+  "2D-5. already open + visualViewport missing -> closes safely",
+  keyboardOpen({ wasOpen: true, composerFocused: false, viewportHeight: null }) === false &&
+    keyboardOpen({ wasOpen: true, composerFocused: true, viewportHeight: undefined }) === false &&
+    // paired, for the same reason as 2D-4
+    keyboardOpen({ wasOpen: true, composerFocused: false }) === true,
+  true
+);
+
+featureCheck(
+  "2D-6. the open state survives focus loss only while genuinely shrunk",
+  // The threshold still governs the held-open case, at the same 150px boundary.
+  keyboardOpen({
+    wasOpen: true,
+    composerFocused: false,
+    innerHeight: 1000,
+    viewportHeight: 850,
+  }) === true &&
+    keyboardOpen({
+      wasOpen: true,
+      composerFocused: false,
+      innerHeight: 1000,
+      viewportHeight: 851,
+    }) === false,
+  true
+);
+
+featureCheck(
+  "2D-7. the effect feeds its own keyboardOpenRef back into the rule",
+  /wasOpen: keyboardOpenRef\.current/.test(KEYBOARD_EFFECT) &&
+    // and that ref is still what report() maintains, so the two cannot drift
+    /keyboardOpenRef\.current = open;/.test(tohiCode),
+  true
+);
+
+invariantCheck(
+  "2D-8. the close path is event-driven — no timer or delayed guess",
+  !/setTimeout|setInterval|requestIdleCallback|Date\.now|performance\.now/.test(tohiCode) &&
+    // closing still comes from the viewport listeners the effect already owns
+    /viewport\.addEventListener\("resize", evaluate\)/.test(KEYBOARD_EFFECT) &&
+    /viewport\.addEventListener\("scroll", evaluate\)/.test(KEYBOARD_EFFECT),
+  true
+);
+
+/* ------------------- 64B-2D. composer clearance for Safari's floating bar ---- */
+
+featureCheck(
+  "2D-9. the keyboard-follow target carries explicit Safari-toolbar clearance",
+  // scroll-margin on the composer itself, applied to the element the
+  // keyboard-follow scroll actually targets.
+  /const COMPOSER_TOOLBAR_CLEARANCE_PX = (\d+);/.test(tohiCode) &&
+    /scrollMarginBottom: COMPOSER_TOOLBAR_CLEARANCE_PX/.test(tohiCode) &&
+    // it is on the composer form (the scroll target), not on the transcript
+    /<form[\s\S]{0,600}?scrollMarginBottom: COMPOSER_TOOLBAR_CLEARANCE_PX/.test(tohiCode) &&
+    // and the clearance is big enough to clear a ~50–56pt floating bar
+    Number((tohiCode.match(/const COMPOSER_TOOLBAR_CLEARANCE_PX = (\d+);/) || [])[1]) >= 64,
+  true
+);
+
+featureCheck(
+  "2D-10. the clearance is scroll-only — no permanent visible spacing",
+  // It must be scroll-margin, never padding/margin/height, and it must not be
+  // applied conditionally on the keyboard state (which would make it a spacer).
+  (() => {
+    const composer = (tohiCode.match(/<form[\s\S]*?\n      >/) || [""])[0];
+    return (
+      /scrollMarginBottom: COMPOSER_TOOLBAR_CLEARANCE_PX/.test(composer) &&
+      !/paddingBottom: COMPOSER_TOOLBAR_CLEARANCE_PX/.test(tohiCode) &&
+      !/marginBottom: COMPOSER_TOOLBAR_CLEARANCE_PX/.test(tohiCode) &&
+      !/height: COMPOSER_TOOLBAR_CLEARANCE_PX/.test(tohiCode) &&
+      // the composer keeps its existing marginBottom: 0
+      /marginBottom: 0,/.test(composer)
+    );
+  })(),
+  true
+);
+
+featureCheck(
+  "2D-11. transcript autoscroll was left alone — clearance is composer-only",
+  // The sentinel scroll must not have gained the clearance; only the composer
+  // follow needs to stop short of Safari's bar.
+  /scrollElementIntoView\(transcriptEndRef\.current, "end"\)/.test(tohiCode) &&
+    /<div ref=\{transcriptEndRef\} aria-hidden="true" \/>/.test(tohiCode) &&
+    (tohiCode.match(/scrollMarginBottom/g) || []).length === 1 &&
+    // and the reduced-motion path still governs both scrolls
+    /behavior: prefersReducedMotion\(\) \? "auto" : "smooth"/.test(tohiCode),
+  true
+);
+
+/* ------------------------------ the effect that drives the rule (structural) -- */
 
 featureCheck(
   "the real effect calls the same exported rule, and does nothing else with it",
@@ -304,9 +445,10 @@ featureCheck(
 );
 
 featureCheck(
-  "6a. blur re-evaluates through the same rule while still mounted",
-  // onBlur clears the focus flag and re-runs the evaluation, so the rule's
-  // focus-is-false branch (proved executed above) is what closes the state.
+  "6a. focus and blur both re-evaluate through the same rule while mounted",
+  // onFocus/onBlur only maintain the focus flag and re-run the evaluation. Since
+  // 64B-2D a blur no longer closes the state by itself — 2D-3 and 2D-4 above
+  // show the viewport is what decides. This asserts the wiring, not the outcome.
   /onBlur=\{\(\) => \{/.test(tohiCode) &&
     /composerFocusedRef\.current = false;/.test(tohiCode) &&
     /onFocus=\{\(\) => \{/.test(tohiCode) &&
@@ -693,8 +835,8 @@ invariantCheck(
 );
 
 console.log("");
-console.log(`  64B-2C feature-discriminating: ${featurePass} passed, ${featureFail} failed`);
-console.log(`  64B-2C invariant regression guards: ${invariantPass} passed, ${invariantFail} failed`);
+console.log(`  64B-2C/2D feature-discriminating: ${featurePass} passed, ${featureFail} failed`);
+console.log(`  64B-2C/2D invariant regression guards: ${invariantPass} passed, ${invariantFail} failed`);
 console.log("");
 console.log(`${passCount} passed, ${failCount} failed`);
 
