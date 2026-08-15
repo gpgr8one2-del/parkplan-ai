@@ -141,6 +141,9 @@ featureCheck(
         "hasPersonalizedAccess",
         "message",
         "onChatSubmit",
+        // 64B-2C: TohiTab reports its own composer's keyboard state upward. A
+        // report, not a decision — App still owns what happens next.
+        "onComposerKeyboardChange",
         "renderLockedFeatureCard",
         "setMessage",
       ].join(",")
@@ -157,6 +160,7 @@ featureCheck(
     /hasPersonalizedAccess=\{hasPersonalizedAccess\}/.test(tohiCall) &&
     /setMessage=\{setMessage\}/.test(tohiCall) &&
     /onChatSubmit=\{handleChatSubmit\}/.test(tohiCall) &&
+    /onComposerKeyboardChange=\{setTohiComposerKeyboardOpen\}/.test(tohiCall) &&
     /renderLockedFeatureCard=\{renderLockedFeatureCard\}/.test(tohiCall) &&
     /card=\{card\}/.test(tohiCall) &&
     /button=\{button\}/.test(tohiCall),
@@ -164,10 +168,18 @@ featureCheck(
 );
 
 featureCheck(
-  "TohiTab exists and is presentation only — no state, effects or refs",
+  "TohiTab is presentation only — it owns no business state",
+  // 64B-2C narrowed this rather than dropping it. Effects and refs are now
+  // authorised, but ONLY for scrolling, focused-composer detection, viewport
+  // observation and accessibility. Component state and memoised derivation stay
+  // forbidden, because that is how chat logic would creep back in.
   tohiSource.length > 0 &&
     /export function TohiTab\(\{/.test(tohiSource) &&
-    !/useState|useEffect|useMemo|useRef|useCallback|useReducer/.test(tohiSource),
+    !/useState|useReducer|useMemo|useCallback/.test(tohiSource) &&
+    !/fetch\(|axios|sendChatMessage|trackAppEvent|trackEvent/.test(tohiCode) &&
+    !/setChat\(|setChatLoading\(|setActivePark|setTripPlanState|setRecommendations/.test(
+      tohiCode
+    ),
   true
 );
 
@@ -311,10 +323,16 @@ invariantCheck(
 );
 
 invariantCheck(
-  "TohiTab derives no mode, clock, storage, media query or night value",
-  !/localStorage|sessionStorage|matchMedia|prefers-color-scheme|new Date|getHours|Date\.now/.test(
+  "TohiTab derives no mode, clock, storage or night value",
+  // 64B-2C narrowed the media-query clause instead of removing it: matchMedia is
+  // permitted for exactly one purpose, prefers-reduced-motion. The colour-scheme
+  // query that would imply night support stays forbidden.
+  !/localStorage|sessionStorage|prefers-color-scheme|new Date|getHours|Date\.now/.test(
     presentation
   ) &&
+    (presentation.match(/matchMedia\(/g) || []).length ===
+      (presentation.match(/matchMedia\("\(prefers-reduced-motion: reduce\)"\)/g) || [])
+        .length &&
     !/\bnight\b|shellNight|planNight|shellTokens|getTohiAppShellTheme/.test(presentation),
   true
 );
@@ -389,7 +407,9 @@ featureCheck(
 // blank, and the "..." label is replaced by the inline loading surface.
 featureCheck(
   "the composer keeps its semantics and gains the approved disabled rule",
-  /<form\s+onSubmit=\{onChatSubmit\}/.test(presentation) &&
+  // 64B-2C added ref={composerRef}, so the handler is no longer the first
+  // attribute. The rule is unchanged: the form still submits via App's callback.
+  /<form[\s\S]{0,80}?onSubmit=\{onChatSubmit\}/.test(presentation) &&
     /type="submit"/.test(presentation) &&
     /placeholder="Ask TOHI\.\.\."/.test(presentation) &&
     /const trimmedMessage = typeof message === "string" \? message\.trim\(\) : "";/.test(
@@ -416,14 +436,18 @@ invariantCheck(
 // phase may arrive early — with the list narrowed to what is still deferred.
 invariantCheck(
   "no later-phase behaviour arrived early",
-  // 64B-2B delivered the connection-failure surface, so it is removed from the
-  // forbidden list. Everything still deferred remains.
-  !/scrollIntoView|autoFocus/.test(presentation) &&        // autoscroll
-    !/aria-live|role="log"/.test(presentation) &&          // live region
-    !/localStorage|sessionStorage/.test(presentation) &&   // chat persistence
+  // 64B-2C delivered autoscroll, the live region and TOHI keyboard suppression,
+  // so those three prohibitions are superseded. They are REPLACED by narrower
+  // guards rather than dropped, and everything still deferred is kept verbatim.
+  !/localStorage|sessionStorage/.test(presentation) &&     // chat persistence
     !/Start Over|Retry|Try again/i.test(presentation) &&   // retry / start over
-    !/visualViewport/.test(presentation) &&                // keyboard nav suppression
-    !/\bnight\b/.test(presentation),                      // night support
+    !/timestamp|reaction|onEdit|contentEditable/i.test(presentation) &&
+    !/\bnight\b/.test(presentation) &&                    // night support
+    // approved-but-bounded: autoscroll may never focus the field for the user
+    !/autoFocus/.test(presentation) &&
+    // approved-but-bounded: the viewport is observed, never written to, and no
+    // global layout lock is installed
+    !/document\.body\.style|position:\s*"fixed"/.test(presentation),
   true
 );
 
