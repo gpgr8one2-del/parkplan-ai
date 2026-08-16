@@ -35,8 +35,8 @@ import { colors } from "../theme";
 // and the accessibility log/status split. 64B-2D added the Safari toolbar
 // clearance and the state-aware keyboard rule.
 //
-// 64B-2E-1 adds the approved NIGHT presentation, PREPARED BUT INACTIVE — see the
-// TOHI_NIGHT table below. Still deferred: chat persistence and Start Over.
+// 64B-2E-1 added the approved NIGHT presentation and 64B-2E-2 activated it — see
+// the TOHI_NIGHT table below. Still deferred: chat persistence and Start Over.
 
 // Approved day tokens, taken from the committed day blueprints.
 //
@@ -92,9 +92,9 @@ const DAY = {
 //     shared locked-card renderer, which already carries its own night branch,
 //     so accentDeep here is the speaker-label value only.
 //
-// PREPARED BUT INACTIVE: App passes a literal night={false}, so production is
-// still day-only and pixel-identical. Activation is 64B-2E-2's job, and TOHI is
-// deliberately still excluded from shellNight until then.
+// PREPARED in 64B-2E-1 behind an inactive gate, ACTIVATED in 64B-2E-2. App now
+// passes the shared explicit shellNight value — the one decision Home, Waits and
+// Plan read — so content, page background and navigation flip in a single render.
 //
 // `night` is an explicit boolean prop and nothing else. It is never derived here
 // from the clock, planNight, shellNight, theme state, the active tab, storage, a

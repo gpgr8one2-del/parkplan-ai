@@ -96,7 +96,7 @@ const appSourceWithoutComments = appSource.replace(/^\s*\/\/.*$/gm, "");
 // Profile are the tabs that remain unconverted, and the guard below still fails
 // the moment either of them is darkened.
 const mainEnd = appSource.indexOf("</main>");
-const UNCONVERTED_TABS = ["tohi", "profile"];
+const UNCONVERTED_TABS = ["profile"];
 const unconvertedTabBranches = UNCONVERTED_TABS
   .map((key) => {
     const start = appSource.indexOf(`{activeTab === "${key}" &&`);
@@ -128,7 +128,7 @@ featureCheck(
   // one of its surfaces had a night presentation. What is protected is unchanged
   // and slightly stronger: exactly one flag, derived from nothing but activeTab
   // and the existing planNight signal.
-  /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\| activeTab === "home" \|\| activeTab === "waits"\)\s*&&\s*\n?\s*planNight;/.test(
+  /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\|\s*\n?\s*activeTab === "home" \|\|\s*\n?\s*activeTab === "waits" \|\|\s*\n?\s*activeTab === "tohi"\)\s*&&\s*\n?\s*planNight;/.test(
     appSource
   ) &&
     /const planNight = parkPresenceTheme\.isNight;/.test(appSource) &&
@@ -142,7 +142,7 @@ featureCheck(
 );
 
 featureCheck(
-  "the three converted tabs, and only those, drive the shell",
+  "the four converted tabs, and only those, drive the shell",
   // Exact set, not a substring match: adding an unconverted tab fails here, and
   // so does dropping a converted one.
   (() => {
@@ -151,7 +151,9 @@ featureCheck(
     );
     if (!m) return false;
     const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)].map((x) => x[1]).sort();
-    return tabs.join(",") === "home,plan,waits";
+    // 64B-2E-2 added tohi. Exact set, so adding an unconverted tab fails here
+    // and so does dropping a converted one.
+    return tabs.join(",") === "home,plan,tohi,waits";
   })() &&
     // and the tabs that are NOT converted are provably absent from it
     UNCONVERTED_TABS.every(
@@ -163,10 +165,10 @@ featureCheck(
   true
 );
 
-// Both converted content tabs are activated through the SAME flag, each pinned
+// Every converted content tab is activated through the SAME flag, each pinned
 // to exactly one night prop. Scoped per element: Plan's own components
 // legitimately receive night={planNight}, so a file-wide positive would be wrong.
-for (const tag of ["HomeTab", "WaitsTab"]) {
+for (const tag of ["HomeTab", "WaitsTab", "TohiTab"]) {
   featureCheck(
     `${tag} is activated through that same flag`,
     (() => {
@@ -182,89 +184,29 @@ for (const tag of ["HomeTab", "WaitsTab"]) {
   );
 }
 
-// The temporary prepare-then-activate gate.
-//
-// 63C-1 parked a deliberate night={false} on <WaitsTab /> while the Waits night
-// presentation was prepared but inactive, and 63C-2 restored the file-wide
-// negative once Waits was activated. 64B-2E-1 is the same pattern for TOHI: the
-// approved TOHI night presentation now exists in TohiTab.jsx but is held shut by
-// a literal false, and 64B-2E-2 activates it after visual QA.
-//
-// So the file-wide prohibition is narrowed here to permit EXACTLY ONE gate, on
-// exactly one element, and every other property it protected is asserted
-// explicitly below rather than left implied.
-//
-// >>> 64B-2E-2 MUST RESTORE THE FILE-WIDE "no temporary false gate" FORM <<<
-// Once TOHI joins the shared shell flag, this block reverts to the stronger
-// !/night=\{false\}/.test(appSource) check, exactly as 63C-2 did for Waits.
-// Leaving the narrowed form in place after activation would let a future gate be
-// parked indefinitely without anyone noticing.
-
-const tohiCallSlice = (() => {
-  const open = appSource.indexOf("<TohiTab");
-  if (open < 0) return "";
-  const close = appSource.indexOf("/>", open);
-  return close > open ? appSource.slice(open, close) : "";
-})();
-
 featureCheck(
-  "exactly one temporary night gate exists in App, and it is TohiTab's",
-  tohiCallSlice.length > 0 &&
-    // exactly one gate in the whole file
-    (appSource.match(/night=\{false\}/g) || []).length === 1 &&
-    // and it is inside the TohiTab element specifically
-    /night=\{false\}/.test(tohiCallSlice),
+  "no temporary night gate survives anywhere in App",
+  // 63C-1 parked a deliberate night={false} on <WaitsTab /> while the Waits
+  // night presentation was prepared but inactive, and 63C-2 restored this
+  // file-wide negative once Waits was activated. 64B-2E-1 did the same for TOHI
+  // and 64B-2E-2 restores it again — stronger than the element-scoped form it
+  // needed while the gate existed.
+  //
+  // The narrowed 64B-2E-1 block that permitted exactly one TohiTab gate, and the
+  // restore-reminder it carried, are both deliberately gone: the gate they
+  // described no longer exists, so keeping them would let a future gate be
+  // parked indefinitely without anyone noticing.
+  !/night=\{false\}/.test(appSource),
   true
 );
 
 featureCheck(
-  "the gated tab receives a literal, never a derived night value",
-  // TohiTab must not be wired to either shared flag while it is gated. This is
-  // what stops 64B-2E-1 from silently becoming 64B-2E-2.
-  tohiCallSlice.length > 0 &&
-    !/night=\{shellNight\}/.test(tohiCallSlice) &&
-    !/night=\{planNight\}/.test(tohiCallSlice) &&
-    (tohiCallSlice.match(/night=\{[^}]*\}/g) || []).join(",") === "night={false}",
-  true
-);
-
-featureCheck(
-  "the already-converted tabs carry no literal false gate",
-  // Home and Waits finished their prepare-then-activate cycles in 62B-2F-2 and
-  // 63C-2. Neither may regress to a parked gate.
-  ["HomeTab", "WaitsTab"].every((tag) => {
-    const open = appSource.indexOf(`<${tag}`);
-    if (open < 0) return false;
-    const close = appSource.indexOf("/>", open);
-    if (close < 0) return false;
-    return !/night=\{false\}/.test(appSource.slice(open, close));
-  }),
-  true
-);
-
-featureCheck(
-  "TOHI is still listed as unconverted while its night presentation is gated",
-  UNCONVERTED_TABS.includes("tohi") && UNCONVERTED_TABS.includes("profile"),
-  true
-);
-
-featureCheck(
-  "TOHI is still absent from the shared shell-night membership",
-  (() => {
-    const m = appSource.match(
-      /const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*\n?\s*planNight;/
-    );
-    if (!m) return false;
-    const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)].map((x) => x[1]).sort();
-    return tabs.join(",") === "home,plan,waits" && !tabs.includes("tohi");
-  })(),
-  true
-);
-
-featureCheck(
-  "Profile and onboarding remain day-only alongside the gated TOHI tab",
-  // Neither may pick up the dark shell while TOHI is being prepared. Onboarding
-  // is checked at its own element because it is not an activeTab branch.
+  "Profile and onboarding remain day-only after the TOHI activation",
+  // Retained from the 64B-2E-1 block, which is the right home for it now that
+  // Profile is the only unconverted content tab. Onboarding is checked at its
+  // own element because it is not an activeTab branch, and the slice is bounded
+  // so a night prop belonging to a later component cannot be mistaken for one of
+  // onboarding's.
   (() => {
     const profile = (() => {
       const start = appSource.indexOf('{activeTab === "profile" &&');
@@ -272,9 +214,6 @@ featureCheck(
       const end = appSource.indexOf("</main>");
       return end > start ? appSource.slice(start, end) : appSource.slice(start);
     })();
-    // Scoped to the OnboardingFlow ELEMENT. An unbounded `<OnboardingFlow[\s\S]*?`
-    // would run past the element and match a night prop belonging to some later
-    // component, which is a false positive rather than a real finding.
     const onboarding = (() => {
       const open = appSource.indexOf("<OnboardingFlow");
       if (open < 0) return "";
@@ -291,7 +230,6 @@ featureCheck(
   })(),
   true
 );
-
 
 featureCheck(
   "no second night-mode mechanism is introduced anywhere in App",

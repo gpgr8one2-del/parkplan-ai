@@ -825,15 +825,29 @@ invariantCheck(
 );
 
 invariantCheck(
-  "shellNight membership is unchanged — TOHI is still day-only",
+  "TOHI joined the shared shell-night membership, and navigation hiding is unaffected by it",
+  // 64B-2E-2 activated TOHI night, so the old "TOHI is still day-only" form
+  // would now assert the opposite of the product. Updated, not dropped — and
+  // deliberately strengthened, because the thing this harness protects is that
+  // hiding BottomTabs stays tied to the real software keyboard and has nothing
+  // to do with the mode.
   (() => {
     const m = appCode.match(
       /const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*\n?\s*planNight;/
     );
     if (!m) return false;
     const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)].map((x) => x[1]).sort();
-    return tabs.join(",") === "home,plan,waits";
-  })(),
+    return tabs.join(",") === "home,plan,tohi,waits";
+  })() &&
+    // The suppression expression names the keyboard flag and the active tab, and
+    // mentions no mode value at all.
+    /\{!\(activeTab === "tohi" && tohiComposerKeyboardOpen\) && \(/.test(appCode) &&
+    !/tohiComposerKeyboardOpen[^\n]*(shellNight|planNight|night)/.test(appCode) &&
+    !/(shellNight|planNight)[^\n]*tohiComposerKeyboardOpen/.test(appCode) &&
+    // and the keyboard rule itself still knows nothing about the mode
+    !/\bnight\b/.test(
+      (tohiCode.match(/export function isComposerKeyboardOpen\(\{[\s\S]*?\n\}/) || [""])[0]
+    ),
   true
 );
 
