@@ -121,11 +121,22 @@ Same-day completed activity behavior:
 - When the user asks whether they already rode or finished a specific attraction, answer from "Completed activity today" and completed ride IDs only. If it is present, say yes and mention the completed attraction by name; include the time if available. If it is not present, say you do not see it in today's completed activity instead of guessing.
 - Use today's completed activity to avoid treating finished attractions as unfinished priorities. Do not recommend an immediate repeat unless the family asks for a re-ride or the context clearly makes it a casual optional idea.
 - Do not invent completed attractions, counts, times, waits, or lands. If completed activity details are absent, be honest about what you can and cannot see.
-- Transportation advice must consider the guest's current park, destination, and direct transit options. Do not assume a resort is a quick move just because it has Skyliner access.
-- From Magic Kingdom, Wilderness Lodge is a nearby resort/lunch-break option by boat/bus, but Pop Century is not a quick Skyliner move from Magic Kingdom.
-- Skyliner logic mainly applies to EPCOT, Hollywood Studios, Riviera, Caribbean Beach, Pop Century, and Art of Animation.
+Transportation routing rules (apply whenever transportation is discussed):
+- FIRST identify the DESTINATION being asked about. The "Transportation context" block covers exactly one journey: the current park to the guest's SELECTED resort. It is authoritative for that journey and for nothing else.
+- If the destination IS the selected resort (getting back, heading to the room, a resort break): the structured direct access is AUTHORITATIVE. State that route first, by name, before discussing anything else.
+- If the question is PARK-TO-PARK: do not apply or even mention the selected-resort route as the answer. Park-to-park routing is not represented in this dataset. Say current official guidance should be checked, and do not invent a route.
+- If the destination is ANOTHER resort, a hotel the guest is not staying at, Disney Springs, or any other location: do not reuse the selected resort's direct access as if it applied. Say that route is not verified by the trip setup, and recommend current official guidance rather than inventing one.
+- If the destination is AMBIGUOUS ("how do we get there?", "what's the best way?"), ask which destination the guest means. Do not silently answer with the selected-resort route.
+- For the selected-resort journey only: if every listed mode is direct, do not present a transfer, a Transportation and Ticket Center hop, or any multi-leg journey as the standard or preferred route.
+- Describe a transfer ONLY when the structured mode explicitly marks one. Otherwise there is no transfer.
+- Never contradict the structured direct access using general Disney knowledge, resort area, or geography. Do not infer a monorail, Skyliner, boat, walking route, or transfer from which park the guest is in.
+- Never say a route runs only "if one is running" when the structured data confirms it. That manufactures doubt about verified trip data.
+- Never claim fastest, quickest, or any comparative travel time, for any destination. This request carries no live transportation timing. Say "the direct option", "usually the simplest route", or "the option that avoids a transfer".
+- If structured route data is unavailable, say the route cannot be verified from the trip setup and recommend checking current official signage or the My Disney Experience app.
+- If the guest corrects a route ("doesn't a direct bus run from here?"), answer from the same structured data and correct any earlier unsupported route instead of defending it.
+- The resort's general transportation list is descriptive only. A mode existing somewhere on property never overrides the park-specific direct access.
 - If the guest has a dining reservation or planned meal near the current park, use that as the natural reset point before suggesting a far resort break.
-- If resortProfile is available, use its directAccess and breakStrategy before suggesting a resort break.
+- Use directAccess and breakStrategy before suggesting a resort break. breakStrategy describes effort and tone; it never determines the transportation mode.
 - Do not recommend park → far resort → another resort movements unless the user clearly has enough time and wants a full reset.
 - Do not suggest a resort as a quick break just because it is geographically nearby or has a transportation mode somewhere on property. Direct access from the current park matters.
 - If GPS/current location context includes a nearest anchor, use it carefully. Treat it as "near X," not proof that the guest is in line for X unless current activity says they tapped In Line.
@@ -702,33 +713,144 @@ function buildLocationContext(locationContext, currentLand) {
   return parts.filter(Boolean).join(" · ");
 }
 
-function buildTransportationContext(activePark) {
-  const park = String(activePark || "").toLowerCase();
+// 64C-2. How each structured directAccess value is described in the prompt.
+//
+// These are the values that already exist in resortProfiles.js. Nothing here is
+// a route table: it is a label for a value the data already carries, so adding a
+// resort or a mode to that file needs no change here beyond a new label.
+//
+// The split that matters is direct vs transfer-required. The structured data
+// marks a transfer explicitly (monorail_transfer, walking_to_ttc,
+// skyliner_via_epcot); every other value is a direct route. A transfer may be
+// described ONLY when the value marks one.
+const DIRECT_ROUTE_LABELS = {
+  bus: "direct Disney bus",
+  monorail: "monorail",
+  skyliner: "Disney Skyliner",
+  walking: "walking path",
+  water_taxi: "boat / water taxi",
+};
 
-  if (park === "magic_kingdom") {
+const TRANSFER_ROUTE_LABELS = {
+  monorail_transfer: "monorail with a transfer",
+  walking_to_ttc: "walking to the Transportation and Ticket Center, then a transfer",
+  skyliner_via_epcot: "Disney Skyliner via an EPCOT transfer",
+};
+
+function describeStructuredRoute(mode) {
+  if (DIRECT_ROUTE_LABELS[mode]) {
+    return { mode, label: DIRECT_ROUTE_LABELS[mode], requiresTransfer: false };
+  }
+  if (TRANSFER_ROUTE_LABELS[mode]) {
+    return { mode, label: TRANSFER_ROUTE_LABELS[mode], requiresTransfer: true };
+  }
+  // An unrecognised value is reported as unverified rather than guessed at.
+  return { mode, label: `${mode} (not a recognised structured mode)`, requiresTransfer: null };
+}
+
+// 64C-2. Transportation context, built from the guest's OWN resort profile.
+//
+// This used to take only activePark and emit a hardcoded block: at Magic Kingdom
+// it listed Wilderness Lodge, Contemporary, Polynesian and Grand Floridian — all
+// monorail/boat resorts — no matter where the family was actually staying. A
+// guest at Port Orleans French Quarter, whose structured route is a direct bus,
+// was handed a monorail framing and the model blended the two into a
+// Monorail-to-TTC-then-bus answer that the data flatly contradicts.
+//
+// So the park-only framing is gone. The route now comes from
+// resortProfile.directAccess[activePark] and nothing else. breakStrategy still
+// appears, but only as effort/tone — it never decides a mode. The general
+// transportation[] list is descriptive only and is labelled as such, because a
+// mode existing somewhere on property says nothing about this park's route.
+function buildTransportationContext(activePark, familyProfile) {
+  const profile = familyProfile?.resortProfile;
+  const parkKey = String(activePark || "").trim();
+  const header =
+    "Transportation context — route from the CURRENT PARK to the SELECTED RESORT only:";
+
+  if (!profile) {
     return [
-      "Transportation/resort break context:",
-      "- Current park is Magic Kingdom.",
-      "- Wilderness Lodge is a nearby Magic Kingdom resort break/lunch option by boat/bus.",
-      "- Contemporary, Polynesian, and Grand Floridian are also nearby MK-area resort options depending on route and time.",
-      "- Pop Century, Art of Animation, Caribbean Beach, and Riviera are not quick Skyliner moves from Magic Kingdom.",
-      "- Do not suggest going from Magic Kingdom to Pop Century for a quick break unless the guest explicitly wants a full resort-room reset and has enough time.",
+      header,
+      "- No Disney resort profile is selected (off-property, unknown, or not yet set up).",
+      "- Structured route data is UNAVAILABLE. Do not state or imply any specific route.",
+      "- This block never covers park-to-park travel or any other destination.",
+      "- Say the route cannot be verified from the trip setup and recommend checking current official signage or the My Disney Experience app.",
     ].join("\n");
   }
 
-  if (park === "epcot" || park === "hollywood") {
+  const routes = profile.directAccess?.[parkKey];
+
+  if (!Array.isArray(routes) || routes.length === 0) {
     return [
-      "Transportation/resort break context:",
-      "- Skyliner can be useful for EPCOT, Hollywood Studios, Riviera, Caribbean Beach, Pop Century, and Art of Animation.",
-      "- Still consider walking distance, transfer time, heat, rain, tired kids, and whether the guest needs a quick break or a full resort-room reset.",
+      header,
+      `- Resort: ${profile.name || "unknown"}.`,
+      `- Current park: ${parkKey || "unknown"}.`,
+      "- Structured route data for this park is UNAVAILABLE for this resort.",
+      "- Do not infer a route from geography, from the resort area, or from general Disney knowledge.",
+      "- This block never covers park-to-park travel or any other destination.",
+      "- Say the route cannot be verified and recommend checking current official signage or the My Disney Experience app.",
     ].join("\n");
   }
 
-  return [
-    "Transportation/resort break context:",
-    "- Consider current park, destination, direct transportation, family energy, weather, and time cost before recommending a resort break.",
-    "- Do not assume any resort is a quick move unless the current park has a direct/easy route.",
-  ].join("\n");
+  const described = routes.map(describeStructuredRoute);
+  const direct = described.filter((r) => r.requiresTransfer === false);
+  const transfers = described.filter((r) => r.requiresTransfer === true);
+  const unknown = described.filter((r) => r.requiresTransfer === null);
+
+  const lines = [
+    header,
+    `- Resort: ${profile.name || "unknown"}.`,
+    `- Current park: ${parkKey}.`,
+    `- Structured direct access, current park to the selected resort: ${formatList(routes)}.`,
+  ];
+
+  if (direct.length) {
+    lines.push(
+      `- DIRECT route(s), no transfer required: ${direct.map((r) => r.label).join("; ")}.`,
+      "- State this route first ONLY when the guest is asking how to reach or return to this selected resort. It is the direct option and normal scheduled service."
+    );
+  }
+
+  if (transfers.length) {
+    lines.push(
+      `- TRANSFER-REQUIRED route(s): ${transfers.map((r) => r.label).join("; ")}.`,
+      "- A transfer is genuinely required here, so describing the transfer is correct."
+    );
+  } else {
+    lines.push(
+      "- No transfer is indicated for this route. Do not describe a transfer, a Transportation and Ticket Center hop, or any multi-leg journey as the standard or preferred way."
+    );
+  }
+
+  if (unknown.length) {
+    lines.push(
+      `- Unrecognised structured value(s): ${formatList(unknown.map((r) => r.mode))}. Treat these as unverified.`
+    );
+  }
+
+  const otherModes = (profile.transportation || []).filter(
+    (mode) => !routes.includes(mode)
+  );
+
+  if (otherModes.length) {
+    lines.push(
+      `- Other modes that exist at this resort but are NOT this park's route: ${formatList(otherModes)}. Descriptive only — these must never override the structured direct access above.`
+    );
+  }
+
+  lines.push(
+    "- No live transportation timing is available in this request. Do not claim fastest, quickest, or a comparative travel time. Say 'the direct option', 'usually the simplest route', or 'the option that avoids a transfer'.",
+    "- DESTINATION SCOPE: this block answers only 'how do we get from this park to our resort'. For a park-to-park question, another resort, or any other destination, IGNORE this block as the answer — it is not verified for those journeys. Say current official guidance should be checked rather than inventing a route.",
+    "- If the destination is unclear, ask which destination the guest means before answering."
+  );
+
+  if (profile.breakStrategy?.[parkKey]) {
+    lines.push(
+      `- Break effort/tone for this park (does NOT determine the mode): ${profile.breakStrategy[parkKey]}`
+    );
+  }
+
+  return lines.join("\n");
 }
 
 
@@ -1157,7 +1279,7 @@ function buildDynamicContext(sessionData = {}) {
     buildResortProfileContext(familyProfile, activePark),
     buildTripPlanContext({ tripPlan, mustDoExperiences, dayGamePlan }),
     buildLocationContext(locationContext, currentLand),
-    buildTransportationContext(activePark),
+    buildTransportationContext(activePark, familyProfile),
     buildCurrentActivityContext(currentActivityContext || currentActivity),
     buildWeatherContext(weather, weatherMode),
     buildDataFreshnessContext(dataFreshness),
