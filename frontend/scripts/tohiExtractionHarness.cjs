@@ -140,6 +140,9 @@ featureCheck(
         "chatLoading",
         "hasPersonalizedAccess",
         "message",
+        // 64B-2E-1: the explicit, parent-owned night switch. App holds it shut
+        // with a literal false; the wiring check below pins that.
+        "night",
         "onChatSubmit",
         // 64B-2C: TohiTab reports its own composer's keyboard state upward. A
         // report, not a decision — App still owns what happens next.
@@ -161,6 +164,8 @@ featureCheck(
     /setMessage=\{setMessage\}/.test(tohiCall) &&
     /onChatSubmit=\{handleChatSubmit\}/.test(tohiCall) &&
     /onComposerKeyboardChange=\{setTohiComposerKeyboardOpen\}/.test(tohiCall) &&
+    // 64B-2E-1: the gate is a literal, never a derived value.
+    /night=\{false\}/.test(tohiCall) &&
     /renderLockedFeatureCard=\{renderLockedFeatureCard\}/.test(tohiCall) &&
     /card=\{card\}/.test(tohiCall) &&
     /button=\{button\}/.test(tohiCall),
@@ -333,7 +338,11 @@ invariantCheck(
     (presentation.match(/matchMedia\(/g) || []).length ===
       (presentation.match(/matchMedia\("\(prefers-reduced-motion: reduce\)"\)/g) || [])
         .length &&
-    !/\bnight\b|shellNight|planNight|shellTokens|getTohiAppShellTheme/.test(presentation),
+    // 64B-2E-1: night is now an approved explicit prop, so the ban narrowed from
+    // the word to the DERIVATION. TohiTab still may not consult the shared shell
+    // flags or the theme runtime to decide its own mode.
+    !new RegExp("shellNight|planNight|shellTokens|getTohiAppShellTheme|isTohiNightMode|TOHI_NIGHT_SHELL|prefers-color-scheme").test(presentation) &&
+    /night = false,/.test(presentation),
   true
 );
 
@@ -442,7 +451,9 @@ invariantCheck(
   !/localStorage|sessionStorage/.test(presentation) &&     // chat persistence
     !/Start Over|Retry|Try again/i.test(presentation) &&   // retry / start over
     !/timestamp|reaction|onEdit|contentEditable/i.test(presentation) &&
-    !/\bnight\b/.test(presentation) &&                    // night support
+    // 64B-2E-1 delivered night; replaced by the narrower derivation ban rather
+    // than dropped.
+    !new RegExp("shellNight|planNight|shellTokens|getTohiAppShellTheme|isTohiNightMode|TOHI_NIGHT_SHELL|prefers-color-scheme").test(presentation) &&
     // approved-but-bounded: autoscroll may never focus the field for the user
     !/autoFocus/.test(presentation) &&
     // approved-but-bounded: the viewport is observed, never written to, and no
