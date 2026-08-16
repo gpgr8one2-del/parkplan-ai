@@ -1297,8 +1297,56 @@ function buildPlanTabState({ activePark, timeContext = {} } = {}) {
 
 
 
+// 64C-1. Boundary-aware term matching for the specificity checks below.
+//
+// These lists were matched with plain substring containment, so short entries
+// counted as specificity from inside completely unrelated words:
+//   "eat"  matched weather, heat, great, seat, theater
+//   "ac"   matched back, place, space
+//   "show" matched shower
+//   "rest" matched restaurant, forest
+//
+// That is why "The rain stopped and the weather cleared—where should we go now?"
+// routed as a specific question: "weather" contains "eat". The terms themselves
+// are fine and are kept exactly as they are — only the MATCHING is corrected, so
+// a term now has to appear as its own word or phrase.
+//
+// Boundaries are written as explicit character alternatives rather than \b
+// because several terms legitimately contain apostrophes ("rock 'n'"), and \b
+// does not treat an apostrophe as part of a word. Lookbehind would read more
+// neatly but is not available on older iOS Safari, which is exactly the device
+// this app is built for.
+function escapeRegExpLiteral(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const SPECIFIC_TERM_PATTERN_CACHE = new Map();
+
+function buildSpecificTermPattern(term) {
+  const cached = SPECIFIC_TERM_PATTERN_CACHE.get(term);
+  if (cached) return cached;
+
+  // Multiword terms tolerate any run of whitespace between their words.
+  const words = String(term).trim().split(/\s+/).map(escapeRegExpLiteral);
+  const pattern = new RegExp(
+    `(?:^|[^a-z0-9'])${words.join("\\s+")}(?:$|[^a-z0-9'])`,
+    "i"
+  );
+
+  SPECIFIC_TERM_PATTERN_CACHE.set(term, pattern);
+  return pattern;
+}
+
+function messageContainsSpecificTerm(text, term) {
+  return buildSpecificTermPattern(term).test(text);
+}
+
 function hasSpecificRidePlaceOrActionInMessage(message = "") {
-  const text = String(message || "").toLowerCase();
+  // Curly apostrophes are folded to straight ones so terms like "rock 'n'" match
+  // what a phone keyboard actually produces.
+  const text = String(message || "")
+    .toLowerCase()
+    .replace(/[’']/g, "'");
 
   // "Where should we go to get AC/food/a break?" is not open-ended.
   // It has a clear goal, so send it to AI instead of re-asking the energy question.
@@ -1306,16 +1354,23 @@ function hasSpecificRidePlaceOrActionInMessage(message = "") {
     return true;
   }
 
+  // Same goal words, same intent — but matched as whole words, so "the weather
+  // cleared—where should we go now?" is no longer read as "where should we go …
+  // to eat".
+  const goalTerms = [
+    "ac",
+    "air condition",
+    "cool",
+    "food",
+    "snack",
+    "eat",
+    "rest",
+    "break",
+  ];
+
   if (
     text.includes("where should we go") &&
-    (text.includes("ac") ||
-      text.includes("air condition") ||
-      text.includes("cool") ||
-      text.includes("food") ||
-      text.includes("snack") ||
-      text.includes("eat") ||
-      text.includes("rest") ||
-      text.includes("break"))
+    goalTerms.some((term) => messageContainsSpecificTerm(text, term))
   ) {
     return true;
   }
@@ -1385,7 +1440,8 @@ function hasSpecificRidePlaceOrActionInMessage(message = "") {
     "rest",
   ];
 
-  return specificTerms.some((term) => text.includes(term));
+  // The list is unchanged; only the matching is boundary-aware now.
+  return specificTerms.some((term) => messageContainsSpecificTerm(text, term));
 }
 
 function isPlanningDepthQuestion(message = "") {
@@ -1408,6 +1464,121 @@ function isPlanningDepthQuestion(message = "") {
   );
 }
 
+// 64C-1. Explicit ACTIVE weather intent in a user message.
+//
+// Why this exists: a question naming a real weather condition is already
+// specific. Before this, "What should we do if storms arrive later?" matched the
+// vague phrase "what should" and was intercepted by the energy QUICK CHECK, so
+// the question never reached the AI at all. The user had to say "you didn't
+// answer my question" to get an answer.
+//
+// The vocabulary mirrors utils/weatherAdvice.js, which already recognises these
+// conditions in forecast summaries. This predicate is the same vocabulary applied
+// to what the family typed. It decides ROUTING ONLY — it never asserts that
+// weather is actually coming, and no advice is generated here. The AI answers
+// from the real forecast, which handleChatSubmit already sends.
+//
+// Word-boundary matching is mandatory, not stylistic. Unbounded substrings would
+// misread ride names: "Barnstormer" contains "storm" and "rainforest" contains
+// "rain". Bare "thunder" is deliberately NOT a condition, because "Big Thunder"
+// is a ride; the ride/place check also runs before this one.
+const WEATHER_CONDITION_PATTERNS = [
+  /\b(?:thunderstorms?|storms?)\b/g,
+  /\blightning\b/g,
+  /\b(?:heavy\s+rain|rain|raining|rains|rainy)\b/g,
+  /\bweather\b/g,
+  // Heat is phrase-scoped on purpose: a bare "hot" would read "hot dog" as a
+  // heat question. "heat" alone is safe because it is not a food or ride word.
+  /\b(?:heat\s+index|heat)\b/g,
+  /\b(?:extremely|really|too|so|very)\s+hot\b/g,
+  /\bhot\s+(?:outside|out|later|today|tomorrow|this\s+afternoon)\b/g,
+  /\bextreme\s+heat\b/g,
+];
+
+// Negation must ATTACH to a specific condition. It is not enough for a negative
+// word to appear somewhere earlier — "I'm not sure if storms arrive later" is a
+// live storm question, and "No rain and extreme heat later" negates only the
+// rain.
+//
+// So the two rules below are ANCHORED to the condition rather than scanning
+// around it. WEATHER_NEGATION_BEFORE must match the text ENDING immediately at
+// the condition (`$`), and WEATHER_NEGATION_AFTER must match the text STARTING
+// immediately at it (`^`). Nothing further away can bind. This is deliberately
+// not a character window: adjacency is structural, so it neither widens with
+// long sentences nor breaks with short ones.
+//
+// Anchoring is also what makes uncertainty safe without a separate rule. In
+// "not sure if storms", "don't know whether it will rain" and "uncertain whether
+// lightning is nearby", the text immediately before the condition ends in "if",
+// "will" and "whether" — none of which is a negation form — so the condition
+// stays active. Uncertainty about weather is still a weather question.
+//
+// Anything the rules do not clearly recognise leaves the condition ACTIVE. The
+// safe direction is routing to the AI, which holds the real forecast; wrongly
+// suppressing a weather question is the defect this phase exists to fix.
+const WEATHER_NEGATION_BEFORE = /\b(?:no|without)\s+(?:chance\s+of\s+|risk\s+of\s+)?$/;
+const WEATHER_NEGATION_AFTER =
+  /^\s*(?:(?:is|are|was|were|will\s+be)\s+not\s+(?:expected|in\s+the\s+forecast|likely)|(?:is|are|was|were)n't\s+(?:expected|in\s+the\s+forecast|likely)|(?:is|are|was|were)\s+over\b|(?:has|have|had)\s+(?:cleared|passed|ended|stopped)|cleared|clearing|stopped|passed|ended|moved\s+out|held\s+off)\b/;
+
+function hasExplicitWeatherIntentInMessage(message = "") {
+  const text = String(message || "")
+    .toLowerCase()
+    .replace(/[’']/g, "'");
+
+  if (!text) return false;
+
+  for (const pattern of WEATHER_CONDITION_PATTERNS) {
+    pattern.lastIndex = 0;
+    let match = pattern.exec(text);
+
+    while (match) {
+      const before = text.slice(0, match.index);
+      const after = text.slice(match.index + match[0].length);
+      const negated =
+        WEATHER_NEGATION_BEFORE.test(before) || WEATHER_NEGATION_AFTER.test(after);
+
+      // One live condition anywhere in the message is enough. Only a message
+      // whose every condition is individually negated falls through to the
+      // existing classification.
+      if (!negated) return true;
+
+      match = pattern.exec(text);
+    }
+  }
+
+  return false;
+}
+
+// 64C-1. The family already told us what the energy QUICK CHECK would ask.
+//
+// Asking "How's everyone's energy right now?" straight after the user said
+// "Everyone is fading" is the same defect wearing different clothes: the question
+// was specific and TOHI asked for information it had just been given.
+//
+// Bounded phrases, not bare words. "tired" alone would catch "tired of waiting",
+// which is impatience with a line rather than a report on the family's state, so
+// a following "of" disqualifies the match.
+const FAMILY_STATE_PATTERNS = [
+  /\b(?:everyone|everybody|we|they|the\s+kids|the\s+little\s+ones|kids)\s+(?:is|are|'re)?\s*fading\b/,
+  /\bstarting\s+to\s+fade\b/,
+  /\b(?:everyone|everybody|we|they|the\s+kids|the\s+little\s+ones|kids|i)\s*(?:is|are|'re|'m|am)\s+(?:really\s+|so\s+|pretty\s+|very\s+)?tired\b(?!\s+of\b)/,
+  /\b(?:exhausted|worn\s+out|wiped\s+out|running\s+on\s+fumes)\b/,
+  /\bstill\s+going\s+strong\b/,
+  /\b(?:plenty\s+of|lots\s+of|tons\s+of)\s+energy\b/,
+  /\bneed\s+(?:a\s+)?break\b/,
+  /\b(?:everyone|everybody|we|they|kids)\s+(?:is|are|'re)?\s*(?:cranky|melting\s+down|done)\b/,
+];
+
+function hasExplicitFamilyStateInMessage(message = "") {
+  const text = String(message || "")
+    .toLowerCase()
+    .replace(/[’']/g, "'");
+
+  if (!text) return false;
+
+  return FAMILY_STATE_PATTERNS.some((pattern) => pattern.test(text));
+}
+
 function isOpenEndedLiveStrategyQuestion(message = "") {
   const text = String(message || "")
     .toLowerCase()
@@ -1416,8 +1587,14 @@ function isOpenEndedLiveStrategyQuestion(message = "") {
     .trim();
 
   if (!text) return false;
+  // 64C-1 precedence. Each escape means "this is already specific enough to
+  // answer, so do not ask a clarifying question first". The ride/place check
+  // stays AHEAD of weather so "Big Thunder" is settled as a ride before any
+  // weather vocabulary is consulted.
   if (isPlanningDepthQuestion(text)) return false;
   if (hasSpecificRidePlaceOrActionInMessage(text)) return false;
+  if (hasExplicitWeatherIntentInMessage(text)) return false;
+  if (hasExplicitFamilyStateInMessage(text)) return false;
 
   const exactOpenEndedQuestions = new Set([
     "what should we do next",
@@ -1441,6 +1618,10 @@ function isOpenEndedLiveStrategyQuestion(message = "") {
     "whats good right now",
     "thoughts",
     "worth it",
+    // 64C-1: a deliberate correction. Production sent this straight to the AI
+    // only because it matched no vague phrase — an accident, not a decision. It
+    // is exactly as open-ended as "what should we do next", so it belongs here.
+    "what would you recommend",
   ]);
 
   if (exactOpenEndedQuestions.has(text)) {
