@@ -164,8 +164,8 @@ featureCheck(
     /setMessage=\{setMessage\}/.test(tohiCall) &&
     /onChatSubmit=\{handleChatSubmit\}/.test(tohiCall) &&
     /onComposerKeyboardChange=\{setTohiComposerKeyboardOpen\}/.test(tohiCall) &&
-    // 64B-2E-1: the gate is a literal, never a derived value.
-    /night=\{false\}/.test(tohiCall) &&
+    // 64B-2E-2: TOHI is activated through the one shared shell decision.
+    /night=\{shellNight\}/.test(tohiCall) &&
     /renderLockedFeatureCard=\{renderLockedFeatureCard\}/.test(tohiCall) &&
     /card=\{card\}/.test(tohiCall) &&
     /button=\{button\}/.test(tohiCall),
@@ -478,16 +478,20 @@ invariantCheck(
 /* ------------------------------------------------------- shell and trust -- */
 
 invariantCheck(
-  "TOHI remains excluded from shellNight",
+  "TOHI reads the shared shell decision, and takes nothing else from the shell",
+  // 64B-2E-2 activated TOHI, so the old "excluded" form is superseded. The
+  // boundary it protected is kept: TohiTab receives the mode as a value and is
+  // still handed none of App's shell internals.
   (() => {
     const m = appCode.match(
       /const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*\n?\s*planNight;/
     );
     if (!m) return false;
     const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)].map((x) => x[1]).sort();
-    return tabs.join(",") === "home,plan,waits";
+    return tabs.join(",") === "home,plan,tohi,waits";
   })() &&
-    !/shellNight|shellTokens|pageStyle/.test(tohiCall),
+    /night=\{shellNight\}/.test(tohiCall) &&
+    !/shellTokens|pageStyle/.test(tohiCall),
   true
 );
 

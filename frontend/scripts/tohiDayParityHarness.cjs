@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
-// 64B-2E-1 TOHI day-value proof.
+// TOHI day-value proof (64B-2E-1, still enforced after 64B-2E-2 activation).
 //
 // Renders every meaningful TOHI scenario at day in BOTH this tree and a detached
 // worktree of the pinned pre-night baseline, then compares the two outputs byte
-// for byte. Nothing is normalized: 64B-2E-1 is a preparation phase, so there is
-// no approved day change to normalize away and any day diff at all is a
-// regression.
+// for byte. Nothing is normalized: night was added without any approved day
+// change, so there is nothing to normalize away and any day diff at all is a
+// regression. Activation does not relax this — day mode must still render the
+// pre-night bytes exactly.
 //
 // Why rendering rather than reading ternaries: a day branch with a mistyped hex
 // still reads correctly, and a `night ? x : y` can silently reorder a day style
@@ -81,7 +82,7 @@ const sections = (html) =>
     s.replace(/^===== /, "").replace(/ =====$/, "")
   );
 
-console.log("TOHI day render parity (64B-2E-1)");
+console.log("TOHI day render parity (64B-2E-1/2E-2)");
 
 const currentDay = render(frontendRoot, false);
 const currentNight = render(frontendRoot, true);
@@ -102,7 +103,7 @@ check(
 
 check("night output actually differs from day", currentDay !== currentNight, true);
 
-/* ------------------------------------------------- the gate is really shut -- */
+/* -------------------------------------------------- TOHI night is activated -- */
 
 const appSource = fs.readFileSync(path.join(frontendRoot, "src", "App.jsx"), "utf8");
 const stripComments = (t) =>
@@ -112,31 +113,45 @@ const stripComments = (t) =>
     .replace(/^\s*\/\/.*$/gm, "");
 const appCode = stripComments(appSource);
 
-check(
-  "production App passes the literal inactive gate night={false} to TohiTab",
-  /<TohiTab[\s\S]*?night=\{false\}[\s\S]*?\/>/.test(appCode),
-  true
-);
+// 64B-2E-1's gate assertions are gone: they required the literal night={false}
+// that 64B-2E-2 removed, so keeping them would assert the opposite of the
+// product. They are REPLACED, not dropped — what mattered about them was that
+// TOHI's mode has exactly one source, and that is still asserted below.
 
 check(
-  "App never passes a derived night value to TohiTab",
-  // The TohiTab call must not receive shellNight/planNight under any name.
+  "TOHI is activated only through night={shellNight}",
   (() => {
     const start = appCode.indexOf("<TohiTab");
     if (start < 0) return false;
     const call = appCode.slice(start, appCode.indexOf("/>", start));
-    return !/night=\{(?!false\})/.test(call);
+    const nightProps = call.match(/night=\{[^}]*\}/g) || [];
+    return nightProps.length === 1 && nightProps[0] === "night={shellNight}";
   })(),
   true
 );
 
 check(
-  "TOHI is still excluded from shellNight — the tab stays unconverted",
+  "no temporary literal gate survives anywhere in App",
+  !/night=\{false\}/.test(appCode),
+  true
+);
+
+check(
+  "TOHI is part of the shared shell-night membership, which is exactly the four converted tabs",
   (() => {
     const m = appCode.match(/const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*\n?\s*planNight;/);
     if (!m) return false;
     const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)].map((x) => x[1]).sort();
-    return tabs.join(",") === "home,plan,waits";
+    return tabs.join(",") === "home,plan,tohi,waits";
+  })(),
+  true
+);
+
+check(
+  "Profile is still excluded, so activation did not darken every tab",
+  (() => {
+    const m = appCode.match(/const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*\n?\s*planNight;/);
+    return m ? !/activeTab === "profile"/.test(m[1]) : false;
   })(),
   true
 );

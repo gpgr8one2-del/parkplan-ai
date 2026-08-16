@@ -824,23 +824,25 @@ invariantCheck(
 );
 
 invariantCheck(
-  "TOHI night is prop-driven only, and TOHI is still excluded from shellNight",
-  // 64B-2E-1 narrowed this instead of dropping it. TohiTab now HAS an approved
-  // night presentation, so a blanket ban on the word would assert the opposite
-  // of the product. What must stay impossible is TohiTab DERIVING the mode: the
+  "TOHI night is prop-driven only, and App owns the single decision",
+  // 64B-2E-1 narrowed this instead of dropping it; 64B-2E-2 updates the two
+  // clauses that described the inactive gate. What must stay impossible is
+  // unchanged and is the whole point: TohiTab may never DERIVE the mode. The
   // shared shell flags, the theme runtime and the colour-scheme query are all
-  // still forbidden inside it, and App must still pass the inactive literal.
+  // still forbidden inside it — only the parent decides.
   /night = false,/.test(tohiCode) &&
     /const t = night \? TOHI_NIGHT : DAY;/.test(tohiCode) &&
     !new RegExp("shellNight|planNight|shellTokens|getTohiAppShellTheme|isTohiNightMode|TOHI_NIGHT_SHELL|prefers-color-scheme").test(tohiCode) &&
-    /<TohiTab[\s\S]*?night=\{false\}[\s\S]*?\/>/.test(appCode) &&
+    // 64B-2E-2: activated through the shared flag, and through nothing else.
+    /<TohiTab[\s\S]*?night=\{shellNight\}[\s\S]*?\/>/.test(appCode) &&
+    !/night=\{false\}/.test(appCode) &&
     (() => {
       const m = appCode.match(
         /const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*\n?\s*planNight;/
       );
       if (!m) return false;
       const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)].map((x) => x[1]).sort();
-      return tabs.join(",") === "home,plan,waits";
+      return tabs.join(",") === "home,plan,tohi,waits";
     })(),
   true
 );

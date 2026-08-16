@@ -2016,8 +2016,8 @@ console.log("Extraction integrity");
         /const planShellNight\s*=\s*activeTab === "plan"\s*&&\s*planNight;/.test(appSource)) &&
       // Post-62B-2F-2 flag: if shellNight exists it must be derived from the
       // converted tabs plus the existing planNight signal — nothing else. Waits
-      // joined the converted set in 63C-2, once its night presentation was
-      // complete; TOHI and Profile stay out.
+      // joined the converted set in 63C-2 and TOHI in 64B-2E-2, each once its
+      // night presentation was complete; Profile stays out.
       (!/const shellNight/.test(appSource) ||
         (() => {
           const m = appSource.match(
@@ -2028,15 +2028,15 @@ console.log("Extraction integrity");
             .map((x) => x[1])
             .sort();
           return (
-            tabs.join(",") === "home,plan,waits" &&
-            !/tohi|profile/.test(m[1]) &&
+            tabs.join(",") === "home,plan,tohi,waits" &&
+            !/profile/.test(m[1]) &&
             /const planNight\s*=/.test(appSource)
           );
         })()) &&
       // BottomTabs never decides night for itself
       !/isNight|prefers-color-scheme|new Date\(|getHours/.test(bottomTabsSource) &&
       // no per-tab night styling for the tabs that are still unconverted
-      !/activeTab === "(tohi|profile)"[^\n]*night/i.test(appSource) &&
+      !/activeTab === "profile"[^\n]*night/i.test(appSource) &&
       // 61E Plan content corrections intact
       (planTabSource.match(
         /color:\s*getChipAccent\("#(92400E|5B21B6|0369A1|E11D48)",\s*palette\)/g
