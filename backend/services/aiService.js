@@ -1,5 +1,14 @@
 const Anthropic = require("@anthropic-ai/sdk");
 const logger = require("../logger");
+// 64C-3C. The audited park-to-park route table is the single source of truth for
+// travel between theme parks. It is imported, never re-stated here: a second copy
+// of these facts would drift from the verified one and there would be no way to
+// tell which had. See backend/data/parkToParkRoutes.js for sources and dates.
+const {
+  PARK_TO_PARK_PARK_IDS,
+  PARK_TO_PARK_ROUTES,
+  PARK_TO_PARK_OPERATIONAL_CAVEAT,
+} = require("../data/parkToParkRoutes");
 
 const ANTHROPIC_MODEL = "claude-sonnet-4-5-20250929";
 
@@ -124,7 +133,7 @@ Same-day completed activity behavior:
 Transportation routing rules (apply whenever transportation is discussed):
 - FIRST identify the DESTINATION being asked about. The "Transportation context" block covers exactly one journey: the current park to the guest's SELECTED resort. It is authoritative for that journey and for nothing else.
 - If the destination IS the selected resort (getting back, heading to the room, a resort break): the structured direct access is AUTHORITATIVE. State that route first, by name, before discussing anything else.
-- If the question is PARK-TO-PARK: do not apply or even mention the selected-resort route as the answer. Park-to-park routing is not represented in this dataset. Say current official guidance should be checked, and do not invent a route.
+- If the question is PARK-TO-PARK (theme park to theme park): answer ONLY from the separate "Park-to-park transportation" block. Do not apply or even mention the selected-resort route as the answer. An origin the guest names explicitly overrides the current park; if they name only a destination, use the current park as the origin; if the origin or destination is still unclear, ask one short clarification. If a pair genuinely cannot be resolved from that block, say so and point to official guidance rather than inventing a route.
 - If the destination is ANOTHER resort, a hotel the guest is not staying at, Disney Springs, or any other location: do not reuse the selected resort's direct access as if it applied. Say that route is not verified by the trip setup, and recommend current official guidance rather than inventing one.
 - If the destination is AMBIGUOUS ("how do we get there?", "what's the best way?"), ask which destination the guest means. Do not silently answer with the selected-resort route.
 - For the selected-resort journey only: if every listed mode is direct, do not present a transfer, a Transportation and Ticket Center hop, or any multi-leg journey as the standard or preferred route.
@@ -773,7 +782,7 @@ function buildTransportationContext(activePark, familyProfile) {
       header,
       "- No Disney resort profile is selected (off-property, unknown, or not yet set up).",
       "- Structured route data is UNAVAILABLE. Do not state or imply any specific route.",
-      "- This block never covers park-to-park travel or any other destination.",
+      "- This block never covers park-to-park travel (see the separate Park-to-park transportation block) or any other destination.",
       "- Say the route cannot be verified from the trip setup and recommend checking current official signage or the My Disney Experience app.",
     ].join("\n");
   }
@@ -787,7 +796,7 @@ function buildTransportationContext(activePark, familyProfile) {
       `- Current park: ${parkKey || "unknown"}.`,
       "- Structured route data for this park is UNAVAILABLE for this resort.",
       "- Do not infer a route from geography, from the resort area, or from general Disney knowledge.",
-      "- This block never covers park-to-park travel or any other destination.",
+      "- This block never covers park-to-park travel (see the separate Park-to-park transportation block) or any other destination.",
       "- Say the route cannot be verified and recommend checking current official signage or the My Disney Experience app.",
     ].join("\n");
   }
@@ -840,7 +849,7 @@ function buildTransportationContext(activePark, familyProfile) {
 
   lines.push(
     "- No live transportation timing is available in this request. Do not claim fastest, quickest, or a comparative travel time. Say 'the direct option', 'usually the simplest route', or 'the option that avoids a transfer'.",
-    "- DESTINATION SCOPE: this block answers only 'how do we get from this park to our resort'. For a park-to-park question, another resort, or any other destination, IGNORE this block as the answer — it is not verified for those journeys. Say current official guidance should be checked rather than inventing a route.",
+    "- DESTINATION SCOPE: this block answers only 'how do we get from this park to our resort'. For a park-to-park question, IGNORE this block and use the separate \"Park-to-park transportation\" block, which is verified for those journeys. For another resort or any other destination, neither block applies — say current official guidance should be checked rather than inventing a route.",
     "- If the destination is unclear, ask which destination the guest means before answering."
   );
 
@@ -853,6 +862,80 @@ function buildTransportationContext(activePark, familyProfile) {
   return lines.join("\n");
 }
 
+
+// 64C-3C. Park display names. Labels only — no route facts live here.
+const PARK_DISPLAY_NAMES = {
+  magic_kingdom: "Magic Kingdom",
+  epcot: "EPCOT",
+  hollywood: "Disney's Hollywood Studios",
+  animal_kingdom: "Disney's Animal Kingdom",
+};
+
+// The exact-ID resolver deliberately rejects anything it does not recognise, so
+// aliases are normalised HERE rather than by loosening the resolver. Anything
+// unrecognised becomes "" — unknown — which the prompt then reports honestly
+// instead of guessing an origin.
+function normalizeParkToParkParkId(parkId) {
+  const raw = String(parkId || "").trim();
+
+  if (!raw) return "";
+  if (raw === "hollywood_studios" || raw === "disney_hollywood_studios") return "hollywood";
+
+  return PARK_TO_PARK_PARK_IDS.includes(raw) ? raw : "";
+}
+
+function describeParkToParkRoute(route) {
+  const parts = [route.label];
+
+  if (route.transferRequired && route.transferLocation) {
+    parts.push(`transfer at ${route.transferLocation}`);
+  }
+  if (route.boardingDetail) {
+    parts.push(route.boardingDetail);
+  }
+
+  return parts.join(" — ");
+}
+
+// 64C-3C. Park-to-park transportation context.
+//
+// Deliberately SEPARATE from buildTransportationContext, which covers the
+// current park to the guest's SELECTED RESORT. Merging them is what produced the
+// original defect: one block answering two different journeys.
+//
+// This renders the whole verified 12-route reference and lets the model match
+// the guest's own wording against it. There is no parser here on purpose — a
+// homemade regex for "from X to Y" would be a new place to be wrong, and reading
+// natural language is the one thing the model is better at than we are.
+//
+// Kept out of the prompt: source URLs and verification dates (audit metadata,
+// not guidance) and the per-entry caveat, which is rendered once at the end
+// rather than twelve times.
+function buildParkToParkTransportationContext(activePark) {
+  const origin = normalizeParkToParkParkId(activePark);
+
+  const lines = [
+    "Park-to-park transportation (verified structured data — authoritative for travel BETWEEN theme parks):",
+    origin
+      ? `- Current park: ${PARK_DISPLAY_NAMES[origin]}. Use it as the origin when the guest names only a destination.`
+      : "- Current park: unknown. If the guest names only a destination, ask which park they are starting from.",
+  ];
+
+  for (const entry of PARK_TO_PARK_ROUTES) {
+    const from = PARK_DISPLAY_NAMES[entry.originPark] || entry.originPark;
+    const to = PARK_DISPLAY_NAMES[entry.destinationPark] || entry.destinationPark;
+    const options = entry.routes.map(describeParkToParkRoute).join(" OR ");
+    lines.push(`- ${from} to ${to}: ${options}`);
+  }
+
+  lines.push(
+    "- Every option above is verified. Present all listed options for a pair; do not drop one.",
+    "- Do not rank these options as fastest, quickest or best, and do not state travel times, service intervals or operating hours — none of that is in this data.",
+    `- Close with: ${PARK_TO_PARK_OPERATIONAL_CAVEAT}`
+  );
+
+  return lines.join("\n");
+}
 
 function getTripPlanPreferences(tripPlan = {}) {
   return tripPlan?.preferences && typeof tripPlan.preferences === "object"
@@ -1280,6 +1363,7 @@ function buildDynamicContext(sessionData = {}) {
     buildTripPlanContext({ tripPlan, mustDoExperiences, dayGamePlan }),
     buildLocationContext(locationContext, currentLand),
     buildTransportationContext(activePark, familyProfile),
+    buildParkToParkTransportationContext(activePark),
     buildCurrentActivityContext(currentActivityContext || currentActivity),
     buildWeatherContext(weather, weatherMode),
     buildDataFreshnessContext(dataFreshness),

@@ -292,7 +292,9 @@ featureCheck(
     const block = renderFor("magic_kingdom", null);
     return (
       block.includes("Structured route data is UNAVAILABLE") &&
-      block.includes("This block never covers park-to-park travel or any other destination") &&
+      block.includes(
+        "This block never covers park-to-park travel (see the separate Park-to-park transportation block) or any other destination"
+      ) &&
       block.includes("My Disney Experience") &&
       !/DIRECT route\(s\)/.test(block) &&
       !/\b(bus|monorail|skyliner|water taxi)\b/i.test(block)
@@ -312,7 +314,9 @@ featureCheck(
     return (
       block.includes("Structured route data for this park is UNAVAILABLE") &&
       block.includes("Do not infer a route from geography") &&
-      block.includes("This block never covers park-to-park travel or any other destination") &&
+      block.includes(
+        "This block never covers park-to-park travel (see the separate Park-to-park transportation block) or any other destination"
+      ) &&
       block.includes("My Disney Experience") &&
       !/DIRECT route\(s\)/.test(block)
     );
@@ -329,19 +333,28 @@ featureCheck(
   ) &&
     POFQ_MK.includes("Structured direct access, current park to the selected resort:") &&
     POFQ_MK.includes("DESTINATION SCOPE:") &&
-    POFQ_MK.includes("IGNORE this block as the answer"),
+    // 64C-3C: the block still disclaims park-to-park, but now points at the
+    // verified separate context instead of refusing outright.
+    POFQ_MK.includes(
+      'IGNORE this block and use the separate "Park-to-park transportation" block'
+    ),
   true
 );
 
 featureCheck(
-  "13b. a park-to-park question must not be answered from the selected-resort route",
-  POFQ_MK.includes("For a park-to-park question, another resort, or any other destination") &&
-    POFQ_MK.includes("Say current official guidance should be checked") &&
-    // and the system rules must forbid mentioning it as the answer
-    /If the question is PARK-TO-PARK: do not apply or even mention the selected-resort route as the answer/.test(
-      aiSource
+  "13b. a park-to-park question is never answered from the selected-resort route",
+  // 64C-3C replaced the blanket refusal with a redirect to verified data. What
+  // this guard protects is unchanged and is the point: the RESORT route must
+  // never be the answer to a park-to-park question. Only the destination of the
+  // redirect changed.
+  POFQ_MK.includes("For a park-to-park question, IGNORE this block") &&
+    POFQ_MK.includes(
+      "For another resort or any other destination, neither block applies — say current official guidance should be checked"
     ) &&
-    /Park-to-park routing is not represented in this dataset/.test(aiSource),
+    /Do not apply or even mention the selected-resort route as the answer/.test(aiSource) &&
+    /answer ONLY from the separate "Park-to-park transportation" block/.test(aiSource) &&
+    // the obsolete refusal must be gone, not merely superseded
+    !/Park-to-park routing is not represented in this dataset/.test(aiSource),
   true
 );
 
