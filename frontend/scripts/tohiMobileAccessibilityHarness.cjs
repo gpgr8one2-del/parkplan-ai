@@ -790,7 +790,10 @@ invariantCheck(
     !/localStorage|sessionStorage/.test(tohiCode) &&
     !/Start Over|Retry|Try again/i.test(tohiCode) &&
     !/timestamp|reaction|onEdit|contentEditable/i.test(tohiCode) &&
-    !/\bnight\b|shellNight|planNight/.test(tohiCode) &&
+    // 64B-2E-1: night arrived as an approved explicit prop. The protection that
+    // remains is that TohiTab never derives it from the shared shell flags.
+    !new RegExp("shellNight|planNight|shellTokens|getTohiAppShellTheme|isTohiNightMode|TOHI_NIGHT_SHELL|prefers-color-scheme").test(tohiCode) &&
+    /night = false,/.test(tohiCode) &&
     // exactly the controls that already existed: 3 prompts + Send
     (tohiCode.match(/<button/g) || []).length === 2,
   true

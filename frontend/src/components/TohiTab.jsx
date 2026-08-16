@@ -31,11 +31,19 @@ import { colors } from "../theme";
 //     personalized-feature card is requested from App's renderer through an
 //     opt-in variant rather than being reimplemented here
 //
-// Still deferred, each approved for a later phase: autoscroll, TOHI-only
-// keyboard and navigation suppression, accessibility live-region work, chat
-// persistence, Start Over, and night support.
+// 64B-2C delivered autoscroll, TOHI-only keyboard and navigation suppression,
+// and the accessibility log/status split. 64B-2D added the Safari toolbar
+// clearance and the state-aware keyboard rule.
+//
+// 64B-2E-1 adds the approved NIGHT presentation, PREPARED BUT INACTIVE — see the
+// TOHI_NIGHT table below. Still deferred: chat persistence and Start Over.
 
 // Approved day tokens, taken from the committed day blueprints.
+//
+// 64B-2E-1 added inputFill, inputLine and onAccent. Day reuses the exact values
+// the input and Send button already rendered inline, so day output is unchanged
+// to the byte; they exist because night draws the input as its own recessed
+// well rather than reusing the card surface.
 const DAY = {
   surface: "#FFFFFF",
   surfaceQuiet: "#FFF9F1",
@@ -61,6 +69,75 @@ const DAY = {
   disabledFill: "#F1EDE7",
   disabledInk: "#A9A297",
   disabledLine: "rgba(234, 220, 200, 0.85)",
+  inputFill: "#FFFFFF",
+  inputLine: "rgba(234, 220, 200, 0.55)",
+  onAccent: "#FFFFFF",
+};
+
+// 64B-2E-1. The approved NIGHT tokens, measured off the committed night
+// blueprints rather than interpreted.
+//
+// Method, identical to the one WaitsTab documents: every value below is the
+// colour the night sheet renders at the exact coordinate where the day sheet
+// renders the day value named beside it. Nothing here was chosen by eye and
+// nothing was carried over from another product surface by assumption.
+//
+// Two day tokens map to more than one night value, so each was resolved at its
+// own surface instead of being substituted globally:
+//   - #FFF9F1 -> #0A1022 at the empty-state card (measured in state 1). The
+//     #0E172A instances of #FFF9F1 elsewhere on the sheet are the bottom
+//     navigation, which BottomTabs owns and which this file never draws.
+//   - #5B21B6 -> #C4B5FD at the TOHI speaker label, and -> #8B5CF6 at the
+//     locked card's Finish trip setup button. The button belongs to App's
+//     shared locked-card renderer, which already carries its own night branch,
+//     so accentDeep here is the speaker-label value only.
+//
+// PREPARED BUT INACTIVE: App passes a literal night={false}, so production is
+// still day-only and pixel-identical. Activation is 64B-2E-2's job, and TOHI is
+// deliberately still excluded from shellNight until then.
+//
+// `night` is an explicit boolean prop and nothing else. It is never derived here
+// from the clock, planNight, shellNight, theme state, the active tab, storage, a
+// media query, or browser appearance. One parent owns the decision; this file
+// only renders it.
+const TOHI_NIGHT = {
+  surface: "#131C36", //        <- DAY.surface        #FFFFFF
+  surfaceQuiet: "#0A1022", //   <- DAY.surfaceQuiet   #FFF9F1
+  line: "#282E66", //           <- DAY.line
+  title: "#F5F3FF", //          <- DAY.title          #241C15
+  muted: "#B6C2E2", //          <- DAY.muted          #7A6F63
+  accent: "#8B5CF6", //         <- DAY.accent         #7C3AED
+  accentDeep: "#C4B5FD", //     <- DAY.accentDeep     #5B21B6 (speaker label)
+  accentLine: "#48378B", //     <- DAY.accentLine
+  // The pale plate is intentional and is NOT darkened. The committed wordmark
+  // ink may not be recoloured, and on the navy shell it would fall to about
+  // 2.8:1. The plate carries it at roughly 4.8:1 while staying clearly not
+  // white. The README locks this exception.
+  brandPlate: "#E9E3FB", //     <- DAY.brandPlate     #F3E8FF
+  brandPlateLine: "#BDAAEC", // <- DAY.brandPlateLine
+  userFill: "#1F214A", //       <- DAY.userFill       #F6F1FF
+  skyInk: "#7ACEF6", //         <- DAY.skyInk         #0369A1
+  skyFill: "#182C49", //        <- DAY.skyFill        #E0F2FE
+  skyLine: "#1A3F60", //        <- DAY.skyLine
+  goldInk: "#FCD34D", //        <- DAY.goldInk        #92400E
+  goldFill: "#2F1B1A", //       <- DAY.goldFill       #FEF3C7
+  goldLine: "#75521D", //       <- DAY.goldLine
+  coralInk: "#FDA4AF", //       <- DAY.coralInk       #9F1239
+  coralFill: "#2A0B1F", //      <- DAY.coralFill      #FFF1F3
+  coralLine: "#6D2B40", //      <- DAY.coralLine
+  // Same offset and blur as day — a shadow's geometry is spacing, and the
+  // blueprint locks day and night to identical structure and spacing. Only the
+  // colour deepens.
+  shadow: "0 10px 30px rgba(2, 6, 23, 0.45)",
+  disabledFill: "#131B32", //   <- DAY.disabledFill   #F1EDE7
+  disabledInk: "#6A7598", //    <- DAY.disabledInk    #A9A297
+  disabledLine: "#282E66", //   <- DAY.disabledLine
+  // Day draws the input on the same white as its card. Night does not: the
+  // sheet recesses the field below the composer surface, so it needs its own
+  // fill and border rather than reusing `surface` and `line`.
+  inputFill: "#090F21", //      <- DAY.inputFill      #FFFFFF
+  inputLine: "#4B536A", //      <- DAY.inputLine
+  onAccent: "#FFFFFF", //       <- DAY.onAccent — Send label stays white on violet
 };
 
 // The three approved prompts. Order is part of the contract.
@@ -174,7 +251,7 @@ function scrollElementIntoView(element, block) {
 // "You: " / "TOHI: " prefixes. Clarification turns carry the QUICK CHECK chip,
 // driven only by the existing msg.isLiveStateQuestion value that App already
 // sets — this component never infers it from copy.
-function SpeakerLabel({ who, quickCheck }) {
+function SpeakerLabel({ who, quickCheck, t }) {
   return (
     <div
       style={{
@@ -184,7 +261,7 @@ function SpeakerLabel({ who, quickCheck }) {
         fontSize: 10,
         fontWeight: 800,
         letterSpacing: 1.2,
-        color: who === "YOU" ? DAY.muted : DAY.accentDeep,
+        color: who === "YOU" ? t.muted : t.accentDeep,
       }}
     >
       <span>{who}</span>
@@ -195,9 +272,9 @@ function SpeakerLabel({ who, quickCheck }) {
             alignItems: "center",
             padding: "2px 8px",
             borderRadius: 999,
-            background: DAY.skyFill,
-            color: DAY.skyInk,
-            border: `1px solid ${DAY.skyLine}`,
+            background: t.skyFill,
+            color: t.skyInk,
+            border: `1px solid ${t.skyLine}`,
             fontSize: 9.5,
             fontWeight: 800,
             letterSpacing: 1,
@@ -229,6 +306,11 @@ export function TohiTab({
   // decides what to do with it. No other component observes the viewport.
   onComposerKeyboardChange,
 
+  // 64B-2E-1: the ONE explicit, parent-owned presentation switch. Defaulting to
+  // false means any caller that has not opted in still renders day, so the gate
+  // cannot open by accident.
+  night = false,
+
   // shared style objects owned by App
   card,
   button,
@@ -236,6 +318,10 @@ export function TohiTab({
   // Send is unavailable while a request is in flight, and while there is nothing
   // to send. The trim guard in App is unchanged and still authoritative; this
   // only stops the control inviting a submit that App would discard.
+  // 64B-2E-1: the whole night decision, in one place. When night is false this
+  // is the DAY object itself, by identity, so the day render is unchanged.
+  const t = night ? TOHI_NIGHT : DAY;
+
   const trimmedMessage = typeof message === "string" ? message.trim() : "";
   const sendDisabled = chatLoading || trimmedMessage === "";
 
@@ -347,8 +433,8 @@ export function TohiTab({
             alignItems: "center",
             padding: "7px 12px",
             borderRadius: 999,
-            background: DAY.brandPlate,
-            border: `1px solid ${DAY.brandPlateLine}`,
+            background: t.brandPlate,
+            border: `1px solid ${t.brandPlateLine}`,
           }}
         >
           {/* alt="" on purpose: the "Ask TOHI" heading immediately below already
@@ -364,7 +450,7 @@ export function TohiTab({
         <h2
           style={{
             margin: 0,
-            color: DAY.title,
+            color: t.title,
             fontSize: 26,
             fontWeight: 800,
             letterSpacing: -0.5,
@@ -377,7 +463,7 @@ export function TohiTab({
         <p
           style={{
             margin: 0,
-            color: DAY.muted,
+            color: t.muted,
             fontSize: 13.5,
             lineHeight: 1.5,
             maxWidth: "34ch",
@@ -396,7 +482,7 @@ export function TohiTab({
           already uses rather than introducing the first stylesheet. */}
       <style>{`
         [data-tohi-focus]:focus-visible {
-          outline: 2px solid ${DAY.accent};
+          outline: 2px solid ${t.accent};
           outline-offset: 2px;
         }
         @keyframes tohiChatPulse { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
@@ -416,6 +502,9 @@ export function TohiTab({
             "TOHI needs your trip setup so it can answer with your family, resort, height, and park context.",
           actionLabel: "Finish trip setup",
           variant: "tohi",
+          // The shared App renderer already carries its own night branch; this
+          // only tells it which mode TOHI is in. It is not redesigned here.
+          night,
         })
       ) : (
         <>
@@ -441,13 +530,13 @@ export function TohiTab({
                   minHeight: 48,
                   borderRadius: 16,
                   padding: "12px 14px",
-                  background: picked ? DAY.userFill : DAY.surface,
-                  border: `1px solid ${picked ? DAY.accentLine : DAY.line}`,
-                  color: DAY.title,
+                  background: picked ? t.userFill : t.surface,
+                  border: `1px solid ${picked ? t.accentLine : t.line}`,
+                  color: t.title,
                   fontSize: 13.5,
                   fontWeight: 650,
                   lineHeight: 1.35,
-                  boxShadow: DAY.shadow,
+                  boxShadow: t.shadow,
                 }}
               >
                 {prompt}
@@ -479,9 +568,9 @@ export function TohiTab({
             style={{
               borderRadius: 20,
               padding: "13px 14px",
-              background: DAY.surfaceQuiet,
-              border: `1px solid ${DAY.line}`,
-              color: DAY.muted,
+              background: t.surfaceQuiet,
+              border: `1px solid ${t.line}`,
+              color: t.muted,
               fontSize: 13,
               lineHeight: 1.45,
             }}
@@ -514,8 +603,8 @@ export function TohiTab({
                   gap: 5,
                   borderRadius: 20,
                   padding: "12px 14px",
-                  background: DAY.coralFill,
-                  border: `1px solid ${DAY.coralLine}`,
+                  background: t.coralFill,
+                  border: `1px solid ${t.coralLine}`,
                 }}
               >
                 <span
@@ -523,14 +612,14 @@ export function TohiTab({
                     fontSize: 10,
                     fontWeight: 800,
                     letterSpacing: 1.2,
-                    color: DAY.coralInk,
+                    color: t.coralInk,
                   }}
                 >
                   CONNECTION
                 </span>
                 <span
                   style={{
-                    color: DAY.coralInk,
+                    color: t.coralInk,
                     fontSize: 13,
                     fontWeight: 600,
                     lineHeight: 1.5,
@@ -552,17 +641,17 @@ export function TohiTab({
                 alignItems: isUser ? "flex-end" : "flex-start",
               }}
             >
-              <SpeakerLabel who={isUser ? "YOU" : "TOHI"} quickCheck={quickCheck} />
+              <SpeakerLabel who={isUser ? "YOU" : "TOHI"} quickCheck={quickCheck} t={t} />
 
               <div
                 style={{
                   maxWidth: isUser ? "85%" : "92%",
                   borderRadius: 20,
                   padding: "12px 14px",
-                  background: isUser ? DAY.userFill : DAY.surface,
-                  border: `1px solid ${isUser ? DAY.accentLine : DAY.line}`,
-                  color: DAY.title,
-                  boxShadow: DAY.shadow,
+                  background: isUser ? t.userFill : t.surface,
+                  border: `1px solid ${isUser ? t.accentLine : t.line}`,
+                  color: t.title,
+                  boxShadow: t.shadow,
                   fontSize: 14,
                   lineHeight: 1.5,
                   // Replies arrive as plain text with real newlines. pre-wrap
@@ -597,7 +686,7 @@ export function TohiTab({
           aria-atomic="true"
           style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-start" }}
         >
-          <SpeakerLabel who="TOHI" />
+          <SpeakerLabel who="TOHI" t={t} />
           <div
             data-tohi-loading="true"
             style={{
@@ -607,9 +696,9 @@ export function TohiTab({
               gap: 10,
               borderRadius: 20,
               padding: "12px 14px",
-              background: DAY.goldFill,
-              border: `1px solid ${DAY.goldLine}`,
-              color: DAY.goldInk,
+              background: t.goldFill,
+              border: `1px solid ${t.goldLine}`,
+              color: t.goldInk,
               fontSize: 13,
               fontWeight: 650,
               lineHeight: 1.4,
@@ -657,11 +746,11 @@ export function TohiTab({
           display: "flex",
           flexDirection: "column",
           gap: 8,
-          background: DAY.surface,
-          border: `1px solid ${DAY.line}`,
+          background: t.surface,
+          border: `1px solid ${t.line}`,
           borderRadius: 24,
           padding: 12,
-          boxShadow: DAY.shadow,
+          boxShadow: t.shadow,
           marginBottom: 0,
           // Affects where scrollIntoView stops, never layout. See
           // COMPOSER_TOOLBAR_CLEARANCE_PX for why the room is needed.
@@ -674,7 +763,7 @@ export function TohiTab({
             fontSize: 10.5,
             fontWeight: 800,
             letterSpacing: 1.1,
-            color: DAY.muted,
+            color: t.muted,
           }}
         >
           Your question
@@ -704,9 +793,9 @@ export function TohiTab({
               minHeight: 48,
               borderRadius: 16,
               padding: "12px 13px",
-              background: DAY.surface,
-              border: `1px solid ${DAY.line}`,
-              color: DAY.title,
+              background: t.inputFill,
+              border: `1px solid ${t.inputLine}`,
+              color: t.title,
               fontSize: 14,
               lineHeight: 1.35,
               fontFamily: "inherit",
@@ -725,9 +814,9 @@ export function TohiTab({
               padding: "0 18px",
               fontSize: 14,
               fontWeight: 800,
-              background: sendDisabled ? DAY.disabledFill : DAY.accent,
-              border: `1px solid ${sendDisabled ? DAY.disabledLine : DAY.accentLine}`,
-              color: sendDisabled ? DAY.disabledInk : "#FFFFFF",
+              background: sendDisabled ? t.disabledFill : t.accent,
+              border: `1px solid ${sendDisabled ? t.disabledLine : t.accentLine}`,
+              color: sendDisabled ? t.disabledInk : t.onAccent,
               cursor: sendDisabled ? "not-allowed" : "pointer",
             }}
           >

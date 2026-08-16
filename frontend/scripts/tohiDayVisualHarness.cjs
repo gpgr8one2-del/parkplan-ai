@@ -824,8 +824,16 @@ invariantCheck(
 );
 
 invariantCheck(
-  "TOHI remains day-only and excluded from shellNight",
-  !/\bnight\b|shellNight|planNight|shellTokens|getTohiAppShellTheme/.test(tohiCode) &&
+  "TOHI night is prop-driven only, and TOHI is still excluded from shellNight",
+  // 64B-2E-1 narrowed this instead of dropping it. TohiTab now HAS an approved
+  // night presentation, so a blanket ban on the word would assert the opposite
+  // of the product. What must stay impossible is TohiTab DERIVING the mode: the
+  // shared shell flags, the theme runtime and the colour-scheme query are all
+  // still forbidden inside it, and App must still pass the inactive literal.
+  /night = false,/.test(tohiCode) &&
+    /const t = night \? TOHI_NIGHT : DAY;/.test(tohiCode) &&
+    !new RegExp("shellNight|planNight|shellTokens|getTohiAppShellTheme|isTohiNightMode|TOHI_NIGHT_SHELL|prefers-color-scheme").test(tohiCode) &&
+    /<TohiTab[\s\S]*?night=\{false\}[\s\S]*?\/>/.test(appCode) &&
     (() => {
       const m = appCode.match(
         /const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*\n?\s*planNight;/
@@ -845,7 +853,11 @@ invariantCheck(
   // forbidden expansions are not. Everything still deferred is kept verbatim.
   !/Start Over|Retry|Try again/i.test(tohiCode) &&       // retry / start over
     !/localStorage|sessionStorage/.test(tohiCode) &&     // persistence
-    !/\bnight\b/.test(tohiCode) &&                       // night support
+    // 64B-2E-1 delivered the night presentation, so the blanket night ban is
+    // superseded. Replaced, not dropped: night may exist, but only as an
+    // explicit prop that App currently holds shut.
+    !new RegExp("shellNight|planNight|shellTokens|getTohiAppShellTheme|isTohiNightMode|TOHI_NIGHT_SHELL|prefers-color-scheme").test(tohiCode) &&
+    /night = false,/.test(tohiCode) &&
     !/timestamp|reaction|onEdit|contentEditable/i.test(tohiCode) &&
     // autoscroll is approved, but it may never focus the field for the user
     !/autoFocus/.test(tohiCode) &&

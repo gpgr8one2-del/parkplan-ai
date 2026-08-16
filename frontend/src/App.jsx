@@ -5309,6 +5309,11 @@ function App() {
               onChatSubmit={handleChatSubmit}
               renderLockedFeatureCard={renderLockedFeatureCard}
               onComposerKeyboardChange={setTohiComposerKeyboardOpen}
+              /* 64B-2E-1: the night presentation is PREPARED BUT INACTIVE. This
+                 literal false is the gate, and TOHI is deliberately still left
+                 out of the shared shell flag, so production stays day-only and
+                 unchanged. Activating it is 64B-2E-2's job, after visual QA. */
+              night={false}
               card={card}
               button={button}
             />
