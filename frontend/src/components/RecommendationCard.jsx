@@ -232,6 +232,41 @@ export function RecommendationCard({
           )}
         </div>
       )}
+
+      {/* Wet-ride heads-up.
+          Rendered from the structured `ride.wetRideHeadsUp` field rather than from
+          any reason string, because no reason string reaches every surfaced ride:
+          buildReason returns early for a must-do, Plan Ahead renders
+          planAheadReason, Wait on This renders waitOnThisReason, and a height note
+          outranks other secondary notes. Reading the field here is what makes the
+          "Okay if TOHI warns us first" answer actually visible on every card.
+
+          It sits below the reason and is visually quieter than it, so height and
+          wait information stay the more prominent signals — but nothing can now
+          erase it. The engine only populates the field for a real `getsWet`
+          attraction when the guest chose that preference, so no other family sees
+          this. */}
+      {ride.wetRideHeadsUp?.message && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            margin: "8px 0 0",
+            padding: "7px 10px",
+            borderRadius: 12,
+            background: night ? "rgba(56, 189, 248, 0.12)" : colors.skySoft,
+            border: `1px solid ${night ? "rgba(56, 189, 248, 0.30)" : "rgba(56, 189, 248, 0.32)"}`,
+            color: night ? "#BAE6FD" : "#075985",
+            fontSize: 12,
+            fontWeight: 800,
+            lineHeight: 1.35,
+          }}
+        >
+          <span aria-hidden="true">💧</span>
+          <span>{ride.wetRideHeadsUp.message}</span>
+        </div>
+      )}
     </>
   );
 
