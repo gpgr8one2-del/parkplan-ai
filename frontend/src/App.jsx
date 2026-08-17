@@ -236,6 +236,142 @@ const premiumBadge = {
   fontWeight: 900,
 };
 
+/* -------------------------------------------------------------------------- */
+/* Profile display labels — presentation only                                 */
+/* -------------------------------------------------------------------------- */
+
+// Stored profile values are internal ids. Profile previously rendered several of
+// them raw, so a guest could read "skyliner" or "water_taxi" as product copy.
+// These maps are display-only: no stored value, default, or normalization rule
+// changes, and an unrecognised value falls through to the "Not set" treatment
+// rather than being guessed at.
+const PROFILE_WALKING_LABELS = {
+  leisurely: "Keep choices nearby",
+  balanced: "A balanced amount of walking",
+  energetic: "Comfortable covering more ground",
+};
+
+const PROFILE_THRILL_LABELS = {
+  low: "Mostly gentle rides",
+  mixed: "A mix of gentle and exciting",
+  high: "Big thrills are a priority",
+};
+
+const PROFILE_HEAT_LABELS = {
+  high: "Breaks before things fall apart",
+  medium: "Watch it and suggest breaks",
+  low: "We handle heat pretty well",
+};
+
+const PROFILE_WATER_LABELS = {
+  avoid: "Avoid getting wet",
+  okay_with_warning: "Okay with a heads-up first",
+  love: "We love water rides",
+  // Legacy alias. normalizeFamilyProfile still accepts a stored "yes", and the
+  // engine still honours it, so a profile saved before "love" became canonical
+  // must read as the answer it is rather than falling through to "Not set".
+  yes: "We love water rides",
+  depends: "Depends on the day",
+};
+
+// The water-ride answer now drives three genuinely different behaviours, so the
+// explanation is written per value instead of describing all of them at once.
+// Each string states only what that value actually does.
+function getProfileWaterRideHint(value) {
+  const key = typeof value === "string" ? value.trim() : "";
+
+  if (key === "avoid") {
+    return "TOHI pushes rides that soak you down your list.";
+  }
+
+  if (key === "love" || key === "yes") {
+    return "TOHI gives rides that soak you a nudge up your list.";
+  }
+
+  if (key === "okay_with_warning") {
+    return "TOHI adds a heads-up on the card before a ride that can soak you.";
+  }
+
+  if (key === "depends") {
+    return "TOHI treats rides that soak you like any other option.";
+  }
+
+  return null;
+}
+
+const PROFILE_STORM_LABELS = {
+  indoor_only: "Indoor when storms are near",
+  brief_outdoor_ok: "Brief outdoor walks are okay",
+  we_handle_it: "We handle weather pretty well",
+};
+
+const PROFILE_TRANSPORT_LABELS = {
+  bus: "Bus",
+  monorail: "Monorail",
+  skyliner: "Skyliner",
+  boat: "Boat",
+  walking: "Walking",
+  car: "Car / rideshare",
+  water_taxi: "Water taxi",
+  gondola: "Gondola",
+};
+
+const PROFILE_HOPPER_LABELS = {
+  yes: "Yes — planning to hop",
+  no: "No — one park per day",
+  unknown: "Not decided yet",
+};
+
+// "unknown" is deliberately absent so it resolves to null and renders through the
+// same explicit "Not set" treatment as every other unanswered row.
+const PROFILE_STAY_LABELS = {
+  yes: "On Disney property",
+  no: "Off-property",
+};
+
+// getParkLabel returns the literal string "Not set" for an unrecognised id. Profile
+// needs null there so the unset styling applies instead of it reading as an answer.
+function getProfileParkLabel(parkId) {
+  if (!parkId) return null;
+  const label = getParkLabel(parkId);
+  return !label || label === "Not set" ? null : label;
+}
+
+// Returns null for anything unset or unrecognised, so every caller renders the
+// same explicit "Not set" state instead of an empty gap.
+function getProfileDisplayLabel(labelMap, value) {
+  const key = typeof value === "string" ? value.trim() : "";
+  if (!key) return null;
+  return labelMap[key] || null;
+}
+
+function formatProfileTripDates(tripContext = {}) {
+  const start = tripContext.tripStartDate;
+  const end = tripContext.tripEndDate;
+
+  if (!start && !end) return null;
+
+  const format = (value) => {
+    if (!value) return null;
+    const parsed = new Date(`${value}T12:00:00`);
+    if (!Number.isFinite(parsed.getTime())) return value;
+    return parsed.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const startLabel = format(start);
+  const endLabel = format(end);
+
+  if (startLabel && endLabel) {
+    return startLabel === endLabel ? startLabel : `${startLabel} – ${endLabel}`;
+  }
+
+  return startLabel || endLabel;
+}
+
 const lockedCardStyle = {
   ...card,
   border: `1px dashed ${colors.cardBorder}`,
@@ -3411,6 +3547,130 @@ function App() {
   }
 
 
+  /* ---------------------------------------------------------------------- */
+  /* Profile presentation helpers                                           */
+  /* ---------------------------------------------------------------------- */
+
+  // One grouped Profile card. The eyebrow is a real heading so the screen can be
+  // navigated by heading, which the previous flat run of <div> labels could not.
+  // Day tokens only: Profile stays outside night mode until its own day/night
+  // presentation is approved.
+  function renderProfileGroup({ accent, title, caption, children }) {
+    const tone = {
+      purple: { text: colors.purpleDeep, chip: "rgba(124, 58, 237, 0.10)", border: "rgba(124, 58, 237, 0.20)" },
+      sky: { text: "#0369A1", chip: "rgba(56, 189, 248, 0.14)", border: "rgba(56, 189, 248, 0.26)" },
+      amber: { text: "#92400E", chip: colors.amberSoft, border: "rgba(245, 158, 11, 0.28)" },
+    }[accent] || {
+      text: colors.purpleDeep,
+      chip: "rgba(124, 58, 237, 0.10)",
+      border: colors.cardBorder,
+    };
+
+    return (
+      <section
+        style={{
+          ...card,
+          background: "#FFFFFF",
+          border: `1px solid ${tone.border}`,
+          borderRadius: 24,
+          padding: 18,
+          boxShadow: "0 10px 28px rgba(28, 25, 23, 0.06)",
+        }}
+      >
+        <h3
+          style={{
+            margin: 0,
+            display: "inline-flex",
+            alignItems: "center",
+            padding: "5px 10px",
+            borderRadius: 999,
+            background: tone.chip,
+            color: tone.text,
+            fontSize: 11.5,
+            fontWeight: 900,
+            letterSpacing: 0.6,
+            textTransform: "uppercase",
+          }}
+        >
+          {title}
+        </h3>
+
+        {caption && (
+          <p
+            style={{
+              margin: "10px 0 0",
+              color: colors.muted,
+              fontSize: 13,
+              lineHeight: 1.45,
+            }}
+          >
+            {caption}
+          </p>
+        )}
+
+        <div style={{ marginTop: 14 }}>{children}</div>
+      </section>
+    );
+  }
+
+  // Label/value rows as a real definition list, so each value is programmatically
+  // tied to its label instead of being two unrelated runs of text. `hint` carries
+  // the plain-language note about how that answer helps TOHI; it is only attached
+  // to answers that genuinely drive a decision.
+  function renderProfileRows(rows) {
+    return (
+      <dl style={{ margin: 0, display: "grid", gap: 12 }}>
+        {rows.filter(Boolean).map(({ label, value, hint }) => {
+          const isSet = value != null && value !== "";
+
+          return (
+            <div key={label} style={{ display: "grid", gap: 3 }}>
+              <dt
+                style={{
+                  color: colors.muted,
+                  fontSize: 11.5,
+                  fontWeight: 900,
+                  letterSpacing: 0.5,
+                  textTransform: "uppercase",
+                }}
+              >
+                {label}
+              </dt>
+              <dd
+                style={{
+                  margin: 0,
+                  // Unset uses the muted token rather than a lighter grey: a
+                  // lighter tone measured 3.92:1 on white, below AA. Italic plus
+                  // the lighter weight carries the unset distinction instead.
+                  color: isSet ? colors.text : colors.muted,
+                  fontSize: 15.5,
+                  fontWeight: isSet ? 850 : 700,
+                  fontStyle: isSet ? "normal" : "italic",
+                  lineHeight: 1.35,
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {isSet ? value : "Not set"}
+              </dd>
+              {hint && (
+                <p
+                  style={{
+                    margin: "1px 0 0",
+                    color: colors.muted,
+                    fontSize: 12.5,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {hint}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </dl>
+    );
+  }
+
   function renderTabPlaceholderCard({ eyebrow, title, body, primaryActionLabel, onPrimaryAction }) {
     return (
       <section
@@ -5504,435 +5764,396 @@ function App() {
 
           {activeTab === "profile" && (
             <>
+              {/* Profile day redesign. Presentation only: every value below is the
+                  same real familyProfileSummary / profileCompletion data the screen
+                  already read, and Profile remains a read-only summary whose single
+                  product action is opening the existing setup flow. No storage,
+                  onboarding, access-control or recommendation behaviour changes, and
+                  Profile stays outside night mode until its own day/night
+                  presentation is approved. */}
               <section
                 style={{
                   ...card,
-                  position: "relative",
-                  overflow: "hidden",
                   background:
-                    "radial-gradient(circle at 92% 2%, rgba(124, 58, 237, 0.22) 0%, rgba(124, 58, 237, 0.06) 34%, transparent 58%), linear-gradient(150deg, #FFFFFF 0%, #F3E8FF 52%, #FFF7ED 100%)",
-                  border: "1px solid rgba(124, 58, 237, 0.20)",
+                    "linear-gradient(150deg, #FFFFFF 0%, #F6EFFF 56%, #FFF7ED 100%)",
+                  border: "1px solid rgba(124, 58, 237, 0.22)",
                   borderRadius: 28,
-                  boxShadow: "0 18px 44px rgba(124, 58, 237, 0.12)",
-                }}
-              >
-                <div
-                  aria-hidden="true"
-                  style={{
-                    position: "absolute",
-                    width: 116,
-                    height: 116,
-                    borderRadius: "999px",
-                    right: -46,
-                    bottom: -52,
-                    background: "rgba(56, 189, 248, 0.13)",
-                  }}
-                />
-
-                <div style={{ position: "relative" }}>
-                  <div
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      padding: "5px 9px",
-                      borderRadius: 999,
-                      background: "rgba(124, 58, 237, 0.12)",
-                      color: colors.purpleDeep,
-                      fontSize: 11,
-                      fontWeight: 950,
-                      letterSpacing: 0.7,
-                      marginBottom: 10,
-                    }}
-                  >
-                    FAMILY CONTEXT
-                  </div>
-
-                  <h2
-                    style={{
-                      margin: 0,
-                      color: colors.text,
-                      fontSize: 27,
-                      letterSpacing: -0.6,
-                      lineHeight: 1.15,
-                    }}
-                  >
-                    Family setup
-                  </h2>
-
-                  <p
-                    style={{
-                      margin: "9px 0 0",
-                      color: colors.muted,
-                      fontSize: 14,
-                      lineHeight: 1.5,
-                      maxWidth: 620,
-                    }}
-                  >
-                    TOHI uses your family profile to make room for height limits, thrill
-                    comfort, walking tolerance, heat sensitivity, resort-break realism,
-                    and the kind of day you are trying to have.
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveScreen("family_profile")}
-                    style={{
-                      ...button,
-                      marginTop: 15,
-                      background:
-                        "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
-                      color: "white",
-                      borderColor: "rgba(124, 58, 237, 0.28)",
-                      boxShadow: "0 12px 24px rgba(124, 58, 237, 0.18)",
-                    }}
-                  >
-                    {profileCompletion.isComplete ? "Review Setup" : "Finish Setup"}
-                  </button>
-                </div>
-              </section>
-
-              <section
-                style={{
-                  ...card,
-                  background:
-                    "linear-gradient(145deg, #FFFFFF 0%, #FFF9F1 100%)",
-                  border: `1px solid ${colors.cardBorder}`,
-                  boxShadow: "0 12px 30px rgba(28, 25, 23, 0.07)",
+                  padding: 20,
+                  boxShadow: "0 16px 38px rgba(91, 33, 182, 0.10)",
                 }}
               >
                 <div
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: 6,
-                    padding: "5px 9px",
+                    padding: "6px 11px",
                     borderRadius: 999,
                     background: profileCompletion.isComplete
                       ? colors.successSoft
                       : colors.amberSoft,
-                    color: profileCompletion.isComplete ? colors.success : "#92400E",
-                    fontSize: 11,
-                    fontWeight: 950,
-                    letterSpacing: 0.7,
-                    marginBottom: 12,
+                    color: profileCompletion.isComplete ? "#046A4E" : "#92400E",
+                    fontSize: 11.5,
+                    fontWeight: 900,
+                    letterSpacing: 0.6,
                   }}
                 >
                   {profileCompletion.isComplete ? "SETUP COMPLETE" : "SETUP NEEDED"}
                 </div>
 
-                <div
+                <h2
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))",
-                    gap: 10,
+                    margin: "12px 0 0",
+                    color: colors.text,
+                    fontSize: 27,
+                    letterSpacing: -0.6,
+                    lineHeight: 1.15,
                   }}
                 >
-                  {[
-                    [
-                      "Party",
-                      `${familyProfileSummary.partySize || 0} guests · ${
-                        familyProfileSummary.adultCount || 0
-                      } adults · ${familyProfileSummary.childCount || 0} kids`,
-                    ],
-                    [
-                      "Youngest groups",
-                      `${familyProfileSummary.ageSummary?.under3Count || 0} under 3 · ${
-                        familyProfileSummary.ageSummary?.childCount || 0
-                      } Disney child · ${
-                        familyProfileSummary.ageSummary?.disneyAdultCount || 0
-                      } Disney adult`,
-                    ],
-                    [
-                      "Shortest rider",
-                      familyProfileSummary.shortestHeightInches != null
-                        ? `${familyProfileSummary.shortestHeightInches}" tall`
-                        : familyProfileSummary.childCount > 0
-                        ? "Child height not set"
-                        : "Adults only",
-                    ],
-                    [
-                      "Resort",
-                      familyProfileSummary.resortProfile?.name ||
-                        familyProfileSummary.resortContext?.resortName ||
-                        familyProfileSummary.resortContext?.offPropertyHotelName ||
-                        "Not set",
-                    ],
-                  ].map(([label, value]) => (
-                    <div
-                      key={label}
-                      style={{
-                        padding: 12,
-                        borderRadius: 18,
-                        background: "rgba(255, 255, 255, 0.82)",
-                        border: `1px solid ${colors.cardBorder}`,
-                        boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          color: colors.muted,
-                          fontSize: 11,
-                          fontWeight: 950,
-                          letterSpacing: 0.5,
-                          marginBottom: 5,
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        {label}
-                      </div>
-                      <strong
-                        style={{
-                          display: "block",
-                          color: colors.text,
-                          fontSize: 14,
-                          lineHeight: 1.25,
-                        }}
-                      >
-                        {value}
-                      </strong>
-                    </div>
-                  ))}
-                </div>
+                  Your family setup
+                </h2>
+
+                <p
+                  style={{
+                    margin: "10px 0 0",
+                    color: colors.muted,
+                    fontSize: 14.5,
+                    lineHeight: 1.5,
+                    maxWidth: 560,
+                  }}
+                >
+                  {profileCompletion.isComplete
+                    ? "These answers are live. TOHI is already using them to choose rides, time breaks, and shape your packing list."
+                    : "Finish setup and TOHI can start using these answers to choose rides, time breaks, and shape your packing list."}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveScreen("family_profile")}
+                  style={{
+                    ...button,
+                    marginTop: 16,
+                    minHeight: 48,
+                    padding: "0 20px",
+                    borderRadius: 16,
+                    fontSize: 15,
+                    background: "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
+                    color: "white",
+                    borderColor: "rgba(124, 58, 237, 0.28)",
+                    boxShadow: "0 12px 24px rgba(124, 58, 237, 0.18)",
+                  }}
+                >
+                  {profileCompletion.isComplete ? "Review setup" : "Finish setup"}
+                </button>
               </section>
 
-              {familyProfile.childCount > 0 && (
+              {!profileCompletion.isComplete && (
                 <section
                   style={{
                     ...card,
-                    background:
-                      "linear-gradient(145deg, #FFFFFF 0%, #F3E8FF 100%)",
-                    border: "1px solid rgba(124, 58, 237, 0.18)",
-                    boxShadow: "0 12px 30px rgba(124, 58, 237, 0.08)",
+                    background: "linear-gradient(145deg, #FFFFFF 0%, #FEF3C7 100%)",
+                    border: "1px solid rgba(245, 158, 11, 0.32)",
+                    borderRadius: 24,
+                    padding: 18,
+                    boxShadow: "0 10px 28px rgba(245, 158, 11, 0.10)",
                   }}
                 >
-                  <div
+                  <h3
                     style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      padding: "5px 9px",
-                      borderRadius: 999,
-                      background: "rgba(124, 58, 237, 0.10)",
-                      color: colors.purpleDeep,
-                      fontSize: 11,
-                      fontWeight: 950,
-                      letterSpacing: 0.7,
-                      marginBottom: 10,
+                      margin: 0,
+                      color: "#92400E",
+                      fontSize: 15.5,
+                      lineHeight: 1.3,
                     }}
                   >
-                    CHILD RIDER DETAILS
-                  </div>
-
-                  <div style={{ display: "grid", gap: 9 }}>
-                    {familyProfile.children.map((child, index) => {
-                      const ageClass = getDisneyAgeClass(child.age);
-                      const heightValue =
-                        child.heightInches !== "" && child.heightInches != null
-                          ? `${child.heightInches}" tall`
-                          : "height not set";
-
-                      return (
-                        <div
-                          key={child.id || index}
-                          style={{
-                            padding: 12,
-                            borderRadius: 18,
-                            background: "rgba(255,255,255,0.82)",
-                            border: `1px solid ${colors.cardBorder}`,
-                          }}
-                        >
-                          <strong style={{ color: colors.text }}>
-                            Child {index + 1}: age {child.age || "not set"} · {heightValue}
-                          </strong>
-                          <p
-                            style={{
-                              margin: "5px 0 0",
-                              color: colors.muted,
-                              fontSize: 13,
-                              lineHeight: 1.4,
-                            }}
-                          >
-                            {getDisneyAgeLabel(ageClass)}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {familyProfileSummary.shortestHeightInches != null && (
-                    <p
-                      style={{
-                        margin: "10px 0 0",
-                        color:
-                          familyProfileSummary.shortestHeightInches < 38
-                            ? colors.error
-                            : familyProfileSummary.shortestHeightInches < 44
-                            ? "#92400E"
-                            : colors.success,
-                        fontSize: 13,
-                        fontWeight: 850,
-                        lineHeight: 1.45,
-                      }}
-                    >
-                      {familyProfileSummary.shortestHeightInches < 38
-                        ? "Height note: some family thrill rides will not be whole-family options yet."
-                        : familyProfileSummary.shortestHeightInches < 44
-                        ? "Height note: several mid-tier thrill rides may work, but bigger headliners still need filtering."
-                        : "Height note: most major height-gated rides should be available, but TOHI will still check each ride."}
-                    </p>
-                  )}
+                    Still needed before TOHI can personalize
+                  </h3>
+                  <p
+                    style={{
+                      margin: "8px 0 0",
+                      color: "#7A4A10",
+                      fontSize: 14,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {profileCompletion.missing.join(", ")}
+                  </p>
                 </section>
               )}
 
-              <section
-                style={{
-                  ...card,
-                  background:
-                    "linear-gradient(145deg, #FFFFFF 0%, #E0F2FE 100%)",
-                  border: "1px solid rgba(56, 189, 248, 0.26)",
-                  boxShadow: "0 12px 30px rgba(2, 132, 199, 0.08)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "5px 9px",
-                    borderRadius: 999,
-                    background: "rgba(56, 189, 248, 0.16)",
-                    color: "#0369A1",
-                    fontSize: 11,
-                    fontWeight: 950,
-                    letterSpacing: 0.7,
-                    marginBottom: 10,
-                  }}
-                >
-                  TRIP CONTEXT
-                </div>
+              {renderProfileGroup({
+                accent: "sky",
+                title: "Trip details",
+                caption:
+                  "Dates and parks tell TOHI whether to plan ahead or guide an active park day.",
+                children: renderProfileRows([
+                  {
+                    label: "Trip dates",
+                    value: formatProfileTripDates(familyProfileSummary.tripContext),
+                  },
+                  {
+                    label: "Park days",
+                    value: familyProfileSummary.tripContext?.parkDays
+                      ? `${familyProfileSummary.tripContext.parkDays} ${
+                          Number(familyProfileSummary.tripContext.parkDays) === 1
+                            ? "park day"
+                            : "park days"
+                        }`
+                      : null,
+                  },
+                  {
+                    label: "Parks on the list",
+                    value: familyProfileSummary.tripContext?.selectedParks?.length
+                      ? familyProfileSummary.tripContext.selectedParks
+                          .map((park) => getParkLabel(park))
+                          .join(" · ")
+                      : null,
+                  },
+                  {
+                    label: "First park",
+                    value: getProfileParkLabel(familyProfileSummary.tripContext?.firstPark),
+                  },
+                  {
+                    label: "Park that matters most",
+                    value: getProfileParkLabel(familyProfileSummary.tripContext?.priorityPark),
+                  },
+                  {
+                    label: "Park Hopper",
+                    value: getProfileDisplayLabel(
+                      PROFILE_HOPPER_LABELS,
+                      familyProfileSummary.tripContext?.parkHopper
+                    ),
+                  },
+                  {
+                    label: "Where you're staying",
+                    value:
+                      familyProfileSummary.resortProfile?.name ||
+                      familyProfileSummary.resortContext?.resortName ||
+                      familyProfileSummary.resortContext?.offPropertyHotelName ||
+                      getProfileDisplayLabel(
+                        PROFILE_STAY_LABELS,
+                        familyProfileSummary.resortContext?.stayingOnProperty
+                      ),
+                    hint: familyProfileSummary.resortProfile?.name
+                      ? "Shapes how realistic a mid-day resort break is."
+                      : null,
+                  },
+                  {
+                    label: "Getting around",
+                    value: getProfileDisplayLabel(
+                      PROFILE_TRANSPORT_LABELS,
+                      familyProfileSummary.resortContext?.transportationMode
+                    ),
+                  },
+                  familyProfileSummary.resortProfile?.transportation?.length
+                    ? {
+                        label: "Resort transportation",
+                        value: familyProfileSummary.resortProfile.transportation
+                          .map(
+                            (mode) =>
+                              getProfileDisplayLabel(PROFILE_TRANSPORT_LABELS, mode) || mode
+                          )
+                          .join(", "),
+                      }
+                    : null,
+                ]),
+              })}
 
-                <div style={{ display: "grid", gap: 9 }}>
-                  {[
-                    [
-                      "Selected parks",
-                      familyProfileSummary.tripContext?.selectedParks?.length
-                        ? familyProfileSummary.tripContext.selectedParks
-                            .map((park) => getParkLabel(park))
-                            .join(" · ")
-                        : "Not set",
-                    ],
-                    [
-                      "First park",
-                      getParkLabel(familyProfileSummary.tripContext?.firstPark),
-                    ],
-                    [
-                      "Priority park",
-                      getParkLabel(familyProfileSummary.tripContext?.priorityPark),
-                    ],
-                    [
-                      "Transportation",
-                      familyProfileSummary.resortContext?.transportationMode &&
-                      familyProfileSummary.resortContext.transportationMode !== "unknown"
-                        ? familyProfileSummary.resortContext.transportationMode
-                        : "Not set",
-                    ],
-                  ].map(([label, value]) => (
-                    <div
-                      key={label}
-                      style={{
-                        padding: 12,
-                        borderRadius: 18,
-                        background: "rgba(255,255,255,0.82)",
-                        border: `1px solid ${colors.cardBorder}`,
-                      }}
-                    >
-                      <div
+              {renderProfileGroup({
+                accent: "purple",
+                title: "Who's going",
+                caption:
+                  "Saved heights help TOHI check posted ride-height requirements. Ages help it judge what may suit the family.",
+                children: (
+                  <>
+                    {renderProfileRows([
+                      {
+                        label: "Your group",
+                        value: `${familyProfileSummary.partySize || 0} guests · ${
+                          familyProfileSummary.adultCount || 0
+                        } adults · ${familyProfileSummary.childCount || 0} kids`,
+                      },
+                      {
+                        label: "Disney age mix",
+                        value: `${familyProfileSummary.ageSummary?.under3Count || 0} under 3 · ${
+                          familyProfileSummary.ageSummary?.childCount || 0
+                        } Disney child · ${
+                          familyProfileSummary.ageSummary?.disneyAdultCount || 0
+                        } Disney adult`,
+                      },
+                      {
+                        label: "Shortest rider",
+                        value:
+                          familyProfileSummary.shortestHeightInches != null
+                            ? `${familyProfileSummary.shortestHeightInches}" tall`
+                            : familyProfileSummary.childCount > 0
+                            ? null
+                            : "Adults only",
+                        hint:
+                          familyProfileSummary.shortestHeightInches != null
+                            ? "TOHI checks posted ride-height requirements against this."
+                            : null,
+                      },
+                    ])}
+
+                    {familyProfileSummary.childCount > 0 &&
+                      familyProfileSummary.children?.length > 0 && (
+                        <div style={{ display: "grid", gap: 8, marginTop: 14 }}>
+                          {familyProfileSummary.children.map((child, index) => {
+                            const ageClass = getDisneyAgeClass(child.age);
+                            const hasAge = child.age !== "" && child.age != null;
+                            const hasHeight =
+                              child.heightInches !== "" && child.heightInches != null;
+
+                            return (
+                              <div
+                                key={child.id || index}
+                                style={{
+                                  padding: "12px 14px",
+                                  borderRadius: 16,
+                                  background: colors.backgroundSoft,
+                                  border: `1px solid ${colors.cardBorder}`,
+                                }}
+                              >
+                                <strong
+                                  style={{
+                                    display: "block",
+                                    color: colors.text,
+                                    fontSize: 14.5,
+                                    lineHeight: 1.3,
+                                  }}
+                                >
+                                  Child {index + 1}
+                                  {": "}
+                                  {hasAge ? `age ${child.age}` : "age not set"}
+                                  {" · "}
+                                  {hasHeight ? `${child.heightInches}" tall` : "height not set"}
+                                </strong>
+                                <span
+                                  style={{
+                                    display: "block",
+                                    marginTop: 4,
+                                    color: colors.muted,
+                                    fontSize: 13,
+                                    lineHeight: 1.4,
+                                  }}
+                                >
+                                  {getDisneyAgeLabel(ageClass)}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                    {familyProfileSummary.shortestHeightInches != null && (
+                      <p
                         style={{
-                          color: colors.muted,
-                          fontSize: 11,
-                          fontWeight: 950,
-                          letterSpacing: 0.5,
-                          marginBottom: 5,
-                          textTransform: "uppercase",
+                          margin: "14px 0 0",
+                          padding: "12px 14px",
+                          borderRadius: 16,
+                          background:
+                            familyProfileSummary.shortestHeightInches < 38
+                              ? colors.errorSoft
+                              : familyProfileSummary.shortestHeightInches < 44
+                              ? colors.amberSoft
+                              : colors.successSoft,
+                          color:
+                            familyProfileSummary.shortestHeightInches < 38
+                              ? "#9F1239"
+                              : familyProfileSummary.shortestHeightInches < 44
+                              ? "#92400E"
+                              : "#046A4E",
+                          fontSize: 13.5,
+                          fontWeight: 800,
+                          lineHeight: 1.45,
                         }}
                       >
-                        {label}
-                      </div>
-                      <strong
-                        style={{
-                          display: "block",
-                          color: colors.text,
-                          fontSize: 14,
-                          lineHeight: 1.3,
-                        }}
-                      >
-                        {value || "Not set"}
-                      </strong>
-                    </div>
-                  ))}
-                </div>
+                        {familyProfileSummary.shortestHeightInches < 38
+                          ? "Many height-gated rides post a requirement above this. TOHI still checks each posted requirement."
+                          : familyProfileSummary.shortestHeightInches < 44
+                          ? "Some height-gated rides post a requirement above this. TOHI still checks each posted requirement."
+                          : "Many height-gated rides may fit this height. TOHI still checks each posted requirement."}
+                      </p>
+                    )}
+                  </>
+                ),
+              })}
 
-                {familyProfileSummary.resortProfile?.transportation?.length > 0 && (
-                  <p
-                    style={{
-                      margin: "10px 0 0",
-                      color: colors.muted,
-                      fontSize: 13,
-                      lineHeight: 1.45,
-                    }}
-                  >
-                    Resort transportation:{" "}
-                    {familyProfileSummary.resortProfile.transportation.join(", ")}
-                  </p>
-                )}
-              </section>
+              {renderProfileGroup({
+                accent: "purple",
+                title: "Comfort & pace",
+                caption: "These answers change which rides TOHI puts in front of you.",
+                children: renderProfileRows([
+                  {
+                    label: "How much walking works",
+                    value: getProfileDisplayLabel(
+                      PROFILE_WALKING_LABELS,
+                      familyProfileSummary.pace
+                    ),
+                    hint: "Decides how strongly TOHI favors nearby choices.",
+                  },
+                  {
+                    label: "Storm comfort",
+                    value: getProfileDisplayLabel(
+                      PROFILE_STORM_LABELS,
+                      familyProfileSummary.stormTolerance
+                    ),
+                    hint: "When rain or storms show up in the real forecast, TOHI leans toward indoor picks.",
+                  },
+                  {
+                    label: "Heat and fatigue",
+                    value: getProfileDisplayLabel(
+                      PROFILE_HEAT_LABELS,
+                      familyProfileSummary.heatSensitivity
+                    ),
+                    hint: "Shapes break timing and how much a hot outdoor wait counts against a ride.",
+                  },
+                  {
+                    label: "Ride comfort",
+                    value: getProfileDisplayLabel(
+                      PROFILE_THRILL_LABELS,
+                      familyProfileSummary.thrillTolerance
+                    ),
+                    hint: "Nudges bigger thrills up or down your list. It does not rule rides out.",
+                  },
+                  {
+                    label: "Water rides",
+                    value: getProfileDisplayLabel(
+                      PROFILE_WATER_LABELS,
+                      familyProfileSummary.waterRidePreference
+                    ),
+                    hint: getProfileWaterRideHint(familyProfileSummary.waterRidePreference),
+                  },
+                ]),
+              })}
 
-              <section
-                style={{
-                  ...card,
-                  background:
-                    "linear-gradient(145deg, #FFFFFF 0%, #FFF7ED 100%)",
-                  border: `1px solid ${colors.cardBorder}`,
-                  boxShadow: "0 12px 30px rgba(28, 25, 23, 0.07)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "5px 9px",
-                    borderRadius: 999,
-                    background: colors.amberSoft,
-                    color: "#92400E",
-                    fontSize: 11,
-                    fontWeight: 950,
-                    letterSpacing: 0.7,
-                    marginBottom: 10,
-                  }}
-                >
-                  FAMILY PRIORITIES
-                </div>
-
-                {familyProfileSummary.priorities?.length ? (
+              {renderProfileGroup({
+                accent: "amber",
+                title: "What matters most",
+                caption:
+                  "TOHI keeps these in view while still adapting to weather, waits, and family energy.",
+                children: familyProfileSummary.priorities?.length ? (
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {familyProfileSummary.priorities.map((priority) => {
                       const label =
-                        FAMILY_PRIORITY_OPTIONS.find((item) => item.value === priority)
-                          ?.label || priority;
+                        FAMILY_PRIORITY_OPTIONS.find((item) => item.value === priority)?.label ||
+                        priority;
 
                       return (
                         <span
                           key={priority}
                           style={{
-                            padding: "7px 10px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            minHeight: 38,
+                            padding: "8px 14px",
                             borderRadius: 999,
-                            background: "rgba(124, 58, 237, 0.10)",
-                            color: colors.purpleDeep,
-                            border: "1px solid rgba(124, 58, 237, 0.16)",
-                            fontSize: 12,
-                            fontWeight: 900,
+                            background: "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
+                            color: "white",
+                            border: "1px solid rgba(91, 33, 182, 0.35)",
+                            fontSize: 13.5,
+                            fontWeight: 850,
+                            lineHeight: 1.2,
                           }}
                         >
                           {label}
@@ -5946,39 +6167,36 @@ function App() {
                       margin: 0,
                       color: colors.muted,
                       fontSize: 14,
-                      lineHeight: 1.45,
-                    }}
-                  >
-                    No priorities selected yet. Add at least one so TOHI does not feel generic.
-                  </p>
-                )}
-              </section>
-
-              {!profileCompletion.isComplete && (
-                <section
-                  style={{
-                    ...card,
-                    background:
-                      "linear-gradient(145deg, #FFFFFF 0%, #FEF3C7 100%)",
-                    border: "1px solid rgba(245, 158, 11, 0.28)",
-                    boxShadow: "0 12px 30px rgba(245, 158, 11, 0.10)",
-                  }}
-                >
-                  <strong style={{ color: "#92400E" }}>Still needed</strong>
-                  <p
-                    style={{
-                      margin: "8px 0 0",
-                      color: colors.muted,
-                      fontSize: 14,
                       lineHeight: 1.5,
                     }}
                   >
-                    {profileCompletion.missing?.length
-                      ? profileCompletion.missing.join(", ")
-                      : "Finish setup so TOHI can unlock personalized recommendations."}
+                    Nothing chosen yet. Adding at least one keeps TOHI from feeling generic.
                   </p>
-                </section>
-              )}
+                ),
+              })}
+
+              {renderProfileGroup({
+                accent: "sky",
+                title: "Packing & day comfort",
+                caption:
+                  "These shape your packing list and day-comfort suggestions. They do not change ride eligibility, and TOHI never decides accessibility or ADA questions for you.",
+                children: renderProfileRows([
+                  {
+                    label: "Stroller",
+                    value: familyProfileSummary.mobilityAccessibility?.usesStroller
+                      ? "Yes, we'll use one"
+                      : "Not using one",
+                  },
+                  {
+                    label: "Wheelchair, ECV or similar support",
+                    value: familyProfileSummary.mobilityAccessibility?.usesWheelchair
+                      ? "Yes, someone will"
+                      : "Not using one",
+                    hint: "Confirm attraction access and transfer details in the official Disney app or with a Cast Member.",
+                  },
+                ]),
+              })}
+
 
               {isProfileIncomplete && access.isDevPreviewing && DEV_ALLOW_FULL_APP_WITHOUT_PROFILE && (
                 <section
