@@ -421,7 +421,45 @@ function sanitizeChatActivityLog(activityLog = []) {
     .filter((entry) => entry.rideName && entry.completedAt);
 }
 
-function sanitizeChatSessionData(sessionData = {}) {
+// Input honesty phase: mobility notes are no longer collected, and any value a
+// guest saved before this phase must stop leaving the device. Nothing on the
+// backend ever read the field, so removing it from the outbound payload changes
+// no TOHI behavior.
+//
+// Deliberately narrow: this removes exactly one field. It is NOT a chat-payload
+// privacy rewrite — child arrays, names, location and every other payload field
+// are out of scope for this phase and are passed through unchanged.
+//
+// The stored object is never mutated. A guest sending a message must not have
+// their saved profile edited as a side effect, so this copies rather than
+// deletes in place.
+function sanitizeChatFamilyProfile(familyProfile) {
+  if (!familyProfile || typeof familyProfile !== "object" || Array.isArray(familyProfile)) {
+    return familyProfile;
+  }
+
+  const mobility = familyProfile.mobilityAccessibility;
+
+  if (!mobility || typeof mobility !== "object" || Array.isArray(mobility)) {
+    return familyProfile;
+  }
+
+  if (!("mobilityNotes" in mobility)) {
+    return familyProfile;
+  }
+
+  const safeMobility = { ...mobility };
+  delete safeMobility.mobilityNotes;
+
+  return {
+    ...familyProfile,
+    mobilityAccessibility: safeMobility,
+  };
+}
+
+// Exported only so a harness can exercise this behavior directly. The production
+// call path is unchanged: sendChatMessage still calls it internally.
+export function sanitizeChatSessionData(sessionData = {}) {
   if (!sessionData || typeof sessionData !== "object" || Array.isArray(sessionData)) {
     return {};
   }
@@ -449,6 +487,10 @@ function sanitizeChatSessionData(sessionData = {}) {
     tripPlan: safeTripPlan,
     mustDoExperiences: safeMustDoExperiences,
     dayGamePlan: safeDayGamePlan,
+
+    // Input honesty phase. Absent/null/malformed profiles pass straight through,
+    // so this cannot change what an incomplete-setup guest sends.
+    familyProfile: sanitizeChatFamilyProfile(sessionData.familyProfile),
   });
 }
 
