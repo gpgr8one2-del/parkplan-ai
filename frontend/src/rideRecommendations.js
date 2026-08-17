@@ -298,6 +298,88 @@ function isRainRecoveryRide(meta) {
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/* Storm preference (familyProfile.stormTolerance)                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The guest's stored storm comfort answer becomes a modest planning lean, and
+ * only when the engine's own structured weather interpretation already says rain
+ * or storms are a concern.
+ *
+ * WHAT THIS IS NOT:
+ *   - It is not a safety signal. `!ride.isOpen`, the `closesInRain` penalties and
+ *     every existing weather rule are applied elsewhere and are far larger. A
+ *     preference cannot reopen a closed ride or make a rain-closing ride look
+ *     safe, and `we_handle_it` is 0 rather than positive precisely so it can
+ *     never argue against an operating condition.
+ *   - It is not a distance rule. Proximity and walking tolerance already favour
+ *     nearby choices; nothing here touches them.
+ *   - It is not a new weather source. There is no prose parsing, no keyword
+ *     matcher, no display string and no new threshold here.
+ *
+ * The gate reuses `getRecommendationWeatherState`, the structured determination
+ * this file already exports and `recommendationWeatherHarness.cjs` already
+ * covers. Missing or malformed weather resolves every field to false there, so
+ * absent weather is neutral and is never treated as a storm.
+ */
+const STORM_PREFERENCE_INDOOR_LEAN = {
+  indoor_only: 8,
+  brief_outdoor_ok: 3,
+  we_handle_it: 0,
+};
+
+const STORM_PREFERENCE_EXPOSED_LEAN = {
+  indoor_only: -8,
+  brief_outdoor_ok: -3,
+  we_handle_it: 0,
+};
+
+function hasStructuredRainOrStormConcern(weatherState) {
+  if (!weatherState) return false;
+
+  // Every one of these is an existing field of the existing structured result.
+  // No new threshold is introduced: `legacyRainActive` is this file's own
+  // long-standing rainRisk determination, already used for slot filtering.
+  return Boolean(
+    weatherState.activeStorm ||
+      weatherState.activeRain ||
+      weatherState.forecastStormWatch ||
+      weatherState.forecastRainWatch ||
+      weatherState.legacyRainActive
+  );
+}
+
+function getStormPreferenceModifier({ meta, familyProfile, weatherState }) {
+  // Missing or malformed attraction data stays neutral rather than being guessed at.
+  if (!meta) return 0;
+
+  if (!hasStructuredRainOrStormConcern(weatherState)) return 0;
+
+  const preference = familyProfile?.stormTolerance;
+  if (typeof preference !== "string") return 0;
+
+  // Reads the existing metadata fields directly. No second classification table,
+  // and no inference about covered queues, sheltered paths or transfers.
+  const indoorFriendly = meta.environment === "indoor" || meta.hasAC === true;
+
+  if (indoorFriendly) {
+    const lean = STORM_PREFERENCE_INDOOR_LEAN[preference];
+    return Number.isFinite(lean) ? lean : 0;
+  }
+
+  // The negative lean applies only where the metadata is explicit that the
+  // attraction is weather-exposed. "covered" and any unrecognised or absent
+  // environment stay neutral instead of being penalised on an assumption.
+  const isExplicitlyExposed =
+    meta.environment === "outdoor" || meta.environment === "mixed";
+
+  if (!isExplicitlyExposed) return 0;
+
+  const lean = STORM_PREFERENCE_EXPOSED_LEAN[preference];
+  return Number.isFinite(lean) ? lean : 0;
+}
+
 function getLocalRainRecoveryModifier(meta, weather, currentLand, proximityModifier) {
   const stormActive = isCurrentlyStorming(weather);
   const rainActive = isRainActive(weather);
@@ -1691,6 +1773,7 @@ function getCrossParkSumCapAdjustment({
   trendModifier,
   nearbyHeadlinerOpportunityModifier,
   mustDoModifier = 0,
+  stormPreferenceModifier = 0,
 }) {
   const isSameLand = !!meta?.land && !!currentLand && meta.land === currentLand;
   if (isSameLand) return 0;
@@ -1704,7 +1787,9 @@ function getCrossParkSumCapAdjustment({
     Math.max(0, familyProfileModifier) +
     Math.max(0, trendModifier) +
     Math.max(0, nearbyHeadlinerOpportunityModifier) +
-    Math.max(0, mustDoModifier);
+    Math.max(0, mustDoModifier) +
+    // Defaults to 0, so every existing caller's positive sum is unchanged.
+    Math.max(0, stormPreferenceModifier);
 
   if (positiveSum <= CROSS_PARK_POSITIVE_SUM_CAP) return 0;
 
@@ -1891,6 +1976,11 @@ export function getNextBestRides({
 
   const stormActive = isCurrentlyStorming(weather);
   const rainActive = isRainActive(weather);
+
+  // The existing structured weather determination, computed once per call and
+  // reused as the storm-preference gate. stormActive and rainActive above are
+  // left exactly as they were, so no existing weather rule changes behaviour.
+  const weatherState = getRecommendationWeatherState(weather);
 
   const now = new Date();
   const closeTime = getParkCloseTime(parkId, now);
@@ -2118,8 +2208,21 @@ export function getNextBestRides({
     });
     const mustDoModifier = mustDoResult.modifier || 0;
 
+    // Applied exactly once, per attraction. Neutral (0) unless the structured
+    // weather gate above is active.
+    const stormPreferenceModifier = getStormPreferenceModifier({
+      meta,
+      familyProfile,
+      weatherState,
+    });
+
     // V1.1: cross-park sum cap. Applied as a separate adjustment so individual
     // modifier values stay readable for telemetry.
+    //
+    // The storm preference joins the existing positive sum rather than bypassing
+    // it, so a rainy-day indoor lean cannot push a cross-land attraction past the
+    // cross-park guard that proximity and walking tolerance already enforce. The
+    // cap value, its threshold and this function's logic are unchanged.
     const crossParkSumCapAdjustment = getCrossParkSumCapAdjustment({
       meta,
       currentLand,
@@ -2129,6 +2232,7 @@ export function getNextBestRides({
       trendModifier,
       nearbyHeadlinerOpportunityModifier,
       mustDoModifier,
+      stormPreferenceModifier,
     });
 
     const finalScore =
@@ -2148,6 +2252,7 @@ export function getNextBestRides({
       nearbyHeadlinerOpportunityModifier +
       closestAnchorOpportunityModifier +
       mustDoModifier +
+      stormPreferenceModifier +
       crossParkSumCapAdjustment -
       (heightWarning ? 16 : 0);
 
@@ -2182,6 +2287,9 @@ export function getNextBestRides({
       mustDoModifier,
       mustDoReason: mustDoResult.reason,
       shouldProtectLater: mustDoResult.shouldProtectLater,
+      // Exposed alongside the existing per-attraction scoring information so the
+      // real value is inspectable rather than inferred from the total.
+      stormPreferenceModifier,
       reason: buildReason(ride, {
         baseScore,
         trendModifier,
