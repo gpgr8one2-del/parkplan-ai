@@ -60,6 +60,59 @@ function getExperienceKey(experience = {}) {
   return String(experience.id || experience.name || experience.displayName || "");
 }
 
+/* -------------------------------------------------------------------------- */
+/* Setup summary labels — presentation only                                   */
+/* -------------------------------------------------------------------------- */
+
+// The summary used to print the stored ids straight through, so a guest who
+// chose "A mix of gentle and exciting" read back "mixed". These maps mirror the
+// EXACT <option> text of the controls further down this same screen, so the
+// summary reads back the answer as it was offered. A focused test asserts each
+// entry still matches its option, which is what keeps the two from drifting.
+//
+// Stored values, defaults, normalization and completion rules are untouched.
+//
+// Ride comfort and Walking are word-for-word identical to the Profile tab's
+// labels. Heat and Storms differ on purpose: Profile uses shortened variants
+// that suit its tighter rows, while this screen echoes the full option text a
+// guest just read. Both are truthful; each matches its own surface.
+const SUMMARY_THRILL_LABELS = {
+  low: "Mostly gentle rides",
+  mixed: "A mix of gentle and exciting",
+  high: "Big thrills are a priority",
+};
+
+const SUMMARY_WALKING_LABELS = {
+  leisurely: "Keep choices nearby",
+  balanced: "A balanced amount of walking",
+  energetic: "Comfortable covering more ground",
+};
+
+const SUMMARY_HEAT_LABELS = {
+  high: "We need breaks before things fall apart",
+  medium: "Watch it and suggest breaks when smart",
+  low: "We usually handle heat pretty well",
+};
+
+const SUMMARY_STORM_LABELS = {
+  indoor_only: "Indoor-only if storms are nearby",
+  brief_outdoor_ok: "Brief outdoor walks are okay",
+  we_handle_it: "We handle weather pretty well",
+};
+
+const SUMMARY_NOT_SET = "Not set";
+
+// Anything missing, blank or unrecognised resolves to "Not set" rather than
+// leaking an id. hasOwnProperty keeps inherited keys such as "constructor" from
+// resolving to a function.
+function getSummaryLabel(labelMap, value) {
+  const key = typeof value === "string" ? value.trim() : "";
+  if (!key) return SUMMARY_NOT_SET;
+  return Object.prototype.hasOwnProperty.call(labelMap, key)
+    ? labelMap[key]
+    : SUMMARY_NOT_SET;
+}
+
 export function OnboardingFlow({
   familyProfileSummary,
   activePark,
@@ -497,20 +550,64 @@ export function OnboardingFlow({
               First park: {getParkLabel(firstParkId)} · Priority park:{" "}
               {getParkLabel(mostImportantParkId)} · {summary.tripAccessStatus.message}
             </p>
-            <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12 }}>
-              Ride comfort: {summary.thrillTolerance || "not set"} · Pace:{" "}
-              {summary.pace || "not set"} · Heat: {summary.heatSensitivity || "not set"} ·
-              Storms: {summary.stormTolerance || "not set"}
-            </p>
+            {/* Stacked rather than inline: the full option text is far too long
+                to read as one run-on sentence at 375px. A definition list also
+                ties each value to its own label. "Pace" is now "Walking",
+                matching what the control actually asks. */}
+            <dl
+              style={{
+                margin: "10px 0 0",
+                display: "grid",
+                gap: 8,
+              }}
+            >
+              {[
+                ["Ride comfort", getSummaryLabel(SUMMARY_THRILL_LABELS, summary.thrillTolerance)],
+                ["Walking", getSummaryLabel(SUMMARY_WALKING_LABELS, summary.pace)],
+                ["Heat", getSummaryLabel(SUMMARY_HEAT_LABELS, summary.heatSensitivity)],
+                ["Storms", getSummaryLabel(SUMMARY_STORM_LABELS, summary.stormTolerance)],
+              ].map(([label, value]) => (
+                <div key={label} style={{ display: "grid", gap: 2 }}>
+                  <dt
+                    style={{
+                      color: colors.muted,
+                      fontSize: 10.5,
+                      fontWeight: 900,
+                      letterSpacing: 0.5,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {label}
+                  </dt>
+                  <dd
+                    style={{
+                      margin: 0,
+                      color: value === SUMMARY_NOT_SET ? colors.muted : colors.text,
+                      fontSize: 12.5,
+                      fontWeight: value === SUMMARY_NOT_SET ? 700 : 800,
+                      fontStyle: value === SUMMARY_NOT_SET ? "italic" : "normal",
+                      lineHeight: 1.35,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
 
           {familyProfileStep === 1 && (
             <div style={{ display: "grid", gap: 14 }}>
               <div style={sectionPanel}>
                 <strong>Who’s in your group?</strong>
+                {/* Narrowed: "avoid rides they cannot ride" claimed a complete
+                    eligibility determination. TOHI compares a saved height against
+                    a posted ride-height requirement, and ages inform family fit. */}
                 <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
-                  Adults do not need height entry. We only need children’s ages and
-                  heights so TOHI can avoid rides they cannot ride.
+                  Adults do not need height entry. Children’s heights help TOHI check
+                  posted ride-height requirements, while ages help it judge what may
+                  suit the family.
                 </p>
 
                 <div
