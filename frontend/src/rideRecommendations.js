@@ -517,6 +517,28 @@ function getHeightWarning(meta, familyProfile) {
   };
 }
 
+/**
+ * "Okay if TOHI warns us first" is a promise the app was not keeping: the value
+ * stored fine, stayed correctly score-neutral, and then nothing was ever said
+ * when a wet ride was surfaced.
+ *
+ * This is the heads-up half of that answer. It is copy only — no modifier, no
+ * cap, no ordering effect — and it fires only for a ride the real metadata marks
+ * `getsWet` and only for the one preference that asked to be told. "avoid" needs
+ * no note because its existing -45 already keeps those rides away, and "love"
+ * and "yes" did not ask to be warned.
+ */
+function getWetRideHeadsUp(meta, familyProfile) {
+  if (!meta || !familyProfile) return null;
+  if (meta.getsWet !== true) return null;
+  if (familyProfile.waterRidePreference !== "okay_with_warning") return null;
+
+  return {
+    reason: "water_ride_heads_up",
+    message: "Heads up: this one can get you wet",
+  };
+}
+
 
 /* -------------------------------------------------------------------------- */
 /* Must-do awareness                                                          */
@@ -745,7 +767,18 @@ function getFamilyProfileModifier(meta, familyProfile, weather) {
 
   if (meta.getsWet) {
     if (familyProfile.waterRidePreference === "avoid") mod -= 45;
-    else if (familyProfile.waterRidePreference === "yes") mod += 8;
+    // Contract fix: onboarding stores the canonical "love", but only the legacy
+    // "yes" ever reached this branch, so "We love water rides" had no effect on
+    // recommendations at all. Both values now earn the SAME existing +8 — the
+    // value is unchanged, only the set of inputs that reaches it is corrected.
+    // "okay_with_warning" and "depends" stay deliberately score-neutral; the
+    // former is answered with a visible heads-up instead (see getWetRideHeadsUp).
+    else if (
+      familyProfile.waterRidePreference === "love" ||
+      familyProfile.waterRidePreference === "yes"
+    ) {
+      mod += 8;
+    }
   }
 
   if (familyProfile.pace === "relaxed") {
@@ -1913,6 +1946,13 @@ function buildReason(ride, parts) {
   // Secondary: one additional signal if relevant
   let secondary = "";
 
+  // The wet-ride heads-up is deliberately NOT part of this chain. Threading it
+  // through `reason` could never guarantee the guest saw it: this function returns
+  // early for a must-do, Plan Ahead renders `planAheadReason` instead, Wait on This
+  // renders `waitOnThisReason`, and a height note would win the else-if. It is now
+  // rendered from the structured `ride.wetRideHeadsUp` field by RecommendationCard,
+  // which is reached by every slot. Keeping a copy here as well would double the
+  // message on ordinary cards.
   if (parts.heightWarning) {
     secondary = ` ${parts.heightWarning.message}.`;
   } else if (isCrosspark && waitStatus !== "great_value") {
@@ -2144,6 +2184,7 @@ export function getNextBestRides({
     });
 
     const heightWarning = getHeightWarning(meta, familyProfile);
+    const wetRideHeadsUp = getWetRideHeadsUp(meta, familyProfile);
 
     const scheduledShowModifier = getScheduledShowScoreModifier(
       meta,
@@ -2275,6 +2316,8 @@ export function getNextBestRides({
       showProfile: meta?.showProfile || null,
       isScheduledShow: isScheduledShowMeta(meta),
       heightWarning,
+      // Copy-only heads-up. Score-neutral by design; see getWetRideHeadsUp.
+      wetRideHeadsUp,
       strategyNote: meta?.waitProfile?.strategyNote || null,
       familyProfileModifier,
       rawFamilyProfileModifier,
