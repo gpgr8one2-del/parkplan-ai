@@ -245,6 +245,15 @@ export function OnboardingFlow({
     background: "rgba(255,255,255,0.92)",
     color: colors.text,
     boxShadow: "0 6px 14px rgba(28, 25, 23, 0.04)",
+
+    // Mobile sizing. A select's min-content width is driven by its longest
+    // <option>, and a number input carries a default intrinsic width, so at
+    // 375px these measured 343px inside a 289px card. These four let the control
+    // shrink to its card instead of pushing the card wider. Nothing is hidden.
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
   };
 
   const fieldLabelStyle = {
@@ -253,6 +262,10 @@ export function OnboardingFlow({
     fontSize: 13,
     fontWeight: 900,
     color: colors.text,
+
+    // As a grid item this would otherwise be floored at its content's
+    // min-content width, re-widening the card the control just shrank out of.
+    minWidth: 0,
   };
 
   const sectionPanel = {
@@ -261,6 +274,11 @@ export function OnboardingFlow({
     border: `1px solid ${colors.cardBorder}`,
     background: "rgba(255,255,255,0.78)",
     boxShadow: "0 8px 20px rgba(28, 25, 23, 0.05)",
+
+    // Lets a panel shrink to the step grid rather than being floored at the
+    // min-content width of the controls inside it.
+    minWidth: 0,
+    boxSizing: "border-box",
   };
 
   const primaryButtonStyle = {
@@ -613,7 +631,7 @@ export function OnboardingFlow({
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
+                    gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
                     gap: 10,
                   }}
                 >
@@ -673,7 +691,7 @@ export function OnboardingFlow({
                           <div
                             style={{
                               display: "grid",
-                              gridTemplateColumns: "1fr 1fr",
+                              gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
                               gap: 8,
                             }}
                           >
@@ -767,7 +785,7 @@ export function OnboardingFlow({
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
+                      gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
                       gap: 10,
                     }}
                   >
@@ -1209,6 +1227,187 @@ export function OnboardingFlow({
                 )}
               </div>
 
+              <div style={sectionPanel}>
+                <strong>What would make this trip feel like a win?</strong>
+                <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13, lineHeight: 1.45 }}>
+                  Pick the rides, shows, or experiences TOHI should keep in view. This is not a checklist — it helps TOHI make room for what matters while still adapting to weather, waits, location, and family energy.
+                </p>
+
+                {selectedMustDoCount > 0 && (
+                  <p style={{ margin: "0 0 10px", color: colors.purpleDeep, fontSize: 12.5, fontWeight: 850 }}>
+                    {selectedMustDoCount} saved as trip priorities.
+                  </p>
+                )}
+
+                {profileMustDoOptions.length > 0 ? (
+                  <div style={{ display: "grid", gap: 12 }}>
+                    {profileMustDoOptionGroups.map((group) => (
+                      <div key={group.parkId} style={{ display: "grid", gap: 8 }}>
+                        <div
+                          style={{
+                            color: colors.purpleDeep,
+                            fontSize: 11,
+                            fontWeight: 950,
+                            letterSpacing: 0.7,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {group.parkLabel}
+                        </div>
+
+                        {group.options.map((experience) => {
+                          const isSelected = selectedMustDoKeys.has(getExperienceKey(experience));
+                          const label = experience.displayName || experience.name || "Experience";
+
+                          return (
+                            <button
+                              key={getExperienceKey(experience)}
+                              type="button"
+                              onClick={() => onToggleMustDoExperience?.(experience)}
+                              style={{
+                                ...button,
+                                justifyContent: "space-between",
+                                textAlign: "left",
+                                gap: 10,
+                                background: isSelected
+                                  ? "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)"
+                                  : "rgba(255,255,255,0.86)",
+                                color: isSelected ? "white" : colors.text,
+                                borderColor: isSelected ? colors.purpleDeep : colors.cardBorder,
+                              }}
+                            >
+                              <span>{isSelected ? `✓ ${label}` : label}</span>
+                              <span
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: 850,
+                                  opacity: isSelected ? 0.9 : 0.62,
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {isSelected ? "Selected" : "Add"}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, color: colors.muted, fontSize: 12.5 }}>
+                    Choose your park days first, then TOHI can show must-do options for each selected park here.
+                  </p>
+                )}
+              </div>
+
+              <div style={sectionPanel}>
+                <strong>How should TOHI shape the day?</strong>
+                <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13, lineHeight: 1.45 }}>
+                  These are gentle defaults, not hard rules. TOHI will still adjust around weather, waits, location, and how the family is doing.
+                </p>
+
+                <div style={{ display: "grid", gap: 10 }}>
+                  <label style={fieldLabelStyle}>
+                    How do you like to start?
+                    <select
+                      value={tripPreferences.startStrategy || ""}
+                      onChange={(e) => onUpdateTripPreferences?.({ startStrategy: e.target.value })}
+                      style={inputStyle}
+                    >
+                      <option value="">Let TOHI keep it flexible</option>
+                      {START_STRATEGY_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label style={fieldLabelStyle}>
+                    Break rhythm
+                    <select
+                      value={tripPreferences.breakPreference || ""}
+                      onChange={(e) => onUpdateTripPreferences?.({ breakPreference: e.target.value })}
+                      style={inputStyle}
+                    >
+                      <option value="">Let TOHI read the day</option>
+                      {BREAK_PREFERENCE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label style={fieldLabelStyle}>
+                    Food rhythm
+                    <select
+                      value={tripPreferences.diningStyle || ""}
+                      onChange={(e) => onUpdateTripPreferences?.({ diningStyle: e.target.value })}
+                      style={inputStyle}
+                    >
+                      <option value="">Keep meals flexible</option>
+                      {DINING_STYLE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label style={fieldLabelStyle}>
+                    Shows and parades
+                    <select
+                      value={tripPreferences.showsImportance || ""}
+                      onChange={(e) => onUpdateTripPreferences?.({ showsImportance: e.target.value })}
+                      style={inputStyle}
+                    >
+                      <option value="">Fit them in if they make sense</option>
+                      {SHOWS_IMPORTANCE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label style={fieldLabelStyle}>
+                    Nighttime plan
+                    <select
+                      value={tripPreferences.nighttimeImportance || ""}
+                      onChange={(e) => onUpdateTripPreferences?.({ nighttimeImportance: e.target.value })}
+                      style={inputStyle}
+                    >
+                      <option value="">Decide based on energy</option>
+                      {NIGHTTIME_IMPORTANCE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label style={fieldLabelStyle}>
+                    Paid queue comfort
+                    <select
+                      value={tripPreferences.paidQueueStrategy || ""}
+                      onChange={(e) => onUpdateTripPreferences?.({ paidQueueStrategy: e.target.value })}
+                      style={inputStyle}
+                    >
+                      <option value="">Only if it helps the day</option>
+                      {PAID_QUEUE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              {/* Replaces a note that claimed rope drop, meals, paid queue strategy and
+                  shows would be asked later in Plan Ahead. Those controls are directly
+                  above now, so the old text was simply wrong. */}
               <div
                 style={{
                   padding: 12,
@@ -1218,217 +1417,39 @@ export function OnboardingFlow({
                   color: colors.muted,
                   fontSize: 13,
                   lineHeight: 1.45,
+                  minWidth: 0,
                 }}
               >
-                We’ll ask about rope drop, meals, paid queue strategy, shows, and
-                deeper planning later in Plan Ahead. That keeps setup fast while
-                still giving TOHI enough context to avoid bad recommendations.
+                None of this is locked in. You can revisit every answer later from the
+                Profile tab, and TOHI keeps adapting to weather, waits, and how the day
+                is actually going.
               </div>
 
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  onClick={() => setFamilyProfileStep(1)}
-                  style={{ ...button, color: colors.muted }}
-                >
-                  Back
-                </button>
+              <button
+                type="button"
+                onClick={() => setFamilyProfileStep(1)}
+                style={{ ...button, color: colors.muted }}
+              >
+                Back
+              </button>
 
-
-                <div style={sectionPanel}>
-                  <strong>What would make this trip feel like a win?</strong>
-                  <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13, lineHeight: 1.45 }}>
-                    Pick the rides, shows, or experiences TOHI should keep in view. This is not a checklist — it helps TOHI make room for what matters while still adapting to weather, waits, location, and family energy.
-                  </p>
-
-                  {selectedMustDoCount > 0 && (
-                    <p style={{ margin: "0 0 10px", color: colors.purpleDeep, fontSize: 12.5, fontWeight: 850 }}>
-                      {selectedMustDoCount} saved as trip priorities.
-                    </p>
-                  )}
-
-                  {profileMustDoOptions.length > 0 ? (
-                    <div style={{ display: "grid", gap: 12 }}>
-                      {profileMustDoOptionGroups.map((group) => (
-                        <div key={group.parkId} style={{ display: "grid", gap: 8 }}>
-                          <div
-                            style={{
-                              color: colors.purpleDeep,
-                              fontSize: 11,
-                              fontWeight: 950,
-                              letterSpacing: 0.7,
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            {group.parkLabel}
-                          </div>
-
-                          {group.options.map((experience) => {
-                            const isSelected = selectedMustDoKeys.has(getExperienceKey(experience));
-                            const label = experience.displayName || experience.name || "Experience";
-
-                            return (
-                              <button
-                                key={getExperienceKey(experience)}
-                                type="button"
-                                onClick={() => onToggleMustDoExperience?.(experience)}
-                                style={{
-                                  ...button,
-                                  justifyContent: "space-between",
-                                  textAlign: "left",
-                                  gap: 10,
-                                  background: isSelected
-                                    ? "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)"
-                                    : "rgba(255,255,255,0.86)",
-                                  color: isSelected ? "white" : colors.text,
-                                  borderColor: isSelected ? colors.purpleDeep : colors.cardBorder,
-                                }}
-                              >
-                                <span>{isSelected ? `✓ ${label}` : label}</span>
-                                <span
-                                  style={{
-                                    fontSize: 11,
-                                    fontWeight: 850,
-                                    opacity: isSelected ? 0.9 : 0.62,
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  {isSelected ? "Selected" : "Add"}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p style={{ margin: 0, color: colors.muted, fontSize: 12.5 }}>
-                      Choose your park days first, then TOHI can show must-do options for each selected park here.
-                    </p>
-                  )}
-                </div>
-
-                <div style={sectionPanel}>
-                  <strong>How should TOHI shape the day?</strong>
-                  <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13, lineHeight: 1.45 }}>
-                    These are gentle defaults, not hard rules. TOHI will still adjust around weather, waits, location, and how the family is doing.
-                  </p>
-
-                  <div style={{ display: "grid", gap: 10 }}>
-                    <label style={fieldLabelStyle}>
-                      How do you like to start?
-                      <select
-                        value={tripPreferences.startStrategy || ""}
-                        onChange={(e) => onUpdateTripPreferences?.({ startStrategy: e.target.value })}
-                        style={inputStyle}
-                      >
-                        <option value="">Let TOHI keep it flexible</option>
-                        {START_STRATEGY_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label style={fieldLabelStyle}>
-                      Break rhythm
-                      <select
-                        value={tripPreferences.breakPreference || ""}
-                        onChange={(e) => onUpdateTripPreferences?.({ breakPreference: e.target.value })}
-                        style={inputStyle}
-                      >
-                        <option value="">Let TOHI read the day</option>
-                        {BREAK_PREFERENCE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label style={fieldLabelStyle}>
-                      Food rhythm
-                      <select
-                        value={tripPreferences.diningStyle || ""}
-                        onChange={(e) => onUpdateTripPreferences?.({ diningStyle: e.target.value })}
-                        style={inputStyle}
-                      >
-                        <option value="">Keep meals flexible</option>
-                        {DINING_STYLE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label style={fieldLabelStyle}>
-                      Shows and parades
-                      <select
-                        value={tripPreferences.showsImportance || ""}
-                        onChange={(e) => onUpdateTripPreferences?.({ showsImportance: e.target.value })}
-                        style={inputStyle}
-                      >
-                        <option value="">Fit them in if they make sense</option>
-                        {SHOWS_IMPORTANCE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label style={fieldLabelStyle}>
-                      Nighttime plan
-                      <select
-                        value={tripPreferences.nighttimeImportance || ""}
-                        onChange={(e) => onUpdateTripPreferences?.({ nighttimeImportance: e.target.value })}
-                        style={inputStyle}
-                      >
-                        <option value="">Decide based on energy</option>
-                        {NIGHTTIME_IMPORTANCE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label style={fieldLabelStyle}>
-                      Paid queue comfort
-                      <select
-                        value={tripPreferences.paidQueueStrategy || ""}
-                        onChange={(e) => onUpdateTripPreferences?.({ paidQueueStrategy: e.target.value })}
-                        style={inputStyle}
-                      >
-                        <option value="">Only if it helps the day</option>
-                        {PAID_QUEUE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    trackAppEvent("profile_step_next", {
-                      source: "profile_setup",
-                      metadata: {
-                        fromStep: 2,
-                        toStep: 3,
-                      },
-                    });
-                    setFamilyProfileStep(3);
-                  }}
-                  style={primaryButtonStyle}
-                >
-                  Next: Where You’re Staying
-                </button>
+              <button
+                type="button"
+                onClick={() => {
+                  trackAppEvent("profile_step_next", {
+                    source: "profile_setup",
+                    metadata: {
+                      fromStep: 2,
+                      toStep: 3,
+                    },
+                  });
+                  setFamilyProfileStep(3);
+                }}
+                style={primaryButtonStyle}
+              >
+                Next: Where You’re Staying
+              </button>
               </div>
             </div>
           )}
