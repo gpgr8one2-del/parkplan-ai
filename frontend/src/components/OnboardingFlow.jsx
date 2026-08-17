@@ -890,9 +890,12 @@ export function OnboardingFlow({
             <div style={{ display: "grid", gap: 14 }}>
               <div style={sectionPanel}>
                 <strong>What matters most today?</strong>
+                {/* Input honesty: the previous copy claimed every answer here
+                    directly affected safety and what TOHI avoids recommending.
+                    Some of these inputs shape packing guidance only, so the
+                    section now describes the real range of effect. */}
                 <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
-                  Keep this quick. These choices directly affect safety, trust, pacing,
-                  and what TOHI should avoid recommending.
+                  These details help shape recommendations, pacing, and packing guidance.
                 </p>
 
                 <div style={{ display: "grid", gap: 10 }}>
@@ -914,30 +917,43 @@ export function OnboardingFlow({
                     </select>
                   </label>
 
-                  <label style={fieldLabelStyle}>
-                    Family pace
-                    <select
-                      value={familyProfile.pace || "balanced"}
-                      onChange={(e) =>
-                        updateFamilyProfile({
-                          pace: e.target.value,
+                  {/* Input honesty: presentation only. "Family pace" described a
+                      vague mood; what this control actually drives is how strongly
+                      the engine favors nearby choices, via the walkingTolerance
+                      alias below. The stored values, the handler and the alias
+                      mapping are deliberately untouched. The helper sits outside
+                      the label so it stays visible without being absorbed into the
+                      select's accessible name. */}
+                  <div style={{ display: "grid", gap: 6 }}>
+                    <label style={fieldLabelStyle}>
+                      How much walking works for your group?
+                      <select
+                        value={familyProfile.pace || "balanced"}
+                        onChange={(e) =>
+                          updateFamilyProfile({
+                            pace: e.target.value,
 
-                          // Compatibility alias. rideRecommendations.js still reads this.
-                          walkingTolerance:
-                            e.target.value === "leisurely"
-                              ? "low"
-                              : e.target.value === "energetic"
-                              ? "high"
-                              : "medium",
-                        })
-                      }
-                      style={inputStyle}
-                    >
-                      <option value="leisurely">Leisurely — keep walking low when possible</option>
-                      <option value="balanced">Balanced — some walking is okay</option>
-                      <option value="energetic">Energetic — we are fine covering ground</option>
-                    </select>
-                  </label>
+                            // Compatibility alias. rideRecommendations.js still reads this.
+                            walkingTolerance:
+                              e.target.value === "leisurely"
+                                ? "low"
+                                : e.target.value === "energetic"
+                                ? "high"
+                                : "medium",
+                          })
+                        }
+                        style={inputStyle}
+                      >
+                        <option value="leisurely">Keep choices nearby</option>
+                        <option value="balanced">A balanced amount of walking</option>
+                        <option value="energetic">Comfortable covering more ground</option>
+                      </select>
+                    </label>
+
+                    <p style={{ margin: 0, color: colors.muted, fontSize: 12, lineHeight: 1.4 }}>
+                      This helps TOHI decide how strongly to favor nearby choices.
+                    </p>
+                  </div>
 
                   <label style={fieldLabelStyle}>
                     Heat and fatigue
@@ -994,10 +1010,16 @@ export function OnboardingFlow({
               </div>
 
               <div style={sectionPanel}>
-                <strong>Mobility and accessibility</strong>
+                {/* Input honesty: these two booleans reach packing guidance only.
+                    They do not currently change attraction eligibility, routing,
+                    transfer requirements, or recommendation distance, so the copy
+                    no longer implies they do, and it points at the walking control
+                    that genuinely drives distance. The stored fields and handlers
+                    are unchanged; no device schema is introduced here. */}
+                <strong>Stroller &amp; mobility equipment</strong>
                 <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
-                  This keeps TOHI from recommending exhausting moves that look good on
-                  paper but are rough in the real park.
+                  These details support packing and park logistics. Walking distance is
+                  guided by the choice above.
                 </p>
 
                 <div style={{ display: "grid", gap: 8 }}>
@@ -1020,7 +1042,7 @@ export function OnboardingFlow({
                         })
                       }
                     />
-                    We use a stroller
+                    We’ll use a stroller
                   </label>
 
                   <label
@@ -1042,28 +1064,16 @@ export function OnboardingFlow({
                         })
                       }
                     />
-                    Someone uses a wheelchair, scooter, or mobility support
+                    Someone will use a wheelchair, ECV/scooter, or similar mobility support
                   </label>
 
-                  <label style={fieldLabelStyle}>
-                    Mobility notes optional
-                    <textarea
-                      value={mobilityAccessibility.mobilityNotes || ""}
-                      onChange={(e) =>
-                        updateMobilityAccessibility({
-                          mobilityNotes: e.target.value,
-                        })
-                      }
-                      placeholder="ex: avoid long backtracking, stroller naps around 2 PM, needs shaded breaks"
-                      rows={3}
-                      style={{
-                        ...inputStyle,
-                        resize: "vertical",
-                        fontFamily:
-                          "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
-                      }}
-                    />
-                  </label>
+                  {/* Input honesty: the free-text "Mobility notes" field is removed
+                      from collection. Nothing read it, and its placeholder invited
+                      guests to describe real constraints TOHI then ignored. Only
+                      collection and transmission are removed here — mobilityNotes
+                      stays in DEFAULT_FAMILY_PROFILE and in normalizeFamilyProfile,
+                      so values already saved on a device keep surviving
+                      normalization untouched. */}
                 </div>
               </div>
 
