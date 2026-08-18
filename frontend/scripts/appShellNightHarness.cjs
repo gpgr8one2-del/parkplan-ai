@@ -30,6 +30,7 @@ const themeSource = read("src", "theme.js");
 const tohiThemeSource = read("src", "theme", "tohiTheme.js");
 const themeRuntimeSource = read("src", "theme", "tohiThemeRuntime.js");
 const cardSource = read("src", "components", "RecommendationCard.jsx");
+const onboardingSource = read("src", "components", "OnboardingFlow.jsx");
 
 let passCount = 0;
 let failCount = 0;
@@ -100,7 +101,7 @@ const appSourceWithoutComments = appSource.replace(/^\s*\/\/.*$/gm, "");
 // darkens it without giving its surfaces a night treatment, and re-deriving it
 // from scratch at that point is exactly when it would be skipped. Onboarding is
 // not in it because onboarding is not an activeTab branch; it is checked at its
-// own element, where it must stay day-only permanently.
+// own element and receives the same time-derived signal explicitly.
 const mainEnd = appSource.indexOf("</main>");
 const UNCONVERTED_TABS = [];
 const unconvertedTabBranches = UNCONVERTED_TABS
@@ -225,10 +226,6 @@ featureCheck(
 
 featureCheck(
   "Profile styling is driven by the shared shell decision, not by a local one",
-  // Replaces the previous "Profile and onboarding remain day-only" check, which
-  // asserted the opposite and is now wrong for Profile. What survives from it is
-  // the half that still holds — onboarding — checked separately below.
-  //
   // Profile must READ shellNight and must not compute night for itself: no clock,
   // no theme lookup, no isNight, no forceMode, no media query, no storage inside
   // the branch. That is what makes Profile's night a consequence of the one
@@ -352,16 +349,18 @@ featureCheck(
 );
 
 featureCheck(
-  "onboarding remains day-only, including when reached from a night Profile",
-  // The surviving half of the old Profile-and-onboarding check. Onboarding is
-  // reached through activeScreen rather than activeTab, so shellNight cannot
-  // apply to it — it keeps the module-level day `page` and takes no night prop.
-  // "Review setup" therefore returns to the unchanged day onboarding.
+  "onboarding receives the shared time-derived night signal",
+  // Onboarding remains outside the active-tab shell, but its own complete
+  // presentation now follows the same planNight decision as the rest of TOHI.
   onboardingElement.length > 0 &&
-    !/page=\{pageStyle\}/.test(onboardingElement) &&
-    !/night=\{/.test(onboardingElement) &&
     /page=\{page\}/.test(onboardingElement) &&
-    !/shellNight|planNight|shellTokens|PROFILE_NIGHT/.test(onboardingElement),
+    !/page=\{pageStyle\}/.test(onboardingElement) &&
+    /night=\{planNight\}/.test(onboardingElement) &&
+    !/night=\{shellNight\}/.test(onboardingElement) &&
+    /night\s*=\s*false/.test(onboardingSource) &&
+    /const palette\s*=\s*night\s*\?\s*ONBOARDING_NIGHT\s*:\s*ONBOARDING_DAY/.test(
+      onboardingSource
+    ),
   true
 );
 
@@ -591,10 +590,13 @@ invariantCheck(
 );
 
 invariantCheck(
-  "onboarding remains on the original day page style",
-  // OnboardingFlow is handed the module-level day `page`, never `pageStyle`.
-  /<OnboardingFlow[\s\S]*?page=\{page\}/.test(appSource) &&
-    !/<OnboardingFlow[\s\S]*?page=\{pageStyle\}/.test(appSource),
+  "onboarding stays separate from the active-tab page shell",
+  // It keeps the module-level page geometry and receives only the shared
+  // time-derived signal; active-tab shell tokens cannot leak into this screen.
+  /page=\{page\}/.test(onboardingElement) &&
+    /night=\{planNight\}/.test(onboardingElement) &&
+    !/page=\{pageStyle\}/.test(onboardingElement) &&
+    !/night=\{shellNight\}/.test(onboardingElement),
   true
 );
 

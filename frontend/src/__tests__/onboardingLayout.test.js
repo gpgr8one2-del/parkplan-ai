@@ -292,10 +292,10 @@ describe("onboarding mobile sizing rules", () => {
   test("section panels can shrink to the step grid", () => {
     const markup = render(2);
 
-    // sectionPanel's own signature: the translucent white background. The blue
-    // summary card above shares the padding/radius but is a different element.
+    // sectionPanel's own compact padding/radius signature. The summary card has
+    // different padding, so it cannot be mistaken for a form panel here.
     const panels =
-      markup.match(/<div style="padding:14px;[^"]*background:rgba\(255,255,255,0\.78\)[^"]*"/g) || [];
+      markup.match(/<div style="padding:14px;border-radius:20px;[^"]*min-width:0;box-sizing:border-box"/g) || [];
 
     expect(panels.length).toBeGreaterThan(0);
     panels.forEach((panel) => {
@@ -317,19 +317,15 @@ describe("onboarding mobile sizing rules", () => {
     [1, 2, 3].forEach((step) => {
       const markup = render(step);
 
-      // The one pre-existing overflow:hidden belongs to the hero, which clips its
-      // own absolutely-positioned decorative circles and did so before this phase.
-      // It is asserted rather than ignored, so a new one would be caught.
+      // The redesigned header has no decorative circles to clip. Nothing on this
+      // screen should hide overflow as a substitute for correct mobile sizing.
       const hidden = markup.match(/overflow:hidden/g) || [];
-      expect(hidden.length).toBe(1);
-
-      const heroMatch = markup.match(/<div style="position:relative;overflow:hidden[^"]*"/);
-      expect(heroMatch).toBeTruthy();
+      expect(hidden.length).toBe(0);
 
       // Nothing this phase touched hides overflow: not the panels, not the
       // controls, not the labels.
       const panels =
-        markup.match(/<div style="padding:14px;[^"]*background:rgba\(255,255,255,0\.78\)[^"]*"/g) || [];
+        markup.match(/<div style="padding:14px;border-radius:20px;[^"]*min-width:0;box-sizing:border-box"/g) || [];
       panels.forEach((panel) => expect(panel).not.toContain("overflow"));
 
       (markup.match(/<select style="[^"]*"/g) || []).forEach((sel) =>
@@ -338,6 +334,51 @@ describe("onboarding mobile sizing rules", () => {
       (markup.match(/<label style="display:grid[^"]*"/g) || []).forEach((label) =>
         expect(label).not.toContain("overflow")
       );
+    });
+  });
+});
+
+describe("onboarding visual system", () => {
+  test("uses a compact hero without the legacy decorative blobs", () => {
+    const markup = render(1);
+
+    expect(markup).toContain('data-onboarding-surface="hero"');
+    expect(markup).toContain("border-radius:24px");
+    expect(markup).toContain("font-size:26px");
+    expect(markup).not.toContain("radial-gradient");
+    expect(markup).not.toContain("width:132px");
+    expect(markup).not.toContain("width:96px");
+  });
+
+  test("renders setup steps as an accessible compact navigation", () => {
+    const markup = render(2);
+
+    expect(markup).toContain('<nav aria-label="Setup steps"');
+    expect(markup).toContain('aria-current="step"');
+    expect(markup).toContain("grid-template-columns:repeat(3, minmax(0, 1fr))");
+    expect(markup).toContain("min-height:44px");
+  });
+
+  test("keeps the repeated setup recap collapsed until the guest asks to review it", () => {
+    const markup = render(2);
+
+    expect(markup).toContain('<details data-onboarding-surface="summary"');
+    expect(markup).not.toContain('<details open=""');
+    expect(markup).toContain(">Review</span></summary>");
+  });
+
+  test("night mode covers the page, hero, summary, panels, and controls", () => {
+    [1, 2, 3].forEach((step) => {
+      const markup = render(step, { night: true });
+
+      expect(markup).toContain("background-color:#0F172A");
+      expect(markup).toContain('data-onboarding-surface="hero"');
+      expect(markup).toContain('data-onboarding-surface="summary"');
+      expect(markup).toContain("background:#131C36");
+      expect(markup).toContain("color:#F5F3FF");
+      expect(markup).toContain("color:#B6C2E2");
+      expect(markup).not.toContain("background:#FFFFFF");
+      expect(markup).not.toContain("background:white");
     });
   });
 });

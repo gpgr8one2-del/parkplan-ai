@@ -765,7 +765,7 @@ describe("Profile screen at night", () => {
     expect(navMarkup).not.toContain("rgba(255, 249, 241, 0.98)");
   });
 
-  test("Review setup still opens the unchanged day-only onboarding", async () => {
+  test("Review setup keeps the night presentation when opened from Profile", async () => {
     seedProfile(COMPLETE_PROFILE);
     await renderAppOnProfileTab();
 
@@ -781,15 +781,16 @@ describe("Profile screen at night", () => {
     // Onboarding really opened...
     expect(profileText()).toContain("Build your family’s park plan");
 
-    // ...and it is still the day presentation. Onboarding is reached through
-    // activeScreen rather than activeTab, so the shell flag cannot apply to it.
+    // ...and it receives the same time-derived presentation as Profile even
+    // though onboarding is a separate activeScreen rather than a bottom tab.
     const main = container.querySelector("main");
-    expect(main.style.backgroundColor.toLowerCase()).not.toBe(rgb("#0F172A"));
+    expect(main.style.backgroundColor.toLowerCase()).toBe(rgb("#0F172A"));
 
     const markup = container.innerHTML.toLowerCase();
-    [...NIGHT_NAVY, ...NIGHT_TEXT_TOKENS].forEach((nightToken) => {
-      expect(markup).not.toContain(nightToken);
-    });
+    [rgb("#131C36"), rgb("#111A33"), rgb("#F5F3FF"), rgb("#B6C2E2")].forEach(
+      (nightToken) => expect(markup).toContain(nightToken)
+    );
+    expect(paleFills(container)).toEqual([]);
   });
 
   test("night is presentation only: content, structure and read-only shape are unchanged", async () => {
