@@ -1,6 +1,5 @@
-import React from "react"; 
+import React from "react";
 import { getResortProfile } from "../resortProfiles";
-import { colors } from "../theme";
 
 const BETA_DISABLED_PARK_IDS = new Set([
   "universal_sf",
@@ -102,6 +101,59 @@ const SUMMARY_STORM_LABELS = {
 
 const SUMMARY_NOT_SET = "Not set";
 
+/* -------------------------------------------------------------------------- */
+/* Onboarding visual system — presentation only                               */
+/* -------------------------------------------------------------------------- */
+
+// Setup is a separate screen rather than a bottom-tab branch, so it receives a
+// time-derived `night` value from App. These two palettes keep the entire flow
+// intentional in either mode without changing any profile value or handler.
+const ONBOARDING_DAY = {
+  page: "linear-gradient(180deg, #FFF9F1 0%, #FFFDF8 54%, #F7F2FF 100%)",
+  hero: "linear-gradient(145deg, #FFFFFF 0%, #F8F5FF 100%)",
+  surface: "#FFFFFF",
+  surfaceSoft: "#FFFDF8",
+  nested: "#FFF9F1",
+  control: "#FFFFFF",
+  border: "#E8DCCB",
+  borderPurple: "rgba(124, 58, 237, 0.22)",
+  title: "#241C15",
+  muted: "#746B61",
+  purple: "#6D28D9",
+  purpleSoft: "#F1E9FF",
+  sky: "#0369A1",
+  skySoft: "#E8F6FF",
+  amber: "#92400E",
+  amberSoft: "#FFF7DC",
+  success: "#047857",
+  successSoft: "#ECFDF5",
+  shadow: "0 10px 28px rgba(28, 25, 23, 0.07)",
+  shadowStrong: "0 14px 34px rgba(91, 33, 182, 0.10)",
+};
+
+const ONBOARDING_NIGHT = {
+  page: "linear-gradient(180deg, #0F172A 0%, #111A33 55%, #131C36 100%)",
+  hero: "linear-gradient(145deg, #131C36 0%, #1B1A45 100%)",
+  surface: "#131C36",
+  surfaceSoft: "#111A33",
+  nested: "#0F172A",
+  control: "#0F172A",
+  border: "rgba(99, 102, 241, 0.30)",
+  borderPurple: "rgba(139, 92, 246, 0.42)",
+  title: "#F5F3FF",
+  muted: "#B6C2E2",
+  purple: "#C4B5FD",
+  purpleSoft: "rgba(76, 29, 149, 0.48)",
+  sky: "#7DD3FC",
+  skySoft: "rgba(12, 74, 110, 0.52)",
+  amber: "#FCD34D",
+  amberSoft: "rgba(120, 53, 15, 0.50)",
+  success: "#6EE7B7",
+  successSoft: "rgba(6, 78, 59, 0.52)",
+  shadow: "0 10px 28px rgba(2, 6, 23, 0.42)",
+  shadowStrong: "0 14px 34px rgba(2, 6, 23, 0.50)",
+};
+
 // Anything missing, blank or unrecognised resolves to "Not set" rather than
 // leaking an id. hasOwnProperty keeps inherited keys such as "constructor" from
 // resolving to a function.
@@ -114,6 +166,7 @@ function getSummaryLabel(labelMap, value) {
 }
 
 export function OnboardingFlow({
+  night = false,
   familyProfileSummary,
   activePark,
   familyProfileStep,
@@ -149,6 +202,7 @@ export function OnboardingFlow({
   onUpdateTripPreferences,
   onToggleMustDoExperience,
 }) {
+  const palette = night ? ONBOARDING_NIGHT : ONBOARDING_DAY;
   const summary = familyProfileSummary;
   const tripContext = familyProfile.tripContext || {};
   const resortContext = familyProfile.resortContext || {};
@@ -213,38 +267,41 @@ export function OnboardingFlow({
 
   const setupPage = {
     ...page,
-    background:
-      "radial-gradient(circle at 18% 0%, rgba(124, 58, 237, 0.12) 0%, rgba(124, 58, 237, 0.03) 28%, transparent 48%), radial-gradient(circle at 88% 8%, rgba(245, 158, 11, 0.22) 0%, rgba(245, 158, 11, 0.05) 30%, transparent 52%), linear-gradient(180deg, #FFF4E6 0%, #FFF9F1 52%, #F3E8FF 100%)",
+    background: palette.page,
+    backgroundColor: night ? "#0F172A" : "#FFF9F1",
+    color: palette.title,
   };
 
   const setupHero = {
     ...premiumHeroCard,
-    position: "relative",
-    overflow: "hidden",
-    background:
-      "radial-gradient(circle at 92% 2%, rgba(124, 58, 237, 0.26) 0%, rgba(124, 58, 237, 0.07) 34%, transparent 58%), radial-gradient(circle at 8% 0%, rgba(245, 158, 11, 0.26) 0%, rgba(245, 158, 11, 0.08) 36%, transparent 62%), linear-gradient(150deg, #FFFFFF 0%, #FFF7ED 48%, #F3E8FF 100%)",
-    border: "1px solid rgba(124, 58, 237, 0.18)",
-    borderRadius: 32,
-    boxShadow: "0 22px 58px rgba(91, 33, 182, 0.15)",
+    marginBottom: 0,
+    padding: 18,
+    background: palette.hero,
+    border: `1px solid ${palette.borderPurple}`,
+    borderRadius: 24,
+    boxShadow: palette.shadowStrong,
   };
 
   const setupCard = {
     ...card,
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, #FFF9F1 100%)",
-    border: `1px solid ${colors.cardBorder}`,
-    borderRadius: 28,
-    boxShadow: "0 18px 44px rgba(28, 25, 23, 0.09)",
+    marginBottom: 0,
+    padding: 0,
+    background: "transparent",
+    border: "none",
+    borderRadius: 0,
+    boxShadow: "none",
   };
 
   const inputStyle = {
-    border: `1px solid ${colors.cardBorder}`,
-    borderRadius: 15,
-    padding: "10px 12px",
+    border: `1px solid ${palette.border}`,
+    borderRadius: 14,
+    padding: "11px 12px",
+    minHeight: 44,
     fontWeight: 800,
-    background: "rgba(255,255,255,0.92)",
-    color: colors.text,
-    boxShadow: "0 6px 14px rgba(28, 25, 23, 0.04)",
+    background: palette.control,
+    color: palette.title,
+    colorScheme: night ? "dark" : "light",
+    boxShadow: night ? "none" : "0 4px 12px rgba(28, 25, 23, 0.04)",
 
     // Mobile sizing. A select's min-content width is driven by its longest
     // <option>, and a number input carries a default intrinsic width, so at
@@ -261,7 +318,7 @@ export function OnboardingFlow({
     gap: 6,
     fontSize: 13,
     fontWeight: 900,
-    color: colors.text,
+    color: palette.title,
 
     // As a grid item this would otherwise be floored at its content's
     // min-content width, re-widening the card the control just shrank out of.
@@ -271,9 +328,10 @@ export function OnboardingFlow({
   const sectionPanel = {
     padding: 14,
     borderRadius: 20,
-    border: `1px solid ${colors.cardBorder}`,
-    background: "rgba(255,255,255,0.78)",
-    boxShadow: "0 8px 20px rgba(28, 25, 23, 0.05)",
+    border: `1px solid ${palette.border}`,
+    background: palette.surface,
+    boxShadow: palette.shadow,
+    color: palette.title,
 
     // Lets a panel shrink to the step grid rather than being floored at the
     // min-content width of the controls inside it.
@@ -283,10 +341,15 @@ export function OnboardingFlow({
 
   const primaryButtonStyle = {
     ...button,
-    background: "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
-    color: "white",
-    borderColor: "rgba(124, 58, 237, 0.28)",
-    boxShadow: "0 12px 24px rgba(124, 58, 237, 0.18)",
+    minHeight: 44,
+    background: night
+      ? "linear-gradient(145deg, #8B5CF6 0%, #6D28D9 100%)"
+      : "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
+    color: "#F5F3FF",
+    borderColor: palette.borderPurple,
+    boxShadow: night
+      ? "0 10px 22px rgba(2, 6, 23, 0.46)"
+      : "0 10px 22px rgba(124, 58, 237, 0.16)",
   };
 
   const stepTitle =
@@ -415,90 +478,100 @@ export function OnboardingFlow({
   return (
     <main style={setupPage}>
       <div style={shell}>
-        <header style={{ padding: "18px 0" }}>
+        <header style={{ padding: "12px 0 14px" }}>
           <button
             type="button"
             onClick={() => setActiveScreen("main")}
             style={{
               ...button,
-              marginBottom: 12,
-              color: colors.muted,
-              background: "rgba(255,255,255,0.76)",
-              borderColor: colors.cardBorder,
+              minHeight: 44,
+              marginBottom: 10,
+              padding: "8px 2px",
+              color: palette.muted,
+              background: "transparent",
+              borderColor: "transparent",
+              boxShadow: "none",
             }}
           >
             ← View basic waits
           </button>
 
-          <div style={setupHero}>
-            <div
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                width: 132,
-                height: 132,
-                borderRadius: "999px",
-                right: -48,
-                bottom: -52,
-                background: "rgba(56, 189, 248, 0.14)",
-              }}
-            />
-            <div
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                width: 96,
-                height: 96,
-                borderRadius: "999px",
-                left: -42,
-                top: -38,
-                background: "rgba(251, 113, 133, 0.12)",
-              }}
-            />
-            <div style={{ position: "relative" }}>
+          <div data-onboarding-surface="hero" style={setupHero}>
+            <div>
               <span
                 style={{
                   ...premiumBadge,
-                  background: "rgba(124, 58, 237, 0.12)",
-                  border: "1px solid rgba(124, 58, 237, 0.18)",
-                  color: colors.purpleDeep,
+                  padding: "5px 9px",
+                  background: palette.purpleSoft,
+                  border: `1px solid ${palette.borderPurple}`,
+                  color: palette.purple,
                 }}
               >
                 ✨ TOHI Trip Setup
               </span>
-              <h1 style={{ fontSize: 34, margin: "10px 0 0", letterSpacing: -1 }}>
+              <h1
+                style={{
+                  color: palette.title,
+                  fontSize: 26,
+                  margin: "10px 0 0",
+                  letterSpacing: -0.7,
+                  lineHeight: 1.12,
+                }}
+              >
                 Build your family’s park plan
               </h1>
-              <p style={{ color: colors.muted, marginTop: 8, lineHeight: 1.5 }}>
-                Every family does the parks differently. Tell TOHI who’s going,
-                where you’re staying, and what kind of day you want — then we’ll
-                help you make smarter, calmer choices in the park.
+              <p
+                style={{
+                  color: palette.muted,
+                  margin: "8px 0 0",
+                  maxWidth: 620,
+                  fontSize: 14,
+                  lineHeight: 1.48,
+                }}
+              >
+                Tell TOHI who’s going, which parks matter, and how your family
+                likes to move. You can change everything later.
               </p>
-
-              {isProfileIncomplete && (
-                <div
-                  style={{
-                    marginTop: 14,
-                    padding: 13,
-                    borderRadius: 18,
-                    background: colors.amberSoft,
-                    border: "1px solid rgba(245, 158, 11, 0.28)",
-                    color: "#92400E",
-                    fontSize: 13,
-                    fontWeight: 850,
-                    lineHeight: 1.45,
-                  }}
-                >
-                  Finish setup to unlock personalized recommendations, AI guidance,
-                  height-aware filtering, and day-of family flow.
-                </div>
-              )}
             </div>
           </div>
+
+          {isProfileIncomplete && (
+            <div
+              style={{
+                marginTop: 10,
+                padding: 12,
+                borderRadius: 16,
+                background: palette.amberSoft,
+                border: `1px solid ${
+                  night ? "rgba(252, 211, 77, 0.32)" : "rgba(245, 158, 11, 0.28)"
+                }`,
+                color: palette.amber,
+                fontSize: 12.5,
+                fontWeight: 850,
+                lineHeight: 1.4,
+              }}
+            >
+              Finish setup to unlock personalized recommendations, AI guidance,
+              height-aware filtering, and day-of family flow.
+            </div>
+          )}
         </header>
 
         <section style={setupCard}>
-          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          <nav
+            aria-label="Setup steps"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: 6,
+              marginBottom: 12,
+              padding: 6,
+              borderRadius: 18,
+              background: palette.surface,
+              border: `1px solid ${palette.border}`,
+              boxShadow: palette.shadow,
+            }}
+          >
             {[
               { step: 1, label: "Trip" },
               { step: 2, label: "Comfort" },
@@ -507,6 +580,7 @@ export function OnboardingFlow({
               <button
                 key={item.step}
                 type="button"
+                aria-current={familyProfileStep === item.step ? "step" : undefined}
                 onClick={() => {
                   trackAppEvent("profile_step_selected", {
                     source: "profile_setup",
@@ -519,17 +593,22 @@ export function OnboardingFlow({
                 }}
                 style={{
                   ...button,
-                  flex: 1,
+                  minWidth: 0,
+                  minHeight: 44,
+                  padding: "8px 5px",
+                  fontSize: 12.5,
                   background:
                     familyProfileStep === item.step
-                      ? "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)"
-                      : "rgba(255,255,255,0.82)",
-                  color: familyProfileStep === item.step ? "white" : colors.text,
+                      ? night
+                        ? "linear-gradient(145deg, #8B5CF6 0%, #6D28D9 100%)"
+                        : "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)"
+                      : "transparent",
+                  color: familyProfileStep === item.step ? "#F5F3FF" : palette.title,
                   borderColor:
                     familyProfileStep === item.step
-                      ? "rgba(124, 58, 237, 0.28)"
-                      : colors.cardBorder,
-                  borderRadius: 16,
+                      ? palette.borderPurple
+                      : "transparent",
+                  borderRadius: 13,
                   boxShadow:
                     familyProfileStep === item.step
                       ? "0 10px 20px rgba(124, 58, 237, 0.16)"
@@ -539,81 +618,113 @@ export function OnboardingFlow({
                 {item.step}. {item.label}
               </button>
             ))}
-          </div>
+          </nav>
 
-          <div
+          <details
+            data-onboarding-surface="summary"
             style={{
               padding: 14,
               borderRadius: 20,
-              border: "1px solid rgba(56, 189, 248, 0.26)",
-              background:
-                "linear-gradient(145deg, rgba(255,255,255,0.88) 0%, #E0F2FE 100%)",
+              border: `1px solid ${night ? palette.border : "rgba(56, 189, 248, 0.28)"}`,
+              background: palette.surfaceSoft,
+              color: palette.title,
               marginBottom: 14,
-              boxShadow: "0 10px 24px rgba(2, 132, 199, 0.08)",
+              boxShadow: palette.shadow,
             }}
           >
-            <strong>{stepTitle}</strong>
-            <p style={{ margin: "6px 0 0", color: colors.text, fontSize: 13 }}>
-              {stepDescription}
-            </p>
-            <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12 }}>
-              {summary.partySize} guests · {summary.ageSummary.under3Count} under 3 ·{" "}
-              {summary.ageSummary.childCount} Disney child ·{" "}
-              {summary.ageSummary.disneyAdultCount} Disney adult · {shortestHeightText}
-            </p>
-            <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12 }}>
-              Parks: {selectedParksText}
-            </p>
-            <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 12 }}>
-              First park: {getParkLabel(firstParkId)} · Priority park:{" "}
-              {getParkLabel(mostImportantParkId)} · {summary.tripAccessStatus.message}
-            </p>
-            {/* Stacked rather than inline: the full option text is far too long
-                to read as one run-on sentence at 375px. A definition list also
-                ties each value to its own label. "Pace" is now "Walking",
-                matching what the control actually asks. */}
-            <dl
+            <summary
               style={{
-                margin: "10px 0 0",
+                minHeight: 44,
                 display: "grid",
-                gap: 8,
+                gridTemplateColumns: "minmax(0, 1fr) auto",
+                alignItems: "center",
+                gap: 10,
+                cursor: "pointer",
+                listStyle: "none",
               }}
             >
-              {[
-                ["Ride comfort", getSummaryLabel(SUMMARY_THRILL_LABELS, summary.thrillTolerance)],
-                ["Walking", getSummaryLabel(SUMMARY_WALKING_LABELS, summary.pace)],
-                ["Heat", getSummaryLabel(SUMMARY_HEAT_LABELS, summary.heatSensitivity)],
-                ["Storms", getSummaryLabel(SUMMARY_STORM_LABELS, summary.stormTolerance)],
-              ].map(([label, value]) => (
-                <div key={label} style={{ display: "grid", gap: 2 }}>
-                  <dt
-                    style={{
-                      color: colors.muted,
-                      fontSize: 10.5,
-                      fontWeight: 900,
-                      letterSpacing: 0.5,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {label}
-                  </dt>
-                  <dd
-                    style={{
-                      margin: 0,
-                      color: value === SUMMARY_NOT_SET ? colors.muted : colors.text,
-                      fontSize: 12.5,
-                      fontWeight: value === SUMMARY_NOT_SET ? 700 : 800,
-                      fontStyle: value === SUMMARY_NOT_SET ? "italic" : "normal",
-                      lineHeight: 1.35,
-                      overflowWrap: "anywhere",
-                    }}
-                  >
-                    {value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
+              <span style={{ display: "grid", gap: 4 }}>
+                <strong style={{ color: palette.title, fontSize: 16 }}>{stepTitle}</strong>
+                <span style={{ color: palette.muted, fontSize: 12.5, lineHeight: 1.35 }}>
+                  {stepDescription}
+                </span>
+              </span>
+              <span
+                style={{
+                  padding: "5px 8px",
+                  borderRadius: 999,
+                  background: palette.purpleSoft,
+                  color: palette.purple,
+                  fontSize: 11,
+                  fontWeight: 900,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Review
+              </span>
+            </summary>
+
+            <div style={{ paddingTop: 12, borderTop: `1px solid ${palette.border}` }}>
+              <p style={{ margin: 0, color: palette.muted, fontSize: 12 }}>
+                {summary.partySize} guests · {summary.ageSummary.under3Count} under 3 ·{" "}
+                {summary.ageSummary.childCount} Disney child ·{" "}
+                {summary.ageSummary.disneyAdultCount} Disney adult · {shortestHeightText}
+              </p>
+              <p style={{ margin: "6px 0 0", color: palette.muted, fontSize: 12 }}>
+                Parks: {selectedParksText}
+              </p>
+              <p style={{ margin: "6px 0 0", color: palette.muted, fontSize: 12 }}>
+                First park: {getParkLabel(firstParkId)} · Priority park:{" "}
+                {getParkLabel(mostImportantParkId)} · {summary.tripAccessStatus.message}
+              </p>
+              {/* Stacked rather than inline: the full option text is far too long
+                  to read as one run-on sentence at 375px. A definition list also
+                  ties each value to its own label. "Pace" is now "Walking",
+                  matching what the control actually asks. */}
+              <dl
+                style={{
+                  margin: "12px 0 0",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gap: 8,
+                }}
+              >
+                {[
+                  ["Ride comfort", getSummaryLabel(SUMMARY_THRILL_LABELS, summary.thrillTolerance)],
+                  ["Walking", getSummaryLabel(SUMMARY_WALKING_LABELS, summary.pace)],
+                  ["Heat", getSummaryLabel(SUMMARY_HEAT_LABELS, summary.heatSensitivity)],
+                  ["Storms", getSummaryLabel(SUMMARY_STORM_LABELS, summary.stormTolerance)],
+                ].map(([label, value]) => (
+                  <div key={label} style={{ display: "grid", gap: 2 }}>
+                    <dt
+                      style={{
+                        color: palette.muted,
+                        fontSize: 10.5,
+                        fontWeight: 900,
+                        letterSpacing: 0.5,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {label}
+                    </dt>
+                    <dd
+                      style={{
+                        margin: 0,
+                        color: value === SUMMARY_NOT_SET ? palette.muted : palette.title,
+                        fontSize: 12.5,
+                        fontWeight: value === SUMMARY_NOT_SET ? 700 : 800,
+                        fontStyle: value === SUMMARY_NOT_SET ? "italic" : "normal",
+                        lineHeight: 1.35,
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </details>
 
           {familyProfileStep === 1 && (
             <div style={{ display: "grid", gap: 14 }}>
@@ -622,7 +733,7 @@ export function OnboardingFlow({
                 {/* Narrowed: "avoid rides they cannot ride" claimed a complete
                     eligibility determination. TOHI compares a saved height against
                     a posted ride-height requirement, and ages inform family fit. */}
-                <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
+                <p style={{ margin: "5px 0 10px", color: palette.muted, fontSize: 13 }}>
                   Adults do not need height entry. Children’s heights help TOHI check
                   posted ride-height requirements, while ages help it judge what may
                   suit the family.
@@ -679,9 +790,9 @@ export function OnboardingFlow({
                           style={{
                             padding: 13,
                             borderRadius: 18,
-                            border: `1px solid ${colors.cardBorder}`,
-                            background: "rgba(255,255,255,0.84)",
-                            boxShadow: "0 8px 18px rgba(28, 25, 23, 0.04)",
+                            border: `1px solid ${palette.border}`,
+                            background: palette.nested,
+                            boxShadow: night ? "none" : "0 6px 16px rgba(28, 25, 23, 0.04)",
                           }}
                         >
                           <strong style={{ display: "block", marginBottom: 8 }}>
@@ -724,7 +835,7 @@ export function OnboardingFlow({
                             </label>
                           </div>
 
-                          <p style={{ margin: "8px 0 0", color: colors.muted, fontSize: 12 }}>
+                          <p style={{ margin: "8px 0 0", color: palette.muted, fontSize: 12 }}>
                             {getDisneyAgeLabel(ageClass)}
                           </p>
                         </div>
@@ -737,12 +848,12 @@ export function OnboardingFlow({
                       marginTop: 12,
                       padding: 12,
                       borderRadius: 16,
-                      border: `1px solid ${colors.successSoft}`,
-                      background: colors.successSoft,
+                      border: `1px solid ${palette.success}`,
+                      background: palette.successSoft,
                     }}
                   >
                     <strong>Adults-only group</strong>
-                    <p style={{ margin: "6px 0 0", color: colors.text, fontSize: 13 }}>
+                    <p style={{ margin: "6px 0 0", color: palette.title, fontSize: 13 }}>
                       No child heights needed. TOHI will not apply child-height
                       restrictions unless you add children later.
                     </p>
@@ -752,7 +863,7 @@ export function OnboardingFlow({
 
               <div style={sectionPanel}>
                 <strong>What should TOHI call you?</strong>
-                <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
+                <p style={{ margin: "5px 0 10px", color: palette.muted, fontSize: 13 }}>
                   Optional. Use a first name or nickname only if it would make the app feel more personal.
                 </p>
 
@@ -776,7 +887,7 @@ export function OnboardingFlow({
 
               <div style={sectionPanel}>
                 <strong>Trip dates and parks</strong>
-                <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
+                <p style={{ margin: "5px 0 10px", color: palette.muted, fontSize: 13 }}>
                   Dates help TOHI understand whether this is pre-trip planning or an
                   active park day. Park days tell us how much pressure the plan has.
                 </p>
@@ -865,11 +976,11 @@ export function OnboardingFlow({
                     style={{
                       ...sectionPanel,
                       marginTop: 12,
-                      background: "rgba(255,255,255,0.68)",
+                      background: palette.surfaceSoft,
                     }}
                   >
                     <strong>What park are you doing each day?</strong>
-                    <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
+                    <p style={{ margin: "5px 0 10px", color: palette.muted, fontSize: 13 }}>
                       This helps TOHI think about the right park when building your plan. You can adjust this later.
                     </p>
 
@@ -895,11 +1006,11 @@ export function OnboardingFlow({
                               gap: 8,
                               padding: 11,
                               borderRadius: 16,
-                              border: `1px solid ${colors.cardBorder}`,
-                              background: "rgba(255,255,255,0.72)",
+                              border: `1px solid ${palette.border}`,
+                              background: palette.nested,
                             }}
                           >
-                            <strong style={{ color: colors.text, fontSize: 13 }}>{dayLabel}</strong>
+                            <strong style={{ color: palette.title, fontSize: 13 }}>{dayLabel}</strong>
 
                             <label style={fieldLabelStyle}>
                               Primary park
@@ -966,7 +1077,7 @@ export function OnboardingFlow({
                               </select>
                             </label>
 
-                            <p style={{ margin: 0, color: colors.muted, fontSize: 12, lineHeight: 1.35 }}>
+                            <p style={{ margin: 0, color: palette.muted, fontSize: 12, lineHeight: 1.35 }}>
                               Use this only if you expect to hop later. TOHI will show it as context for now.
                             </p>
                           </div>
@@ -989,12 +1100,7 @@ export function OnboardingFlow({
                   });
                   setFamilyProfileStep(2);
                 }}
-                style={{
-                  ...button,
-                  background: "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
-                  color: "white",
-                  justifySelf: "start",
-                }}
+                style={{ ...primaryButtonStyle, justifySelf: "start" }}
               >
                 Next: Family Comfort
               </button>
@@ -1009,7 +1115,7 @@ export function OnboardingFlow({
                     directly affected safety and what TOHI avoids recommending.
                     Some of these inputs shape packing guidance only, so the
                     section now describes the real range of effect. */}
-                <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
+                <p style={{ margin: "5px 0 10px", color: palette.muted, fontSize: 13 }}>
                   These details help shape recommendations, pacing, and packing guidance.
                 </p>
 
@@ -1065,7 +1171,7 @@ export function OnboardingFlow({
                       </select>
                     </label>
 
-                    <p style={{ margin: 0, color: colors.muted, fontSize: 12, lineHeight: 1.4 }}>
+                    <p style={{ margin: 0, color: palette.muted, fontSize: 12, lineHeight: 1.4 }}>
                       This helps TOHI decide how strongly to favor nearby choices.
                     </p>
                   </div>
@@ -1132,7 +1238,7 @@ export function OnboardingFlow({
                     that genuinely drives distance. The stored fields and handlers
                     are unchanged; no device schema is introduced here. */}
                 <strong>Stroller &amp; mobility equipment</strong>
-                <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
+                <p style={{ margin: "5px 0 10px", color: palette.muted, fontSize: 13 }}>
                   These details support packing and park logistics. Walking distance is
                   guided by the choice above.
                 </p>
@@ -1145,7 +1251,7 @@ export function OnboardingFlow({
                       gap: 9,
                       fontSize: 13,
                       fontWeight: 850,
-                      color: colors.text,
+                      color: palette.title,
                     }}
                   >
                     <input
@@ -1167,7 +1273,7 @@ export function OnboardingFlow({
                       gap: 9,
                       fontSize: 13,
                       fontWeight: 850,
-                      color: colors.text,
+                      color: palette.title,
                     }}
                   >
                     <input
@@ -1194,7 +1300,7 @@ export function OnboardingFlow({
 
               <div style={sectionPanel}>
                 <strong>What matters most this trip?</strong>
-                <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
+                <p style={{ margin: "5px 0 10px", color: palette.muted, fontSize: 13 }}>
                   Pick the moments TOHI should keep in mind. You can choose more than one.
                 </p>
 
@@ -1209,9 +1315,13 @@ export function OnboardingFlow({
                         onClick={() => handlePriorityToggle(option.value)}
                         style={{
                           ...actionButton,
-                          background: selected ? "#0f172a" : "white",
-                          color: selected ? "white" : "#0f172a",
-                          borderColor: selected ? "#0f172a" : "#cbd5e1",
+                          background: selected
+                            ? night
+                              ? "linear-gradient(145deg, #8B5CF6 0%, #6D28D9 100%)"
+                              : "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)"
+                            : palette.control,
+                          color: selected ? "#F5F3FF" : palette.title,
+                          borderColor: selected ? palette.borderPurple : palette.border,
                         }}
                       >
                         {option.label}
@@ -1221,7 +1331,7 @@ export function OnboardingFlow({
                 </div>
 
                 {!familyProfile.priorities.length && (
-                  <p style={{ margin: "8px 0 0", color: "#92400E", fontSize: 12, fontWeight: 800 }}>
+                  <p style={{ margin: "8px 0 0", color: palette.amber, fontSize: 12, fontWeight: 800 }}>
                     Pick at least one priority so recommendations do not feel generic.
                   </p>
                 )}
@@ -1229,12 +1339,12 @@ export function OnboardingFlow({
 
               <div style={sectionPanel}>
                 <strong>What would make this trip feel like a win?</strong>
-                <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13, lineHeight: 1.45 }}>
+                <p style={{ margin: "5px 0 10px", color: palette.muted, fontSize: 13, lineHeight: 1.45 }}>
                   Pick the rides, shows, or experiences TOHI should keep in view. This is not a checklist — it helps TOHI make room for what matters while still adapting to weather, waits, location, and family energy.
                 </p>
 
                 {selectedMustDoCount > 0 && (
-                  <p style={{ margin: "0 0 10px", color: colors.purpleDeep, fontSize: 12.5, fontWeight: 850 }}>
+                  <p style={{ margin: "0 0 10px", color: palette.purple, fontSize: 12.5, fontWeight: 850 }}>
                     {selectedMustDoCount} saved as trip priorities.
                   </p>
                 )}
@@ -1245,7 +1355,7 @@ export function OnboardingFlow({
                       <div key={group.parkId} style={{ display: "grid", gap: 8 }}>
                         <div
                           style={{
-                            color: colors.purpleDeep,
+                            color: palette.purple,
                             fontSize: 11,
                             fontWeight: 950,
                             letterSpacing: 0.7,
@@ -1269,11 +1379,14 @@ export function OnboardingFlow({
                                 justifyContent: "space-between",
                                 textAlign: "left",
                                 gap: 10,
+                                minHeight: 44,
                                 background: isSelected
-                                  ? "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)"
-                                  : "rgba(255,255,255,0.86)",
-                                color: isSelected ? "white" : colors.text,
-                                borderColor: isSelected ? colors.purpleDeep : colors.cardBorder,
+                                  ? night
+                                    ? "linear-gradient(145deg, #8B5CF6 0%, #6D28D9 100%)"
+                                    : "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)"
+                                  : palette.control,
+                                color: isSelected ? "#F5F3FF" : palette.title,
+                                borderColor: isSelected ? palette.borderPurple : palette.border,
                               }}
                             >
                               <span>{isSelected ? `✓ ${label}` : label}</span>
@@ -1294,7 +1407,7 @@ export function OnboardingFlow({
                     ))}
                   </div>
                 ) : (
-                  <p style={{ margin: 0, color: colors.muted, fontSize: 12.5 }}>
+                  <p style={{ margin: 0, color: palette.muted, fontSize: 12.5 }}>
                     Choose your park days first, then TOHI can show must-do options for each selected park here.
                   </p>
                 )}
@@ -1302,7 +1415,7 @@ export function OnboardingFlow({
 
               <div style={sectionPanel}>
                 <strong>How should TOHI shape the day?</strong>
-                <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13, lineHeight: 1.45 }}>
+                <p style={{ margin: "5px 0 10px", color: palette.muted, fontSize: 13, lineHeight: 1.45 }}>
                   These are gentle defaults, not hard rules. TOHI will still adjust around weather, waits, location, and how the family is doing.
                 </p>
 
@@ -1412,9 +1525,9 @@ export function OnboardingFlow({
                 style={{
                   padding: 12,
                   borderRadius: 16,
-                  border: `1px solid ${colors.cardBorder}`,
-                  background: colors.backgroundSoft,
-                  color: colors.muted,
+                  border: `1px solid ${palette.border}`,
+                  background: palette.surfaceSoft,
+                  color: palette.muted,
                   fontSize: 13,
                   lineHeight: 1.45,
                   minWidth: 0,
@@ -1426,30 +1539,36 @@ export function OnboardingFlow({
               </div>
 
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button
-                type="button"
-                onClick={() => setFamilyProfileStep(1)}
-                style={{ ...button, color: colors.muted }}
-              >
-                Back
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setFamilyProfileStep(1)}
+                  style={{
+                    ...button,
+                    minHeight: 44,
+                    color: palette.muted,
+                    background: palette.control,
+                    borderColor: palette.border,
+                  }}
+                >
+                  Back
+                </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  trackAppEvent("profile_step_next", {
-                    source: "profile_setup",
-                    metadata: {
-                      fromStep: 2,
-                      toStep: 3,
-                    },
-                  });
-                  setFamilyProfileStep(3);
-                }}
-                style={primaryButtonStyle}
-              >
-                Next: Where You’re Staying
-              </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    trackAppEvent("profile_step_next", {
+                      source: "profile_setup",
+                      metadata: {
+                        fromStep: 2,
+                        toStep: 3,
+                      },
+                    });
+                    setFamilyProfileStep(3);
+                  }}
+                  style={primaryButtonStyle}
+                >
+                  Next: Where You’re Staying
+                </button>
               </div>
             </div>
           )}
@@ -1458,7 +1577,7 @@ export function OnboardingFlow({
             <div style={{ display: "grid", gap: 14 }}>
               <div style={sectionPanel}>
                 <strong>Trip context</strong>
-                <p style={{ margin: "5px 0 10px", color: colors.muted, fontSize: 13 }}>
+                <p style={{ margin: "5px 0 10px", color: palette.muted, fontSize: 13 }}>
                   Resort context helps TOHI give realistic break, rope-drop, and
                   transportation advice.
                 </p>
@@ -1533,18 +1652,18 @@ export function OnboardingFlow({
                           style={{
                             padding: 12,
                             borderRadius: 16,
-                            border: `1px solid ${colors.successSoft}`,
-                            background: colors.successSoft,
+                            border: `1px solid ${palette.success}`,
+                            background: palette.successSoft,
                           }}
                         >
                           <strong>{familyProfileSummary.resortProfile.name}</strong>
-                          <p style={{ margin: "6px 0 0", color: colors.text, fontSize: 13 }}>
+                          <p style={{ margin: "6px 0 0", color: palette.title, fontSize: 13 }}>
                             {familyProfileSummary.resortProfile.areaLabel} · Transportation:{" "}
                             {familyProfileSummary.resortProfile.transportation.join(", ")}
                           </p>
 
                           {familyProfileSummary.resortProfile.breakStrategy?.[activePark] && (
-                            <p style={{ margin: "6px 0 0", color: colors.success, fontSize: 13 }}>
+                            <p style={{ margin: "6px 0 0", color: palette.success, fontSize: 13 }}>
                               Current park break note:{" "}
                               {familyProfileSummary.resortProfile.breakStrategy[activePark]}
                             </p>
@@ -1603,12 +1722,12 @@ export function OnboardingFlow({
                 style={{
                   padding: 12,
                   borderRadius: 16,
-                  border: `1px solid ${colors.skySoft}`,
-                  background: colors.skySoft,
+                  border: `1px solid ${palette.sky}`,
+                  background: palette.skySoft,
                 }}
               >
                 <strong>Disney classification reminder</strong>
-                <p style={{ margin: "6px 0 0", color: colors.text, fontSize: 13 }}>
+                <p style={{ margin: "6px 0 0", color: palette.title, fontSize: 13 }}>
                   Ages 0–2 are under 3 / no ticket. Ages 3–9 are Disney child.
                   Ages 10+ count as Disney adults for tickets and dining.
                 </p>
@@ -1619,9 +1738,9 @@ export function OnboardingFlow({
                   style={{
                     padding: 12,
                     borderRadius: 16,
-                    border: `1px solid ${colors.amberSoft}`,
-                    background: colors.cardWarm,
-                    color: "#92400E",
+                    border: `1px solid ${palette.amber}`,
+                    background: palette.amberSoft,
+                    color: palette.amber,
                     fontSize: 13,
                     fontWeight: 800,
                   }}
@@ -1634,7 +1753,13 @@ export function OnboardingFlow({
                 <button
                   type="button"
                   onClick={() => setFamilyProfileStep(2)}
-                  style={{ ...button, color: colors.muted }}
+                  style={{
+                    ...button,
+                    minHeight: 44,
+                    color: palette.muted,
+                    background: palette.control,
+                    borderColor: palette.border,
+                  }}
                 >
                   Back
                 </button>
@@ -1642,11 +1767,17 @@ export function OnboardingFlow({
                 <button
                   type="button"
                   onClick={handleFamilyProfileDone}
-                  style={{
-                    ...button,
-                    background: profileCompletion.isComplete ? "#0f172a" : "#94a3b8",
-                    color: "white",
-                  }}
+                  style={
+                    profileCompletion.isComplete
+                      ? primaryButtonStyle
+                      : {
+                          ...button,
+                          minHeight: 44,
+                          background: night ? "#334155" : "#94A3B8",
+                          color: "#F8FAFC",
+                          borderColor: "transparent",
+                        }
+                  }
                 >
                   {profileCompletion.isComplete ? "Unlock My Family Plan" : "Finish Setup First"}
                 </button>
@@ -1667,8 +1798,10 @@ export function OnboardingFlow({
                     }}
                     style={{
                       ...button,
-                      color: colors.purple,
-                      borderColor: colors.purpleSoft,
+                      minHeight: 44,
+                      color: palette.purple,
+                      background: palette.control,
+                      borderColor: palette.borderPurple,
                     }}
                   >
                     Dev Preview Full App

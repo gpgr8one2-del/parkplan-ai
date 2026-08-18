@@ -2001,8 +2001,8 @@ console.log("Extraction integrity");
     // The protected meaning is carried forward intact: the five-tab order is
     // unchanged, whichever shell-night flag exists is gated to exactly the
     // converted tabs and to nothing else, BottomTabs never decides night for
-    // itself, onboarding stays day-only, and the 61E Plan content corrections
-    // are still in place.
+    // itself, onboarding receives the same time signal explicitly, and the 61E
+    // Plan content corrections are still in place.
     "night styling stays gated to the converted tabs",
     [...bottomTabsSource.matchAll(/key:\s*"(\w+)"/g)].map((m) => m[1]).join(",") ===
       "home,waits,plan,tohi,profile" &&
@@ -2039,10 +2039,20 @@ console.log("Extraction integrity");
         })()) &&
       // BottomTabs never decides night for itself
       !/isNight|prefers-color-scheme|new Date\(|getHours/.test(bottomTabsSource) &&
-      // onboarding is not an activeTab branch and stays on the day page, so it
-      // can never inherit the shell decision
-      /<OnboardingFlow[\s\S]*?page=\{page\}/.test(appSource) &&
-      !/<OnboardingFlow[\s\S]*?page=\{pageStyle\}/.test(appSource) &&
+      // onboarding is not an activeTab branch. It keeps the separate page
+      // geometry and receives only the shared time-derived signal explicitly.
+      (() => {
+        const start = appSource.indexOf("<OnboardingFlow");
+        const end = start >= 0 ? appSource.indexOf("/>", start) : -1;
+        if (start < 0 || end < 0) return false;
+        const element = appSource.slice(start, end);
+        return (
+          /page=\{page\}/.test(element) &&
+          !/page=\{pageStyle\}/.test(element) &&
+          /night=\{planNight\}/.test(element) &&
+          !/night=\{shellNight\}/.test(element)
+        );
+      })() &&
       // 61E Plan content corrections intact
       (planTabSource.match(
         /color:\s*getChipAccent\("#(92400E|5B21B6|0369A1|E11D48)",\s*palette\)/g

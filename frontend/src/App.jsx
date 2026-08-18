@@ -5315,6 +5315,7 @@ function App() {
   if (activeScreen === "family_profile") {
     return (
       <OnboardingFlow
+        night={planNight}
         familyProfileSummary={familyProfileSummary}
         familyProfileStep={familyProfileStep}
         familyProfile={familyProfile}
