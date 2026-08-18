@@ -842,7 +842,11 @@ invariantCheck(
       );
       if (!m) return false;
       const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)].map((x) => x[1]).sort();
-      return tabs.join(",") === "home,plan,tohi,waits";
+      // Profile joined the membership in the Profile night phase. TOHI's own
+      // guarantee — that it never derives the mode itself — is unaffected by who
+      // else is in the set; what this clause pins is that TOHI is still in it,
+      // and that the set is still exact.
+      return tabs.join(",") === "home,plan,profile,tohi,waits";
     })(),
   true
 );

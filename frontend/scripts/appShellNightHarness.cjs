@@ -90,13 +90,19 @@ const appSourceWithoutComments = appSource.replace(/^\s*\/\/.*$/gm, "");
 // Render branch of each tab that remains deliberately day-styled, so a night
 // value leaking into one of them can be detected directly.
 //
-// Waits left this list in 63C-2, the phase that activated it, exactly as Home
-// left it in 62B-2F-2. Both were removed only once every surface on the tab had
-// a night presentation and the tab had joined the shared shell flag. TOHI and
-// Profile are the tabs that remain unconverted, and the guard below still fails
-// the moment either of them is darkened.
+// Every content tab has now been converted: Home left this list in 62B-2F-2,
+// Waits in 63C-2, TOHI in 64B-2E-2 and Profile in the Profile night phase. Each
+// left only once every surface on the tab had a night presentation and the tab
+// had joined the shared shell flag.
+//
+// The list is deliberately kept — empty — rather than deleted. The machinery
+// below is what fails the moment a NEW day-only tab is added and someone
+// darkens it without giving its surfaces a night treatment, and re-deriving it
+// from scratch at that point is exactly when it would be skipped. Onboarding is
+// not in it because onboarding is not an activeTab branch; it is checked at its
+// own element, where it must stay day-only permanently.
 const mainEnd = appSource.indexOf("</main>");
-const UNCONVERTED_TABS = ["profile"];
+const UNCONVERTED_TABS = [];
 const unconvertedTabBranches = UNCONVERTED_TABS
   .map((key) => {
     const start = appSource.indexOf(`{activeTab === "${key}" &&`);
@@ -106,6 +112,22 @@ const unconvertedTabBranches = UNCONVERTED_TABS
     return appSource.slice(start, end);
   })
   .filter((branch) => branch.length > 0);
+
+// The Profile render branch, sliced once and reused by the checks below.
+const profileBranch = (() => {
+  const start = appSource.indexOf('{activeTab === "profile" &&');
+  if (start < 0) return "";
+  return mainEnd > start ? appSource.slice(start, mainEnd) : appSource.slice(start);
+})();
+
+// The <OnboardingFlow ... /> element, bounded so a night prop belonging to a
+// later component cannot be mistaken for one of onboarding's.
+const onboardingElement = (() => {
+  const open = appSource.indexOf("<OnboardingFlow");
+  if (open < 0) return "";
+  const close = appSource.indexOf("/>", open);
+  return close > open ? appSource.slice(open, close) : "";
+})();
 
 const nightShell = readTokenBlock(tohiThemeSource, "TOHI_NIGHT_SHELL");
 const dayShell = readTokenBlock(tohiThemeSource, "TOHI_DAY_SHELL");
@@ -124,11 +146,12 @@ console.log("Phase 62A app shell night — FEATURE-DISCRIMINATING");
 featureCheck(
   "App derives one converted-tab shell-night flag from activeTab and planNight",
   // 62B-2F-2 superseded the Plan-only form when Home joined; 63C-2 superseded
-  // the Home-or-Plan form when Waits joined. Each tab was added only once every
-  // one of its surfaces had a night presentation. What is protected is unchanged
-  // and slightly stronger: exactly one flag, derived from nothing but activeTab
-  // and the existing planNight signal.
-  /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\|\s*\n?\s*activeTab === "home" \|\|\s*\n?\s*activeTab === "waits" \|\|\s*\n?\s*activeTab === "tohi"\)\s*&&\s*\n?\s*planNight;/.test(
+  // the Home-or-Plan form when Waits joined; the Profile night phase adds the
+  // fifth and final content tab. Each tab was added only once every one of its
+  // surfaces had a night presentation. What is protected is unchanged and
+  // slightly stronger: exactly one flag, derived from nothing but activeTab and
+  // the existing planNight signal.
+  /const shellNight\s*=\s*\n?\s*\(activeTab === "plan" \|\|\s*\n?\s*activeTab === "home" \|\|\s*\n?\s*activeTab === "waits" \|\|\s*\n?\s*activeTab === "tohi" \|\|\s*\n?\s*activeTab === "profile"\)\s*&&\s*\n?\s*planNight;/.test(
     appSource
   ) &&
     /const planNight = parkPresenceTheme\.isNight;/.test(appSource) &&
@@ -142,7 +165,7 @@ featureCheck(
 );
 
 featureCheck(
-  "the four converted tabs, and only those, drive the shell",
+  "the five converted tabs, and only those, drive the shell",
   // Exact set, not a substring match: adding an unconverted tab fails here, and
   // so does dropping a converted one.
   (() => {
@@ -151,9 +174,9 @@ featureCheck(
     );
     if (!m) return false;
     const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)].map((x) => x[1]).sort();
-    // 64B-2E-2 added tohi. Exact set, so adding an unconverted tab fails here
-    // and so does dropping a converted one.
-    return tabs.join(",") === "home,plan,tohi,waits";
+    // 64B-2E-2 added tohi; the Profile night phase adds profile, completing the
+    // five content tabs. Exact set, so adding a sixth or dropping one fails here.
+    return tabs.join(",") === "home,plan,profile,tohi,waits";
   })() &&
     // and the tabs that are NOT converted are provably absent from it
     UNCONVERTED_TABS.every(
@@ -201,33 +224,144 @@ featureCheck(
 );
 
 featureCheck(
-  "Profile and onboarding remain day-only after the TOHI activation",
-  // Retained from the 64B-2E-1 block, which is the right home for it now that
-  // Profile is the only unconverted content tab. Onboarding is checked at its
-  // own element because it is not an activeTab branch, and the slice is bounded
-  // so a night prop belonging to a later component cannot be mistaken for one of
-  // onboarding's.
+  "Profile styling is driven by the shared shell decision, not by a local one",
+  // Replaces the previous "Profile and onboarding remain day-only" check, which
+  // asserted the opposite and is now wrong for Profile. What survives from it is
+  // the half that still holds — onboarding — checked separately below.
+  //
+  // Profile must READ shellNight and must not compute night for itself: no clock,
+  // no theme lookup, no isNight, no forceMode, no media query, no storage inside
+  // the branch. That is what makes Profile's night a consequence of the one
+  // parent decision rather than a second, drift-prone mechanism.
+  profileBranch.length > 0 &&
+    /shellNight/.test(profileBranch) &&
+    !/planNight|isNight|new Date\(|getHours|forceMode|matchMedia|prefers-color-scheme/.test(
+      profileBranch
+    ) &&
+    !/localStorage|sessionStorage/.test(profileBranch) &&
+    !/getTohiAppShellTheme|getTohiThemeMode|getTohiShellTokens|isTohiNightMode/.test(
+      profileBranch
+    ) &&
+    !/useState|useEffect/.test(profileBranch),
+  true
+);
+
+featureCheck(
+  "every Profile surface has an intentional night treatment",
+  // A night presentation that covers only some surfaces is worse than none: the
+  // untreated ones read as bugs on the dark shell. Each conditional below is one
+  // named surface from the phase's list, matched at its own token so a missing
+  // treatment fails here by name rather than passing on a file-wide positive.
   (() => {
-    const profile = (() => {
-      const start = appSource.indexOf('{activeTab === "profile" &&');
-      if (start < 0) return "";
-      const end = appSource.indexOf("</main>");
-      return end > start ? appSource.slice(start, end) : appSource.slice(start);
-    })();
-    const onboarding = (() => {
-      const open = appSource.indexOf("<OnboardingFlow");
-      if (open < 0) return "";
-      const close = appSource.indexOf("/>", open);
-      return close > open ? appSource.slice(open, close) : "";
-    })();
+    const required = [
+      // setup hero
+      "PROFILE_NIGHT.heroBackground",
+      "PROFILE_NIGHT.heroBorder",
+      "PROFILE_NIGHT.heroShadow",
+      // complete and incomplete status pills
+      "PROFILE_NIGHT.statusCompleteBackground",
+      "PROFILE_NIGHT.statusCompleteColor",
+      "PROFILE_NIGHT.statusNeededBackground",
+      "PROFILE_NIGHT.statusNeededColor",
+      // primary action
+      "PROFILE_NIGHT.ctaBackground",
+      "PROFILE_NIGHT.ctaColor",
+      "PROFILE_NIGHT.ctaBorder",
+      "PROFILE_NIGHT.ctaShadow",
+      // incomplete-profile alert
+      "PROFILE_NIGHT.alertBackground",
+      "PROFILE_NIGHT.alertBorder",
+      "PROFILE_NIGHT.alertShadow",
+      "PROFILE_NIGHT.alertTitle",
+      "PROFILE_NIGHT.alertBody",
+      // child rows
+      "PROFILE_NIGHT.childSurface",
+      "PROFILE_NIGHT.childBorder",
+      // all three height-message states
+      "PROFILE_NIGHT.heightLowBackground",
+      "PROFILE_NIGHT.heightLowColor",
+      "PROFILE_NIGHT.heightMidBackground",
+      "PROFILE_NIGHT.heightMidColor",
+      "PROFILE_NIGHT.heightHighBackground",
+      "PROFILE_NIGHT.heightHighColor",
+      // priority chips
+      "PROFILE_NIGHT.priorityBackground",
+      "PROFILE_NIGHT.priorityColor",
+      "PROFILE_NIGHT.priorityBorder",
+      // developer-preview banner and button
+      "PROFILE_NIGHT.devSurface",
+      "PROFILE_NIGHT.devBorder",
+      "PROFILE_NIGHT.devTitle",
+      "PROFILE_NIGHT.devButtonBackground",
+      "PROFILE_NIGHT.devButtonBorder",
+      "PROFILE_NIGHT.devButtonColor",
+    ];
+    // These live in the shared Profile renderers rather than the branch, so they
+    // are checked against the whole file: grouped cards, section eyebrow chips,
+    // labels, values, hints, "Not set", and the packing disclaimer caption.
+    const requiredInRenderers = [
+      "PROFILE_NIGHT.groupSurface",
+      "PROFILE_NIGHT.groupShadow",
+      "PROFILE_NIGHT.tonePurpleText",
+      "PROFILE_NIGHT.tonePurpleChip",
+      "PROFILE_NIGHT.tonePurpleBorder",
+      "PROFILE_NIGHT.toneSkyText",
+      "PROFILE_NIGHT.toneSkyChip",
+      "PROFILE_NIGHT.toneSkyBorder",
+      "PROFILE_NIGHT.toneAmberText",
+      "PROFILE_NIGHT.toneAmberChip",
+      "PROFILE_NIGHT.toneAmberBorder",
+      "PROFILE_NIGHT.toneFallbackBorder",
+      "PROFILE_NIGHT.title",
+      "PROFILE_NIGHT.muted",
+    ];
     return (
-      profile.length > 0 &&
-      onboarding.length > 0 &&
-      !/shellNight|planNight|shellTokens|pageStyle|night=\{/.test(profile) &&
-      !/page=\{pageStyle\}/.test(onboarding) &&
-      !/night=\{/.test(onboarding)
+      required.every((token) => profileBranch.includes(token)) &&
+      requiredInRenderers.every((token) => appSource.includes(token))
     );
   })(),
+  true
+);
+
+featureCheck(
+  "the Profile night palette is a lookup table, not a second night decision",
+  // PROFILE_NIGHT may hold colours and nothing else. If it ever gained a clock,
+  // a storage read, or a theme lookup it would become a competing mechanism, and
+  // the single-source guarantee the shell rests on would be gone.
+  (() => {
+    const start = appSource.indexOf("const PROFILE_NIGHT = {");
+    if (start < 0) return false;
+    const end = appSource.indexOf("\n};", start);
+    if (end < 0) return false;
+    // Comments stripped: each entry deliberately names the DAY value it
+    // replaces, so `<- #FFFFFF` is documentation, not a night colour. Without
+    // this the day-fill guard below would fire on the comments it is meant to
+    // make possible.
+    const table = appSource.slice(start, end).replace(/\/\/.*$/gm, "");
+    return (
+      !/new Date\(|getHours|matchMedia|localStorage|sessionStorage|useState|isNight|forceMode|=>/.test(
+        table
+      ) &&
+      // no pure black anywhere in the palette
+      !/#000\b|#000000\b|rgb\(\s*0\s*,\s*0\s*,\s*0\s*\)/i.test(table) &&
+      // and no day-mode white or cream card fill smuggled into a night token
+      !/#FFFFFF\b|#FFF9F1\b|#FFFDF8\b/i.test(table)
+    );
+  })(),
+  true
+);
+
+featureCheck(
+  "onboarding remains day-only, including when reached from a night Profile",
+  // The surviving half of the old Profile-and-onboarding check. Onboarding is
+  // reached through activeScreen rather than activeTab, so shellNight cannot
+  // apply to it — it keeps the module-level day `page` and takes no night prop.
+  // "Review setup" therefore returns to the unchanged day onboarding.
+  onboardingElement.length > 0 &&
+    !/page=\{pageStyle\}/.test(onboardingElement) &&
+    !/night=\{/.test(onboardingElement) &&
+    /page=\{page\}/.test(onboardingElement) &&
+    !/shellNight|planNight|shellTokens|PROFILE_NIGHT/.test(onboardingElement),
   true
 );
 
@@ -343,7 +477,12 @@ featureCheck(
 );
 
 featureCheck(
-  "switching to any unconverted tab forces the shell and navigation to day",
+  "whenever the shell flag is false, the shell and navigation are forced to day",
+  // Previously phrased as "switching to any unconverted tab". Every content tab
+  // is now converted, so the flag is false during daylight rather than on a
+  // particular tab — but what it protects is unchanged: a false flag must force
+  // day everywhere, never merely fail to force night.
+  //
   // page falls back to the untouched module-level object by identity...
   /:\s*page;/.test(appSource) &&
     // ...and the shell lookup itself forces day whenever the flag is false
@@ -462,24 +601,117 @@ invariantCheck(
 invariantCheck(
   "no night styling reaches an unconverted tab's content",
   // Slice each unconverted tab's render branch and prove no shell-night value is
-  // used inside it. TOHI and Profile are the tabs that remain unconverted; Home
-  // stopped being one in 62B-2F-2 and Waits in 63C-2, and both now legitimately
-  // receive night={shellNight}.
+  // used inside it. Home stopped being one in 62B-2F-2, Waits in 63C-2, TOHI in
+  // 64B-2E-2 and Profile in the Profile night phase, so the list is empty today
+  // and this holds vacuously.
+  //
+  // Kept rather than deleted, because its job was never to describe the current
+  // tab list — it is the guard that catches a NEW day-only tab being darkened
+  // without a night presentation. Adding a key to UNCONVERTED_TABS re-arms it in
+  // one line.
   //
   // The forbidden list includes shellNight. Without it this guard was blind to
   // the rename: `planShellNight` does not match `shellNight`, so a darkened
-  // unconverted branch would have passed unnoticed. That blindness was real —
-  // the Home branch carried shellNight while the old expression still reported
-  // clean.
-  //
-  // True at base (where none of these identifiers exist) and true now, and it
-  // fails the moment someone darkens an unconverted tab's content.
+  // unconverted branch would have passed unnoticed.
   unconvertedTabBranches.length === UNCONVERTED_TABS.length &&
     unconvertedTabBranches.every(
       (branch) =>
         branch.length > 0 &&
         !/planShellNight|shellNight|shellTokens|pageStyle/.test(branch)
     ),
+  true
+);
+
+invariantCheck(
+  "the approved Profile DAY values survive the night conversion unchanged",
+  // Day parity, checked at the source. Every literal below is a value the
+  // approved Profile day design rendered before this phase, and each must still
+  // be present on the false side of its conditional. A conversion that "tidied"
+  // a day colour while adding night would fail here, which is the exact failure
+  // this phase was told to prevent.
+  //
+  // Structural day values — radii, padding, spacing, font sizes and weights —
+  // are deliberately not duplicated into the night palette at all, so they
+  // cannot drift: there is only one copy of each in the branch.
+  [
+    // setup hero
+    'linear-gradient(150deg, #FFFFFF 0%, #F6EFFF 56%, #FFF7ED 100%)',
+    '"1px solid rgba(124, 58, 237, 0.22)"',
+    '"0 16px 38px rgba(91, 33, 182, 0.10)"',
+    // status pills
+    "colors.successSoft",
+    "colors.amberSoft",
+    '"#046A4E"',
+    '"#92400E"',
+    // primary action
+    'linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)',
+    '"rgba(124, 58, 237, 0.28)"',
+    '"0 12px 24px rgba(124, 58, 237, 0.18)"',
+    // incomplete alert
+    'linear-gradient(145deg, #FFFFFF 0%, #FEF3C7 100%)',
+    '"1px solid rgba(245, 158, 11, 0.32)"',
+    '"0 10px 28px rgba(245, 158, 11, 0.10)"',
+    '"#7A4A10"',
+    // child rows
+    "colors.backgroundSoft",
+    "colors.cardBorder",
+    // height messages
+    "colors.errorSoft",
+    '"#9F1239"',
+    // priority chips
+    '"1px solid rgba(91, 33, 182, 0.35)"',
+    // developer preview
+    '"1px solid #ddd6fe"',
+    '"#f5f3ff"',
+    '"#6d28d9"',
+    "colors.purple",
+  ].every((literal) => profileBranch.includes(literal)) &&
+    // grouped cards and eyebrow chips live in the shared renderers
+    [
+      '"#FFFFFF"',
+      '"0 10px 28px rgba(28, 25, 23, 0.06)"',
+      "colors.purpleDeep",
+      '"rgba(124, 58, 237, 0.10)"',
+      '"rgba(124, 58, 237, 0.20)"',
+      '"#0369A1"',
+      '"rgba(56, 189, 248, 0.14)"',
+      '"rgba(56, 189, 248, 0.26)"',
+      '"rgba(245, 158, 11, 0.28)"',
+    ].every((literal) => appSource.includes(literal)),
+  true
+);
+
+invariantCheck(
+  "Profile keeps its content, structure, single action, and read-only shape",
+  // The night phase was presentation-only. These are the load-bearing pieces of
+  // the approved Profile that a restyle could quietly disturb: the group titles
+  // and their order, the definition-list structure, the one primary action, and
+  // the absence of any editing control.
+  [
+    "Your family setup",
+    "Trip details",
+    "Who's going",
+    "Comfort &amp; pace",
+    "What matters most",
+    "Packing &amp; day comfort",
+  ]
+    .map((title) => title.replace("&amp;", "&"))
+    .every((title) => profileBranch.includes(title)) &&
+    // group order is unchanged
+    (() => {
+      const order = ["Trip details", "Who's going", "Comfort & pace", "What matters most", "Packing & day comfort"];
+      const positions = order.map((title) => profileBranch.indexOf(title));
+      return positions.every((p, i) => p > -1 && (i === 0 || p > positions[i - 1]));
+    })() &&
+    // still a read-only summary: no editing control was introduced
+    !/<input|<select|<textarea/.test(profileBranch) &&
+    // exactly two buttons in the branch — the primary action and the
+    // developer-preview toggle, which only renders behind the dev flag
+    (profileBranch.match(/<button/g) || []).length === 2 &&
+    /setActiveScreen\("family_profile"\)/.test(profileBranch) &&
+    // the definition-list renderer is still what draws label/value pairs
+    /<dl style=/.test(appSource) &&
+    /renderProfileRows\(/.test(profileBranch),
   true
 );
 

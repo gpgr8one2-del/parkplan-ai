@@ -137,22 +137,34 @@ check(
 );
 
 check(
-  "TOHI is part of the shared shell-night membership, which is exactly the four converted tabs",
+  "TOHI is part of the shared shell-night membership, which is exactly the five converted tabs",
   (() => {
     const m = appCode.match(/const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*\n?\s*planNight;/);
     if (!m) return false;
     const tabs = [...m[1].matchAll(/activeTab === "(\w+)"/g)].map((x) => x[1]).sort();
-    return tabs.join(",") === "home,plan,tohi,waits";
+    // Profile joined in the Profile night phase, completing the content tabs.
+    // Still an exact set, so a sixth entry or a dropped one fails here.
+    return tabs.join(",") === "home,plan,profile,tohi,waits";
   })(),
   true
 );
 
 check(
-  "Profile is still excluded, so activation did not darken every tab",
-  (() => {
-    const m = appCode.match(/const shellNight\s*=\s*\n?\s*\(([\s\S]*?)\)\s*&&\s*\n?\s*planNight;/);
-    return m ? !/activeTab === "profile"/.test(m[1]) : false;
-  })(),
+  "onboarding is still excluded, so activation did not darken every surface",
+  // Replaces the previous "Profile is still excluded" check, which described the
+  // membership of the phase that wrote it rather than an invariant. Onboarding
+  // is the surface that must stay day-only permanently: it is reached through
+  // activeScreen, not activeTab, so the shell flag cannot reach it, and it keeps
+  // the module-level day `page`.
+  /<OnboardingFlow[\s\S]*?page=\{page\}/.test(appCode) &&
+    !/<OnboardingFlow[\s\S]*?page=\{pageStyle\}/.test(appCode) &&
+    (() => {
+      const open = appCode.indexOf("<OnboardingFlow");
+      if (open < 0) return false;
+      const close = appCode.indexOf("/>", open);
+      if (close < 0) return false;
+      return !/night=\{/.test(appCode.slice(open, close));
+    })(),
   true
 );
 

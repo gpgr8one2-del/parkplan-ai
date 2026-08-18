@@ -161,7 +161,7 @@ function dbFmt(v) {
 // 62A: this module-level style is the day/onboarding page. It is resolved with
 // forced day mode so that merely importing App at night can never restyle
 // onboarding or an unconverted tab. Night is applied per-render, and only for
-// Plan and Home, via shellNight below.
+// converted tabs, via shellNight below.
 const appShellTheme = getTohiAppShellTheme({ forceMode: TOHI_THEME_MODES.DAY });
 
 const page = {
@@ -371,6 +371,95 @@ function formatProfileTripDates(tripContext = {}) {
 
   return startLabel || endLabel;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Profile night palette — presentation only                                   */
+/* -------------------------------------------------------------------------- */
+
+// The approved night colour for every Profile surface, written beside the exact
+// day value it replaces so this table reads as a mapping rather than a set of
+// fresh choices. It is a plain lookup table: it decides nothing about WHEN night
+// applies. That decision stays with the single parent-controlled `shellNight`
+// flag, which Profile joined alongside Home, Waits, Plan and TOHI.
+//
+// Same navy/muted-purple language as the shell and the other converted tabs:
+// #131C36 primary surfaces, #0F172A/#132139 nested surfaces, #F5F3FF primary
+// text, #B6C2E2 secondary text, #C4B5FD purple, #7DD3FC sky, #FCD34D amber,
+// #6EE7B7 success. No pure black, and no bright-white card left on the shell.
+const PROFILE_NIGHT = {
+  // Setup hero. Day carries a white → lavender → cream wash; night carries the
+  // same three-stop movement in navy → indigo → plum.
+  heroBackground: "linear-gradient(150deg, #131C36 0%, #1B1A45 56%, #251F3F 100%)",
+  heroBorder: "1px solid rgba(139, 92, 246, 0.40)", //  <- rgba(124, 58, 237, 0.22)
+  heroShadow: "0 16px 38px rgba(2, 6, 23, 0.50)", //    <- rgba(91, 33, 182, 0.10)
+
+  // Status pills. Both keep their semantic hue; only the fill deepens and the
+  // text lightens, so "complete" still reads green and "needed" still reads amber.
+  statusCompleteBackground: "rgba(6, 78, 59, 0.55)", // <- colors.successSoft #D1FAE5
+  statusCompleteColor: "#6EE7B7", //                    <- #046A4E
+  statusNeededBackground: "rgba(120, 53, 15, 0.52)", // <- colors.amberSoft   #FEF3C7
+  statusNeededColor: "#FCD34D", //                      <- #92400E
+
+  title: "#F5F3FF", //                                  <- colors.text        #241C15
+  muted: "#B6C2E2", //                                  <- colors.muted       #7A6F63
+
+  // Primary action. Day is a violet gradient on white text; night lifts the
+  // gradient one step so the button still separates from the darker hero.
+  ctaBackground: "linear-gradient(145deg, #8B5CF6 0%, #6D28D9 100%)",
+  ctaColor: "#F5F3FF", //                               <- white
+  ctaBorder: "rgba(139, 92, 246, 0.52)", //             <- rgba(124, 58, 237, 0.28)
+  ctaShadow: "0 12px 24px rgba(2, 6, 23, 0.50)", //     <- rgba(124, 58, 237, 0.18)
+
+  // Missing-information alert.
+  alertBackground: "linear-gradient(145deg, #131C36 0%, #2C2113 100%)",
+  alertBorder: "1px solid rgba(252, 211, 77, 0.34)", // <- rgba(245, 158, 11, 0.32)
+  alertShadow: "0 10px 28px rgba(2, 6, 23, 0.45)", //   <- rgba(245, 158, 11, 0.10)
+  alertTitle: "#FCD34D", //                             <- #92400E
+  alertBody: "#F0DCB4", //                              <- #7A4A10
+
+  // Grouped cards.
+  groupSurface: "#131C36", //                           <- #FFFFFF
+  groupShadow: "0 10px 28px rgba(2, 6, 23, 0.45)", //   <- rgba(28, 25, 23, 0.06)
+
+  // Section eyebrow chips. Each accent keeps its identity; the chip becomes a
+  // deep tint of its own hue rather than a pale wash.
+  tonePurpleText: "#C4B5FD", //                         <- colors.purpleDeep  #5B21B6
+  tonePurpleChip: "rgba(76, 29, 149, 0.48)", //         <- rgba(124, 58, 237, 0.10)
+  tonePurpleBorder: "rgba(139, 92, 246, 0.38)", //      <- rgba(124, 58, 237, 0.20)
+  toneSkyText: "#7DD3FC", //                            <- #0369A1
+  toneSkyChip: "rgba(12, 74, 110, 0.55)", //            <- rgba(56, 189, 248, 0.14)
+  toneSkyBorder: "rgba(56, 189, 248, 0.34)", //         <- rgba(56, 189, 248, 0.26)
+  toneAmberText: "#FCD34D", //                          <- #92400E
+  toneAmberChip: "rgba(120, 53, 15, 0.52)", //          <- colors.amberSoft
+  toneAmberBorder: "rgba(252, 211, 77, 0.32)", //       <- rgba(245, 158, 11, 0.28)
+  toneFallbackBorder: "rgba(99, 102, 241, 0.30)", //    <- colors.cardBorder  #EADCC8
+
+  // Child rows: a deeper nested surface so they still recess inside the card.
+  childSurface: "#0F172A", //                           <- colors.backgroundSoft #FFF9F1
+  childBorder: "rgba(99, 102, 241, 0.28)", //           <- colors.cardBorder  #EADCC8
+
+  // The three height-message states keep coral / amber / green semantics.
+  heightLowBackground: "rgba(76, 5, 25, 0.58)", //      <- colors.errorSoft   #FEE2E2
+  heightLowColor: "#FDA4AF", //                         <- #9F1239
+  heightMidBackground: "rgba(120, 53, 15, 0.52)", //    <- colors.amberSoft   #FEF3C7
+  heightMidColor: "#FCD34D", //                         <- #92400E
+  heightHighBackground: "rgba(6, 78, 59, 0.55)", //     <- colors.successSoft #D1FAE5
+  heightHighColor: "#6EE7B7", //                        <- #046A4E
+
+  // Priority chips stay solid violet so they still read as chosen, one step
+  // deeper than day so they sit calmly on the navy card.
+  priorityBackground: "linear-gradient(145deg, #6D28D9 0%, #4C1D95 100%)",
+  priorityColor: "#F5F3FF", //                          <- white
+  priorityBorder: "1px solid rgba(139, 92, 246, 0.50)", // <- rgba(91, 33, 182, 0.35)
+
+  // Developer-preview banner and its button.
+  devSurface: "#132139", //                             <- #f5f3ff
+  devBorder: "1px solid rgba(139, 92, 246, 0.40)", //   <- 1px solid #ddd6fe
+  devTitle: "#C4B5FD", //                               <- #6d28d9
+  devButtonBackground: "#0F172A", //                    <- colors.card        #FFFFFF
+  devButtonBorder: "1px solid rgba(139, 92, 246, 0.38)", // <- colors.cardBorder
+  devButtonColor: "#C4B5FD", //                         <- colors.purple      #7C3AED
+};
 
 const lockedCardStyle = {
   ...card,
@@ -2637,13 +2726,18 @@ function App() {
   // restrained lavender. Night: deep navy with muted purple borders.
   const planNight = parkPresenceTheme.isNight;
 
-  // 62A/62B-2F-2/63C-2/64B-2E-2: the one explicit, parent-controlled shell
-  // decision. The dark shell and dark navigation apply while ANY converted tab
-  // is active. Home joined Plan in 62B-2F-2, Waits in 63C-2 and TOHI in
-  // 64B-2E-2, each only once every surface on that tab had a night presentation
-  // — Profile and onboarding still render day content, and a dark shell behind
+  // 62A/62B-2F-2/63C-2/64B-2E-2/Profile night: the one explicit,
+  // parent-controlled shell decision. The dark shell and dark navigation apply
+  // while ANY converted tab is active. Home joined Plan in 62B-2F-2, Waits in
+  // 63C-2, TOHI in 64B-2E-2 and Profile in this phase — each only once every
+  // surface on that tab had a night presentation, because a dark shell behind
   // day surfaces would read as a bug. Plan Tools inherits true because it is a
   // sub-view of Plan: activeTab stays "plan" while it is open.
+  //
+  // Onboarding is deliberately NOT part of this. It is not an activeTab branch;
+  // it renders through activeScreen and keeps the module-level day `page`, so
+  // opening "Review setup" from a night Profile returns to the unchanged day
+  // onboarding rather than inheriting Profile's night styling.
   //
   // Because the page background, BottomTabs and each converted tab's content all
   // read this single value in the same render, a tab switch can never leave dark
@@ -2656,7 +2750,8 @@ function App() {
     (activeTab === "plan" ||
       activeTab === "home" ||
       activeTab === "waits" ||
-      activeTab === "tohi") &&
+      activeTab === "tohi" ||
+      activeTab === "profile") &&
     planNight;
   const shellTokens = getTohiAppShellTheme({
     forceMode: shellNight ? TOHI_THEME_MODES.NIGHT : TOHI_THEME_MODES.DAY,
@@ -3553,28 +3648,52 @@ function App() {
 
   // One grouped Profile card. The eyebrow is a real heading so the screen can be
   // navigated by heading, which the previous flat run of <div> labels could not.
-  // Day tokens only: Profile stays outside night mode until its own day/night
-  // presentation is approved.
+  //
+  // Night reads the shared parent-controlled `shellNight` decision — the same
+  // value the page background and BottomTabs read in this render — so a card can
+  // never be dark on a day page or pale on the night shell. Every conditional
+  // below resolves to the exact day value it had before when the flag is false,
+  // which is what the day-parity guard pins.
   function renderProfileGroup({ accent, title, caption, children }) {
     const tone = {
-      purple: { text: colors.purpleDeep, chip: "rgba(124, 58, 237, 0.10)", border: "rgba(124, 58, 237, 0.20)" },
-      sky: { text: "#0369A1", chip: "rgba(56, 189, 248, 0.14)", border: "rgba(56, 189, 248, 0.26)" },
-      amber: { text: "#92400E", chip: colors.amberSoft, border: "rgba(245, 158, 11, 0.28)" },
+      purple: shellNight
+        ? {
+            text: PROFILE_NIGHT.tonePurpleText,
+            chip: PROFILE_NIGHT.tonePurpleChip,
+            border: PROFILE_NIGHT.tonePurpleBorder,
+          }
+        : { text: colors.purpleDeep, chip: "rgba(124, 58, 237, 0.10)", border: "rgba(124, 58, 237, 0.20)" },
+      sky: shellNight
+        ? {
+            text: PROFILE_NIGHT.toneSkyText,
+            chip: PROFILE_NIGHT.toneSkyChip,
+            border: PROFILE_NIGHT.toneSkyBorder,
+          }
+        : { text: "#0369A1", chip: "rgba(56, 189, 248, 0.14)", border: "rgba(56, 189, 248, 0.26)" },
+      amber: shellNight
+        ? {
+            text: PROFILE_NIGHT.toneAmberText,
+            chip: PROFILE_NIGHT.toneAmberChip,
+            border: PROFILE_NIGHT.toneAmberBorder,
+          }
+        : { text: "#92400E", chip: colors.amberSoft, border: "rgba(245, 158, 11, 0.28)" },
     }[accent] || {
-      text: colors.purpleDeep,
-      chip: "rgba(124, 58, 237, 0.10)",
-      border: colors.cardBorder,
+      text: shellNight ? PROFILE_NIGHT.tonePurpleText : colors.purpleDeep,
+      chip: shellNight ? PROFILE_NIGHT.tonePurpleChip : "rgba(124, 58, 237, 0.10)",
+      border: shellNight ? PROFILE_NIGHT.toneFallbackBorder : colors.cardBorder,
     };
 
     return (
       <section
         style={{
           ...card,
-          background: "#FFFFFF",
+          background: shellNight ? PROFILE_NIGHT.groupSurface : "#FFFFFF",
           border: `1px solid ${tone.border}`,
           borderRadius: 24,
           padding: 18,
-          boxShadow: "0 10px 28px rgba(28, 25, 23, 0.06)",
+          boxShadow: shellNight
+            ? PROFILE_NIGHT.groupShadow
+            : "0 10px 28px rgba(28, 25, 23, 0.06)",
         }}
       >
         <h3
@@ -3599,7 +3718,7 @@ function App() {
           <p
             style={{
               margin: "10px 0 0",
-              color: colors.muted,
+              color: shellNight ? PROFILE_NIGHT.muted : colors.muted,
               fontSize: 13,
               lineHeight: 1.45,
             }}
@@ -3627,7 +3746,7 @@ function App() {
             <div key={label} style={{ display: "grid", gap: 3 }}>
               <dt
                 style={{
-                  color: colors.muted,
+                  color: shellNight ? PROFILE_NIGHT.muted : colors.muted,
                   fontSize: 11.5,
                   fontWeight: 900,
                   letterSpacing: 0.5,
@@ -3642,7 +3761,15 @@ function App() {
                   // Unset uses the muted token rather than a lighter grey: a
                   // lighter tone measured 3.92:1 on white, below AA. Italic plus
                   // the lighter weight carries the unset distinction instead.
-                  color: isSet ? colors.text : colors.muted,
+                  // Night follows the same rule with the night muted token,
+                  // which measures well above AA on the #131C36 card.
+                  color: shellNight
+                    ? isSet
+                      ? PROFILE_NIGHT.title
+                      : PROFILE_NIGHT.muted
+                    : isSet
+                    ? colors.text
+                    : colors.muted,
                   fontSize: 15.5,
                   fontWeight: isSet ? 850 : 700,
                   fontStyle: isSet ? "normal" : "italic",
@@ -3656,7 +3783,7 @@ function App() {
                 <p
                   style={{
                     margin: "1px 0 0",
-                    color: colors.muted,
+                    color: shellNight ? PROFILE_NIGHT.muted : colors.muted,
                     fontSize: 12.5,
                     lineHeight: 1.4,
                   }}
@@ -5764,22 +5891,32 @@ function App() {
 
           {activeTab === "profile" && (
             <>
-              {/* Profile day redesign. Presentation only: every value below is the
-                  same real familyProfileSummary / profileCompletion data the screen
-                  already read, and Profile remains a read-only summary whose single
-                  product action is opening the existing setup flow. No storage,
-                  onboarding, access-control or recommendation behaviour changes, and
-                  Profile stays outside night mode until its own day/night
-                  presentation is approved. */}
+              {/* Profile day/night presentation. Presentation only: every value
+                  below is the same real familyProfileSummary / profileCompletion
+                  data the screen already read, and Profile remains a read-only
+                  summary whose single product action is opening the existing
+                  setup flow. No storage, onboarding, access-control or
+                  recommendation behaviour changes.
+
+                  Night reads the shared `shellNight` decision that the page
+                  background and BottomTabs read in the same render, so Profile,
+                  the shell and the navigation always flip together. Every
+                  conditional resolves to its exact previous day value when the
+                  flag is false. Onboarding is untouched and stays day-only. */}
               <section
                 style={{
                   ...card,
-                  background:
-                    "linear-gradient(150deg, #FFFFFF 0%, #F6EFFF 56%, #FFF7ED 100%)",
-                  border: "1px solid rgba(124, 58, 237, 0.22)",
+                  background: shellNight
+                    ? PROFILE_NIGHT.heroBackground
+                    : "linear-gradient(150deg, #FFFFFF 0%, #F6EFFF 56%, #FFF7ED 100%)",
+                  border: shellNight
+                    ? PROFILE_NIGHT.heroBorder
+                    : "1px solid rgba(124, 58, 237, 0.22)",
                   borderRadius: 28,
                   padding: 20,
-                  boxShadow: "0 16px 38px rgba(91, 33, 182, 0.10)",
+                  boxShadow: shellNight
+                    ? PROFILE_NIGHT.heroShadow
+                    : "0 16px 38px rgba(91, 33, 182, 0.10)",
                 }}
               >
                 <div
@@ -5788,10 +5925,20 @@ function App() {
                     alignItems: "center",
                     padding: "6px 11px",
                     borderRadius: 999,
-                    background: profileCompletion.isComplete
+                    background: shellNight
+                      ? profileCompletion.isComplete
+                        ? PROFILE_NIGHT.statusCompleteBackground
+                        : PROFILE_NIGHT.statusNeededBackground
+                      : profileCompletion.isComplete
                       ? colors.successSoft
                       : colors.amberSoft,
-                    color: profileCompletion.isComplete ? "#046A4E" : "#92400E",
+                    color: shellNight
+                      ? profileCompletion.isComplete
+                        ? PROFILE_NIGHT.statusCompleteColor
+                        : PROFILE_NIGHT.statusNeededColor
+                      : profileCompletion.isComplete
+                      ? "#046A4E"
+                      : "#92400E",
                     fontSize: 11.5,
                     fontWeight: 900,
                     letterSpacing: 0.6,
@@ -5803,7 +5950,7 @@ function App() {
                 <h2
                   style={{
                     margin: "12px 0 0",
-                    color: colors.text,
+                    color: shellNight ? PROFILE_NIGHT.title : colors.text,
                     fontSize: 27,
                     letterSpacing: -0.6,
                     lineHeight: 1.15,
@@ -5815,7 +5962,7 @@ function App() {
                 <p
                   style={{
                     margin: "10px 0 0",
-                    color: colors.muted,
+                    color: shellNight ? PROFILE_NIGHT.muted : colors.muted,
                     fontSize: 14.5,
                     lineHeight: 1.5,
                     maxWidth: 560,
@@ -5836,10 +5983,16 @@ function App() {
                     padding: "0 20px",
                     borderRadius: 16,
                     fontSize: 15,
-                    background: "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
-                    color: "white",
-                    borderColor: "rgba(124, 58, 237, 0.28)",
-                    boxShadow: "0 12px 24px rgba(124, 58, 237, 0.18)",
+                    background: shellNight
+                      ? PROFILE_NIGHT.ctaBackground
+                      : "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
+                    color: shellNight ? PROFILE_NIGHT.ctaColor : "white",
+                    borderColor: shellNight
+                      ? PROFILE_NIGHT.ctaBorder
+                      : "rgba(124, 58, 237, 0.28)",
+                    boxShadow: shellNight
+                      ? PROFILE_NIGHT.ctaShadow
+                      : "0 12px 24px rgba(124, 58, 237, 0.18)",
                   }}
                 >
                   {profileCompletion.isComplete ? "Review setup" : "Finish setup"}
@@ -5850,17 +6003,23 @@ function App() {
                 <section
                   style={{
                     ...card,
-                    background: "linear-gradient(145deg, #FFFFFF 0%, #FEF3C7 100%)",
-                    border: "1px solid rgba(245, 158, 11, 0.32)",
+                    background: shellNight
+                      ? PROFILE_NIGHT.alertBackground
+                      : "linear-gradient(145deg, #FFFFFF 0%, #FEF3C7 100%)",
+                    border: shellNight
+                      ? PROFILE_NIGHT.alertBorder
+                      : "1px solid rgba(245, 158, 11, 0.32)",
                     borderRadius: 24,
                     padding: 18,
-                    boxShadow: "0 10px 28px rgba(245, 158, 11, 0.10)",
+                    boxShadow: shellNight
+                      ? PROFILE_NIGHT.alertShadow
+                      : "0 10px 28px rgba(245, 158, 11, 0.10)",
                   }}
                 >
                   <h3
                     style={{
                       margin: 0,
-                      color: "#92400E",
+                      color: shellNight ? PROFILE_NIGHT.alertTitle : "#92400E",
                       fontSize: 15.5,
                       lineHeight: 1.3,
                     }}
@@ -5870,7 +6029,7 @@ function App() {
                   <p
                     style={{
                       margin: "8px 0 0",
-                      color: "#7A4A10",
+                      color: shellNight ? PROFILE_NIGHT.alertBody : "#7A4A10",
                       fontSize: 14,
                       lineHeight: 1.5,
                     }}
@@ -6010,14 +6169,18 @@ function App() {
                                 style={{
                                   padding: "12px 14px",
                                   borderRadius: 16,
-                                  background: colors.backgroundSoft,
-                                  border: `1px solid ${colors.cardBorder}`,
+                                  background: shellNight
+                                    ? PROFILE_NIGHT.childSurface
+                                    : colors.backgroundSoft,
+                                  border: `1px solid ${
+                                    shellNight ? PROFILE_NIGHT.childBorder : colors.cardBorder
+                                  }`,
                                 }}
                               >
                                 <strong
                                   style={{
                                     display: "block",
-                                    color: colors.text,
+                                    color: shellNight ? PROFILE_NIGHT.title : colors.text,
                                     fontSize: 14.5,
                                     lineHeight: 1.3,
                                   }}
@@ -6032,7 +6195,7 @@ function App() {
                                   style={{
                                     display: "block",
                                     marginTop: 4,
-                                    color: colors.muted,
+                                    color: shellNight ? PROFILE_NIGHT.muted : colors.muted,
                                     fontSize: 13,
                                     lineHeight: 1.4,
                                   }}
@@ -6051,18 +6214,28 @@ function App() {
                           margin: "14px 0 0",
                           padding: "12px 14px",
                           borderRadius: 16,
-                          background:
-                            familyProfileSummary.shortestHeightInches < 38
-                              ? colors.errorSoft
+                          background: shellNight
+                            ? familyProfileSummary.shortestHeightInches < 38
+                              ? PROFILE_NIGHT.heightLowBackground
                               : familyProfileSummary.shortestHeightInches < 44
-                              ? colors.amberSoft
-                              : colors.successSoft,
-                          color:
-                            familyProfileSummary.shortestHeightInches < 38
-                              ? "#9F1239"
+                              ? PROFILE_NIGHT.heightMidBackground
+                              : PROFILE_NIGHT.heightHighBackground
+                            : familyProfileSummary.shortestHeightInches < 38
+                            ? colors.errorSoft
+                            : familyProfileSummary.shortestHeightInches < 44
+                            ? colors.amberSoft
+                            : colors.successSoft,
+                          color: shellNight
+                            ? familyProfileSummary.shortestHeightInches < 38
+                              ? PROFILE_NIGHT.heightLowColor
                               : familyProfileSummary.shortestHeightInches < 44
-                              ? "#92400E"
-                              : "#046A4E",
+                              ? PROFILE_NIGHT.heightMidColor
+                              : PROFILE_NIGHT.heightHighColor
+                            : familyProfileSummary.shortestHeightInches < 38
+                            ? "#9F1239"
+                            : familyProfileSummary.shortestHeightInches < 44
+                            ? "#92400E"
+                            : "#046A4E",
                           fontSize: 13.5,
                           fontWeight: 800,
                           lineHeight: 1.45,
@@ -6148,9 +6321,13 @@ function App() {
                             minHeight: 38,
                             padding: "8px 14px",
                             borderRadius: 999,
-                            background: "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
-                            color: "white",
-                            border: "1px solid rgba(91, 33, 182, 0.35)",
+                            background: shellNight
+                              ? PROFILE_NIGHT.priorityBackground
+                              : "linear-gradient(145deg, #7C3AED 0%, #5B21B6 100%)",
+                            color: shellNight ? PROFILE_NIGHT.priorityColor : "white",
+                            border: shellNight
+                              ? PROFILE_NIGHT.priorityBorder
+                              : "1px solid rgba(91, 33, 182, 0.35)",
                             fontSize: 13.5,
                             fontWeight: 850,
                             lineHeight: 1.2,
@@ -6165,7 +6342,7 @@ function App() {
                   <p
                     style={{
                       margin: 0,
-                      color: colors.muted,
+                      color: shellNight ? PROFILE_NIGHT.muted : colors.muted,
                       fontSize: 14,
                       lineHeight: 1.5,
                     }}
@@ -6202,12 +6379,20 @@ function App() {
                 <section
                   style={{
                     ...card,
-                    border: "1px solid #ddd6fe",
-                    background: "#f5f3ff",
+                    border: shellNight ? PROFILE_NIGHT.devBorder : "1px solid #ddd6fe",
+                    background: shellNight ? PROFILE_NIGHT.devSurface : "#f5f3ff",
                   }}
                 >
-                  <strong style={{ color: "#6d28d9" }}>Developer Preview Active</strong>
-                  <p style={{ margin: "6px 0 0", color: colors.muted, fontSize: 13 }}>
+                  <strong style={{ color: shellNight ? PROFILE_NIGHT.devTitle : "#6d28d9" }}>
+                    Developer Preview Active
+                  </strong>
+                  <p
+                    style={{
+                      margin: "6px 0 0",
+                      color: shellNight ? PROFILE_NIGHT.muted : colors.muted,
+                      fontSize: 13,
+                    }}
+                  >
                     You are seeing the full app even though the guest profile is incomplete.
                     Normal guests would only see basic wait times until setup is finished.
                   </p>
@@ -6219,7 +6404,20 @@ function App() {
                       });
                       setDevPreviewFullApp(false);
                     }}
-                    style={{ ...button, marginTop: 10, color: colors.purple }}
+                    style={{
+                      ...button,
+                      marginTop: 10,
+                      // The base button style carries a white fill and a warm
+                      // cream border, both of which would read as a stray day
+                      // control on the navy card, so night replaces all three.
+                      ...(shellNight
+                        ? {
+                            background: PROFILE_NIGHT.devButtonBackground,
+                            border: PROFILE_NIGHT.devButtonBorder,
+                          }
+                        : {}),
+                      color: shellNight ? PROFILE_NIGHT.devButtonColor : colors.purple,
+                    }}
                   >
                     Turn Off Preview Gate Bypass
                   </button>

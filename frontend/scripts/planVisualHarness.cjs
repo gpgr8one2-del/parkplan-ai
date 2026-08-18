@@ -1992,17 +1992,17 @@ console.log("Extraction integrity");
     // 62A superseded the original "no app-wide theme or BottomTabs change" form:
     // a shell/navigation night treatment now exists deliberately.
     //
-    // 62B-2F-2 supersedes the Plan-only wording. Home became a converted
-    // night-mode tab once every Home surface had a night presentation, so the
-    // shell is now gated to Home OR Plan. That is a widening of the approved
-    // set, not a loss of protection — Waits, TOHI, Profile and onboarding remain
-    // day-only, which is what this guard actually exists to defend.
+    // 62B-2F-2 supersedes the Plan-only wording. Each tab became a converted
+    // night-mode tab once every one of its surfaces had a night presentation:
+    // Home in 62B-2F-2, Waits in 63C-2, TOHI in 64B-2E-2 and Profile in the
+    // Profile night phase. Each step is a widening of the approved set, not a
+    // loss of protection.
     //
     // The protected meaning is carried forward intact: the five-tab order is
     // unchanged, whichever shell-night flag exists is gated to exactly the
-    // converted tabs, BottomTabs never decides night for itself, no night
-    // styling reaches an unconverted tab's content, and the 61E Plan content
-    // corrections are still in place.
+    // converted tabs and to nothing else, BottomTabs never decides night for
+    // itself, onboarding stays day-only, and the 61E Plan content corrections
+    // are still in place.
     "night styling stays gated to the converted tabs",
     [...bottomTabsSource.matchAll(/key:\s*"(\w+)"/g)].map((m) => m[1]).join(",") ===
       "home,waits,plan,tohi,profile" &&
@@ -2016,8 +2016,13 @@ console.log("Extraction integrity");
         /const planShellNight\s*=\s*activeTab === "plan"\s*&&\s*planNight;/.test(appSource)) &&
       // Post-62B-2F-2 flag: if shellNight exists it must be derived from the
       // converted tabs plus the existing planNight signal — nothing else. Waits
-      // joined the converted set in 63C-2 and TOHI in 64B-2E-2, each once its
-      // night presentation was complete; Profile stays out.
+      // joined the converted set in 63C-2, TOHI in 64B-2E-2 and Profile in the
+      // Profile night phase, each once its night presentation was complete.
+      //
+      // The membership list is checked as an EXACT set, so this still fails if a
+      // tab is added without its night presentation, or if one is dropped. What
+      // it no longer does is name Profile as permanently excluded — that clause
+      // described a fact of the previous phase, not an invariant.
       (!/const shellNight/.test(appSource) ||
         (() => {
           const m = appSource.match(
@@ -2028,15 +2033,16 @@ console.log("Extraction integrity");
             .map((x) => x[1])
             .sort();
           return (
-            tabs.join(",") === "home,plan,tohi,waits" &&
-            !/profile/.test(m[1]) &&
+            tabs.join(",") === "home,plan,profile,tohi,waits" &&
             /const planNight\s*=/.test(appSource)
           );
         })()) &&
       // BottomTabs never decides night for itself
       !/isNight|prefers-color-scheme|new Date\(|getHours/.test(bottomTabsSource) &&
-      // no per-tab night styling for the tabs that are still unconverted
-      !/activeTab === "profile"[^\n]*night/i.test(appSource) &&
+      // onboarding is not an activeTab branch and stays on the day page, so it
+      // can never inherit the shell decision
+      /<OnboardingFlow[\s\S]*?page=\{page\}/.test(appSource) &&
+      !/<OnboardingFlow[\s\S]*?page=\{pageStyle\}/.test(appSource) &&
       // 61E Plan content corrections intact
       (planTabSource.match(
         /color:\s*getChipAccent\("#(92400E|5B21B6|0369A1|E11D48)",\s*palette\)/g
