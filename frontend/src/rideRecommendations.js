@@ -1156,12 +1156,19 @@ function getNextShowtimeInfo(meta) {
   const showtimes = meta?.showProfile?.showtimes || [];
   const nowMinutes = getOrlandoTimeParts().totalMinutes;
 
+  // Strictly future: a performance counts as upcoming only when it starts LATER
+  // than the current park-local minute. `>=` used to admit a performance that
+  // begins during the current minute, which meant TOHI would keep targeting a
+  // show that was already starting — and, at the final performance, keep
+  // treating the day as unfinished for that whole minute. Park-local time is
+  // minute-resolution (getOrlandoTimeParts discards seconds), so once the clock
+  // reads the start minute the performance has begun for our purposes.
   const upcoming = showtimes
     .map((label) => ({
       label,
       totalMinutes: parseShowtimeToMinutes(label),
     }))
-    .filter((item) => item.totalMinutes != null && item.totalMinutes >= nowMinutes)
+    .filter((item) => item.totalMinutes != null && item.totalMinutes > nowMinutes)
     .sort((a, b) => a.totalMinutes - b.totalMinutes);
 
   const next = upcoming[0] || null;
@@ -1179,6 +1186,56 @@ function getNextShowtimeInfo(meta) {
     minutesUntilShow: next.totalMinutes - nowMinutes,
     isPastFinalShow: false,
   };
+}
+
+// Eligibility gate for scheduled shows whose day is over.
+//
+// Field test, Hollywood Studios, ~8:00 PM: Indiana Jones Epic Stunt Spectacular
+// (final listed performance 4:30 PM) and the Frozen Sing-Along (5:30 PM) were
+// still being surfaced. The cause was not the showtime data and not the time
+// comparison — both were correct. It was that "past its final performance" was
+// expressed ONLY as a ranking penalty (-120 to the score, -1000 to the Plan
+// Ahead priority). A penalty is a comparison, not an exclusion: Plan Ahead takes
+// candidates[0], so once the evening thinned the pool out, the least-bad
+// remaining candidate was a show that had finished hours earlier.
+//
+// `ride.isOpen` cannot cover this. A show venue reports open for the whole
+// operating day, so the open flag stays true long after the last performance —
+// which is exactly why the existing closed check let these through.
+//
+// Deliberately narrower than getNextShowtimeInfo().isPastFinalShow, which
+// reports true for a show with NO listed showtimes. That is the right input for
+// a ranking hint but the wrong one for an exclusion: an absent schedule means
+// unknown, not finished. Feathered Friends in Flight! ships with
+// `showtimes: []` and `verifyDailySchedule: true`, and must stay recommendable
+// all day rather than vanishing because its schedule is not hard-coded. The
+// existing scoring behaviour for that case is left exactly as it was.
+function hasFinishedFinalPerformance(meta, now = new Date()) {
+  if (!isScheduledShowMeta(meta)) return false;
+
+  const showtimes = meta?.showProfile?.showtimes;
+  if (!Array.isArray(showtimes) || showtimes.length === 0) return false;
+
+  const parsed = showtimes
+    .map((label) => parseShowtimeToMinutes(label))
+    .filter((minutes) => minutes != null);
+
+  // Every listed performance failed to parse: the schedule is unreadable, not
+  // over. Same reasoning as the empty case.
+  if (!parsed.length) return false;
+
+  // Park-local minutes-of-day, from the same instant the rest of this
+  // recommendation pass uses, so the gate cannot straddle a minute or day
+  // boundary against the other time-dependent checks.
+  const nowMinutes = getOrlandoTimeParts(now).totalMinutes;
+
+  // Exact negation of the strictly-future "upcoming" test in
+  // getNextShowtimeInfo: finished once no listed performance starts later than
+  // the current park-local minute. A performance beginning this very minute has
+  // begun, so it no longer keeps the show eligible. Because the park-local clock
+  // is minute-resolution, this covers the whole of that minute — 4:30:00 PM and
+  // 4:30:59 PM both read as 4:30 PM and both count as started.
+  return parsed.every((minutes) => minutes <= nowMinutes);
 }
 
 function getScheduledShowScoreModifier(meta, weather, proximityModifier) {
@@ -2036,6 +2093,7 @@ export function getNextBestRides({
     unsupportedVariant: 0,
     contextOnly: 0,
     heightRestricted: 0,
+    showFinishedForDay: 0,
     earlyEntryBlocked: 0,
     closingSoon: 0,
     eligible: 0,
@@ -2049,6 +2107,7 @@ export function getNextBestRides({
     unsupportedVariant: [],
     contextOnly: [],
     heightRestricted: [],
+    showFinishedForDay: [],
     earlyEntryBlocked: [],
     closingSoon: [],
     eligible: [],
@@ -2084,6 +2143,18 @@ export function getNextBestRides({
     if (!ride.isOpen) return { reason: "closed", meta };
     if (completed.has(String(ride.id))) return { reason: "completed", meta };
     if (skipped.has(String(ride.id))) return { reason: "skipped", meta };
+
+    // A scheduled show with no remaining performance today is not
+    // recommendation-eligible anywhere. This is the one structural gate every
+    // slot, pool and fallback flows through, so putting it here — rather than
+    // in Plan Ahead, where the leak surfaced — is what makes the invariant hold
+    // for Best Move, Smart Backup, Worth the Walk, Plan Ahead, Wait on This,
+    // the relaxed close-time fallback and the indoor-recovery fallback alike.
+    // Ordered after closed/completed/skipped so those keep reporting the more
+    // specific reason for an attraction that is also finished for the day.
+    if (hasFinishedFinalPerformance(meta, now)) {
+      return { reason: "showFinishedForDay", meta };
+    }
 
     if (!isAllowedDuringEarlyEntry(parkId, meta, now)) {
       return { reason: "earlyEntryBlocked", meta };
