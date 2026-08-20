@@ -17,6 +17,7 @@
  */
 
 import { getLocationZonesForPark } from "../parkLocationAnchors";
+import { LOCATION_STABILITY_THRESHOLDS } from "./locationStability";
 
 const HIGH_CONFIDENCE_METERS = 90;
 const MEDIUM_CONFIDENCE_METERS = 180;
@@ -25,6 +26,11 @@ const CLUSTER_ANCHOR_COUNT = 5;
 const LAND_CLUSTER_RADIUS_METERS = 220;
 const CLOSEST_ANCHOR_SAFEGUARD_METERS = 45;
 const CLUSTER_STEAL_LEAD_REQUIRED = 95;
+
+// Uncertainty-radius thresholds come from locationStability.js, which owns the
+// trust policy and documents the measured anchor separations behind them.
+// Deliberately not re-declared here: two copies of 40/90 would drift.
+const { TRUSTED_ACCURACY_METERS, MAX_ACCURACY_METERS } = LOCATION_STABILITY_THRESHOLDS;
 
 export function getDistanceMeters(lat1, lng1, lat2, lng2) {
   const earthRadiusMeters = 6371000;
@@ -154,6 +160,32 @@ function getClusterDecisionWithClosestAnchorSafeguard({ bestAnchor, clusterScore
   };
 }
 
+// coords.accuracy is an uncertainty RADIUS, not a correction to apply to the
+// coordinates. It cannot tell us where the guest really is, only how much the
+// reported point may be wrong by — so it is used to cap how much the geometry
+// below is allowed to claim, and never to move the position.
+//
+// Field test: a fix displaced ~80 m still reported "high" confidence, because
+// it landed squarely among a neighbouring land's anchors and the geometry had
+// no way to know the fix was poor. Radius thresholds come from the measured
+// Hollywood anchor separations and are documented in locationStability.js.
+function capConfidenceByAccuracy(confidence, accuracyMeters) {
+  const accuracy = Number(accuracyMeters);
+
+  // Callers that do not supply accuracy — including the existing fieldwork
+  // tests and any pure geometry question — keep the previous behaviour exactly.
+  if (!Number.isFinite(accuracy)) return confidence;
+
+  if (accuracy > MAX_ACCURACY_METERS) return "low";
+
+  // Between trusted and unusable the reading is real but imprecise: it can
+  // still refresh where it agrees with what we already believe, but it has not
+  // earned the right to be called a confident fix.
+  if (accuracy > TRUSTED_ACCURACY_METERS && confidence === "high") return "medium";
+
+  return confidence;
+}
+
 function getConfidence({ bestAnchor, winningCluster, runnerUpCluster }) {
   if (!bestAnchor || !winningCluster) return "low";
 
@@ -185,7 +217,7 @@ function getConfidence({ bestAnchor, winningCluster, runnerUpCluster }) {
   return "low";
 }
 
-export function detectNearestLocationZone({ parkId, lat, lng }) {
+export function detectNearestLocationZone({ parkId, lat, lng, accuracyMeters }) {
   if (lat == null || lng == null) return null;
 
   const candidates = buildAnchorCandidates({ parkId, lat, lng });
@@ -202,11 +234,13 @@ export function detectNearestLocationZone({ parkId, lat, lng }) {
 
   if (!winningCluster) return null;
 
-  const confidence = getConfidence({
+  const geometryConfidence = getConfidence({
     bestAnchor,
     winningCluster,
     runnerUpCluster,
   });
+
+  const confidence = capConfidenceByAccuracy(geometryConfidence, accuracyMeters);
 
   const bestLandAnchor =
     winningCluster.closestAnchor ||
@@ -239,6 +273,10 @@ export function detectNearestLocationZone({ parkId, lat, lng }) {
     anchorType: bestLandAnchor.anchorType,
     distanceMeters: roundedDistance,
     confidence,
+    geometryConfidence,
+    accuracyMeters: Number.isFinite(Number(accuracyMeters))
+      ? Math.round(Number(accuracyMeters))
+      : null,
     nearbyAnchors,
     clusterScores: clusterScores.map((cluster) => ({
       landKey: cluster.landKey,
