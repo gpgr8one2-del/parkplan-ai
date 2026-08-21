@@ -83,6 +83,13 @@ import { shouldShowRideInWaitList } from "./attractionDisplayFilters";
 import { shouldApplyBrowsedResponse } from "./utils/waitsViewState";
 import { getResortOptions } from "./resortProfiles";
 import { detectNearestLocationZone, getCurrentPosition } from "./utils/locationDetection";
+import {
+  createLocationStabilityState,
+  reduceLocationReading,
+  resolveLocationTrust,
+  resolveRestoredLocationState,
+  shouldClearExpiredGpsLocation,
+} from "./utils/locationStability";
 import { OnboardingFlow } from "./components/OnboardingFlow";
 import { PlanRecommendations } from "./components/PlanRecommendations";
 import { WaitsTab } from "./components/WaitsTab";
@@ -2121,6 +2128,40 @@ function App() {
   const [lastAutoUpdateAt, setLastAutoUpdateAt] = useState("");
   const [lastLocationUpdateAt, setLastLocationUpdateAt] = useState("");
   const [detectedLocationContext, setDetectedLocationContext] = useState(null);
+
+  // Memory of the last GPS reading TOHI actually trusted. Held in a ref rather
+  // than state: it is plumbing for the next reading's decision, and it must not
+  // trigger a render of its own. Both the manual "Use My Location" path and the
+  // continuous watch feed the same reducer, so one noisy sample cannot move the
+  // guest no matter which path delivered it.
+  const locationStabilityRef = useRef(createLocationStabilityState());
+
+  // A coarse clock, purely so an accepted fix can EXPIRE without waiting for
+  // some unrelated state change to re-run the decision memo. Expiry is the half
+  // of the lifecycle that no incoming reading can trigger — when the app is
+  // backgrounded the watch stops delivering entirely, so nothing else would
+  // notice the fix ageing out.
+  //
+  // Ticks every 30 s against a 3-minute lifetime, and immediately on becoming
+  // visible again, which is precisely the "walked away with the app in my
+  // pocket" case from the field report.
+  const [locationFreshnessNow, setLocationFreshnessNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const markNow = () => setLocationFreshnessNow(Date.now());
+
+    const intervalId = setInterval(markNow, 30 * 1000);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") markNow();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, []);
   const [initialFamilyProfileState] = useState(() => {
     const storedProfile = readStoredFamilyProfile();
     const storedCompletion = getFamilyProfileCompletion(storedProfile);
@@ -2148,7 +2189,23 @@ function App() {
   const [manualPlanningParkOverride, setManualPlanningParkOverride] = useState("");
   const lastProfilePlanningParkRef = useRef(planningPark);
 
-  const [currentLand, setCurrentLand] = useState(null);
+  const [currentLand, setCurrentLandState] = useState(null);
+
+  // Who put this land here. currentLand is written both by GPS and by the
+  // guest's own picker, and once a GPS fix expires the two must not be
+  // confusable: an expired GPS land presenting itself as a manual selection
+  // would hide the fact that TOHI no longer knows where the family is.
+  const [currentLandSource, setCurrentLandSource] = useState(null);
+
+  // The setter handed to the manual area picker. Same signature the picker
+  // already calls, so no component changes: choosing an area records it as a
+  // deliberate choice and clears the GPS stabilization history, because the
+  // guest has just overruled it.
+  const setCurrentLand = useCallback((nextLand) => {
+    setCurrentLandState(nextLand);
+    setCurrentLandSource(nextLand ? "manual" : null);
+    locationStabilityRef.current = createLocationStabilityState();
+  }, []);
   const [completedRideIds, setCompletedRideIds] = useState([]);
   const [skippedRideIds, setSkippedRideIds] = useState([]);
   const [reportedRideIssueIds, setReportedRideIssueIds] = useState([]);
@@ -2338,6 +2395,7 @@ function App() {
           parkId: activePark,
           lat: position.coords.latitude,
           lng: position.coords.longitude,
+          accuracyMeters: position.coords.accuracy,
         });
 
         if (!detectedZone) {
@@ -2346,6 +2404,42 @@ function App() {
               "I could not match your location to this park yet. Pick the closest area manually for now."
             );
           }
+          return null;
+        }
+
+        // Same gate as the watch. A tap on "Use My Location" is an explicit
+        // request, but it still cannot make a poor fix trustworthy — the reading
+        // is only as good as its accuracy radius and its age.
+        const stability = reduceLocationReading(
+          locationStabilityRef.current,
+          {
+            landKey: detectedZone.landKey,
+            // The detector's own verdict. A precise fix that the anchor
+            // geometry cannot back up must not become stored context.
+            confidence: detectedZone.confidence,
+            accuracyMeters: position.coords.accuracy,
+            timestamp: position.timestamp,
+          },
+          Date.now()
+        );
+
+        locationStabilityRef.current = stability.state;
+
+        if (stability.decision.action !== "accept") {
+          // Keep whatever was already trusted rather than replacing it with a
+          // reading TOHI cannot stand behind. Manual area selection stays
+          // available, which is the honest fallback when GPS is weak.
+          if (!silent) {
+            setLocationError(
+              "Your location signal is not steady enough to place you right now. Pick the closest area manually for now."
+            );
+          }
+
+          // The watch still starts. The guest asked to be located and this one
+          // fix was not good enough — later readings may well be, and the watch
+          // is how they arrive. Without this, one weak fix at the moment of
+          // tapping would leave location switched off for the rest of the day.
+          setLocationAutoEnabled(true);
           return null;
         }
 
@@ -2359,6 +2453,11 @@ function App() {
           nearestAnchorType: detectedZone.anchorType,
           distanceMeters: detectedZone.distanceMeters,
           confidence: detectedZone.confidence,
+          // When the FIX was taken. Kept separate from updatedAt, which is only
+          // when this handler stored it — a context built from a cached sample
+          // is already partly spent on arrival, and freshness must be measured
+          // against the fix.
+          fixedAtMs: position.timestamp,
           updatedAt: new Date().toISOString(),
         };
 
@@ -2366,7 +2465,8 @@ function App() {
 
         // Do not let low-confidence GPS yank families into the wrong land.
         if (detectedZone.confidence !== "low") {
-          setCurrentLand(getSafeLandForPark(activePark, detectedZone.landKey));
+          setCurrentLandState(getSafeLandForPark(activePark, detectedZone.landKey));
+          setCurrentLandSource("gps");
         }
 
         const nowIso = structuredLocation.updatedAt;
@@ -2483,7 +2583,14 @@ function App() {
   }, [loadData, locationAutoEnabled, updateUserLocation]);
 
   useEffect(() => {
-    if (!locationAutoEnabled) return undefined;
+    if (!locationAutoEnabled) {
+      // GPS is off, so its accumulated history is meaningless. Clearing it also
+      // means that if the guest turns location back on, the next good fix
+      // establishes promptly rather than being weighed against a land that was
+      // last seen who knows when.
+      locationStabilityRef.current = createLocationStabilityState();
+      return undefined;
+    }
     if (
       typeof navigator === "undefined" ||
       !navigator.geolocation ||
@@ -2507,9 +2614,39 @@ function App() {
           parkId: activePark,
           lat: position.coords.latitude,
           lng: position.coords.longitude,
+          accuracyMeters: position.coords.accuracy,
         });
 
         if (!detectedZone) return;
+
+        // The stability gate. Readings that are too imprecise to tell
+        // neighbouring lands apart, older than the fix already accepted, or
+        // proposing a land change on a single sample do not reach state at all —
+        // so the previously trusted location survives instead of being replaced.
+        // This is what stops one border sample near Galaxy's Edge from moving
+        // the guest to Toy Story Land and reshaping recommendation proximity.
+        const stability = reduceLocationReading(
+          locationStabilityRef.current,
+          {
+            landKey: detectedZone.landKey,
+            // Rejected here rather than merely distrusted downstream, so a weak
+            // reading never overwrites the stored context or renews its
+            // lifetime. The previously trusted fix keeps ageing on its own
+            // original timestamp.
+            confidence: detectedZone.confidence,
+            accuracyMeters: position.coords.accuracy,
+            // position.timestamp is when the FIX was taken. Using it, rather
+            // than the moment this handler ran, is what lets a cached fix
+            // delivered after the app returns from the background be recognised
+            // as old news.
+            timestamp: position.timestamp,
+          },
+          Date.now()
+        );
+
+        locationStabilityRef.current = stability.state;
+
+        if (stability.decision.action !== "accept") return;
 
         const structuredLocation = {
           source: "gps_watch",
@@ -2521,6 +2658,7 @@ function App() {
           nearestAnchorType: detectedZone.anchorType,
           distanceMeters: detectedZone.distanceMeters,
           confidence: detectedZone.confidence,
+          fixedAtMs: position.timestamp,
           updatedAt: new Date().toISOString(),
         };
 
@@ -2529,7 +2667,8 @@ function App() {
         setLocationError("");
 
         if (detectedZone.confidence !== "low") {
-          setCurrentLand(getSafeLandForPark(activePark, detectedZone.landKey));
+          setCurrentLandState(getSafeLandForPark(activePark, detectedZone.landKey));
+          setCurrentLandSource("gps");
           setLocationMessage(
             `${detectedZone.message} Not right? Pick another area manually.`
           );
@@ -2559,7 +2698,22 @@ function App() {
 
     const saved = readStoredParkState(activePark);
 
-    setCurrentLand(saved.currentLand ? getSafeLandForPark(activePark, saved.currentLand) : null);
+    // Only an explicitly recorded manual choice comes back. GPS-owned and
+    // source-less legacy state is dropped rather than guessed at — see
+    // resolveRestoredLocationState. This also keeps the area picker empty
+    // instead of leaving a land selected that nothing stands behind.
+    const restored = resolveRestoredLocationState(saved);
+    const restoredLand = restored.currentLand
+      ? getSafeLandForPark(activePark, restored.currentLand)
+      : null;
+
+    setCurrentLandState(restoredLand);
+    setCurrentLandSource(restoredLand ? restored.currentLandSource : null);
+
+    // The previous park's stabilization history says nothing about this one.
+    // Clearing it is also what lets the first good reading in the new park
+    // establish promptly instead of looking like a change of land.
+    locationStabilityRef.current = createLocationStabilityState();
     setCompletedRideIds(saved.completedRideIds || []);
     setSkippedRideIds(saved.skippedRideIds || []);
     setReportedRideIssueIds(saved.reportedRideIssueIds || []);
@@ -2580,6 +2734,7 @@ function App() {
 
     writeStoredParkState(activePark, {
       currentLand,
+      currentLandSource,
       completedRideIds,
       skippedRideIds,
       reportedRideIssueIds,
@@ -2589,6 +2744,7 @@ function App() {
   }, [
     activePark,
     currentLand,
+    currentLandSource,
     completedRideIds,
     skippedRideIds,
     reportedRideIssueIds,
@@ -2952,25 +3108,74 @@ function App() {
     return Array.from(ids);
   }, [skippedRideIds, reportedRideIssueIds, activeRideId]);
 
-  const locationContextForDecisions = useMemo(() => {
-    const safeDetectedLocation =
-      detectedLocationContext?.parkId === activePark &&
-      detectedLocationContext.confidence !== "low"
-        ? detectedLocationContext
-        : null;
+  // Tear down GPS-owned location state once its fix has expired, so what the
+  // guest sees matches what the recommendation engine reasons over. Without
+  // this, resolveLocationTrust below stops trusting the old fix while the area
+  // picker still shows the old land and the card still reads "Near <old
+  // attraction>" — the engine and the interface disagreeing about where the
+  // family is.
+  //
+  // Automatic GPS is deliberately left enabled: the fix expired, the permission
+  // did not, and the next good reading should establish normally.
+  useEffect(() => {
+    if (
+      !shouldClearExpiredGpsLocation({
+        gpsContext: detectedLocationContext,
+        currentLand,
+        currentLandSource,
+        activeParkId: activePark,
+        now: locationFreshnessNow,
+      })
+    ) {
+      return;
+    }
 
-    if (!safeDetectedLocation && !currentLand) {
+    setCurrentLandState(null);
+    setCurrentLandSource(null);
+    setDetectedLocationContext(null);
+    setLocationMessage("");
+    setLastLocationUpdateAt("");
+    locationStabilityRef.current = createLocationStabilityState();
+  }, [
+    activePark,
+    currentLand,
+    currentLandSource,
+    detectedLocationContext,
+    locationFreshnessNow,
+  ]);
+
+  const locationContextForDecisions = useMemo(() => {
+    // An accepted fix does not stay true forever. Gating incoming readings
+    // stops bad data arriving; this stops good data from outliving its own
+    // accuracy after the watch goes quiet — which is what happens the moment the
+    // app is backgrounded. Resolution is a pure helper so the whole lifecycle is
+    // testable without rendering the app.
+    //
+    // A GPS-written currentLand is deliberately NOT offered as the manual
+    // fallback: the guest never chose it, and once its fix expires the honest
+    // answer is that TOHI does not know where they are.
+    const trust = resolveLocationTrust({
+      gpsContext: detectedLocationContext,
+      activeParkId: activePark,
+      manualLandKey: currentLandSource === "manual" ? currentLand : null,
+      now: locationFreshnessNow,
+    });
+
+    if (trust.source === "none") {
       return null;
     }
 
+    const safeDetectedLocation = trust.gpsContext;
+    const resolvedLand = trust.landKey;
+
     return {
       type: safeDetectedLocation ? "gps" : "manual_land",
-      land: safeDetectedLocation?.landKey || currentLand,
-      landKey: safeDetectedLocation?.landKey || currentLand,
+      land: resolvedLand,
+      landKey: resolvedLand,
       landLabel:
         safeDetectedLocation?.landLabel ||
-        LAND_OPTIONS[activePark]?.find((option) => option.value === currentLand)?.label ||
-        formatLandLabel(activePark, currentLand),
+        LAND_OPTIONS[activePark]?.find((option) => option.value === resolvedLand)?.label ||
+        formatLandLabel(activePark, resolvedLand),
       locationMessage,
       detectedLocation: safeDetectedLocation,
       source: safeDetectedLocation ? "gps" : "manual",
@@ -2981,7 +3186,14 @@ function App() {
       confidence: safeDetectedLocation?.confidence || null,
       updatedAt: safeDetectedLocation?.updatedAt || null,
     };
-  }, [activePark, currentLand, detectedLocationContext, locationMessage]);
+  }, [
+    activePark,
+    currentLand,
+    currentLandSource,
+    detectedLocationContext,
+    locationFreshnessNow,
+    locationMessage,
+  ]);
 
   const recommendations = useMemo(() => {
     return getNextBestRides({
