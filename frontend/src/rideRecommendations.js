@@ -66,6 +66,7 @@ import { getRideMeta, getWaitValueStatus, getParkRides } from "./rideMetadata";
 import {
   resolveCurrentLand,
   getProximityModifier,
+  getLandDistance,
 } from "./parkProximity";
 import { getParkCloseTime, getParkHoursForDate } from "./parkHours";
 
@@ -396,6 +397,57 @@ function getLocalRainRecoveryModifier(meta, weather, currentLand, proximityModif
 
   if (local) return 22;
   return 4;
+}
+
+/**
+ * Walking weight for "Keep choices nearby" (walkingTolerance: "low") while rain
+ * or a storm is active.
+ *
+ * Why this exists: the walking penalty inside getCrossParkRealityModifier only
+ * runs when isFarFromCurrentArea() is true, and that helper treats any positive
+ * proximity modifier as "same area". An adjacent land scores +3, so it was
+ * counted as same-area and never received a walking penalty at all — a family
+ * asking to stay close got no extra weight for a land change in the rain.
+ *
+ * This modifier keys off the real land-distance bucket rather than the sign of
+ * the proximity number, and stays at 0 unless BOTH precipitation is actually
+ * falling and the low walking tolerance is set, so dry weather and other walking
+ * tolerances keep their existing scores exactly.
+ *
+ * The gate reads the structured weatherState, not isRainActive(). That legacy
+ * helper is true at rainRisk >= 0.45, which is a forecast signal: Rain Watch and
+ * Storm Watch both carry legacyRainActive === true while nothing is falling yet.
+ * Weighing a walk against rain that has not arrived would move recommendations
+ * outside the active-rain case, and would let the card claim it is raining when
+ * the app knows it is not. Only activeRain / activeStorm count here.
+ *
+ * Values are deliberately smaller than a typical great-value wait advantage, so
+ * a genuinely extreme wait gap can still win the walk.
+ */
+const RAIN_KEEP_CLOSE_WALK_WEIGHT = {
+  same: 0,
+  adjacent: -20,
+  nearby: -30,
+  far: -40,
+};
+
+function isRainKeepCloseActive(weatherState, familyProfile) {
+  if (familyProfile?.walkingTolerance !== "low") return false;
+  if (!weatherState) return false;
+
+  return weatherState.activeRain === true || weatherState.activeStorm === true;
+}
+
+function getRainKeepCloseWalkModifier({
+  weatherState,
+  familyProfile,
+  landDistance,
+}) {
+  if (!landDistance) return 0;
+  if (!isRainKeepCloseActive(weatherState, familyProfile)) return 0;
+
+  const weight = RAIN_KEEP_CLOSE_WALK_WEIGHT[landDistance];
+  return Number.isFinite(weight) ? weight : 0;
 }
 
 
@@ -1942,7 +1994,18 @@ function fitsBeforeClose(waitTime, closeTime, now) {
 
 function buildReason(ride, parts) {
   const waitStatus = parts.waitValueStatus?.status;
-  const isNearby = parts.proximityModifier > 0;
+  // "Already nearby" means the guest is standing in this land. An adjacent land
+  // is a real walk, so it must not claim proximity it does not have. Falls back
+  // to false when there is no usable location, matching the previous result for
+  // that case (proximityModifier is 0 without a location).
+  const isNearby = parts.landDistance === "same";
+  // Rain + "Keep choices nearby". These drive the ranking when active, so the
+  // card should say so rather than leaving the walk unexplained.
+  const keepCloseCostsAWalk =
+    parts.rainKeepCloseActive === true &&
+    (parts.rainKeepCloseWalkModifier || 0) < 0;
+  const keepCloseAndHere =
+    parts.rainKeepCloseActive === true && parts.landDistance === "same";
   const isCloseAnchor = parts.closestAnchorOpportunityModifier >= 30;
   const isCrosspark = parts.crossParkRealityModifier <= -25;
   const isModeratelyFar = !isCrosspark && parts.crossParkRealityModifier <= -12;
@@ -2012,6 +2075,10 @@ function buildReason(ride, parts) {
   // message on ordinary cards.
   if (parts.heightWarning) {
     secondary = ` ${parts.heightWarning.message}.`;
+  } else if (keepCloseAndHere) {
+    secondary = " Staying close makes sense while it's raining.";
+  } else if (keepCloseCostsAWalk) {
+    secondary = " This one would mean more walking in the rain.";
   } else if (isCrosspark && waitStatus !== "great_value") {
     secondary = " Requires crossing the park.";
   } else if (isModeratelyFar) {
@@ -2229,6 +2296,13 @@ export function getNextBestRides({
     const trendModifier = getTrendModifier(ride.name);
     const contextModifier = getContextModifier(meta, weather, mode);
     const proximityModifier = getProximityModifier(meta, currentLand, parkId);
+    // The real adjacency bucket, resolved once so scoring and explanation text
+    // read the same distance. Null when there is no usable location, which is
+    // the same condition under which proximityModifier stays 0.
+    const landDistance =
+      meta && currentLand
+        ? getLandDistance(parkId, currentLand, meta.land)
+        : null;
     const waitValueStatus = getWaitValueStatus(meta, ride.waitTime);
     const waitValueModifier = waitValueStatus.modifier || 0;
     const mustDoMatch = getMustDoMatch(tripPlan, parkId, ride, meta);
@@ -2328,6 +2402,18 @@ export function getNextBestRides({
       weatherState,
     });
 
+    // Neutral (0) unless precipitation is actually falling and "Keep choices
+    // nearby" is set. Forecast-only Rain Watch / Storm Watch stay neutral.
+    const rainKeepCloseActive = isRainKeepCloseActive(
+      weatherState,
+      familyProfile
+    );
+    const rainKeepCloseWalkModifier = getRainKeepCloseWalkModifier({
+      weatherState,
+      familyProfile,
+      landDistance,
+    });
+
     // V1.1: cross-park sum cap. Applied as a separate adjustment so individual
     // modifier values stay readable for telemetry.
     //
@@ -2365,15 +2451,16 @@ export function getNextBestRides({
       closestAnchorOpportunityModifier +
       mustDoModifier +
       stormPreferenceModifier +
+      rainKeepCloseWalkModifier +
       crossParkSumCapAdjustment -
       (heightWarning ? 16 : 0);
 
-    const proximityDistance =
-      proximityModifier > 0
-        ? "same"
-        : proximityModifier < -8
-        ? "far"
-        : "adjacent";
+    // Report the bucket that scoring actually used. The previous version
+    // re-derived this from the sign of proximityModifier, which reported an
+    // adjacent land (+3) as "same" and a nearby land (-4) as "adjacent".
+    // Unknown location keeps the previous neutral "adjacent" label so the
+    // nearbyRides / farRides filters below behave exactly as before.
+    const proximityDistance = landDistance || "adjacent";
 
     return {
       ...ride,
@@ -2404,11 +2491,17 @@ export function getNextBestRides({
       // Exposed alongside the existing per-attraction scoring information so the
       // real value is inspectable rather than inferred from the total.
       stormPreferenceModifier,
+      rainKeepCloseWalkModifier,
+      rainKeepCloseActive,
+      landDistance,
       reason: buildReason(ride, {
         baseScore,
         trendModifier,
         contextModifier,
         proximityModifier,
+        landDistance,
+        rainKeepCloseWalkModifier,
+        rainKeepCloseActive,
         waitValueStatus,
         familyProfileModifier,
         rawFamilyProfileModifier,
