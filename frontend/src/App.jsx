@@ -3062,12 +3062,21 @@ function App() {
       },
     });
 
+    // Park presence, when it exists, owns this decision: selecting a card
+    // BROWSES that park and leaves the confirmed active park alone. Without
+    // presence there is nothing to browse against, so the existing active-park
+    // behaviour stands. Neither branch changes here.
     if (!parkPresence) {
       setActivePark(parkId);
-      return;
+    } else {
+      setParkPresence((current) => (current ? selectBrowsedPark(current, parkId) : current));
     }
 
-    setParkPresence((current) => (current ? selectBrowsedPark(current, parkId) : current));
+    // The park cards answer "show me this park", and the answer lives on Waits.
+    // waitListParkId already resolves to the browsed park while browsing and to
+    // the active park otherwise, so both branches above land on the park the
+    // guest just tapped — including when they tap the one already selected.
+    setActiveTab("waits");
   }
 
   function handleConfirmParkPresence(parkId) {
@@ -3734,6 +3743,12 @@ function App() {
     if (!ride?.id) return;
 
     const id = String(ride.id);
+
+    // "In Line Now" is the disabled state of this same button, so this is
+    // normally unreachable for the ride already in progress. Guarding here as
+    // well means a re-entry can never restart an activity, reset its start
+    // time, or bounce the guest to Home for something they are already doing.
+    if (activeRideId === id) return;
     const recommendationSlot = getRecommendationSlotForRide(recommendations, id);
     const recommendation = getRecommendationForRide(recommendations, id) || ride;
 
@@ -3763,6 +3778,13 @@ function App() {
     setCompletedRideIds((prev) => prev.filter((existingId) => existingId !== id));
     setSkippedRideIds((prev) => prev.filter((existingId) => existingId !== id));
     setReportedRideIssueIds((prev) => prev.filter((existingId) => existingId !== id));
+
+    // Home is where the queue lives — elapsed time, While You Wait, and the
+    // queue mini-games. Joining a line from Plan or Waits left the guest on the
+    // screen they started from, with the thing they just started one tab away.
+    // Only reached for a newly created activity, so nothing here can disturb an
+    // activity already running.
+    setActiveTab("home");
   }
 
   function handleDone(rideId) {
@@ -5808,6 +5830,9 @@ function App() {
               waitsError={waitsError}
               sortedRides={sortedRides}
               waitListParkId={waitListParkId}
+              parkPresencePrompt={parkPresencePrompt}
+              handleConfirmParkPresence={handleConfirmParkPresence}
+              handleDismissParkPresencePrompt={handleDismissParkPresencePrompt}
               loadData={handleWaitsRefresh}
               formatLandLabel={formatLandLabel}
               getParkNameById={getParkNameById}

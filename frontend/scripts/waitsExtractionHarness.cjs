@@ -197,9 +197,13 @@ featureCheck(
   [
     "activeRideId", "browsedParkLabel", "browsingAnotherPark", "button",
     "confirmedActiveParkLabel", "formatLandLabel", "getParkNameById",
-    "hasShowtimeSchedule", "loadData", "loading", "renderRideActions",
-    "renderShowtimeInfo", "sortedRides", "waitListParkData", "waitListParkId",
-    "waitsError",
+    // The Park Check now renders on Waits too, so the prompt and its two
+    // existing handlers arrive the same way everything else does — explicitly,
+    // from App. WaitsTab still derives no park-presence state of its own.
+    "handleConfirmParkPresence", "handleDismissParkPresencePrompt",
+    "hasShowtimeSchedule", "loadData", "loading", "parkPresencePrompt",
+    "renderRideActions", "renderShowtimeInfo", "sortedRides", "waitListParkData",
+    "waitListParkId", "waitsError",
   ].join(",")
 );
 
