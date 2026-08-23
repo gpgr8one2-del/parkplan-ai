@@ -2,6 +2,7 @@ import React from "react";
 import { CloudSun, MapPin, RefreshCw } from "lucide-react";
 
 import { DataStatusBanner } from "./DataStatusBanner";
+import { RainCheckPrompt } from "./RainCheckPrompt";
 import { FreshnessBadge } from "./FreshnessBadge";
 import { WhileYouWaitCard } from "./WhileYouWaitCard";
 import { getSelectableParks } from "../data/parkAreas";
@@ -195,6 +196,9 @@ export function HomeTab({
   parkHopperContext,
   parkPresence,
   parkPresencePrompt,
+  showRainCheckPrompt = false,
+  rainCheckWatchKind = "rain",
+  guestConfirmedRain = false,
   planningPark,
   planningParkLabel,
   planningParkSource,
@@ -217,6 +221,9 @@ export function HomeTab({
   handleCancelCurrentActivity,
   handleConfirmParkPresence,
   handleDismissParkPresencePrompt,
+  handleConfirmRainCheck,
+  handleRainCheckNotYet,
+  handleDismissRainCheck,
   handleDone,
   handleSelectPark,
   loadData,
@@ -674,6 +681,35 @@ export function HomeTab({
             </p>
 
             <DataStatusBanner source={weather?.source} night={night} />
+
+            {/* Forecast-only Rain Watch / Storm Watch. Renders inline and never
+                covers anything; once the family answers it stops asking for
+                this weather episode. */}
+            {showRainCheckPrompt && (
+              <RainCheckPrompt
+                watchKind={rainCheckWatchKind}
+                night={night}
+                onConfirm={handleConfirmRainCheck}
+                onNotYet={handleRainCheckNotYet}
+                onDismiss={handleDismissRainCheck}
+              />
+            )}
+
+            {/* Names the source of the current read so a guest-confirmed
+                condition is never mistaken for the provider's forecast. */}
+            {guestConfirmedRain && (
+              <p
+                style={{
+                  margin: "10px 0 0",
+                  color: t.muted,
+                  fontSize: 12,
+                  lineHeight: 1.45,
+                }}
+              >
+                You told us it is raining, so TOHI is favoring indoor and covered
+                moves for now. The forecast above is unchanged.
+              </p>
+            )}
           </div>
         </section>
 

@@ -3,7 +3,20 @@ import { CloudSun, MapPin } from "lucide-react";
 import { fetchParkData, fetchWeather, sendChatMessage, sendTohiPickReview, trackEvent } from "./api";
 import { FreshnessBadge } from "./components/FreshnessBadge";
 import { DataStatusBanner } from "./components/DataStatusBanner";
-import { getNextBestRides } from "./rideRecommendations";
+import { getNextBestRides, getRecommendationWeatherState } from "./rideRecommendations";
+import {
+  applyRainConfirmationToWeather,
+  buildRainConfirmationRecord,
+  canAskRainConfirmation,
+  clearStoredRainConfirmation,
+  getActiveRainConfirmation,
+  getRainConfirmationEpisode,
+  isRainConfirmationObsolete,
+  readStoredRainConfirmation,
+  shouldAskRainConfirmation,
+  writeStoredRainConfirmation,
+  RAIN_CONFIRMATION_RESPONSES,
+} from "./utils/rainConfirmation";
 import { getWeatherMode, getRecoverySuggestions } from "./utils/weatherAdvice";
 import { generatePackingChecklist } from "./utils/packingChecklist";
 import { generateDayGamePlan } from "./utils/dayGamePlan";
@@ -3195,11 +3208,127 @@ function App() {
     locationMessage,
   ]);
 
+  /* ------------------------------------------------------------------------ */
+  /* Rain confirmation                                                        */
+  /* ------------------------------------------------------------------------ */
+
+  // The structured weather determination the engine already uses. Derived once
+  // here so the prompt and the recommendations read the same interpretation.
+  const recommendationWeatherState = useMemo(() => {
+    return getRecommendationWeatherState(weather);
+  }, [weather]);
+
+  const [rainConfirmationRecord, setRainConfirmationRecord] = useState(() =>
+    readStoredRainConfirmation()
+  );
+
+  // Null unless the weather is a forecast-only Rain Watch or Storm Watch, so
+  // clear skies and already-active precipitation can never produce a prompt.
+  const rainConfirmationEpisode = useMemo(() => {
+    return getRainConfirmationEpisode({
+      weatherState: recommendationWeatherState,
+      weather,
+      parkId: activePark,
+      tripDate: timeContext?.orlandoDate,
+    });
+  }, [recommendationWeatherState, weather, activePark, timeContext?.orlandoDate]);
+
+  // Forget an answer once it expires, once the park or trip date moves on, or
+  // once the provider reports precipitation itself. Reuses the existing
+  // 30-second freshness tick rather than adding a timer.
+  useEffect(() => {
+    if (!rainConfirmationRecord) return;
+
+    if (
+      isRainConfirmationObsolete({
+        record: rainConfirmationRecord,
+        episode: rainConfirmationEpisode,
+        weatherState: recommendationWeatherState,
+        now: locationFreshnessNow,
+      })
+    ) {
+      clearStoredRainConfirmation();
+      setRainConfirmationRecord(null);
+    }
+  }, [
+    rainConfirmationRecord,
+    rainConfirmationEpisode,
+    recommendationWeatherState,
+    locationFreshnessNow,
+  ]);
+
+  const activeRainConfirmation = useMemo(() => {
+    return getActiveRainConfirmation({
+      episode: rainConfirmationEpisode,
+      record: rainConfirmationRecord,
+      now: locationFreshnessNow,
+    });
+  }, [rainConfirmationEpisode, rainConfirmationRecord, locationFreshnessNow]);
+
+  // What the engine reasons about. Identical to `weather` unless the family has
+  // confirmed rain, and even then the forecast fields are carried through
+  // untouched — `weather` itself is never edited and stays the display source.
+  const weatherForDecisions = useMemo(() => {
+    return applyRainConfirmationToWeather(weather, activeRainConfirmation);
+  }, [weather, activeRainConfirmation]);
+
+  // Never during onboarding, without a real park, without a finished profile,
+  // or before a plan has actually been generated.
+  const rainCheckAllowed = canAskRainConfirmation({
+    activeScreen,
+    isProfileIncomplete,
+    activePark,
+    weather,
+    tripPlan: tripPlanState,
+  });
+
+  const showRainCheckPrompt = useMemo(() => {
+    return shouldAskRainConfirmation({
+      episode: rainConfirmationEpisode,
+      record: rainConfirmationRecord,
+      now: locationFreshnessNow,
+      canAsk: rainCheckAllowed,
+    });
+  }, [
+    rainConfirmationEpisode,
+    rainConfirmationRecord,
+    locationFreshnessNow,
+    rainCheckAllowed,
+  ]);
+
+  const respondToRainCheck = useCallback(
+    (response) => {
+      const record = buildRainConfirmationRecord({
+        episode: rainConfirmationEpisode,
+        response,
+        now: Date.now(),
+      });
+
+      if (!record) return;
+
+      writeStoredRainConfirmation(record);
+      setRainConfirmationRecord(record);
+    },
+    [rainConfirmationEpisode]
+  );
+
+  const handleConfirmRainCheck = useCallback(() => {
+    respondToRainCheck(RAIN_CONFIRMATION_RESPONSES.CONFIRMED);
+  }, [respondToRainCheck]);
+
+  const handleRainCheckNotYet = useCallback(() => {
+    respondToRainCheck(RAIN_CONFIRMATION_RESPONSES.NOT_YET);
+  }, [respondToRainCheck]);
+
+  const handleDismissRainCheck = useCallback(() => {
+    respondToRainCheck(RAIN_CONFIRMATION_RESPONSES.DISMISSED);
+  }, [respondToRainCheck]);
+
   const recommendations = useMemo(() => {
     return getNextBestRides({
       parkId: activePark,
       rides: parkData?.rides || [],
-      weather,
+      weather: weatherForDecisions,
       locationContext: locationContextForDecisions,
       completedRideIds,
       skippedRideIds: recommendationAvoidedRideIds,
@@ -3210,7 +3339,7 @@ function App() {
   }, [
     activePark,
     parkData,
-    weather,
+    weatherForDecisions,
     locationContextForDecisions,
     completedRideIds,
     recommendationAvoidedRideIds,
@@ -5624,6 +5753,12 @@ function App() {
               parkHopperContext={parkHopperContext}
               parkPresence={parkPresence}
               parkPresencePrompt={parkPresencePrompt}
+              showRainCheckPrompt={showRainCheckPrompt}
+              rainCheckWatchKind={rainConfirmationEpisode?.watchKind || "rain"}
+              guestConfirmedRain={Boolean(activeRainConfirmation)}
+              handleConfirmRainCheck={handleConfirmRainCheck}
+              handleRainCheckNotYet={handleRainCheckNotYet}
+              handleDismissRainCheck={handleDismissRainCheck}
               // 62B-2F-2 activation. The same flag the page background and
               // BottomTabs read, so Home and its shell switch in one render.
               night={shellNight}
