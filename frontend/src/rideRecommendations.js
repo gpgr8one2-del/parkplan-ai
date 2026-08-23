@@ -192,6 +192,23 @@ function getEffectiveTempF(weather) {
 }
 
 function isCurrentlyRaining(weather) {
+  // `currentPrecipitation` is a direct reading of whether anything is falling
+  // right now, and it is authoritative in BOTH directions. weatherAdvice and
+  // homeArt already treat it that way; this helper looked only at the display
+  // summary, which is a forecast-facing string.
+  //
+  // That mattered because the provider mapping deliberately emits "Rain
+  // possible soon" / "Rain possible nearby" exactly when precipitation is NOT
+  // measured. Matching "rain" in those strings reported active rain during the
+  // precise state that is only a forecast watch.
+  //
+  // The summary fallback still applies when the field is absent or unknown, so
+  // providers that never send it behave as before, and an upcoming window is
+  // unaffected either way — forecast watches are derived from
+  // `nextPrecipitationWindow`, not from this helper.
+  if (weather?.currentPrecipitation === true) return true;
+  if (weather?.currentPrecipitation === false) return false;
+
   const summary = getWeatherSummary(weather);
 
   return (
