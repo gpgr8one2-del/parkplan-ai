@@ -3,6 +3,7 @@ import { CloudSun, MapPin, RefreshCw } from "lucide-react";
 
 import { DataStatusBanner } from "./DataStatusBanner";
 import { RainCheckPrompt } from "./RainCheckPrompt";
+import { ParkCheckPrompt } from "./ParkCheckPrompt";
 import { FreshnessBadge } from "./FreshnessBadge";
 import { WhileYouWaitCard } from "./WhileYouWaitCard";
 import { getSelectableParks } from "../data/parkAreas";
@@ -942,94 +943,14 @@ export function HomeTab({
         )}
 
         {parkPresencePrompt && (
-          <section
-            style={{
-              ...card,
-              position: "relative",
-              overflow: "hidden",
-              background: night
-                ? "linear-gradient(150deg, #0F172A 0%, #1E1B4B 100%)"
-                : "linear-gradient(150deg, #FFFFFF 0%, #FFF9F1 55%, #F3E8FF 100%)",
-              border: night
-                ? "1px solid rgba(139, 92, 246, 0.45)"
-                : "1px solid rgba(124, 58, 237, 0.20)",
-              boxShadow: night
-                ? "0 14px 34px rgba(76, 29, 149, 0.35)"
-                : "0 14px 34px rgba(91, 33, 182, 0.10)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 950,
-                letterSpacing: 0.7,
-                marginBottom: 6,
-                color: night ? "#C4B5FD" : colors.purpleDeep,
-              }}
-            >
-              PARK CHECK
-            </div>
-
-            <h3
-              style={{
-                margin: "0 0 6px",
-                fontSize: 20,
-                letterSpacing: -0.3,
-                color: night ? "#F5F3FF" : colors.text,
-              }}
-            >
-              {parkPresencePrompt.type === "detected_arrival"
-                ? `Looks like you’ve arrived at ${getParkNameById(parkPresencePrompt.parkId)}`
-                : `Are you at ${getParkNameById(parkPresencePrompt.parkId)} now?`}
-            </h3>
-
-            <p
-              style={{
-                margin: "0 0 12px",
-                fontSize: 13,
-                lineHeight: 1.45,
-                color: night ? "#C7D2FE" : colors.muted,
-              }}
-            >
-              {parkPresencePrompt.type === "detected_arrival"
-                ? `Start using ${getParkNameById(parkPresencePrompt.parkId)} waits and recommendations?`
-                : `TOHI can start using ${getParkNameById(parkPresencePrompt.parkId)} waits, weather, and recommendations.`}
-            </p>
-
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button
-                type="button"
-                onClick={() => handleConfirmParkPresence(parkPresencePrompt.parkId)}
-                style={{
-                  ...button,
-                  background: night ? "#6D28D9" : colors.purpleDeep,
-                  borderColor: night ? "#6D28D9" : colors.purpleDeep,
-                  color: "white",
-                }}
-              >
-                {parkPresencePrompt.type === "detected_arrival"
-                  ? `I’m at ${getParkNameById(parkPresencePrompt.parkId)} now`
-                  : "I’m here now"}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleDismissParkPresencePrompt}
-                style={{
-                  ...button,
-                  ...(night
-                    ? {
-                        background: "rgba(30, 27, 75, 0.6)",
-                        color: "#C7D2FE",
-                        borderColor: "rgba(139, 92, 246, 0.4)",
-                      }
-                    : { color: colors.muted }),
-                }}
-              >
-                {parkPresencePrompt.type === "detected_arrival" ? "Not yet" : "Just checking"}
-              </button>
-            </div>
-          </section>
+          <ParkCheckPrompt
+            parkPresencePrompt={parkPresencePrompt}
+            night={night}
+            getParkNameById={getParkNameById}
+            handleConfirmParkPresence={handleConfirmParkPresence}
+            handleDismissParkPresencePrompt={handleDismissParkPresencePrompt}
+            button={button}
+          />
         )}
 
         <section style={{ ...card, ...(night ? { background: t.surface, border: `1px solid ${t.borderQuiet}`, boxShadow: t.shadow } : null) }}>

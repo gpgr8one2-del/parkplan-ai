@@ -2,6 +2,7 @@ import React from "react";
 import { RefreshCw, TriangleAlert } from "lucide-react";
 
 import { DataStatusBanner } from "./DataStatusBanner";
+import { ParkCheckPrompt } from "./ParkCheckPrompt";
 import { FreshnessBadge } from "./FreshnessBadge";
 import { WaitTimesList } from "./WaitTimesList";
 import { colors } from "../theme";
@@ -153,12 +154,15 @@ export function WaitsTab({
   waitListParkData,
   waitListParkId,
   waitsError,
+  parkPresencePrompt,
 
   // Explicit, parent-owned presentation switch. Never derived in this file.
   night = false,
 
   // handlers owned by App
   loadData,
+  handleConfirmParkPresence,
+  handleDismissParkPresencePrompt,
 
   // resolvers and renderers owned by App
   formatLandLabel,
@@ -332,6 +336,24 @@ export function WaitsTab({
           </p>
         )}
       </header>
+
+      {/* Park Check. Selecting a planned park on Home now opens its Waits
+          immediately, which used to leave the confirmation stranded on the
+          screen the guest had just left. The SAME prompt renders here, and only
+          when it names the park this list is actually showing — so it can never
+          ask about a park that is not on screen, and Home and Waits can never
+          show two different questions. Whether a prompt exists at all, and what
+          the answers do, stay entirely with App and utils/parkPresence. */}
+      {parkPresencePrompt?.parkId === waitListParkId && (
+        <ParkCheckPrompt
+          parkPresencePrompt={parkPresencePrompt}
+          night={night}
+          getParkNameById={getParkNameById}
+          handleConfirmParkPresence={handleConfirmParkPresence}
+          handleDismissParkPresencePrompt={handleDismissParkPresencePrompt}
+          button={button}
+        />
+      )}
 
       {/* Stale explanation. DataStatusBanner already ships this exact copy and
           the correct day treatment, so it is reused rather than duplicated. */}

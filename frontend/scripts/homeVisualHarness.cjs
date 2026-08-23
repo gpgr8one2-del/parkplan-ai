@@ -28,6 +28,11 @@ const manifestSource = read("src", "data", "homeArtManifest.js");
 const wywSource = read("src", "components", "WhileYouWaitCard.jsx");
 const badgeSource = read("src", "components", "FreshnessBadge.jsx");
 const bannerSource = read("src", "components", "DataStatusBanner.jsx");
+// The Park Check moved out of HomeTab so Waits can render the SAME prompt
+// rather than a second copy. These guards follow it: what they protect — one
+// theme signal, both handlers wired, and the prompt still ahead of the park
+// selector on Home — is unchanged.
+const parkCheckSource = read("src", "components", "ParkCheckPrompt.jsx");
 const wywCode = wywSource
   .replace(/\/\*[\s\S]*?\*\//g, "")
   .replace(/\{\s*\/\*[\s\S]*?\*\/\s*\}/g, "")
@@ -523,9 +528,14 @@ featureCheck(
   "Home has exactly one theme signal — the prompt uses the same night prop",
   // Before this phase the park-presence prompt read parkPresenceTheme.isNight
   // directly, so at night it went dark while the rest of Home stayed white.
-  /PARK CHECK/.test(homeTabSource) &&
-    (homeTabCode.match(/\bnight\b\s*\?/g) || []).length >= 4 &&
-    !/parkPresenceTheme/.test(homeTabSource),
+  /PARK CHECK/.test(parkCheckSource) &&
+    // Home hands the prompt the one night boolean it already uses everywhere
+    // else, and the prompt derives no theme of its own.
+    /night=\{night\}/.test(homeTabSource) &&
+    (parkCheckSource.match(/\bnight\b\s*\?/g) || []).length >= 4 &&
+    !/parkPresenceTheme/.test(homeTabSource) &&
+    !/parkPresenceTheme/.test(parkCheckSource) &&
+    !/useState|useEffect|useMemo|matchMedia|localStorage/.test(parkCheckSource),
   true
 );
 
@@ -1001,9 +1011,11 @@ invariantCheck(
   // Selector located by its handler, so this reads identically before and after
   // 62B-2D and stays a genuine base-true guard rather than being padded with
   // this phase's new landmark.
-  /PARK CHECK/.test(homeTabSource) &&
-    /handleConfirmParkPresence\(parkPresencePrompt\.parkId\)/.test(homeTabSource) &&
-    /onClick=\{handleDismissParkPresencePrompt\}/.test(homeTabSource) &&
+  /PARK CHECK/.test(parkCheckSource) &&
+    /handleConfirmParkPresence\(parkPresencePrompt\.parkId\)/.test(parkCheckSource) &&
+    /onClick=\{handleDismissParkPresencePrompt\}/.test(parkCheckSource) &&
+    // Home still renders it, and still renders it before the selector.
+    /<ParkCheckPrompt/.test(homeTabSource) &&
     selectorStartIdx > 0 &&
     homeTabCode.search(/\{parkPresencePrompt\s*&&\s*\(/) < selectorStartIdx,
   true
