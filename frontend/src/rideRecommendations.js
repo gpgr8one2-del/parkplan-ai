@@ -1420,6 +1420,48 @@ function getFirstUnusedRide(pool, usedIds) {
   return (pool || []).find((ride) => !usedIds.has(String(ride.id))) || null;
 }
 
+/**
+ * Smart Backup must-do preference.
+ *
+ * Best Move and Smart Backup are drawn from the same score-sorted pool, so a
+ * family's second must-do can be displaced by a non-must-do it lost to by a
+ * point or two. That alone would be fair competition, but a standby must-do has
+ * no admission path into Plan Ahead (which requires a plan-ahead category, a
+ * scheduled show, or shouldProtectLater) or Wait On This (which requires
+ * shouldProtectLater or a poor-value wait). An open, nearby must-do with a good
+ * wait therefore matches none of the later slots and leaves the shortlist with
+ * nothing explaining why.
+ *
+ * Within a tier, prefer the best still-unused must-do when the tier's top
+ * still-unused candidate leads it by no more than that must-do's own modifier —
+ * the margin its priority already earned it. A genuinely stronger non-must-do
+ * keeps the slot.
+ *
+ * This reorders an existing tier only. It reads pools that have already cleared
+ * every eligibility filter, so closures, finished showtimes, height limits and
+ * weather blocks are untouched, and must-dos held back for a better window are
+ * excluded both by goNowPositivePool and by the explicit guard below.
+ */
+function getMustDoPreferredBackup(pool, usedIds) {
+  const topPick = getFirstUnusedRide(pool, usedIds);
+  if (!topPick) return null;
+  if (topPick.mustDoModifier > 0) return topPick;
+
+  const mustDoPick = (pool || []).find((ride) => {
+    return (
+      !usedIds.has(String(ride.id)) &&
+      ride.mustDoModifier > 0 &&
+      !ride.shouldProtectLater
+    );
+  });
+
+  if (!mustDoPick) return topPick;
+
+  const scoreGap = topPick.recommendationScore - mustDoPick.recommendationScore;
+
+  return scoreGap <= mustDoPick.mustDoModifier ? mustDoPick : topPick;
+}
+
 function isFillerOrRecovery(ride) {
   return ride?.planningProfile?.category === "filler_or_recovery";
 }
@@ -2648,8 +2690,8 @@ export function getNextBestRides({
       const backup = needsLocation || blockGoNowForPreOpen
         ? null
         : (
-            getFirstUnusedRide(primarySameAreaRides, usedAfterBest) ||
-            getFirstUnusedRide(primaryNearbyRides, usedAfterBest) ||
+            getMustDoPreferredBackup(primarySameAreaRides, usedAfterBest) ||
+            getMustDoPreferredBackup(primaryNearbyRides, usedAfterBest) ||
             getFirstUnusedRide(localSoftRecoveryRides, usedAfterBest) ||
             getFirstUnusedRide(primaryPositivePool, usedAfterBest) ||
             null
