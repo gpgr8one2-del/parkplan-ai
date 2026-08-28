@@ -461,7 +461,17 @@ invariantCheck(
     !/localStorage|sessionStorage/.test(tohiCode) &&
     !/Start Over|Retry|Try again/i.test(tohiCode) &&
     !/timestamp|reaction|onEdit|contentEditable/i.test(tohiCode) &&
-    (tohiCode.match(/<button/g) || []).length === 2,
+    // 64C-A2: the approved microphone is the ONE added control, and it draws
+    // from the same day/night token object as everything else — it introduces
+    // no palette of its own, so night parity is preserved.
+    (tohiCode.match(/<button/g) || []).length === 3 &&
+    /data-tohi-voice="true"/.test(tohiCode) &&
+    /background: voiceListening\s*\n\s*\? t\.goldFill/.test(tohiCode) &&
+    !/#[0-9a-fA-F]{6}/.test(
+      (tohiCode.match(/data-tohi-voice="true"[\s\S]*?\/>/) || [""])[0]
+    ) &&
+    // and no spoken reply or playback arrived with it
+    !/speechSynthesis|SpeechSynthesisUtterance|new Audio\(|<audio/i.test(tohiCode),
   true
 );
 

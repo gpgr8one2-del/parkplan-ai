@@ -761,7 +761,13 @@ featureCheck(
 
 invariantCheck(
   "12. handleChatSubmit, the duplicate latch and failure handling are unchanged",
-  /async function handleChatSubmit\(e\) \{/.test(appCode) &&
+  // 64C-A2 added the approved optional explicit-text parameter so a voice
+  // transcript enters the SAME handler. Everything the latch and failure
+  // handling depend on is unchanged, and is still asserted below.
+  /async function handleChatSubmit\(e, explicitText\) \{/.test(appCode) &&
+    // one shared chat authority: one user insertion, one AI request
+    (appCode.match(/\{\s*role:\s*["']user["']/g) || []).length === 1 &&
+    (appCode.match(/sendChatMessage\(/g) || []).length === 1 &&
     /if \(chatInFlightRef\.current\) return;/.test(appCode) &&
     /chatInFlightRef\.current = true;/.test(appCode) &&
     /const finalizeChatFailure = \(\) => \{/.test(appCode) &&
@@ -794,8 +800,26 @@ invariantCheck(
     // remains is that TohiTab never derives it from the shared shell flags.
     !new RegExp("shellNight|planNight|shellTokens|getTohiAppShellTheme|isTohiNightMode|TOHI_NIGHT_SHELL|prefers-color-scheme").test(tohiCode) &&
     /night = false,/.test(tohiCode) &&
-    // exactly the controls that already existed: 3 prompts + Send
-    (tohiCode.match(/<button/g) || []).length === 2,
+    // 64C-A2: the approved microphone is the ONE added control. Three buttons
+    // now — the prompt/Send pair that already existed plus the microphone —
+    // and the microphone must be a distinct type="button" so it can never
+    // submit the composer form.
+    (tohiCode.match(/<button/g) || []).length === 3 &&
+    // The microphone element itself carries type="button" — asserted on that
+    // element, not as a global count, so it cannot be satisfied by one of the
+    // existing prompt chips.
+    /<button\s*\n\s*type="button"\s*\n\s*data-tohi-focus="true"\s*\n\s*data-tohi-voice="true"/.test(
+      tohiCode
+    ) &&
+    // Send remains the one and only submit control.
+    (tohiCode.match(/type="submit"/g) || []).length === 1 &&
+    // It renders only when App reports a usable recorder, and defaults to off.
+    /const showVoice = voiceSupported === true && typeof onVoicePress === "function";/.test(
+      tohiCode
+    ) &&
+    /voiceSupported = false,/.test(tohiCode) &&
+    // Still no spoken reply, playback or synthesis anywhere in the presentation.
+    !/speechSynthesis|SpeechSynthesisUtterance|new Audio\(|<audio/i.test(tohiCode),
   true
 );
 
