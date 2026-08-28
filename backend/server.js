@@ -11,6 +11,7 @@ const { cleanupExpired } = require("./services/cache");
 const parkRoutes = require("./routes/park");
 const weatherRoutes = require("./routes/weather");
 const aiRoutes = require("./routes/ai");
+const voiceRoutes = require("./routes/voice");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -80,6 +81,20 @@ const eventLimiter = rateLimit({
   handler: (req, res) => {
     req.log.warn({ path: req.path }, "event rate limit exceeded");
     res.status(429).json({ error: "Too many events. Please slow down." });
+  },
+});
+
+// Voice transcription gets its own budget. Recordings are far heavier than a
+// chat turn, so this must not borrow from — or lend to — the AI chat limiter.
+const voiceTranscribeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 12,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    req.log.warn({ path: req.path }, "voice transcription rate limit exceeded");
+    res.set("Cache-Control", "no-store");
+    res.status(429).json({ error: "Too many voice requests. Try again in a minute." });
   },
 });
 
@@ -250,10 +265,12 @@ app.use("/api/park-data", generalApiLimiter);
 app.use("/api/weather", generalApiLimiter);
 app.use("/api/ai-chat", aiLimiter);
 app.use("/api/tohi-pick-review", aiLimiter);
+app.use("/api/voice/transcribe", voiceTranscribeLimiter);
 
 app.use("/api", parkRoutes);
 app.use("/api", weatherRoutes);
 app.use("/api", aiRoutes);
+app.use("/api", voiceRoutes);
 
 app.get("/health", (_req, res) =>
   res.json({
@@ -281,6 +298,7 @@ app.listen(PORT, () => {
     {
       openWeather: Boolean(process.env.OPENWEATHER_API_KEY),
       anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
+      openai: Boolean(process.env.OPENAI_API_KEY),
     },
     "environment check"
   );
