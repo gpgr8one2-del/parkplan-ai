@@ -40,8 +40,14 @@ const tohiCall = (() => {
 })();
 
 // handleChatSubmit, sliced from App.
+// 64C-A2 added the approved optional explicit-text parameter so a voice
+// transcript can enter the SAME handler as typed input. The slice follows the
+// signature; it does not accept an arbitrary one, so a future third parameter
+// or a renamed handler still fails loudly here.
+const CHAT_SUBMIT_SIGNATURE = "async function handleChatSubmit(e, explicitText) {";
+
 const chatSubmit = (() => {
-  const start = appCode.indexOf("async function handleChatSubmit(e) {");
+  const start = appCode.indexOf(CHAT_SUBMIT_SIGNATURE);
   if (start < 0) return "";
   const end = appCode.indexOf("\n  }\n", start);
   return end > start ? appCode.slice(start, end) : "";
@@ -147,8 +153,17 @@ featureCheck(
         // 64B-2C: TohiTab reports its own composer's keyboard state upward. A
         // report, not a decision — App still owns what happens next.
         "onComposerKeyboardChange",
+        // 64C-A2: the approved push-to-talk microphone. Presentation-only
+        // props — App owns the recorder, permission, upload, transcript and
+        // submission. Listed explicitly, in sorted order, so an unapproved
+        // extra prop still fails this assertion.
+        "onVoicePress",
         "renderLockedFeatureCard",
         "setMessage",
+        "voiceBusy",
+        "voiceState",
+        "voiceStatusMessage",
+        "voiceSupported",
       ].join(",")
     );
   })(),
@@ -224,12 +239,19 @@ featureCheck(
 // pinned to exactly three modules; MessageCircle is gone because the approved
 // header has no generic chat icon, so lucide now supplies only the Send mark.
 featureCheck(
-  "TohiTab imports only React, lucide, and colors — and only Send from lucide",
+  "TohiTab imports only React, lucide, colors and the voice copy — and only Mic, Send, Square from lucide",
   (() => {
     const imports = [...tohiSource.matchAll(/^import .*?from "([^"]+)";$/gm)].map((m) => m[1]).sort();
     return (
-      imports.join(",") === ["react", "lucide-react", "../theme"].sort().join(",") &&
-      /^import \{ Send \} from "lucide-react";$/m.test(tohiSource)
+      // 64C-A2 adds ../utils/voiceRecording for the approved microphone copy, so
+      // the strings live in one place rather than being duplicated here. No
+      // other module may be pulled in.
+      imports.join(",") ===
+        ["react", "lucide-react", "../theme", "../utils/voiceRecording"].sort().join(",") &&
+      // Exactly the three approved icons: Send for the existing button, Mic and
+      // Square for the microphone's two states. Nothing else.
+      /^import \{ Mic, Send, Square \} from "lucide-react";$/m.test(tohiSource) &&
+      /^import \{ VOICE_COPY \} from "\.\.\/utils\/voiceRecording";$/m.test(tohiSource)
     );
   })(),
   true
@@ -252,10 +274,18 @@ console.log("Behaviour, state, trust and scope preserved — INVARIANT REGRESSIO
 /* ------------------------------------------------- App keeps the logic -- */
 
 invariantCheck(
-  "handleChatSubmit remains in App, in full",
-  /async function handleChatSubmit\(e\) \{/.test(appCode) &&
+  "handleChatSubmit remains in App, in full, and is the ONE chat authority",
+  appCode.includes(CHAT_SUBMIT_SIGNATURE) &&
     chatSubmit.length > 0 &&
-    !/handleChatSubmit/.test(tohiCode),
+    // The presentation still never owns or names the handler.
+    !/handleChatSubmit/.test(tohiCode) &&
+    // 64C-A2: exactly one user-message insertion site, and exactly one AI
+    // request, shared by typed and spoken input alike.
+    (appCode.match(/\{\s*role:\s*["']user["']/g) || []).length === 1 &&
+    (appCode.match(/sendChatMessage\(/g) || []).length === 1 &&
+    // Voice reaches it through the current render's handler, never a second
+    // handler and never a duplicated payload.
+    /handleChatSubmitRef\.current\?\.\(undefined, validated\.transcript\)/.test(appCode),
   true
 );
 
@@ -424,8 +454,31 @@ featureCheck(
     /const trimmedMessage = typeof message === "string" \? message\.trim\(\) : "";/.test(
       presentation
     ) &&
-    /const sendDisabled = chatLoading \|\| trimmedMessage === "";/.test(presentation) &&
+    // 64C-A2 adds voiceBusy: while the microphone is listening or a transcript
+    // is being fetched, a typed submit would race the spoken one. voiceBusy is
+    // false whenever voice is unsupported or idle, so this reduces to the
+    // original rule for every non-voice render.
+    /const sendDisabled = chatLoading \|\| trimmedMessage === "" \|\| voiceBusy;/.test(
+      presentation
+    ) &&
     /disabled=\{sendDisabled\}/.test(presentation) &&
+    // The existing input and Send button are preserved exactly.
+    /<Send size=\{15\} \/> Send/.test(presentation) &&
+    // The microphone is a DISTINCT type="button" — it can never submit the form.
+    /<button\s*\n\s*type="button"\s*\n\s*data-tohi-focus="true"\s*\n\s*data-tohi-voice="true"/.test(
+      presentation
+    ) &&
+    // It renders only when App reports a usable recorder AND supplies a handler.
+    /const showVoice = voiceSupported === true && typeof onVoicePress === "function";/.test(
+      presentation
+    ) &&
+    /\{showVoice && \(/.test(presentation) &&
+    // Default/no-voice rendering is intact: every voice prop defaults to the
+    // "no voice" value, so a caller that has not opted in is unaffected.
+    /voiceSupported = false,/.test(presentation) &&
+    /voiceBusy = false,/.test(presentation) &&
+    // No TTS or playback arrived with it.
+    !/speechSynthesis|SpeechSynthesisUtterance|new Audio\(|<audio/i.test(presentation) &&
     // the visible label replaces the placeholder-only field
     /<label\s*\n?\s*htmlFor="tohi-question"/.test(presentation) &&
     /Your question/.test(presentation) &&
@@ -508,8 +561,12 @@ invariantCheck(
 
 invariantCheck(
   "the blank-submit guard and preventDefault remain in App",
-  /e\.preventDefault\(\);/.test(chatSubmit) &&
-    /const trimmed = message\.trim\(\);/.test(chatSubmit) &&
+  // 64C-A2: preventDefault is now optional-called because the voice path passes
+  // no event, and the message source is chosen before the SAME trim. The form
+  // path is unchanged: with no second argument it still reads `message`.
+  /e\?\.preventDefault\?\.\(\);/.test(chatSubmit) &&
+    /const source = typeof explicitText === "string" \? explicitText : message;/.test(chatSubmit) &&
+    /const trimmed = source\.trim\(\);/.test(chatSubmit) &&
     /if \(!trimmed\) return;/.test(chatSubmit),
   true
 );

@@ -506,6 +506,11 @@ function sanitizeMetadata(value) {
 
     Object.entries(value).forEach(([key, item]) => {
       // Never allow obvious sensitive/raw fields into analytics metadata.
+      //
+      // The voice keys are defensive. Phase A2 deliberately sends no transcript
+      // anywhere near analytics, but a spoken question is the same private text
+      // a typed one is, so the drop list refuses it by name too — a later caller
+      // cannot leak one by accident.
       if (
         [
           "message",
@@ -521,6 +526,12 @@ function sanitizeMetadata(value) {
           "longitude",
           "rawPosition",
           "coords",
+          "transcript",
+          "transcription",
+          "spokenText",
+          "audio",
+          "audioBlob",
+          "recording",
         ].includes(key)
       ) {
         return;
@@ -794,4 +805,91 @@ export async function sendChatMessage(message, sessionData) {
     // backend can return a clean failure instead of the frontend falling back early.
     { retries: 0, timeoutMs: 18000, dedupe: false }
   );
+}
+
+/**
+ * TOHI Voice — send one recording for transcription.
+ *
+ * Deliberately NOT routed through apiFetch. apiFetch is the JSON path: it sets
+ * a JSON Content-Type, builds a dedupe key by parsing the body as JSON, can
+ * retry, and raises errors whose message embeds the response body. None of that
+ * is right for audio, and bending apiFetch to suit one binary caller would
+ * change behaviour for every unrelated request. This uses the shared
+ * fetchWithTimeout directly and leaves apiFetch untouched.
+ *
+ * Guarantees this function makes:
+ *   - the raw Blob is the body — never JSON, base64, or browser multipart
+ *   - the real recorded Content-Type travels with it
+ *   - exactly one attempt: no retry, no dedupe, no queue
+ *   - a bounded timeout slightly above the backend's own 15s provider timeout,
+ *     so the backend gets to answer with its own bounded failure first
+ *   - nothing is logged: not the audio, not the transcript, not headers, not
+ *     the response body
+ *   - the caller sees only a bounded category, never an upstream message
+ *
+ * Rejects with an Error carrying `.category`, one of the VOICE_ERRORS values.
+ */
+export async function transcribeVoiceRecording(blob, contentType) {
+  const fail = (category) => {
+    const error = new Error(category);
+    error.category = category;
+    return error;
+  };
+
+  if (!blob || typeof blob.size !== "number" || blob.size <= 0) {
+    throw fail("empty_audio");
+  }
+
+  if (typeof contentType !== "string" || !contentType.trim()) {
+    throw fail("unsupported_audio");
+  }
+
+  let res;
+
+  try {
+    res = await fetchWithTimeout(
+      `${BASE_URL}/api/voice/transcribe`,
+      {
+        method: "POST",
+        // Exactly the recorded type. No JSON header is merged in.
+        headers: { "Content-Type": contentType },
+        body: blob,
+      },
+      // Backend provider timeout is 15s; stay just above it.
+      18000
+    );
+  } catch {
+    // Abort, DNS, offline, TLS — all converge on one bounded category. The
+    // underlying error is not surfaced or logged.
+    throw fail("voice_unavailable");
+  }
+
+  if (!res || res.ok !== true) {
+    const status = res && typeof res.status === "number" ? res.status : 0;
+
+    if (status === 413) throw fail("audio_too_large");
+    if (status === 415) throw fail("unsupported_audio");
+    if (status === 429) throw fail("rate_limited");
+    if (status === 400) throw fail("empty_audio");
+
+    // 503 and anything else the client cannot act on. The response body is
+    // never read, so no upstream text can escape through this path.
+    throw fail("voice_unavailable");
+  }
+
+  let payload;
+
+  try {
+    payload = await res.json();
+  } catch {
+    throw fail("voice_unavailable");
+  }
+
+  if (!payload || typeof payload !== "object" || typeof payload.transcript !== "string") {
+    throw fail("voice_unavailable");
+  }
+
+  // Trimmed here so a blank-but-valid transcript reaches the caller as the empty
+  // string it is, and can be recognised as silence rather than submitted.
+  return { transcript: payload.transcript.trim() };
 }

@@ -1,6 +1,25 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CloudSun, MapPin } from "lucide-react";
-import { fetchParkData, fetchWeather, sendChatMessage, sendTohiPickReview, trackEvent } from "./api";
+import {
+  fetchParkData,
+  fetchWeather,
+  sendChatMessage,
+  sendTohiPickReview,
+  trackEvent,
+  transcribeVoiceRecording,
+} from "./api";
+import {
+  MAX_RECORDING_MS,
+  VOICE_COPY,
+  VOICE_ERRORS,
+  isVoiceInputSupported,
+  resolveRecorderMimeType,
+  resolveUploadContentType,
+  selectRecordingMimeType,
+  stopMediaStream,
+  validateRecordingBlob,
+  validateTranscript,
+} from "./utils/voiceRecording";
 import { FreshnessBadge } from "./components/FreshnessBadge";
 import { DataStatusBanner } from "./components/DataStatusBanner";
 import { getNextBestRides, getRecommendationWeatherState } from "./rideRecommendations";
@@ -2187,6 +2206,484 @@ function App() {
   const [familyProfile, setFamilyProfile] = useState(() => initialFamilyProfileState.profile);
   const [activeScreen, setActiveScreen] = useState(() => initialFamilyProfileState.activeScreen);
   const [activeTab, setActiveTab] = useState("home");
+
+  /* ---------------------------------------------------------------------- */
+  /* 64C-A2: TOHI Voice push-to-talk input                                   */
+  /*                                                                         */
+  /* Voice is an INPUT LAYER and nothing more. It produces a string and hands */
+  /* it to handleChatSubmit. It never calls /api/ai-chat, never builds a      */
+  /* session payload, never inserts a chat entry, and adds no spoken reply.   */
+  /*                                                                         */
+  /* This lives in App rather than TohiTab for two reasons: TohiTab is        */
+  /* presentation-only by contract, and App does NOT unmount when the guest   */
+  /* leaves the TOHI tab — so the microphone teardown has to be owned by      */
+  /* something that outlives the tab, or the iPhone recording indicator would */
+  /* stay lit after navigating away.                                         */
+  /*                                                                         */
+  /* RUN ISOLATION. Everything belonging to one recording lives on a single   */
+  /* run object held in voiceRunRef. Callbacks close over THEIR run and act   */
+  /* only while `voiceRunRef.current === run`. That identity check is what    */
+  /* makes a queued callback from an abandoned recorder inert: it cannot      */
+  /* append chunks to a newer recording, stop a newer stream, clear newer     */
+  /* refs, upload, or submit. Chunks, stream, recorder and timer are all      */
+  /* run-local, so even a missed check could not reach another run's state.   */
+  /* ---------------------------------------------------------------------- */
+
+  // "idle" | "requesting" | "listening" | "transcribing"
+  const [voiceState, setVoiceState] = useState("idle");
+  const [voiceNotice, setVoiceNotice] = useState("");
+
+  // The synchronous authority. React state is batched, so two taps in one tick
+  // would both read "idle" and both start a recorder. This ref is written
+  // immediately, so the second tap sees the real state and is ignored.
+  const voiceStateRef = useRef("idle");
+
+  // The one live recording, or null. Identity is the generation check.
+  const voiceRunRef = useRef(null);
+
+  // Monotonic id, for readable diagnostics and test assertions. Correctness
+  // rests on the object identity above, not on this number.
+  const voiceRunSeqRef = useRef(0);
+
+  // The CURRENT render's chat authority.
+  //
+  // This ref exists because of a real defect: handleVoiceRecordingFinished is
+  // memoized, and handleChatSubmit is recreated every render over fresh chat,
+  // park, family, weather, location, recommendation and freshness values. A
+  // memoized callback that closed over handleChatSubmit directly would keep the
+  // FIRST render's handler forever — a later spoken turn would overwrite the
+  // conversation with a stale `chat` array and send stale park-day context.
+  //
+  // Writing the ref during render (the same pattern TohiTab already uses for
+  // its keyboard callback) keeps it pointing at the latest handler without
+  // duplicating the handler, the payload, the user insertion or the AI request.
+  const handleChatSubmitRef = useRef(null);
+  handleChatSubmitRef.current = handleChatSubmit;
+
+  const setVoiceStateBoth = useCallback((next) => {
+    voiceStateRef.current = next;
+    setVoiceState(next);
+  }, []);
+
+  // Feature detection is resolved once. A browser with no MediaRecorder, no
+  // getUserMedia, or no format we are willing to record gets no microphone at
+  // all, and typed chat renders exactly as it always has.
+  const voiceSupported = useMemo(() => {
+    if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+
+    return isVoiceInputSupported({
+      mediaDevices: navigator.mediaDevices,
+      MediaRecorderCtor: window.MediaRecorder,
+    });
+  }, []);
+
+  /** Releases one run's resources. Safe to call twice, and never touches another run. */
+  const disposeRun = useCallback((run) => {
+    if (!run) return;
+
+    if (run.timerId) {
+      clearTimeout(run.timerId);
+      run.timerId = null;
+    }
+
+    const recorder = run.recorder;
+    run.recorder = null;
+
+    if (recorder) {
+      // Drop the handlers first: a recorder stopped during teardown must not
+      // run the upload path on its way out.
+      try {
+        recorder.ondataavailable = null;
+        recorder.onstop = null;
+        recorder.onerror = null;
+      } catch {
+        // A recorder that refuses property writes still gets stopped below.
+      }
+
+      try {
+        if (recorder.state && recorder.state !== "inactive") recorder.stop();
+      } catch {
+        // Already stopped, or stopped by the browser. Nothing to recover.
+      }
+    }
+
+    // The line the iPhone microphone indicator actually depends on.
+    stopMediaStream(run.stream);
+    run.stream = null;
+    run.chunks = [];
+  }, []);
+
+  /**
+   * The single teardown path. Every exit route calls this: normal stop, the
+   * 30-second auto-stop, permission failure, recorder error, upload failure,
+   * leaving TOHI, unmount, pagehide and document-hidden.
+   *
+   * Clearing voiceRunRef is what invalidates every callback still holding the
+   * old run.
+   */
+  const teardownVoice = useCallback(() => {
+    const run = voiceRunRef.current;
+    voiceRunRef.current = null;
+    disposeRun(run);
+  }, [disposeRun]);
+
+  /**
+   * Maps a bounded failure category to calm copy. No provider, model, status
+   * code or upstream text is ever shown.
+   */
+  const noticeForVoiceError = useCallback((category) => {
+    if (category === VOICE_ERRORS.PERMISSION_DENIED) return VOICE_COPY.denied;
+    if (category === "blank") return VOICE_COPY.blank;
+
+    return VOICE_COPY.failed;
+  }, []);
+
+  const finishVoice = useCallback(
+    (notice) => {
+      teardownVoice();
+      setVoiceStateBoth("idle");
+      setVoiceNotice(notice || "");
+    },
+    [setVoiceStateBoth, teardownVoice]
+  );
+
+  /**
+   * Runs after the recorder has stopped and produced its chunks.
+   *
+   * The FIRST thing this does is confirm its run is still the live one. Nothing
+   * shared is read, cleared or stopped before that check — an abandoned run
+   * must be able to return without having touched anything.
+   */
+  const handleVoiceRecordingFinished = useCallback(
+    async (run) => {
+      // Generation check BEFORE any state is read or mutated.
+      if (voiceRunRef.current !== run) return;
+      if (run.finished) return;
+      run.finished = true;
+
+      const chunks = run.chunks;
+      run.chunks = [];
+
+      // Read the recorder's OWN reported type before the recorder reference is
+      // dropped. What it reports decides: an unsupported report yields null
+      // rather than falling back to what we asked for, because uploading bytes
+      // under a content type that does not describe them is worse than not
+      // uploading at all.
+      const recordedMimeType = resolveRecorderMimeType(run.recorder, run.requestedMimeType);
+
+      if (run.timerId) {
+        clearTimeout(run.timerId);
+        run.timerId = null;
+      }
+
+      // Tracks are released the moment recording ends — before the upload, and
+      // before any bail-out below — so the microphone indicator clears whether
+      // this recording is uploaded or refused.
+      stopMediaStream(run.stream);
+      run.stream = null;
+      run.recorder = null;
+
+      if (!recordedMimeType) {
+        // The browser produced something we cannot honestly label. The guest
+        // gets the same calm copy every other bounded failure uses, and nothing
+        // is uploaded or submitted.
+        finishVoice(VOICE_COPY.failed);
+        return;
+      }
+
+      let blob = null;
+      try {
+        blob = new Blob(chunks, { type: recordedMimeType });
+      } catch {
+        finishVoice(VOICE_COPY.failed);
+        return;
+      }
+
+      const contentType = resolveUploadContentType(blob.type, recordedMimeType);
+      const check = validateRecordingBlob(blob, contentType);
+
+      if (!check.ok) {
+        // Zero-byte and oversized recordings are refused here, before any
+        // request is made.
+        finishVoice(
+          check.reason === VOICE_ERRORS.EMPTY_AUDIO ? VOICE_COPY.blank : VOICE_COPY.failed
+        );
+        return;
+      }
+
+      setVoiceStateBoth("transcribing");
+      setVoiceNotice("");
+
+      let result;
+      try {
+        result = await transcribeVoiceRecording(blob, check.contentType);
+      } catch (err) {
+        if (voiceRunRef.current !== run) return;
+        finishVoice(noticeForVoiceError(err?.category));
+        return;
+      }
+
+      // The guest may have left TOHI, hidden the page or started again while
+      // the request was in flight. A late transcript must not move the UI or
+      // submit a question.
+      if (voiceRunRef.current !== run) return;
+
+      const validated = validateTranscript(result?.transcript);
+
+      if (!validated.ok) {
+        // Silence. A blank transcript is a real answer, not a failure, and must
+        // never become a chat turn.
+        finishVoice(noticeForVoiceError(validated.reason));
+        return;
+      }
+
+      // Back to idle BEFORE submitting, so the composer is usable again and the
+      // chat's own latch — not the voice state — governs the turn.
+      teardownVoice();
+      setVoiceStateBoth("idle");
+      setVoiceNotice("");
+
+      // The one and only handoff, through the CURRENT render's handler so the
+      // turn carries live chat, park, family and freshness context. Same
+      // function, same latch, same insertion site, same session payload as a
+      // typed question.
+      handleChatSubmitRef.current?.(undefined, validated.transcript);
+    },
+    [finishVoice, noticeForVoiceError, setVoiceStateBoth, teardownVoice]
+  );
+
+  /**
+   * Ends the live recording.
+   *
+   * The voice authority is moved OUT of the tappable "listening" state
+   * synchronously, before stop() is called. Without that, a second fast Stop
+   * tap would still read "listening" — because onstop has not fired yet — and
+   * would cancel the recording that is already on its way to being uploaded.
+   * The `stopping` latch is belt and braces for the same race.
+   */
+  const stopVoiceRecording = useCallback(() => {
+    const run = voiceRunRef.current;
+    if (!run || run.stopping) return;
+
+    run.stopping = true;
+
+    if (run.timerId) {
+      clearTimeout(run.timerId);
+      run.timerId = null;
+    }
+
+    // Non-tappable from this instant on.
+    setVoiceStateBoth("transcribing");
+
+    try {
+      if (run.recorder && run.recorder.state === "recording") {
+        // Exactly one onstop path builds and uploads the Blob.
+        run.recorder.stop();
+        return;
+      }
+    } catch {
+      // fall through to a clean reset
+    }
+
+    finishVoice("");
+  }, [finishVoice, setVoiceStateBoth]);
+
+  const startVoiceRecording = useCallback(async () => {
+    // Any previous run is abandoned first, which invalidates its callbacks.
+    teardownVoice();
+
+    voiceRunSeqRef.current += 1;
+
+    const run = {
+      id: voiceRunSeqRef.current,
+      chunks: [],
+      stream: null,
+      recorder: null,
+      timerId: null,
+      requestedMimeType: null,
+      stopping: false,
+      finished: false,
+    };
+
+    voiceRunRef.current = run;
+
+    setVoiceStateBoth("requesting");
+    setVoiceNotice("");
+
+    const mimeType = selectRecordingMimeType(window.MediaRecorder?.isTypeSupported);
+
+    if (!mimeType) {
+      if (voiceRunRef.current === run) finishVoice(VOICE_COPY.failed);
+      return;
+    }
+
+    run.requestedMimeType = mimeType;
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      // A rejection that arrives AFTER the guest left TOHI, hid the page or
+      // started again must say nothing and change nothing — showing a stale
+      // permission notice over a newer run would be wrong on both counts.
+      if (voiceRunRef.current !== run) return;
+
+      // NotAllowedError / SecurityError are a denied permission; anything else
+      // is a device problem. Both leave typed chat completely untouched.
+      const denied = err?.name === "NotAllowedError" || err?.name === "SecurityError";
+      finishVoice(noticeForVoiceError(denied ? VOICE_ERRORS.PERMISSION_DENIED : null));
+      return;
+    }
+
+    // The guest may have left, hidden the page or tapped again while the
+    // permission prompt was open. That stream must not be kept.
+    if (voiceRunRef.current !== run) {
+      stopMediaStream(stream);
+      return;
+    }
+
+    let recorder;
+    try {
+      recorder = new window.MediaRecorder(stream, { mimeType });
+    } catch {
+      stopMediaStream(stream);
+      if (voiceRunRef.current === run) finishVoice(VOICE_COPY.failed);
+      return;
+    }
+
+    run.stream = stream;
+    run.recorder = recorder;
+
+    recorder.ondataavailable = (event) => {
+      // An event queued before this run was abandoned must not append into the
+      // recording that replaced it.
+      if (voiceRunRef.current !== run) return;
+
+      // Chunks are held in memory only, on this run. Nothing is written to
+      // storage, and the audio never reaches logging or analytics.
+      if (event?.data && event.data.size > 0) run.chunks.push(event.data);
+    };
+
+    recorder.onstop = () => {
+      // A stop from an abandoned recorder must not clear chunks, stop tracks,
+      // clear refs, upload or submit.
+      if (voiceRunRef.current !== run) return;
+      handleVoiceRecordingFinished(run);
+    };
+
+    recorder.onerror = () => {
+      // An error from an abandoned recorder must not tear down a newer one.
+      if (voiceRunRef.current !== run) return;
+      finishVoice(VOICE_COPY.failed);
+    };
+
+    try {
+      recorder.start();
+    } catch {
+      if (voiceRunRef.current === run) finishVoice(VOICE_COPY.failed);
+      else stopMediaStream(stream);
+      return;
+    }
+
+    if (voiceRunRef.current !== run) {
+      // Abandoned while starting.
+      disposeRun(run);
+      return;
+    }
+
+    setVoiceStateBoth("listening");
+
+    // Hard 30-second ceiling. It goes through the same stop path a deliberate
+    // tap uses, so it inherits the same non-tappable transition and the same
+    // single upload route.
+    run.timerId = setTimeout(() => {
+      run.timerId = null;
+      if (voiceRunRef.current !== run) return;
+      stopVoiceRecording();
+    }, MAX_RECORDING_MS);
+  }, [
+    disposeRun,
+    finishVoice,
+    handleVoiceRecordingFinished,
+    noticeForVoiceError,
+    setVoiceStateBoth,
+    stopVoiceRecording,
+    teardownVoice,
+  ]);
+
+  /**
+   * The only microphone entry point the UI has.
+   *
+   * Reads the synchronous ref, never the batched state, so rapid tapping can
+   * never produce two recorders, two uploads or two chat turns. Taps arriving
+   * while a permission prompt is open or a transcript is being fetched — which
+   * now includes the instant after Stop — are ignored outright.
+   */
+  const handleVoiceButtonPress = useCallback(() => {
+    if (!voiceSupported) return;
+
+    const current = voiceStateRef.current;
+
+    if (current === "idle") {
+      // Never compete with a chat turn that is already running.
+      if (chatInFlightRef.current) return;
+      startVoiceRecording();
+      return;
+    }
+
+    if (current === "listening") {
+      stopVoiceRecording();
+    }
+
+    // "requesting" and "transcribing" deliberately ignore the tap.
+  }, [startVoiceRecording, stopVoiceRecording, voiceSupported]);
+
+  // Leaving TOHI, hiding the page, or unmounting must release the microphone.
+  // App does not unmount on tab change, so activeTab is watched explicitly.
+  useEffect(() => {
+    if (activeTab !== "tohi" && voiceStateRef.current !== "idle") {
+      teardownVoice();
+      setVoiceStateBoth("idle");
+      setVoiceNotice("");
+    }
+  }, [activeTab, setVoiceStateBoth, teardownVoice]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const releaseMicrophone = () => {
+      if (voiceStateRef.current === "idle" && !voiceRunRef.current) return;
+      teardownVoice();
+      setVoiceStateBoth("idle");
+      setVoiceNotice("");
+    };
+
+    const onVisibilityChange = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        releaseMicrophone();
+      }
+    };
+
+    window.addEventListener("pagehide", releaseMicrophone);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.removeEventListener("pagehide", releaseMicrophone);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      // Unmount: abandon the run and release every track.
+      teardownVoice();
+    };
+  }, [setVoiceStateBoth, teardownVoice]);
+
+  const voiceBusy = voiceState !== "idle";
+
+  const voiceStatusMessage = useMemo(() => {
+    if (voiceState === "requesting") return VOICE_COPY.requesting;
+    if (voiceState === "listening") return VOICE_COPY.listening;
+    if (voiceState === "transcribing") return VOICE_COPY.transcribing;
+
+    return voiceNotice || "";
+  }, [voiceNotice, voiceState]);
   // 61D: Plan Tools is a sub-view of the Plan tab, not a router destination.
   // The global router (activeScreen) and the tab bar (activeTab) are untouched,
   // so the bottom nav keeps showing Plan as active while Plan Tools is open.
@@ -4606,10 +5103,28 @@ function App() {
   }
 
 
-  async function handleChatSubmit(e) {
-    e.preventDefault();
+  // 64C-A2: the ONE adjustment voice input needs from the chat authority.
+  //
+  // `explicitText` lets a caller that already holds the question — today only
+  // the voice transcript — submit it directly. The form path is unchanged: it
+  // passes no second argument, so `message` is still the source, still trimmed
+  // the same way, still discarded when blank.
+  //
+  // This is why voice does NOT do setMessage(transcript) then dispatch a
+  // synthetic submit: React would batch the state write, and the submit could
+  // read the previous value or an empty one. Passing the string removes the
+  // timing question entirely.
+  //
+  // Everything below this point is untouched, so a spoken question and a typed
+  // question share one latch, one analytics call, one user-message insertion,
+  // one QUICK CHECK interception, one session payload, one history filter, one
+  // reply validation and one failure path. There is no second role:"user"
+  // insertion site anywhere in the app.
+  async function handleChatSubmit(e, explicitText) {
+    e?.preventDefault?.();
 
-    const trimmed = message.trim();
+    const source = typeof explicitText === "string" ? explicitText : message;
+    const trimmed = source.trim();
     if (!trimmed) return;
 
     // Latch acquired BEFORE the user message, the tracking event and the
@@ -6251,6 +6766,16 @@ function App() {
               hasPersonalizedAccess={hasPersonalizedAccess}
               setMessage={setMessage}
               onChatSubmit={handleChatSubmit}
+              /* 64C-A2 voice input. Presentation props only: TohiTab renders the
+                 microphone and reflects these states, and owns none of the
+                 recording, permission, upload or submission logic. When
+                 voiceSupported is false it renders no microphone at all and the
+                 composer is exactly what it was. */
+              voiceSupported={voiceSupported}
+              voiceState={voiceState}
+              voiceBusy={voiceBusy}
+              voiceStatusMessage={voiceStatusMessage}
+              onVoicePress={handleVoiceButtonPress}
               renderLockedFeatureCard={renderLockedFeatureCard}
               onComposerKeyboardChange={setTohiComposerKeyboardOpen}
               /* 64B-2E-2: activated. TOHI now reads the same single shell

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from "react";
-import { Send } from "lucide-react";
+import { Mic, Send, Square } from "lucide-react";
 
 import { colors } from "../theme";
+import { VOICE_COPY } from "../utils/voiceRecording";
 
 // 64B-1 extracted this presentation verbatim from App.jsx.
 // 64B-2A rebuilt the DAY presentation to the approved TOHI blueprints committed
@@ -298,6 +299,18 @@ export function TohiTab({
   setMessage,
   onChatSubmit,
 
+  // 64C-A2 voice input. Presentation only, exactly like everything else here:
+  // App owns the recorder, the permission prompt, the upload, the transcript
+  // and the submission. This component renders a button and some copy.
+  //
+  // Every one of these defaults to the "no voice" value, so a caller that has
+  // not opted in renders the composer byte-for-byte as it was before A2.
+  voiceSupported = false,
+  voiceState = "idle",
+  voiceBusy = false,
+  voiceStatusMessage = "",
+  onVoicePress,
+
   // renderer owned by App — passed through, never reimplemented, so its Dev
   // Preview branch and setActiveScreen wiring stay in one place
   renderLockedFeatureCard,
@@ -323,7 +336,30 @@ export function TohiTab({
   const t = night ? TOHI_NIGHT : DAY;
 
   const trimmedMessage = typeof message === "string" ? message.trim() : "";
-  const sendDisabled = chatLoading || trimmedMessage === "";
+  // 64C-A2 adds voiceBusy for one reason: while the microphone is listening or
+  // a transcript is being fetched, a typed submit would race the spoken one.
+  // The moment voice finishes or fails, App sets it false and typing is
+  // restored. When voice is unsupported it is always false, so this reduces to
+  // the original expression.
+  const sendDisabled = chatLoading || trimmedMessage === "" || voiceBusy;
+
+  // The microphone is rendered only when App reports a usable recorder AND has
+  // given us something to call. No capability is detected here.
+  const showVoice = voiceSupported === true && typeof onVoicePress === "function";
+  const voiceListening = voiceState === "listening";
+  const voicePending = voiceState === "requesting" || voiceState === "transcribing";
+
+  // App already refuses to start a recording while a chat turn is in flight.
+  // Without this the control still LOOKED available and the tap did nothing
+  // visible, which reads as a broken button. Stopping an in-progress recording
+  // stays allowed, so a turn that starts mid-recording cannot trap the guest.
+  //
+  // Deliberately NOT folded into voicePending: that value describes what the
+  // microphone itself is doing, and drives aria-busy. Chat sending is a
+  // separate reason for unavailability and must not be announced as the
+  // microphone being busy.
+  const voiceBlockedByChat = chatLoading === true && !voiceListening;
+  const voiceDisabled = voicePending || voiceBlockedByChat;
 
   // 64B-2C DOM refs. These exist for scrolling, focused-composer detection and
   // viewport observation only. No chat data, submission logic, validation or
@@ -487,7 +523,8 @@ export function TohiTab({
         }
         @keyframes tohiChatPulse { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
         @media (prefers-reduced-motion: reduce) {
-          [data-tohi-loading] span { animation: none !important; opacity: .7 !important; }
+          [data-tohi-loading] span { animation: none !important; opacity: .7 !important; }${showVoice ? `
+          [data-tohi-listening] { animation: none !important; opacity: 1 !important; }` : ""}
         }
       `}</style>
 
@@ -823,6 +860,113 @@ export function TohiTab({
             <Send size={15} /> Send
           </button>
         </div>
+
+        {/* 64C-A2 voice input.
+            Rendered only when App reports a usable recorder, so a browser
+            without MediaRecorder, without getUserMedia, or without a format we
+            will record sees the composer exactly as it was — typed chat is
+            never degraded by voice being unavailable.
+
+            The status copy sits in its own role="status" region, OUTSIDE the
+            conversation log, so microphone state is announced without being
+            written into the transcript. role="status" is implicitly polite, so
+            no aria-live is declared here — the same rule the loading region
+            follows, and the reason there is still exactly one explicit live
+            region in this component. */}
+        {showVoice && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <button
+                type="button"
+                data-tohi-focus="true"
+                data-tohi-voice="true"
+                onClick={onVoicePress}
+                disabled={voiceDisabled}
+                aria-pressed={voiceListening}
+                aria-busy={voicePending}
+                aria-label={
+                  voiceListening
+                    ? "Stop recording your question"
+                    : VOICE_COPY.idle
+                }
+                style={{
+                  ...button,
+                  flex: "0 0 auto",
+                  // Full 48px touch target on the smallest phone.
+                  minHeight: 48,
+                  minWidth: 48,
+                  borderRadius: 16,
+                  padding: "0 16px",
+                  fontSize: 13,
+                  fontWeight: 800,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  background: voiceListening
+                    ? t.goldFill
+                    : voiceDisabled
+                      ? t.disabledFill
+                      : t.surfaceQuiet,
+                  border: `1px solid ${
+                    voiceListening ? t.goldLine : voiceDisabled ? t.disabledLine : t.accentLine
+                  }`,
+                  color: voiceListening
+                    ? t.goldInk
+                    : voiceDisabled
+                      ? t.disabledInk
+                      : t.accent,
+                  cursor: voiceDisabled ? "not-allowed" : "pointer",
+                }}
+              >
+                {voiceListening ? (
+                  <>
+                    <Square size={14} aria-hidden="true" /> Stop
+                  </>
+                ) : (
+                  <>
+                    <Mic size={14} aria-hidden="true" /> {VOICE_COPY.idle}
+                  </>
+                )}
+                {voiceListening && (
+                  <span
+                    aria-hidden="true"
+                    data-tohi-listening="true"
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: 999,
+                      background: "currentColor",
+                      animation: "tohiChatPulse 1.25s ease-in-out infinite",
+                    }}
+                  />
+                )}
+              </button>
+            </div>
+
+            {voiceStatusMessage ? (
+              <div
+                role="status"
+                aria-atomic="true"
+                data-tohi-voice-status="true"
+                style={{
+                  fontSize: 12.5,
+                  lineHeight: 1.4,
+                  fontWeight: 650,
+                  color: t.muted,
+                }}
+              >
+                {voiceStatusMessage}
+              </div>
+            ) : null}
+
+            {/* Claims only what this application controls. No provider is
+                named, and no promise is made about what any downstream service
+                does or does not retain. */}
+            <p style={{ margin: 0, fontSize: 11.5, lineHeight: 1.35, color: t.muted }}>
+              {VOICE_COPY.privacy}
+            </p>
+          </div>
+        )}
       </form>
         </>
       )}
