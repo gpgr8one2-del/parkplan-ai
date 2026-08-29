@@ -277,6 +277,7 @@ async function main() {
   let routeRegistration = null;
   let rawCalls = [];
   let registeredCount = 0;
+  let stubRegistered = [];
   try {
     const routePath = path.join(sourceRoot, "routes", "voice.js");
     if (fs.existsSync(routePath) && voiceService) {
@@ -284,19 +285,54 @@ async function main() {
       requireWithStubs(routePath, { express: stub.expressStub });
       rawCalls = stub.rawCalls;
       registeredCount = stub.registered.length;
-      routeRegistration = stub.registered[0] || null;
+      stubRegistered = stub.registered;
+      routeRegistration =
+        stub.registered.find((r) => r.routePath === "/voice/transcribe") || null;
     }
+    // 64C-A3 added the approved spoken-reply route to this file. The count is
+    // still pinned — exactly TWO, no more — and each route is asserted
+    // individually, including which middleware it carries. A third route, a
+    // renamed path, or the raw audio parser leaking onto the speak route all
+    // still fail here.
+    const speakRegistration =
+      stubRegistered.find((r) => r.routePath === "/voice/speak") || null;
+
     load(
-      "routes/voice.js registers exactly one POST /voice/transcribe route",
-      registeredCount === 1 &&
+      "routes/voice.js registers exactly the two intended voice routes",
+      registeredCount === 2 &&
         Boolean(routeRegistration) &&
-        routeRegistration.routePath === "/voice/transcribe",
+        routeRegistration.routePath === "/voice/transcribe" &&
+        Boolean(speakRegistration),
+      `registered ${registeredCount} route(s): ${stubRegistered
+        .map((r) => r.routePath)
+        .join(", ") || "none"}`
+    );
+
+    load(
+      "POST /voice/transcribe keeps its parser wrapper and request handler",
+      Boolean(routeRegistration) &&
+        routeRegistration.handlers.length === 2 &&
+        // the wrapper, not a bare express.raw middleware
+        routeRegistration.handlers[0].__options === undefined &&
+        routeRegistration.handlers[1].constructor.name === "AsyncFunction",
       routeRegistration
-        ? `registered ${registeredCount} route(s); first is ${routeRegistration.routePath}`
-        : "no route registered"
+        ? `transcribe has ${routeRegistration.handlers.length} handler(s)`
+        : "no transcribe route"
+    );
+
+    load(
+      "POST /voice/speak is a single JSON handler with NO raw audio parser",
+      Boolean(speakRegistration) &&
+        speakRegistration.handlers.length === 1 &&
+        speakRegistration.handlers[0].constructor.name === "AsyncFunction" &&
+        // the route-scoped raw parser must never be attached here
+        speakRegistration.handlers[0].__options === undefined,
+      speakRegistration
+        ? `speak has ${speakRegistration.handlers.length} handler(s)`
+        : "no speak route"
     );
   } catch (err) {
-    load("routes/voice.js registers exactly one POST /voice/transcribe route", false, err.message);
+    load("routes/voice.js registers exactly the two intended voice routes", false, err.message);
   }
 
   console.log("");

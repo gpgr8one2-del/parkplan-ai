@@ -44,7 +44,8 @@ const tohiCall = (() => {
 // transcript can enter the SAME handler as typed input. The slice follows the
 // signature; it does not accept an arbitrary one, so a future third parameter
 // or a renamed handler still fails loudly here.
-const CHAT_SUBMIT_SIGNATURE = "async function handleChatSubmit(e, explicitText) {";
+const CHAT_SUBMIT_SIGNATURE =
+  "async function handleChatSubmit(e, explicitText, options) {";
 
 const chatSubmit = (() => {
   const start = appCode.indexOf(CHAT_SUBMIT_SIGNATURE);
@@ -157,10 +158,20 @@ featureCheck(
         // props — App owns the recorder, permission, upload, transcript and
         // submission. Listed explicitly, in sorted order, so an unapproved
         // extra prop still fails this assertion.
+        "onPlaySpeech",
+        "onStopSpeech",
+        "onToggleVoiceReplies",
         "onVoicePress",
         "renderLockedFeatureCard",
         "setMessage",
+        // 64C-A3 spoken replies. Presentation-only props — App owns synthesis,
+        // the single Audio element, the object-URL lifecycle and every
+        // cancellation rule. Listed explicitly, in sorted order, so an
+        // unapproved extra prop still fails this assertion.
+        "speechState",
+        "speechSupported",
         "voiceBusy",
+        "voiceRepliesEnabled",
         "voiceState",
         "voiceStatusMessage",
         "voiceSupported",
@@ -247,11 +258,18 @@ featureCheck(
       // the strings live in one place rather than being duplicated here. No
       // other module may be pulled in.
       imports.join(",") ===
-        ["react", "lucide-react", "../theme", "../utils/voiceRecording"].sort().join(",") &&
+        ["react", "lucide-react", "../theme", "../utils/voiceRecording", "../utils/voiceSpeech"]
+          .sort()
+          .join(",") &&
       // Exactly the three approved icons: Send for the existing button, Mic and
       // Square for the microphone's two states. Nothing else.
-      /^import \{ Mic, Send, Square \} from "lucide-react";$/m.test(tohiSource) &&
-      /^import \{ VOICE_COPY \} from "\.\.\/utils\/voiceRecording";$/m.test(tohiSource)
+      // 64C-A3 adds Play, Volume2 and VolumeX for the two approved speech
+      // controls, and the speech copy module so those strings live in one place.
+      /^import \{ Mic, Play, Send, Square, Volume2, VolumeX \} from "lucide-react";$/m.test(
+        tohiSource
+      ) &&
+      /^import \{ VOICE_COPY \} from "\.\.\/utils\/voiceRecording";$/m.test(tohiSource) &&
+      /^import \{ SPEECH_COPY \} from "\.\.\/utils\/voiceSpeech";$/m.test(tohiSource)
     );
   })(),
   true
@@ -285,7 +303,13 @@ invariantCheck(
     (appCode.match(/sendChatMessage\(/g) || []).length === 1 &&
     // Voice reaches it through the current render's handler, never a second
     // handler and never a duplicated payload.
-    /handleChatSubmitRef\.current\?\.\(undefined, validated\.transcript\)/.test(appCode),
+    /handleChatSubmitRef\.current\?\.\(undefined, validated\.transcript, \{ origin: "voice" \}\)/.test(
+      appCode
+    ) &&
+    // 64C-A3: both visible-reply commits go through ONE helper, and the
+    // connection-failure entry still does not.
+    (appCode.match(/const commitAssistantReply = \(entry\) => \{/g) || []).length === 1 &&
+    (appCode.match(/commitAssistantReply\(\{/g) || []).length === 2,
   true
 );
 
@@ -477,8 +501,14 @@ featureCheck(
     // "no voice" value, so a caller that has not opted in is unaffected.
     /voiceSupported = false,/.test(presentation) &&
     /voiceBusy = false,/.test(presentation) &&
-    // No TTS or playback arrived with it.
-    !/speechSynthesis|SpeechSynthesisUtterance|new Audio\(|<audio/i.test(presentation) &&
+    // 64C-A3: the approved spoken reply. Preserved protections — browser
+    // synthesis is never used, no Realtime/WebSocket conversation exists, and
+    // no media element is rendered here: the single Audio element is owned by
+    // App and never enters this presentation.
+    !/speechSynthesis|SpeechSynthesisUtterance/i.test(presentation) &&
+    !/new WebSocket|RealtimeClient|\/realtime/i.test(presentation) &&
+    !/<audio|<video/i.test(presentation) &&
+    !/new Audio\(/.test(presentation) &&
     // the visible label replaces the placeholder-only field
     /<label\s*\n?\s*htmlFor="tohi-question"/.test(presentation) &&
     /Your question/.test(presentation) &&

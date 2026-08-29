@@ -532,6 +532,16 @@ function sanitizeMetadata(value) {
           "audio",
           "audioBlob",
           "recording",
+          // A3 spoken replies. Defensive, exactly like the voice-input keys
+          // above: this phase sends no reply text near analytics, but a spoken
+          // answer is the same private content a typed one is, so the drop list
+          // refuses it by name too.
+          "speech",
+          "speechText",
+          "spokenReply",
+          "ttsText",
+          "audioUrl",
+          "objectUrl",
         ].includes(key)
       ) {
         return;
@@ -892,4 +902,115 @@ export async function transcribeVoiceRecording(blob, contentType) {
   // Trimmed here so a blank-but-valid transcript reaches the caller as the empty
   // string it is, and can be recognised as silence rather than submitted.
   return { transcript: payload.transcript.trim() };
+}
+
+/**
+ * TOHI Voice — render one reply as speech.
+ *
+ * Deliberately NOT routed through apiFetch, for the same reasons the
+ * transcription helper avoids it: apiFetch can retry, dedupes by JSON body, and
+ * raises errors whose message embeds the response body. This uses the shared
+ * fetchWithTimeout directly and leaves apiFetch untouched.
+ *
+ * Guarantees this function makes:
+ *   - exactly one attempt: no retry, no dedupe, no queue
+ *   - a bounded timeout slightly above the backend's own 10s provider timeout
+ *   - nothing is logged: not the reply text, not the audio, not headers, not
+ *     the response body
+ *   - the caller sees only a bounded category, never an upstream message
+ *   - the returned Blob is audio the caller owns and must revoke
+ *
+ * Rejects with an Error carrying `.category`, one of the SPEECH_ERRORS values.
+ */
+export async function synthesizeSpeechAudio(text) {
+  const fail = (category) => {
+    const error = new Error(category);
+    error.category = category;
+    return error;
+  };
+
+  const safeText = typeof text === "string" ? text.replace(/\s+/g, " ").trim() : "";
+
+  if (!safeText) throw fail("empty_text");
+  if (safeText.length > 600) throw fail("text_too_long");
+
+  let res;
+
+  try {
+    res = await fetchWithTimeout(
+      `${BASE_URL}/api/voice/speak`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: safeText }),
+      },
+      // Backend provider timeout is 10s; stay just above it.
+      13000
+    );
+  } catch {
+    // Abort, DNS, offline, TLS — all converge on one bounded category. The
+    // underlying error is not surfaced or logged.
+    throw fail("speech_unavailable");
+  }
+
+  if (!res || res.ok !== true) {
+    const status = res && typeof res.status === "number" ? res.status : 0;
+
+    if (status === 400) throw fail("empty_text");
+    if (status === 413) throw fail("text_too_long");
+    if (status === 429) throw fail("rate_limited");
+
+    // 503 and anything else the client cannot act on. The response body is
+    // never read, so no upstream text can escape through this path.
+    throw fail("speech_unavailable");
+  }
+
+  // The success contract is checked before the body is touched. A response that
+  // does not claim MP3 is not audio this phase asked for, whatever it contains.
+  const declaredType = res.headers?.get?.("content-type");
+  const mediaType =
+    typeof declaredType === "string" ? declaredType.split(";")[0].trim().toLowerCase() : "";
+
+  if (mediaType !== "audio/mpeg") throw fail("speech_unavailable");
+
+  // Content-Length is advisory, but when present it lets an oversized body be
+  // refused BEFORE it is read into memory. A malformed value is refused too:
+  // a header we cannot trust is not a header we act on.
+  const declaredLength = res.headers?.get?.("content-length");
+
+  if (typeof declaredLength === "string" && declaredLength.trim() !== "") {
+    const claimed = Number(declaredLength);
+
+    if (!Number.isFinite(claimed) || !Number.isInteger(claimed) || claimed < 0) {
+      throw fail("speech_unavailable");
+    }
+    if (claimed > 2 * 1024 * 1024) throw fail("speech_unavailable");
+  }
+
+  let blob;
+
+  try {
+    blob = await res.blob();
+  } catch {
+    throw fail("speech_unavailable");
+  }
+
+  if (!blob || typeof blob.size !== "number" || blob.size <= 0) {
+    throw fail("speech_unavailable");
+  }
+
+  // The real ceiling, applied to what actually arrived rather than to what the
+  // header claimed.
+  if (blob.size > 2 * 1024 * 1024) throw fail("speech_unavailable");
+
+  // Defense in depth. A blank blob type is accepted — some browsers leave it
+  // empty even for a correctly labelled response — but a stated type must be
+  // the right one.
+  const blobType = typeof blob.type === "string" ? blob.type.trim() : "";
+
+  if (blobType && blobType.split(";")[0].trim().toLowerCase() !== "audio/mpeg") {
+    throw fail("speech_unavailable");
+  }
+
+  return blob;
 }

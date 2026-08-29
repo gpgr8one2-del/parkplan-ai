@@ -1,10 +1,18 @@
 /**
  * TOHI Voice routes.
  *
- * A thin adapter. Every decision — MIME normalization, size limits, provider
- * handling, error mapping — lives in services/voiceService.js so it can be
- * executed without express. This file only moves bytes between express and
- * that service.
+ * A thin adapter over TWO services, deliberately kept apart:
+ *
+ *   - services/voiceService.js owns every TRANSCRIPTION decision: MIME
+ *     normalization, the upload ceiling, provider handling and error mapping
+ *     for POST /voice/transcribe.
+ *   - services/voiceSpeechService.js owns every SPOKEN-REPLY decision: text
+ *     bounds, provider handling, audio bounds and error mapping for
+ *     POST /voice/speak.
+ *
+ * Both are free of express so they can be executed directly by the harnesses.
+ * This file only moves bytes between express and whichever service owns the
+ * request.
  */
 
 const express = require("express");
@@ -15,6 +23,15 @@ const {
   TRANSCRIBE_OUTCOMES,
   handleTranscriptionRequest,
 } = require("../services/voiceService");
+
+// A3 speech lives in its own service. Transcription is merged and in
+// production; keeping the two apart means a speech change cannot reach the
+// upload path.
+const {
+  MAX_SPEECH_CHARS,
+  SPEECH_CONTENT_TYPE,
+  handleSpeechRequest,
+} = require("../services/voiceSpeechService");
 
 const router = express.Router();
 
@@ -76,6 +93,38 @@ router.post("/voice/transcribe", parseAudioBody, async (req, res) => {
   return res.status(result.status).json(result.body);
 });
 
+/**
+ * TOHI Voice — spoken reply.
+ *
+ * Renders text TOHI has ALREADY decided to say. It never reasons, never calls
+ * the chat path, and never changes a reply. The guest always has the text; this
+ * is an addition to it, never a replacement.
+ *
+ * JSON in, audio out. The app-wide express.json({ limit: "75kb" }) already
+ * covers the request — no parser is added or changed here, and the raw audio
+ * parser above stays bound to the transcribe path alone.
+ */
+router.post("/voice/speak", async (req, res) => {
+  // Spoken replies are never written to disk and never cached, here or
+  // downstream.
+  res.set("Cache-Control", "no-store");
+
+  const result = await handleSpeechRequest({
+    text: req.body?.text,
+    log: req.log,
+  });
+
+  if (result.audio) {
+    res.set("Content-Type", result.contentType);
+    res.set("Content-Length", String(result.audio.length));
+    return res.status(result.status).send(result.audio);
+  }
+
+  return res.status(result.status).json(result.body);
+});
+
 module.exports = router;
 module.exports.MAX_AUDIO_BYTES = MAX_AUDIO_BYTES;
 module.exports.SUPPORTED_AUDIO_MIMES = SUPPORTED_AUDIO_MIMES;
+module.exports.MAX_SPEECH_CHARS = MAX_SPEECH_CHARS;
+module.exports.SPEECH_CONTENT_TYPE = SPEECH_CONTENT_TYPE;

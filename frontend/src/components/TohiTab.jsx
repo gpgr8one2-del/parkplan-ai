@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from "react";
-import { Mic, Send, Square } from "lucide-react";
+import { Mic, Play, Send, Square, Volume2, VolumeX } from "lucide-react";
 
 import { colors } from "../theme";
 import { VOICE_COPY } from "../utils/voiceRecording";
+import { SPEECH_COPY } from "../utils/voiceSpeech";
 
 // 64B-1 extracted this presentation verbatim from App.jsx.
 // 64B-2A rebuilt the DAY presentation to the approved TOHI blueprints committed
@@ -311,6 +312,18 @@ export function TohiTab({
   voiceStatusMessage = "",
   onVoicePress,
 
+  // 64C-A3 spoken replies. Presentation only, exactly like the voice-input
+  // props: App owns synthesis, the Audio element, the object-URL lifecycle and
+  // every cancellation rule. This component renders controls and reflects
+  // state. All default to the "no speech" value, so a caller that has not
+  // opted in renders exactly as it did before A3.
+  speechSupported = false,
+  speechState = "idle",
+  voiceRepliesEnabled = true,
+  onToggleVoiceReplies,
+  onStopSpeech,
+  onPlaySpeech,
+
   // renderer owned by App — passed through, never reimplemented, so its Dev
   // Preview branch and setActiveScreen wiring stay in one place
   renderLockedFeatureCard,
@@ -360,6 +373,14 @@ export function TohiTab({
   // microphone being busy.
   const voiceBlockedByChat = chatLoading === true && !voiceListening;
   const voiceDisabled = voicePending || voiceBlockedByChat;
+
+  // 64C-A3. Speech controls appear only alongside a usable microphone: a spoken
+  // reply can only follow a spoken question, so without voice input there is
+  // nothing for them to control.
+  const showSpeech = showVoice && speechSupported === true;
+  const speechSpeaking = speechState === "speaking" || speechState === "loading";
+  const speechBlocked = speechState === "blocked";
+  const showPlaybackControl = showSpeech && (speechSpeaking || speechBlocked);
 
   // 64B-2C DOM refs. These exist for scrolling, focused-composer detection and
   // viewport observation only. No chat data, submission logic, validation or
@@ -943,6 +964,86 @@ export function TohiTab({
               </button>
             </div>
 
+            {/* 64C-A3: Voice replies on/off, and the playback control.
+                The toggle is a real pressed-state button so a screen reader
+                reports the setting, not just the word. The playback control
+                only exists when there is something to stop or start — it is
+                never a dead affordance. */}
+            {showSpeech && (
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  data-tohi-focus="true"
+                  data-tohi-voice-replies="true"
+                  onClick={onToggleVoiceReplies}
+                  aria-pressed={voiceRepliesEnabled === true}
+                  aria-label={SPEECH_COPY.toggleLabel}
+                  style={{
+                    ...button,
+                    flex: "0 0 auto",
+                    minHeight: 44,
+                    borderRadius: 14,
+                    padding: "0 12px",
+                    fontSize: 12,
+                    fontWeight: 800,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    background: t.surfaceQuiet,
+                    border: `1px solid ${voiceRepliesEnabled ? t.accentLine : t.line}`,
+                    color: voiceRepliesEnabled ? t.accent : t.muted,
+                    cursor: "pointer",
+                  }}
+                >
+                  {voiceRepliesEnabled ? (
+                    <>
+                      <Volume2 size={14} aria-hidden="true" /> {SPEECH_COPY.toggleOn}
+                    </>
+                  ) : (
+                    <>
+                      <VolumeX size={14} aria-hidden="true" /> {SPEECH_COPY.toggleOff}
+                    </>
+                  )}
+                </button>
+
+                {showPlaybackControl && (
+                  <button
+                    type="button"
+                    data-tohi-focus="true"
+                    data-tohi-speech-playback="true"
+                    onClick={speechSpeaking ? onStopSpeech : onPlaySpeech}
+                    aria-label={speechSpeaking ? "Stop reading the reply" : SPEECH_COPY.play}
+                    style={{
+                      ...button,
+                      flex: "0 0 auto",
+                      minHeight: 44,
+                      borderRadius: 14,
+                      padding: "0 12px",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 7,
+                      background: speechSpeaking ? t.goldFill : t.surfaceQuiet,
+                      border: `1px solid ${speechSpeaking ? t.goldLine : t.accentLine}`,
+                      color: speechSpeaking ? t.goldInk : t.accent,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {speechSpeaking ? (
+                      <>
+                        <Square size={13} aria-hidden="true" /> {SPEECH_COPY.stop}
+                      </>
+                    ) : (
+                      <>
+                        <Play size={13} aria-hidden="true" /> {SPEECH_COPY.play}
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
+
             {voiceStatusMessage ? (
               <div
                 role="status"
@@ -961,9 +1062,12 @@ export function TohiTab({
 
             {/* Claims only what this application controls. No provider is
                 named, and no promise is made about what any downstream service
-                does or does not retain. */}
+                does or does not retain. When speech is available this also
+                discloses plainly that the speaking voice is not a recording of
+                a person. */}
             <p style={{ margin: 0, fontSize: 11.5, lineHeight: 1.35, color: t.muted }}>
               {VOICE_COPY.privacy}
+              {showSpeech ? ` ${SPEECH_COPY.disclosure}` : ""}
             </p>
           </div>
         )}

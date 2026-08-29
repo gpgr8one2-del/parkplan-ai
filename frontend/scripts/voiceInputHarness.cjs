@@ -397,8 +397,12 @@ function runWiringAssertions() {
   );
 
   /* 7b — voice reaches chat only through handleChatSubmit, exactly once. */
+  // 64C-A3 added the explicit origin flag, which is how a spoken question is
+  // distinguished from a typed one at the single chat authority.
   const voiceSubmitCalls =
-    appCode.match(/handleChatSubmitRef\.current\?\.\(undefined,\s*validated\.transcript\)/g) || [];
+    appCode.match(
+      /handleChatSubmitRef\.current\?\.\(undefined,\s*validated\.transcript,\s*\{ origin: "voice" \}\)/g
+    ) || [];
   wiring(
     "7b. (src) the transcript reaches chat through exactly one submit call",
     voiceSubmitCalls.length === 1 &&
@@ -495,7 +499,10 @@ function runWiringAssertions() {
   /* 14b — leaving TOHI and unmount both tear down. */
   wiring(
     "14b. (src) leaving the TOHI tab and unmounting both release every track",
-    /if \(activeTab !== "tohi" && voiceStateRef\.current !== "idle"\)/.test(appCode) &&
+    // 64C-A3 restructured this effect to an early return so it can also stop a
+    // spoken reply; the microphone teardown it guards is unchanged.
+    /if \(activeTab === "tohi"\) return;/.test(appCode) &&
+      /if \(voiceStateRef\.current !== "idle"\) \{\s*teardownVoice\(\);/.test(appCode) &&
       /stopMediaStream\(run\.stream\);/.test(appCode) &&
       // teardown is the cleanup return of the listener effect
       /return \(\) => \{[\s\S]{0,400}?teardownVoice\(\);\s*\};/.test(appCode)
@@ -516,7 +523,7 @@ function runWiringAssertions() {
       ) &&
       // and the submit is preceded by one
       appCode.indexOf("if (voiceRunRef.current !== run) return;\n\n      const validated") <
-        appCode.indexOf("handleChatSubmitRef.current?.(undefined, validated.transcript)"),
+        appCode.indexOf("handleChatSubmitRef.current?.(undefined, validated.transcript,"),
     `${staleChecks.length} generation checks found`
   );
 
@@ -586,14 +593,23 @@ function runWiringAssertions() {
     offenders.join(", ")
   );
 
-  /* 20 — no TTS surface was introduced. */
+  /* 20 — the spoken reply added in A3 is bounded to what was approved.
+     The original protection is preserved where it still applies: browser
+     synthesis is never used, no Realtime/WebSocket conversation exists, and the
+     RECORDING module gained no playback of its own. What changed is only that a
+     server-rendered spoken reply is now allowed to exist. */
   wiring(
-    "20. (src) no spoken reply, TTS, playback or speak endpoint was added",
+    "20. (src) speech is server-rendered only — no browser synthesis, Realtime or always-listening",
     !/speechSynthesis|SpeechSynthesisUtterance/i.test(appCode + apiCode + tohiCode + voiceUtilSource) &&
-      !/api\/voice\/speak/.test(appCode + apiCode + tohiCode + voiceUtilSource) &&
-      !/new Audio\(/.test(appCode + apiCode + tohiCode + voiceUtilSource) &&
+      !/new WebSocket|RealtimeClient|\/realtime/i.test(
+        appCode + apiCode + tohiCode + voiceUtilSource
+      ) &&
+      !/continuous|alwaysListening|wakeWord/i.test(appCode + voiceUtilSource) &&
+      // the voice-INPUT module stays input-only: no playback leaked into it
+      !/new Audio\(|createObjectURL|\.play\(/.test(voiceUtilSource) &&
       !/<audio/i.test(tohiCode) &&
-      !/Realtime|realtime/.test(voiceUtilSource)
+      // and speech, where it exists, goes through the approved bounded endpoint
+      (!/api\/voice\/speak/.test(apiCode) || /synthesizeSpeechAudio/.test(apiCode))
   );
 }
 
