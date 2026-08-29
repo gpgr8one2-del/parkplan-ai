@@ -493,14 +493,18 @@ describe("20. accessibility and scope", () => {
     expect(html.toLowerCase()).not.toMatch(/openai|whisper|render\.com|anthropic/);
   });
 
-  test("no spoken-reply, TTS or playback surface exists in this phase", () => {
+  test("speech is server-rendered only — no browser synthesis or media element", () => {
     const html = renderTohi({
       voiceSupported: true,
       onVoicePress: () => {},
       chat: [{ role: "assistant", content: "Try Peter Pan now." }],
     });
 
-    // Rendered surface: no media element, and no control that would play audio.
+    // 64C-A3 added an approved spoken reply. What is still forbidden here:
+    // no media element is rendered into the tree (the single Audio element is
+    // owned by App), and the browser's own synthesis voice is never used, not
+    // even as a hidden fallback.
+    //
     // Asserted against real DOM/API surfaces rather than English words — the
     // markup legitimately contains "listening" in a CSS selector and a status
     // string, and matching prose would flag those instead of a real regression.
@@ -513,21 +517,24 @@ describe("20. accessibility and scope", () => {
     expect(html).toContain("Try Peter Pan now.");
   });
 
-  test("the voice module exposes no playback or synthesis API", () => {
+  test("the voice INPUT module stays input-only", () => {
     // Source-level, because a playback path could exist without rendering
     // anything. This is the module this phase owns.
     // eslint-disable-next-line global-require
     const voiceModule = require("../utils/voiceRecording");
 
+    // Recording stays recording. Playback and synthesis live in the separate
+    // A3 module, so this one must never grow either.
     Object.keys(voiceModule).forEach((key) => {
       expect(key).not.toMatch(/speak|speech|tts|play|utterance|audioOut/i);
     });
 
-    // And the phase adds no speak endpoint anywhere in the API surface.
+    // A3's speech helper is a SEPARATE export. What must never appear anywhere
+    // in the API surface is a browser-synthesis path.
     // eslint-disable-next-line global-require
     const apiModule = require("../api");
     Object.keys(apiModule).forEach((key) => {
-      expect(key).not.toMatch(/speak|synthes|tts/i);
+      expect(key).not.toMatch(/speechSynthesis|utterance/i);
     });
   });
 });

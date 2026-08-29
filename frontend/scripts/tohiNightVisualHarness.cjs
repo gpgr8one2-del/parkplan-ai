@@ -464,14 +464,32 @@ invariantCheck(
     // 64C-A2: the approved microphone is the ONE added control, and it draws
     // from the same day/night token object as everything else — it introduces
     // no palette of its own, so night parity is preserved.
-    (tohiCode.match(/<button/g) || []).length === 3 &&
+    // 64C-A3 adds exactly two approved controls: the Voice Replies toggle and
+    // the single Stop/Play playback control. Five buttons total — the prompt
+    // chip and Send that always existed, the microphone from A2, and these two.
+    (tohiCode.match(/<button/g) || []).length === 5 &&
+    /data-tohi-voice-replies="true"/.test(tohiCode) &&
+    /data-tohi-speech-playback="true"/.test(tohiCode) &&
+    // both are distinct type="button" controls; Send remains the only submit
+    (tohiCode.match(/type="submit"/g) || []).length === 1 &&
+    // and they appear only when speech is actually usable
+    /const showSpeech = showVoice && speechSupported === true;/.test(tohiCode) &&
+    /speechSupported = false,/.test(tohiCode) &&
     /data-tohi-voice="true"/.test(tohiCode) &&
     /background: voiceListening\s*\n\s*\? t\.goldFill/.test(tohiCode) &&
     !/#[0-9a-fA-F]{6}/.test(
       (tohiCode.match(/data-tohi-voice="true"[\s\S]*?\/>/) || [""])[0]
     ) &&
-    // and no spoken reply or playback arrived with it
-    !/speechSynthesis|SpeechSynthesisUtterance|new Audio\(|<audio/i.test(tohiCode),
+    // 64C-A3: the approved spoken reply. The protections that REMAIN are the
+    // ones that still matter — browser synthesis is never used (not even as a
+    // hidden fallback), no Realtime/WebSocket conversation exists, and no media
+    // element is rendered into the tree: the single Audio element is owned by
+    // App and never appears in this presentation.
+    !/speechSynthesis|SpeechSynthesisUtterance/i.test(tohiCode) &&
+    !/new WebSocket|RealtimeClient|\/realtime/i.test(tohiCode) &&
+    !/<audio|<video/i.test(tohiCode) &&
+    // and the spoken voice is disclosed as AI-generated
+    /SPEECH_COPY\.disclosure/.test(tohiCode),
   true
 );
 

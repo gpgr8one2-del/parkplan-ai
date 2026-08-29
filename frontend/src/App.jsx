@@ -5,6 +5,7 @@ import {
   fetchWeather,
   sendChatMessage,
   sendTohiPickReview,
+  synthesizeSpeechAudio,
   trackEvent,
   transcribeVoiceRecording,
 } from "./api";
@@ -20,6 +21,13 @@ import {
   validateRecordingBlob,
   validateTranscript,
 } from "./utils/voiceRecording";
+import {
+  SPEECH_COPY,
+  isSpeechOutputSupported,
+  playbackResultToPromise,
+  validateSpeechBlob,
+  validateSpeechText,
+} from "./utils/voiceSpeech";
 import { FreshnessBadge } from "./components/FreshnessBadge";
 import { DataStatusBanner } from "./components/DataStatusBanner";
 import { getNextBestRides, getRecommendationWeatherState } from "./rideRecommendations";
@@ -2260,6 +2268,11 @@ function App() {
   const handleChatSubmitRef = useRef(null);
   handleChatSubmitRef.current = handleChatSubmit;
 
+  // A3 teardown, reached from the recorder's exit paths. Held in a ref because
+  // the recorder controller is defined ABOVE the speech controller, and reading
+  // stopSpeech directly here would be a use-before-initialization.
+  const stopSpeechRef = useRef(null);
+
   const setVoiceStateBoth = useCallback((next) => {
     voiceStateRef.current = next;
     setVoiceState(next);
@@ -2447,7 +2460,7 @@ function App() {
       // turn carries live chat, park, family and freshness context. Same
       // function, same latch, same insertion site, same session payload as a
       // typed question.
-      handleChatSubmitRef.current?.(undefined, validated.transcript);
+      handleChatSubmitRef.current?.(undefined, validated.transcript, { origin: "voice" });
     },
     [finishVoice, noticeForVoiceError, setVoiceStateBoth, teardownVoice]
   );
@@ -2489,6 +2502,11 @@ function App() {
   }, [finishVoice, setVoiceStateBoth]);
 
   const startVoiceRecording = useCallback(async () => {
+    // A new question stops the previous answer mid-sentence. Doing this first,
+    // before any await, means the tap silences TOHI immediately rather than
+    // after the permission prompt resolves.
+    stopSpeechRef.current?.();
+
     // Any previous run is abandoned first, which invalidates its callbacks.
     teardownVoice();
 
@@ -2641,7 +2659,13 @@ function App() {
   // Leaving TOHI, hiding the page, or unmounting must release the microphone.
   // App does not unmount on tab change, so activeTab is watched explicitly.
   useEffect(() => {
-    if (activeTab !== "tohi" && voiceStateRef.current !== "idle") {
+    if (activeTab === "tohi") return;
+
+    // Leaving TOHI releases the microphone AND stops any spoken reply, so
+    // audio never follows the guest to another tab.
+    stopSpeechRef.current?.();
+
+    if (voiceStateRef.current !== "idle") {
       teardownVoice();
       setVoiceStateBoth("idle");
       setVoiceNotice("");
@@ -2652,6 +2676,10 @@ function App() {
     if (typeof window === "undefined") return undefined;
 
     const releaseMicrophone = () => {
+      // Speech is released unconditionally: it can be playing with the
+      // microphone completely idle.
+      stopSpeechRef.current?.();
+
       if (voiceStateRef.current === "idle" && !voiceRunRef.current) return;
       teardownVoice();
       setVoiceStateBoth("idle");
@@ -2670,10 +2698,276 @@ function App() {
     return () => {
       window.removeEventListener("pagehide", releaseMicrophone);
       document.removeEventListener("visibilitychange", onVisibilityChange);
-      // Unmount: abandon the run and release every track.
+      // Unmount: abandon the run, release every track, stop playback and
+      // revoke the object URL.
+      stopSpeechRef.current?.();
       teardownVoice();
     };
   }, [setVoiceStateBoth, teardownVoice]);
+
+
+  /* ---------------------------------------------------------------------- */
+  /* 64C-A3: TOHI spoken replies                                             */
+  /*                                                                         */
+  /* An OUTPUT layer over text TOHI has already decided to say. It never      */
+  /* reasons, never reaches the chat path, and never changes a reply. The     */
+  /* visible text is always authoritative: every failure here is silent to    */
+  /* the answer itself, and the guest keeps the words on screen.              */
+  /*                                                                         */
+  /* NOT a conversation channel: no Realtime API, no WebSocket, no streaming  */
+  /* session, no always-listening behaviour, and no browser speechSynthesis   */
+  /* — not even as a hidden fallback.                                        */
+  /*                                                                         */
+  /* RUN ISOLATION, the same discipline the recorder uses: one run object per */
+  /* spoken reply, held in speechRunRef. Async continuations act only while   */
+  /* `speechRunRef.current === run`, so a slower earlier reply can never      */
+  /* speak over a newer one or revoke its audio.                              */
+  /* ---------------------------------------------------------------------- */
+
+  // "idle" | "loading" | "speaking" | "blocked"
+  const [speechState, setSpeechState] = useState("idle");
+  const [speechNotice, setSpeechNotice] = useState("");
+
+  // Defaults ON for the push-to-talk flow, as approved. Typed questions are
+  // unaffected either way — they never reach the speech path at all.
+  const [voiceRepliesEnabled, setVoiceRepliesEnabled] = useState(true);
+
+  // Read synchronously when a reply commits, so turning voice replies off while
+  // an answer is still in flight takes effect for that answer.
+  const voiceRepliesEnabledRef = useRef(true);
+  voiceRepliesEnabledRef.current = voiceRepliesEnabled;
+
+  const speechRunRef = useRef(null);
+
+  // THE one reusable Audio element. Created once, reused for every reply.
+  // Reuse is not just tidiness: on iOS an element first played inside a user
+  // gesture stays playable afterwards, so keeping one element is what gives a
+  // later reply any chance of starting without a second tap.
+  const speechAudioRef = useRef(null);
+
+  // The object URL currently attached to that element, so it can be revoked
+  // exactly once on every exit path.
+  const speechUrlRef = useRef("");
+
+  const speechSupported = useMemo(() => {
+    if (typeof window === "undefined") return false;
+
+    return isSpeechOutputSupported({
+      AudioCtor: window.Audio,
+      createObjectURL: window.URL && window.URL.createObjectURL,
+    });
+  }, []);
+
+  /** Lazily creates the single shared element. Never creates a second one. */
+  const getSpeechAudio = useCallback(() => {
+    if (speechAudioRef.current) return speechAudioRef.current;
+    if (typeof window === "undefined" || typeof window.Audio !== "function") return null;
+
+    const audio = new window.Audio();
+    audio.preload = "auto";
+    speechAudioRef.current = audio;
+
+    return audio;
+  }, []);
+
+  /** Revokes the attached object URL exactly once. Safe to call repeatedly. */
+  const releaseSpeechUrl = useCallback(() => {
+    const url = speechUrlRef.current;
+    speechUrlRef.current = "";
+
+    if (!url) return;
+
+    try {
+      window.URL.revokeObjectURL(url);
+    } catch {
+      // A browser that refuses revocation must not break teardown.
+    }
+  }, []);
+
+  /**
+   * The single teardown path for audio. Every exit route calls it: a new
+   * recording, a newer reply, Stop, leaving TOHI, page hide, and unmount.
+   */
+  const stopSpeech = useCallback(
+    (notice) => {
+      // Only a string is ever accepted as copy. Wiring this straight to a click
+      // handler would otherwise pass the DOM event in as `notice`, and React
+      // would try to render the event object as a child.
+      const safeNotice = typeof notice === "string" ? notice : "";
+
+      speechRunRef.current = null;
+
+      const audio = speechAudioRef.current;
+
+      if (audio) {
+        try {
+          // Handlers come off FIRST. Removing the source and calling load()
+          // can itself fire an error event, and a detached-but-still-wired
+          // handler would then report a failure for a reply the guest
+          // deliberately stopped. The run-identity checks inside those handlers
+          // remain as defense in depth.
+          audio.onended = null;
+          audio.onerror = null;
+        } catch {
+          // An element that refuses property writes is still paused below.
+        }
+
+        try {
+          audio.pause();
+          // Detaching the source is what actually frees the decoded audio.
+          audio.removeAttribute("src");
+          audio.load?.();
+        } catch {
+          // Already stopped, or refused. The URL is still revoked below.
+        }
+      }
+
+      releaseSpeechUrl();
+      setSpeechState("idle");
+      setSpeechNotice(safeNotice);
+    },
+    [releaseSpeechUrl]
+  );
+
+  /** The Stop control. Takes no argument, so no event can reach stopSpeech. */
+  const handleStopSpeechPress = useCallback(() => {
+    stopSpeech();
+  }, [stopSpeech]);
+
+  stopSpeechRef.current = stopSpeech;
+
+  /**
+   * Attempts playback of the already-attached audio.
+   *
+   * A rejection is the normal iPhone Safari outcome when the reply arrives
+   * outside the tap that started the recording. It is NOT an error: the text is
+   * already on screen, and the guest gets an obvious Play control instead.
+   */
+  const attemptPlayback = useCallback((run) => {
+    const audio = speechAudioRef.current;
+    if (!audio) return;
+
+    let result;
+    try {
+      result = audio.play();
+    } catch {
+      if (speechRunRef.current === run) setSpeechState("blocked");
+      return;
+    }
+
+    playbackResultToPromise(result)
+      .then(() => {
+        if (speechRunRef.current !== run) return;
+        setSpeechState("speaking");
+        setSpeechNotice("");
+      })
+      .catch(() => {
+        // Autoplay refused. Keep the audio attached so one tap can start it.
+        if (speechRunRef.current !== run) return;
+        setSpeechState("blocked");
+        setSpeechNotice("");
+      });
+  }, []);
+
+  /**
+   * Renders one reply as speech and plays it.
+   *
+   * Called only from the assistant-commit helper inside handleChatSubmit, and
+   * only for a voice-origin turn with voice replies enabled. Every failure ends
+   * quietly: the reply text has already been committed and is never touched.
+   */
+  const speakReply = useCallback(
+    async (text) => {
+      if (!speechSupported) return;
+
+      const validated = validateSpeechText(text);
+      if (!validated.ok) return;
+
+      // Starting a new reply abandons any older one, including its audio.
+      stopSpeech();
+
+      const run = {};
+      speechRunRef.current = run;
+      setSpeechState("loading");
+      setSpeechNotice("");
+
+      let blob;
+      try {
+        blob = await synthesizeSpeechAudio(validated.text);
+      } catch {
+        if (speechRunRef.current !== run) return;
+        // Bounded and quiet. The answer is already visible.
+        stopSpeech(SPEECH_COPY.failed);
+        return;
+      }
+
+      if (speechRunRef.current !== run) return;
+
+      if (!validateSpeechBlob(blob).ok) {
+        stopSpeech(SPEECH_COPY.failed);
+        return;
+      }
+
+      const audio = getSpeechAudio();
+      if (!audio) {
+        stopSpeech(SPEECH_COPY.failed);
+        return;
+      }
+
+      let url;
+      try {
+        url = window.URL.createObjectURL(blob);
+      } catch {
+        stopSpeech(SPEECH_COPY.failed);
+        return;
+      }
+
+      if (speechRunRef.current !== run) {
+        try {
+          window.URL.revokeObjectURL(url);
+        } catch {
+          // nothing to recover
+        }
+        return;
+      }
+
+      // Replace the previous URL on the SAME element, revoking the old one.
+      releaseSpeechUrl();
+      speechUrlRef.current = url;
+      audio.src = url;
+
+      audio.onended = () => {
+        if (speechRunRef.current !== run) return;
+        stopSpeech();
+      };
+
+      audio.onerror = () => {
+        if (speechRunRef.current !== run) return;
+        stopSpeech(SPEECH_COPY.failed);
+      };
+
+      attemptPlayback(run);
+    },
+    [attemptPlayback, getSpeechAudio, releaseSpeechUrl, speechSupported, stopSpeech]
+  );
+
+  /** The Play control shown when autoplay was refused. A real user gesture. */
+  const playPendingSpeech = useCallback(() => {
+    const run = speechRunRef.current;
+    if (!run || !speechUrlRef.current) return;
+
+    attemptPlayback(run);
+  }, [attemptPlayback]);
+
+  const toggleVoiceReplies = useCallback(() => {
+    setVoiceRepliesEnabled((current) => {
+      const next = !current;
+      // Turning it off stops anything already speaking, immediately.
+      if (!next) stopSpeech();
+      return next;
+    });
+  }, [stopSpeech]);
+
 
   const voiceBusy = voiceState !== "idle";
 
@@ -2681,9 +2975,17 @@ function App() {
     if (voiceState === "requesting") return VOICE_COPY.requesting;
     if (voiceState === "listening") return VOICE_COPY.listening;
     if (voiceState === "transcribing") return VOICE_COPY.transcribing;
+    if (voiceNotice) return voiceNotice;
 
-    return voiceNotice || "";
-  }, [voiceNotice, voiceState]);
+    // 64C-A3 shares the ONE status region rather than opening a second live
+    // region to compete with it. Microphone state always wins — it is the more
+    // urgent thing to know — and speech copy fills the region only when the
+    // microphone has nothing to say.
+    if (speechState === "speaking") return SPEECH_COPY.speaking;
+    if (speechState === "blocked") return SPEECH_COPY.blocked;
+
+    return speechNotice || "";
+  }, [speechNotice, speechState, voiceNotice, voiceState]);
   // 61D: Plan Tools is a sub-view of the Plan tab, not a router destination.
   // The global router (activeScreen) and the tab bar (activeTab) are untouched,
   // so the bottom nav keeps showing Plan as active while Plan Tools is open.
@@ -5120,12 +5422,21 @@ function App() {
   // one QUICK CHECK interception, one session payload, one history filter, one
   // reply validation and one failure path. There is no second role:"user"
   // insertion site anywhere in the app.
-  async function handleChatSubmit(e, explicitText) {
+  async function handleChatSubmit(e, explicitText, options) {
     e?.preventDefault?.();
 
     const source = typeof explicitText === "string" ? explicitText : message;
     const trimmed = source.trim();
     if (!trimmed) return;
+
+    // 64C-A3: how the question's ORIGIN reaches the one chat authority.
+    //
+    // Declared explicitly by the caller rather than inferred from
+    // `explicitText` being a string. Inference would be free today — voice is
+    // the only caller passing text — but the first future caller that submits
+    // explicit text (a suggested prompt, a retry control) would silently start
+    // speaking. An explicit flag cannot drift that way.
+    const isVoiceOrigin = options?.origin === "voice";
 
     // Latch acquired BEFORE the user message, the tracking event and the
     // request, so a rapid second submit produces none of them. Everything after
@@ -5133,6 +5444,21 @@ function App() {
     // clarification early-return and any throw while preparing context — the
     // composer can never be left permanently locked.
     if (chatInFlightRef.current) return;
+
+    // 64C-A3: a newly ACCEPTED question silences the previous answer.
+    //
+    // This runs for every accepted submission, typed or spoken, and it runs
+    // synchronously — before the latch, before the user message, before any
+    // await. Without it TOHI would keep reading the previous answer over a new
+    // typed question, or a synthesis still in flight from the previous turn
+    // would start speaking after it.
+    //
+    // Placed after the blank-input and in-flight guards on purpose: a rejected
+    // submission is not a new question and must not interrupt anything. The
+    // microphone-start path keeps its own earlier stop, which silences TOHI at
+    // the moment of the tap rather than when the transcript arrives.
+    stopSpeech();
+
     chatInFlightRef.current = true;
 
     try {
@@ -5163,6 +5489,30 @@ function App() {
       // value captured at submission and clobber that newer draft; the updater
       // reads the latest value and only fills the field when it is still blank
       // or whitespace.
+      /**
+       * The ONE place a visible assistant reply is committed.
+       *
+       * Both success sites — the QUICK CHECK clarification and the validated AI
+       * answer — go through here, so "what TOHI said" and "what TOHI speaks"
+       * can never disagree. Speech is started only for a voice-origin turn with
+       * voice replies still enabled, and only AFTER the text is committed, so a
+       * speech failure can never remove, delay, replace or mark the text.
+       *
+       * Connection-failure entries deliberately do NOT come through here. They
+       * keep their existing separate path and never speak: they are an app
+       * notice, not something TOHI said.
+       */
+      const commitAssistantReply = (entry) => {
+        setChat([...nextChat, entry]);
+
+        if (!isVoiceOrigin) return;
+        if (!voiceRepliesEnabledRef.current) return;
+
+        // Fire-and-forget on purpose. The reply is already on screen; nothing
+        // downstream waits on audio.
+        speakReply(entry.content);
+      };
+
       const finalizeChatFailure = () => {
         setChat([...nextChat, buildChatConnectionFailureEntry()]);
         setMessage((current) =>
@@ -5215,14 +5565,11 @@ function App() {
           timeContext: freshTimeContext,
         });
 
-        setChat([
-          ...nextChat,
-          {
-            role: "assistant",
-            content: clarifyingQuestion,
-            isLiveStateQuestion: true,
-          },
-        ]);
+        commitAssistantReply({
+          role: "assistant",
+          content: clarifyingQuestion,
+          isLiveStateQuestion: true,
+        });
 
         trackAppEvent("tohi_live_state_question_asked", {
           source: "tohi_chat",
@@ -5298,7 +5645,7 @@ function App() {
         const replyText = resolveAssistantReplyText(res, trimmed);
 
         if (replyText) {
-          setChat([...nextChat, { role: "assistant", content: replyText }]);
+          commitAssistantReply({ role: "assistant", content: replyText });
         } else {
           finalizeChatFailure();
         }
@@ -6776,6 +7123,15 @@ function App() {
               voiceBusy={voiceBusy}
               voiceStatusMessage={voiceStatusMessage}
               onVoicePress={handleVoiceButtonPress}
+              /* 64C-A3 spoken replies. Presentation props only: App owns
+                 synthesis, the single Audio element, the object-URL lifecycle
+                 and every cancellation rule. */
+              speechSupported={speechSupported}
+              speechState={speechState}
+              voiceRepliesEnabled={voiceRepliesEnabled}
+              onToggleVoiceReplies={toggleVoiceReplies}
+              onStopSpeech={handleStopSpeechPress}
+              onPlaySpeech={playPendingSpeech}
               renderLockedFeatureCard={renderLockedFeatureCard}
               onComposerKeyboardChange={setTohiComposerKeyboardOpen}
               /* 64B-2E-2: activated. TOHI now reads the same single shell

@@ -535,10 +535,15 @@ featureCheck(
   (appCode.match(/finalizeChatFailure\(\);/g) || []).length === 2 &&
     /\} catch \{\s*\n\s*finalizeChatFailure\(\);/.test(appCode) &&
     /\} else \{\s*\n\s*finalizeChatFailure\(\);/.test(appCode) &&
-    // the success branch must NOT finalize as a failure
-    /if \(replyText\) \{\s*\n\s*setChat\(\[\.\.\.nextChat, \{ role: "assistant", content: replyText \}\]\);/.test(
+    // The success branch must NOT finalize as a failure. 64C-A3 routes it
+    // through the one commitAssistantReply seam instead of an inline setChat;
+    // the protection is unchanged — success and failure remain distinct paths,
+    // and the failure path is still the only one that builds a marked entry.
+    /if \(replyText\) \{\s*\n\s*commitAssistantReply\(\{ role: "assistant", content: replyText \}\);/.test(
       appCode
-    ),
+    ) &&
+    // and the failure builder is never routed through the commit seam
+    !/commitAssistantReply\(buildChatConnectionFailureEntry/.test(appCode),
   true
 );
 
@@ -643,9 +648,10 @@ featureCheck(
     /typeof res\.reply === "string"/.test(appCode) &&
     /if \(!raw\.trim\(\)\) return "";/.test(appCode) &&
     /typeof cleaned === "string" && cleaned\.trim\(\) \? cleaned : ""/.test(appCode) &&
-    // The accept/reject fork now routes the reject arm through the shared
-    // finalizer rather than building an entry inline.
-    /if \(replyText\) \{\s*\n\s*setChat\(\[\.\.\.nextChat, \{ role: "assistant", content: replyText \}\]\);\s*\n\s*\} else \{\s*\n\s*finalizeChatFailure\(\);/.test(
+    // The accept/reject fork still routes the reject arm through the shared
+    // finalizer rather than building an entry inline. 64C-A3 only changed how
+    // the ACCEPT arm commits: through the one commitAssistantReply seam.
+    /if \(replyText\) \{\s*\n\s*commitAssistantReply\(\{ role: "assistant", content: replyText \}\);\s*\n\s*\} else \{\s*\n\s*finalizeChatFailure\(\);/.test(
       appCode
     ),
   true

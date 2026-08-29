@@ -98,6 +98,21 @@ const voiceTranscribeLimiter = rateLimit({
   },
 });
 
+// Spoken replies get their own budget, separate from transcription and from
+// the AI chat limiter. One chat turn can produce at most one spoken reply, so
+// this is deliberately tighter than the transcription budget.
+const voiceSpeakLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    req.log.warn({ path: req.path }, "voice speech rate limit exceeded");
+    res.set("Cache-Control", "no-store");
+    res.status(429).json({ error: "Too many voice replies. Try again in a minute." });
+  },
+});
+
 /**
  * V1 product analytics event schema.
  *
@@ -266,6 +281,7 @@ app.use("/api/weather", generalApiLimiter);
 app.use("/api/ai-chat", aiLimiter);
 app.use("/api/tohi-pick-review", aiLimiter);
 app.use("/api/voice/transcribe", voiceTranscribeLimiter);
+app.use("/api/voice/speak", voiceSpeakLimiter);
 
 app.use("/api", parkRoutes);
 app.use("/api", weatherRoutes);

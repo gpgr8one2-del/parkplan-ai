@@ -764,7 +764,10 @@ invariantCheck(
   // 64C-A2 added the approved optional explicit-text parameter so a voice
   // transcript enters the SAME handler. Everything the latch and failure
   // handling depend on is unchanged, and is still asserted below.
-  /async function handleChatSubmit\(e, explicitText\) \{/.test(appCode) &&
+  // 64C-A3 added the approved options parameter, which is how a question's
+  // ORIGIN reaches the one chat authority without a second handler.
+  /async function handleChatSubmit\(e, explicitText, options\) \{/.test(appCode) &&
+    /const commitAssistantReply = \(entry\) => \{/.test(appCode) &&
     // one shared chat authority: one user insertion, one AI request
     (appCode.match(/\{\s*role:\s*["']user["']/g) || []).length === 1 &&
     (appCode.match(/sendChatMessage\(/g) || []).length === 1 &&
@@ -804,7 +807,17 @@ invariantCheck(
     // now — the prompt/Send pair that already existed plus the microphone —
     // and the microphone must be a distinct type="button" so it can never
     // submit the composer form.
-    (tohiCode.match(/<button/g) || []).length === 3 &&
+    // 64C-A3 adds exactly two approved controls: the Voice Replies toggle and
+    // the single Stop/Play playback control. Five buttons total — the prompt
+    // chip and Send that always existed, the microphone from A2, and these two.
+    (tohiCode.match(/<button/g) || []).length === 5 &&
+    /data-tohi-voice-replies="true"/.test(tohiCode) &&
+    /data-tohi-speech-playback="true"/.test(tohiCode) &&
+    // both are distinct type="button" controls; Send remains the only submit
+    (tohiCode.match(/type="submit"/g) || []).length === 1 &&
+    // and they appear only when speech is actually usable
+    /const showSpeech = showVoice && speechSupported === true;/.test(tohiCode) &&
+    /speechSupported = false,/.test(tohiCode) &&
     // The microphone element itself carries type="button" — asserted on that
     // element, not as a global count, so it cannot be satisfied by one of the
     // existing prompt chips.
@@ -818,8 +831,16 @@ invariantCheck(
       tohiCode
     ) &&
     /voiceSupported = false,/.test(tohiCode) &&
-    // Still no spoken reply, playback or synthesis anywhere in the presentation.
-    !/speechSynthesis|SpeechSynthesisUtterance|new Audio\(|<audio/i.test(tohiCode),
+    // 64C-A3: the approved spoken reply. The protections that REMAIN are the
+    // ones that still matter — browser synthesis is never used (not even as a
+    // hidden fallback), no Realtime/WebSocket conversation exists, and no media
+    // element is rendered into the tree: the single Audio element is owned by
+    // App and never appears in this presentation.
+    !/speechSynthesis|SpeechSynthesisUtterance/i.test(tohiCode) &&
+    !/new WebSocket|RealtimeClient|\/realtime/i.test(tohiCode) &&
+    !/<audio|<video/i.test(tohiCode) &&
+    // and the spoken voice is disclosed as AI-generated
+    /SPEECH_COPY\.disclosure/.test(tohiCode),
   true
 );
 
