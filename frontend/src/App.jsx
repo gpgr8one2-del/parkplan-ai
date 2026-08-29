@@ -25,6 +25,7 @@ import {
   SPEECH_COPY,
   isSpeechOutputSupported,
   playbackResultToPromise,
+  prepareSpokenReply,
   validateSpeechBlob,
   validateSpeechText,
 } from "./utils/voiceSpeech";
@@ -2710,9 +2711,9 @@ function App() {
   /* 64C-A3: TOHI spoken replies                                             */
   /*                                                                         */
   /* An OUTPUT layer over text TOHI has already decided to say. It never      */
-  /* reasons, never reaches the chat path, and never changes a reply. The     */
-  /* visible text is always authoritative: every failure here is silent to    */
-  /* the answer itself, and the guest keeps the words on screen.              */
+  /* reasons or reaches the chat path. It may prepare a shorter spoken version */
+  /* of the same facts, but the visible text is always authoritative: every    */
+  /* failure here is silent to the answer itself.                              */
   /*                                                                         */
   /* NOT a conversation channel: no Realtime API, no WebSocket, no streaming  */
   /* session, no always-listening behaviour, and no browser speechSynthesis   */
@@ -2880,8 +2881,24 @@ function App() {
     async (text) => {
       if (!speechSupported) return;
 
-      const validated = validateSpeechText(text);
-      if (!validated.ok) return;
+      // Speech gets its own deterministic rendering. If preparation ever
+      // fails unexpectedly, fall back to the committed reply verbatim.
+      let preparedText = text;
+      try {
+        preparedText = prepareSpokenReply(text) || text;
+      } catch {
+        preparedText = text;
+      }
+
+      const validated = validateSpeechText(preparedText);
+
+      if (!validated.ok) {
+        // Preparation bounds the text to the provider limit, so this should not
+        // happen. If it ever does, say so with the existing calm copy rather
+        // than going silent — the answer is already on screen either way.
+        stopSpeech(SPEECH_COPY.failed);
+        return;
+      }
 
       // Starting a new reply abandons any older one, including its audio.
       stopSpeech();
@@ -5493,8 +5510,9 @@ function App() {
        * The ONE place a visible assistant reply is committed.
        *
        * Both success sites — the QUICK CHECK clarification and the validated AI
-       * answer — go through here, so "what TOHI said" and "what TOHI speaks"
-       * can never disagree. Speech is started only for a voice-origin turn with
+       * answer — go through here. The committed response remains authoritative;
+       * speech may shorten or pronounce that same response for listening but
+       * cannot replace it. Speech is started only for a voice-origin turn with
        * voice replies still enabled, and only AFTER the text is committed, so a
        * speech failure can never remove, delay, replace or mark the text.
        *

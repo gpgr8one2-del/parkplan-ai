@@ -169,6 +169,14 @@ async function runFeatures() {
     "10. (exec) frontend enforces the 2 MB ceiling and the Blob MIME on what arrives",
     "11. (exec) backend refuses an oversized Content-Length before consuming the body",
     "12. (exec) backend refuses a successful response that does not claim MP3",
+    "13. (exec) spoken preparation shortens ordinary replies but keeps weather guidance",
+    "14. (exec) label-like prose survives; only structural headings are removed",
+    "15. (exec) abbreviations and decimals never split a sentence",
+    "16. (exec) prepared speech always fits the provider ceiling after number expansion",
+    "17. (exec) temperature-only safety guidance survives naturalization",
+    "18. (exec) a spoken time never ends a sentence early",
+    "19. (exec) indoor/water descriptions shorten; indoor/water instructions do not",
+    "20. (exec) durations are singular before a noun and plural standing alone",
   ];
 
   if (!speechService || !speechUtil || !apiModule) {
@@ -563,6 +571,176 @@ async function runFeatures() {
       backendCasedType.ok === true &&
       okResult.ok === true
   );
+
+  /* 13 — the speech-only preparation is real production code, EXECUTED. */
+  const visibleReply =
+    "Head to Pirates of the Caribbean now — it’s a 10-minute wait. " +
+    "It is one of your must-dos. Haunted Mansion is a good backup. " +
+    "Jungle Cruise can stay flexible for later.";
+  const preparedReply = speechUtil.prepareSpokenReply(visibleReply);
+  const weatherReply = speechUtil.prepareSpokenReply(
+    "Rain is moving in. Head indoors now. If lightning is nearby, stay sheltered."
+  );
+  feature(
+    NAMES[12],
+    preparedReply ===
+      "Head to Pirates of the Caribbean now, it’s a ten minute wait. " +
+        "It is one of your must-dos. " +
+        speechUtil.SPOKEN_DETAIL_NOTE &&
+      preparedReply.length < visibleReply.length &&
+      weatherReply.includes("If lightning is nearby, stay sheltered.") &&
+      !weatherReply.includes(speechUtil.SPOKEN_DETAIL_NOTE)
+  );
+
+  /* 14 — structural label removal, EXECUTED. */
+  const prosePreserved =
+    speechUtil.prepareSpokenReply("The best move is Big Thunder Mountain right now.") ===
+      "The best move is Big Thunder Mountain right now." &&
+    speechUtil
+      .prepareSpokenReply("My recommendations are simple: head left, then rest.")
+      .includes("My recommendations are simple") &&
+    speechUtil
+      .prepareSpokenReply("Here is why this works for your family today.")
+      .includes("why this works");
+
+  const headingsRemoved =
+    speechUtil.prepareSpokenReply("BEST MOVE: Head to Pirates now.") === "Head to Pirates now." &&
+    speechUtil.prepareSpokenReply("Best Move — Head to Pirates now.") === "Head to Pirates now." &&
+    speechUtil.prepareSpokenReply("SMART BACKUP: Haunted Mansion is close.") ===
+      "Haunted Mansion is close." &&
+    speechUtil.prepareSpokenReply("RECOMMENDATION: Try Jungle Cruise.") === "Try Jungle Cruise.";
+
+  feature(NAMES[13], prosePreserved && headingsRemoved,
+    `prose preserved=${prosePreserved} headings removed=${headingsRemoved}`);
+
+  /* 15 — sentence-boundary correctness, EXECUTED. */
+  const toad = speechUtil.prepareSpokenReply(
+    "Mr. Toad's Wild Ride is posted at 15 minutes right now, and it sits beside where you are " +
+      "standing, so it is comfortably the cheapest win before the afternoon parade shuts the " +
+      "walkway. Head there first, then loop back."
+  );
+  const walk = speechUtil.prepareSpokenReply(
+    "You are 1.5 miles out. Walking that in the afternoon with a tired eight year old costs " +
+      "more than it gives back, so take the boat instead and save everyone's legs for tonight."
+  );
+
+  feature(
+    NAMES[14],
+    toad.startsWith("Mr. Toad's Wild Ride") &&
+      toad !== `Mr. ${speechUtil.SPOKEN_DETAIL_NOTE}` &&
+      walk.includes("1.5 miles") &&
+      !/(^|\s)5 miles/.test(walk),
+    `toad=${JSON.stringify(toad.slice(0, 40))} walk=${JSON.stringify(walk.slice(0, 40))}`
+  );
+
+  /* 16 — the ceiling holds against number expansion, EXECUTED. */
+  const expansionRaw =
+    "Here is the run of waits I can see for you at the moment: " +
+    Array.from({ length: 22 }, (_, index) => `option ${index} is 25 min`).join(", ") +
+    ".";
+  const expansionSpoken = speechUtil.prepareSpokenReply(expansionRaw);
+  const runOnSpoken = speechUtil.prepareSpokenReply(`Start here. ${"detail ".repeat(400)}`);
+
+  feature(
+    NAMES[15],
+    expansionRaw.length <= speechUtil.MAX_SPEECH_CHARS &&
+      expansionSpoken.length <= speechUtil.MAX_SPEECH_CHARS &&
+      speechUtil.validateSpeechText(expansionSpoken).ok === true &&
+      runOnSpoken.length <= speechUtil.MAX_SPEECH_CHARS &&
+      speechUtil.validateSpeechText(runOnSpoken).ok === true,
+    `raw=${expansionRaw.length} spoken=${expansionSpoken.length} runOn=${runOnSpoken.length}`
+  );
+
+  /* 17 — the guidance decision must be made before "97°F" becomes words. */
+  const temperatureOnly = speechUtil.prepareSpokenReply(
+    "It is 97°F right now. Take a break before the next ride. Sit for twenty minutes. " +
+      "Do not head back outside until everyone feels better."
+  );
+
+  feature(
+    NAMES[16],
+    temperatureOnly.includes("ninety-seven degrees Fahrenheit") &&
+      temperatureOnly.includes("Sit for twenty minutes.") &&
+      temperatureOnly.includes("Do not head back outside until everyone feels better.") &&
+      !temperatureOnly.includes(speechUtil.SPOKEN_DETAIL_NOTE),
+    JSON.stringify(temperatureOnly.slice(0, 70))
+  );
+
+  /* 18 — a spoken time carries no sentence-ending punctuation of its own. */
+  const meeting = speechUtil.prepareSpokenReply(
+    "Meet at 9 AM near Spaceship Earth before walking to the next attraction because it is the " +
+      "simplest place for the entire family to regroup without crossing the park again or losing " +
+      "the current low-wait opportunity. Haunted Mansion is the backup. Keep the rest visible."
+  );
+  const genuineBreak = speechUtil.prepareSpokenReply(
+    "Rope drop is at 9 AM. Haunted Mansion is the backup."
+  );
+
+  feature(
+    NAMES[17],
+    meeting.includes("nine in the morning near Spaceship Earth") &&
+      !/A\.M\./.test(meeting) &&
+      genuineBreak === "Rope drop is at nine in the morning. Haunted Mansion is the backup.",
+    JSON.stringify(meeting.slice(0, 60))
+  );
+
+  /* 19 — low-signal words only mean guidance in an instructional context. */
+  const piratesIndoor = speechUtil.prepareSpokenReply(
+    "Head to Pirates of the Caribbean now, it is a 10 min wait and fully indoor, which makes it " +
+      "the easiest win you have before the afternoon parade closes the walkway and pushes " +
+      "everyone toward the hub. Haunted Mansion is the backup. Keep Jungle Cruise flexible."
+  );
+  const tianaWaterRide = speechUtil.prepareSpokenReply(
+    "Tiana's Bayou Adventure is posted at 25 min and it is a water ride, so it is a good pick " +
+      "while the queue is short and everyone still has energy left for the rest of the " +
+      "afternoon. Big Thunder is the backup. Keep the rest on screen."
+  );
+  const instructionsPreserved = [
+    "Head indoors before the storm rolls through and stay put until it clears, then pick the " +
+      "next ride once the walkways drain and the crowds start moving again. Big Thunder is the backup.",
+    "Pick the nearest indoor show or restaurant first, then reassess once the band passes over " +
+      "the park and the walkways start to dry out. Big Thunder is the backup. Keep the rest visible.",
+    "Keep sipping water while you walk between the two lands so nobody runs down before the " +
+      "evening show starts, because that stretch has very little cover. Big Thunder is the backup.",
+  ].every((reply) => !speechUtil.prepareSpokenReply(reply).includes(speechUtil.SPOKEN_DETAIL_NOTE));
+
+  feature(
+    NAMES[18],
+    piratesIndoor.includes(speechUtil.SPOKEN_DETAIL_NOTE) &&
+      tianaWaterRide.includes(speechUtil.SPOKEN_DETAIL_NOTE) &&
+      instructionsPreserved,
+    `pirates shortened=${piratesIndoor.includes(speechUtil.SPOKEN_DETAIL_NOTE)} ` +
+      `tiana shortened=${tianaWaterRide.includes(speechUtil.SPOKEN_DETAIL_NOTE)} ` +
+      `instructions preserved=${instructionsPreserved}`
+  );
+
+  /* 20 — attributive durations are singular; standalone durations are plural. */
+  const durationCases = [
+    ["It is a 10 min wait.", "It is a ten minute wait."],
+    ["It is a 25-minute wait.", "It is a twenty-five minute wait."],
+    ["It is a 5 min walk.", "It is a five minute walk."],
+    ["It is a 1 min wait.", "It is a one minute wait."],
+    ["It is a 5\u201310 min wait.", "It is a five to ten minute wait."],
+    ["The wait is 10 min.", "The wait is ten minutes."],
+    ["Wait about 1 min.", "Wait about one minute."],
+    ["Expect between 5\u201310 min.", "Expect between five to ten minutes."],
+    ["Check back in 20 min later on.", "Check back in twenty minutes later on."],
+  ];
+  const firstWrong = durationCases.find(
+    ([input, expected]) => speechUtil.prepareSpokenReply(input) !== expected
+  );
+
+  feature(
+    NAMES[19],
+    !firstWrong &&
+      piratesIndoor.includes("a ten minute wait") &&
+      !piratesIndoor.includes("a ten minutes wait"),
+    firstWrong
+      ? `${JSON.stringify(firstWrong[0])} -> ${JSON.stringify(
+          speechUtil.prepareSpokenReply(firstWrong[0])
+        )}`
+      : "pirates grammar ok"
+  );
 }
 
 function runWiring() {
@@ -644,8 +822,12 @@ function runWiring() {
     "W8. (src) no chat-watching effect, entry metadata or spoken-index bookkeeping",
     !/useEffect\([^)]*\[[^\]]*\bchat\b[^\]]*\]\s*\)/.test(appCode) &&
       !/lastSpoken|spokenIndex|spokenOrigin|hasSpoken/i.test(appCode) &&
-      // speech is started from the commit helper, once
-      (appCode.match(/speakReply\(entry\.content\)/g) || []).length === 1
+      // speech is started from the commit helper, once, and prepared only in the output layer
+      (appCode.match(/speakReply\(entry\.content\)/g) || []).length === 1 &&
+      (appCode.match(/prepareSpokenReply\(text\)/g) || []).length === 1 &&
+      // An unspeakable preparation must surface the existing failure copy
+      // rather than returning silently with no audio and no explanation.
+      /if \(!validated\.ok\) \{[\s\S]{0,320}?stopSpeech\(SPEECH_COPY\.failed\);/.test(appCode)
   );
 
   /* audio lifecycle */

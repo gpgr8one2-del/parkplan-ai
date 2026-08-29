@@ -44,9 +44,25 @@ import {
   synthesizeSpeechAudio,
   transcribeVoiceRecording,
 } from "../api";
-import { SPEECH_COPY } from "../utils/voiceSpeech";
+import {
+  SPEECH_COPY,
+  SPOKEN_DETAIL_NOTE,
+  validateSpeechText,
+} from "../utils/voiceSpeech";
 
 const DEFAULT_REPLY = "Head to Frontierland now.";
+// Deliberately free of weather/safety wording. Replies that mention shade,
+// water, sun or indoor options are preserved complete by design, so such a
+// fixture could not demonstrate shortening. That behaviour has its own test.
+const LONG_VISIBLE_REPLY =
+  "Head to Pirates of the Caribbean now — it’s a 10-minute wait, " +
+  "and one of your must-dos for today. After that, keep Haunted Mansion and Jungle Cruise " +
+  "on the screen as flexible backups while you decide whether the family wants another ride or a break.";
+
+/** The exact spoken rendering of LONG_VISIBLE_REPLY, asserted as a literal. */
+const LONG_SPOKEN_REPLY =
+  "Head to Pirates of the Caribbean now, it’s a ten minute wait, and one of your must-dos for today. " +
+  "I’ve put the rest of the details on your screen.";
 // Deliberately NOT an open-ended "what should we do next" phrasing: that is
 // intercepted by QUICK CHECK before the AI. The QUICK CHECK path is exercised
 // explicitly in its own describe block below.
@@ -332,13 +348,59 @@ describe("1-2. only voice-origin replies speak", () => {
 
     expect(assistantMessages()).toEqual([DEFAULT_REPLY]);
     expect(synthesizeSpeechAudio).toHaveBeenCalledTimes(1);
-    // Exactly the committed reply text is what gets spoken.
+    // A short already-natural reply needs no speech-only shortening.
     expect(synthesizeSpeechAudio).toHaveBeenCalledWith(DEFAULT_REPLY);
 
     expect(audioElements).toHaveLength(1);
     expect(audioElements[0].playCalls).toBe(1);
     expect(createdUrls).toHaveLength(1);
     expect(audioElements[0].src).toBe(createdUrls[0]);
+  });
+
+  test("a longer voice reply stays complete on screen but uses its shorter spoken rendering", async () => {
+    await mountApp();
+    await openTohiTab();
+
+    sendChatMessage.mockImplementationOnce(async () => ({ reply: LONG_VISIBLE_REPLY }));
+    await completeVoiceTurn();
+
+    // The complete answer stays on screen, unchanged.
+    expect(assistantMessages()).toEqual([LONG_VISIBLE_REPLY]);
+
+    // The spoken rendering is asserted as a LITERAL. Comparing against another
+    // call to prepareSpokenReply would let a defect in preparation satisfy both
+    // sides of the assertion at once.
+    expect(synthesizeSpeechAudio).toHaveBeenCalledTimes(1);
+    expect(synthesizeSpeechAudio).toHaveBeenCalledWith(LONG_SPOKEN_REPLY);
+    expect(LONG_SPOKEN_REPLY).toContain(SPOKEN_DETAIL_NOTE);
+    expect(LONG_SPOKEN_REPLY).not.toContain("Jungle Cruise");
+    expect(validateSpeechText(LONG_SPOKEN_REPLY).ok).toBe(true);
+  });
+
+  test("a reply that mentions shade or water is spoken complete, never summarized", async () => {
+    await mountApp();
+    await openTohiTab();
+
+    const heatReply =
+      "This is the window where families usually wait too long to cool down. " +
+      "Use water, AC, food, shade, or a seated show before the day gets harder. " +
+      "Big Thunder Mountain can wait until the sun drops.";
+    sendChatMessage.mockImplementationOnce(async () => ({ reply: heatReply }));
+    await completeVoiceTurn();
+
+    // The committed visible reply is the source of truth: TOHI's existing chat
+    // cleaning may already have trimmed it before speech ever sees it.
+    const visible = assistantMessages()[0];
+    const spoken = synthesizeSpeechAudio.mock.calls[0][0];
+
+    expect(spoken).toContain("Use water, AC, food, shade, or a seated show");
+    // Every sentence of the committed guidance survives into speech.
+    visible
+      .split(". ")
+      .map((fragment) => fragment.replace(/\.$/, "").trim())
+      .filter(Boolean)
+      .forEach((fragment) => expect(spoken).toContain(fragment));
+    expect(spoken).not.toContain(SPOKEN_DETAIL_NOTE);
   });
 
   test("a typed reply never requests speech", async () => {
