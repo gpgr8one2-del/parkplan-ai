@@ -272,6 +272,143 @@ const scenarios = [
     },
   },
   {
+    // The reported defect, on the UI side. Probability says light rain is very
+    // likely; it says nothing about thunder.
+    name: "99% chance of light rain is a Rain Watch, never a Storm Watch",
+    weather: {
+      ...baseWeather,
+      summary: "Rain possible soon",
+      stormMode: false,
+      currentPrecipitation: false,
+      rainRisk: 0.99,
+      precipitationProbability: 99,
+      precipitationIntensityInPerHr: 0,
+      weatherCode: 4200,
+      upcomingPrecipitation: true,
+      nextPrecipitationWindow: {
+        time: "2026-07-09T00:00:00Z",
+        summary: "Light rain",
+        rainRisk: 0.99,
+        precipitationProbability: 99,
+        precipitationIntensityInPerHr: 0,
+        weatherCode: 4200,
+      },
+    },
+    expected: {
+      mode: "rain",
+      label: "Rain Watch",
+      notLabel: "Storm Watch",
+    },
+  },
+  {
+    // 0.72 sat between the engine's old 0.70 promotion and this file's old
+    // 0.75 one, so the two halves of the product named it differently.
+    name: "0.72 light rain is a Rain Watch, in the band the two halves disagreed on",
+    weather: {
+      ...baseWeather,
+      summary: "Rain possible soon",
+      stormMode: false,
+      currentPrecipitation: false,
+      rainRisk: 0.72,
+      precipitationProbability: 72,
+      precipitationIntensityInPerHr: 0,
+      weatherCode: 4200,
+      upcomingPrecipitation: true,
+      nextPrecipitationWindow: {
+        time: "2026-07-09T00:00:00Z",
+        summary: "Light rain",
+        rainRisk: 0.72,
+        precipitationProbability: 72,
+        precipitationIntensityInPerHr: 0,
+        weatherCode: 4200,
+      },
+    },
+    expected: {
+      mode: "rain",
+      label: "Rain Watch",
+      notLabel: "Storm Watch",
+    },
+  },
+  {
+    name: "5% chance of thunderstorms is still a Storm Watch",
+    weather: {
+      ...baseWeather,
+      summary: "Cloudy",
+      stormMode: false,
+      currentPrecipitation: false,
+      rainRisk: 0.05,
+      precipitationProbability: 5,
+      precipitationIntensityInPerHr: 0,
+      weatherCode: 1001,
+      upcomingPrecipitation: true,
+      nextPrecipitationWindow: {
+        time: "2026-07-09T00:00:00Z",
+        summary: "Thunderstorm",
+        rainRisk: 0.05,
+        precipitationProbability: 5,
+        precipitationIntensityInPerHr: 0,
+        weatherCode: 8000,
+      },
+    },
+    expected: {
+      mode: "rain",
+      label: "Storm Watch",
+    },
+  },
+  {
+    name: "active light rain is named active, never a watch",
+    weather: {
+      ...baseWeather,
+      summary: "Light rain",
+      stormMode: false,
+      currentPrecipitation: true,
+      rainRisk: 0.99,
+      precipitationProbability: 99,
+      precipitationIntensityInPerHr: 0.02,
+      weatherCode: 4200,
+    },
+    expected: {
+      mode: "rain",
+      label: "Light Rain",
+      notLabel: "Rain Watch",
+    },
+  },
+  {
+    name: "active heavy rain is named heavy",
+    weather: {
+      ...baseWeather,
+      summary: "Heavy rain",
+      stormMode: false,
+      currentPrecipitation: true,
+      rainRisk: 0.5,
+      precipitationProbability: 50,
+      precipitationIntensityInPerHr: 0.4,
+      weatherCode: 4201,
+    },
+    expected: {
+      mode: "rain",
+      label: "Heavy Rain",
+    },
+  },
+  {
+    // No stormMode flag, no storm word anywhere — only the provider's code.
+    name: "active weather code 8000 is a storm without stormMode or summary prose",
+    weather: {
+      ...baseWeather,
+      summary: "",
+      stormMode: false,
+      currentPrecipitation: true,
+      rainRisk: 0.5,
+      precipitationProbability: 50,
+      precipitationIntensityInPerHr: 0.2,
+      weatherCode: 8000,
+    },
+    expected: {
+      mode: "storm",
+      label: "Storm Smart Mode",
+    },
+  },
+  {
     name: "clear comfortable weather",
     weather: {
       ...baseWeather,

@@ -181,11 +181,21 @@ describe("rain + keep it close proximity weighting", () => {
 
     expect(wet.bestMove?.name).toBe(dry.bestMove?.name);
 
-    // Rain lifts both indoor options, so the gap between them is unchanged.
+    // DELIBERATELY CHANGED. This used to assert the gap was identical wet and
+    // dry, which held only because the rain-recovery bonus read isSameArea() —
+    // a helper that counts an ADJACENT land as "same area", so both attractions
+    // collected the identical same-area figure regardless of where they were.
+    //
+    // The bonus now reads the structured landDistance bucket, so the attraction
+    // in the guest's own land is worth more than one a land over. The gap
+    // therefore moves, and that movement is the corrected behaviour.
+    //
+    // What this test is actually about is unchanged and still asserted below:
+    // without Keep It Close, rain adds no WALKING weight at all.
     const gap = (recs) =>
       cardFor(recs, "Under the Sea").recommendationScore -
       cardFor(recs, "Haunted Mansion").recommendationScore;
-    expect(gap(wet)).toBe(gap(dry));
+    expect(gap(wet)).not.toBe(gap(dry));
 
     for (const card of allCards(wet)) {
       expect(card.rainKeepCloseWalkModifier).toBe(0);
@@ -377,19 +387,32 @@ describe("rain + keep it close only counts precipitation that is falling", () =>
     expect(rainWatch.label).toBe("Rain Watch");
     expect(rainWatch.activeRain).toBe(false);
     expect(rainWatch.activeStorm).toBe(false);
-    // The trap: legacy says rain, structured says not yet.
-    expect(rainWatch.legacyRainActive).toBe(true);
+    // DELIBERATELY CHANGED. This used to assert `true` and was labelled "the
+    // trap: legacy says rain, structured says not yet" — it documented a defect
+    // rather than a requirement.
+    //
+    // A forecast PROBABILITY, however high, is not an observation that rain is
+    // falling. `currentPrecipitation: false` with `rainRisk: 0.99` is a Rain
+    // Watch, and treating it as active rain gave a dry park active-rain
+    // recovery scoring and walking penalties. isRainActive is now observation
+    // only; forecast awareness lives in forecastRainWatch, where it belongs.
+    expect(rainWatch.legacyRainActive).toBe(false);
+    expect(rainWatch.forecastRainWatch).toBe(true);
 
     const stormWatch = getRecommendationWeatherState(stormWatchWeather());
     expect(stormWatch.label).toBe("Storm Watch");
     expect(stormWatch.activeRain).toBe(false);
     expect(stormWatch.activeStorm).toBe(false);
-    expect(stormWatch.legacyRainActive).toBe(true);
+    // Same correction: a storm WATCH is a forecast, not falling precipitation.
+    expect(stormWatch.legacyRainActive).toBe(false);
+    expect(stormWatch.forecastStormWatch).toBe(true);
 
     const bare = getRecommendationWeatherState(bareRainRiskWeather());
     expect(bare.activeRain).toBe(false);
     expect(bare.activeStorm).toBe(false);
-    expect(bare.legacyRainActive).toBe(true);
+    // A bare rainRisk with nothing falling is the purest form of the same
+    // correction: probability alone can no longer assert active rain.
+    expect(bare.legacyRainActive).toBe(false);
   });
 
   /* 1. Active rain still produces the corrected ranking. */

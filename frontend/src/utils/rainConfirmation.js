@@ -153,10 +153,21 @@ export function buildRainConfirmationRecord({ episode, response, now }) {
     response,
     respondedAt,
 
-    // Only a "yes" ever steers recommendations, and only for a while.
+    // How long this answer steers DECISIONS, for both answers that describe
+    // conditions outside.
+    //
+    // A "not yet" used to carry no decision window at all, so it only silenced
+    // the prompt while every consumer carried on as before. That is the field
+    // report: the guest said it was not raining, the ranking did not change,
+    // and the Plan screen kept showing active-rain guidance.
+    //
+    // A "no" is shorter-lived than a "yes" on purpose: rain that has not
+    // started yet may well start, so the forecast resumes governing sooner.
     effectExpiresAt: isConfirmed
       ? respondedAt + RAIN_CONFIRMATION_TTL_MINUTES * MINUTE_MS
-      : null,
+      : isNotYet
+        ? respondedAt + RAIN_CONFIRMATION_NOT_YET_COOLDOWN_MINUTES * MINUTE_MS
+        : null,
 
     // null means "do not ask again for this episode at all".
     promptCooldownUntil: isNotYet
@@ -296,6 +307,59 @@ export function getActiveRainConfirmation({ episode, record, now } = {}) {
   if (time >= safeRecord.effectExpiresAt) return null;
 
   return safeRecord;
+}
+
+/**
+ * The live "not yet" answer that should currently colour decisions, or null.
+ *
+ * Mirrors getActiveRainConfirmation for the opposite answer. Same episode
+ * scoping, same expiry rules — the only difference is which response it accepts
+ * and what the caller layers onto the weather afterwards.
+ */
+export function getActiveRainNotYet({ episode, record, now } = {}) {
+  const safeRecord = normalizeRainConfirmationRecord(record);
+
+  if (!safeRecord) return null;
+  if (safeRecord.response !== RAIN_CONFIRMATION_RESPONSES.NOT_YET) return null;
+  if (!isRecordForEpisode(safeRecord, episode)) return null;
+  if (isRecordExpired(safeRecord, now)) return null;
+
+  const time = toTimestamp(now);
+  if (time == null) return null;
+
+  // A record written before "not yet" carried a decision window has none, and
+  // stays inert rather than being retro-applied.
+  if (safeRecord.effectExpiresAt == null) return null;
+  if (time >= safeRecord.effectExpiresAt) return null;
+
+  return safeRecord;
+}
+
+/**
+ * Layers a guest "not yet" over the forecast WITHOUT editing it.
+ *
+ * The mirror of applyRainConfirmationToWeather. `currentPrecipitation` — the
+ * field this codebase already treats as authoritative in BOTH directions —
+ * becomes false, and the provider's own value is preserved under
+ * `forecastCurrentPrecipitation`.
+ *
+ * `summary`, `rainRisk` and `nextPrecipitationWindow` pass through untouched.
+ * The forecast is neither erased nor falsified: it is still displayed, and a
+ * Rain Watch is still a Rain Watch. What changes is that a forecast probability
+ * can no longer assert that rain is falling when the guest has just looked
+ * outside and said it is not.
+ */
+export function applyRainNotYetToWeather(weather, notYet) {
+  if (!weather || !notYet) return weather;
+
+  return {
+    ...weather,
+    currentPrecipitation: false,
+    guestReportedNoRain: true,
+    guestReportedNoRainAt: notYet.respondedAt,
+    guestReportedNoRainExpiresAt: notYet.effectExpiresAt,
+    forecastCurrentPrecipitation: weather.currentPrecipitation ?? null,
+  };
 }
 
 /**

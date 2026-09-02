@@ -230,7 +230,13 @@ const scenarios = [
       activeRain: false,
       forecastStormWatch: true,
       forecastRainWatch: false,
-      legacyRainActive: true,
+      // DELIBERATELY CHANGED from true. The scenario name says "forecast-only",
+      // and nothing is falling — currentPrecipitation is false and the
+      // intensity is 0. It was only "active" because rainRisk >= 0.45 made it
+      // so, which is a probability asserting an observation. That is now
+      // rejected product behaviour: forecast awareness lives in
+      // forecastStormWatch, which this scenario already asserts is true.
+      legacyRainActive: false,
     },
   },
   {
@@ -276,12 +282,154 @@ const scenarios = [
       weatherCode: 4001,
     },
     expected: {
-      label: "Rain Active",
+      // DELIBERATELY CHANGED from "Rain Active". Falling rain is now named by
+      // what it is doing, so a light shower and a downpour can never share a
+      // label, and no active state borrows the word "Watch".
+      label: "Light Rain",
       activeStorm: false,
       activeRain: true,
+      activeRainSeverity: "light",
       forecastStormWatch: false,
       forecastRainWatch: false,
       legacyRainActive: true,
+    },
+  },
+  {
+    // The reported defect. 99% is a probability: it says light rain is very
+    // likely, not that thunder is likely.
+    name: "99% chance of light rain is a Rain Watch, never a Storm Watch",
+    weather: {
+      ...baseWeather,
+      summary: "Rain possible soon",
+      stormMode: false,
+      currentPrecipitation: false,
+      rainRisk: 0.99,
+      precipitationProbability: 99,
+      precipitationIntensityInPerHr: 0,
+      weatherCode: 4200,
+      upcomingPrecipitation: true,
+      nextPrecipitationWindow: {
+        time: "2026-07-09T00:00:00Z",
+        summary: "Light rain",
+        rainRisk: 0.99,
+        precipitationProbability: 99,
+        precipitationIntensityInPerHr: 0,
+        weatherCode: 4200,
+      },
+    },
+    expected: {
+      label: "Rain Watch",
+      phase: "forecast",
+      severity: "light",
+      activeStorm: false,
+      activeRain: false,
+      activeRainSeverity: "none",
+      forecastStormWatch: false,
+      forecastRainWatch: true,
+      legacyRainActive: false,
+    },
+  },
+  {
+    // Between the two thresholds this product used to disagree across: the
+    // engine promoted a storm at 0.70, the advice system at 0.75.
+    name: "0.72 light rain is a Rain Watch, in the band the two halves disagreed on",
+    weather: {
+      ...baseWeather,
+      summary: "Rain possible soon",
+      stormMode: false,
+      currentPrecipitation: false,
+      rainRisk: 0.72,
+      precipitationProbability: 72,
+      precipitationIntensityInPerHr: 0,
+      weatherCode: 4200,
+      upcomingPrecipitation: true,
+      nextPrecipitationWindow: {
+        time: "2026-07-09T00:00:00Z",
+        summary: "Light rain",
+        rainRisk: 0.72,
+        precipitationProbability: 72,
+        precipitationIntensityInPerHr: 0,
+        weatherCode: 4200,
+      },
+    },
+    expected: {
+      label: "Rain Watch",
+      forecastStormWatch: false,
+      forecastRainWatch: true,
+    },
+  },
+  {
+    // Low probability, explicit thunderstorm evidence. Severity comes from the
+    // evidence, so this is the stronger state despite the small number.
+    name: "5% chance of thunderstorms is still a Storm Watch",
+    weather: {
+      ...baseWeather,
+      summary: "Cloudy",
+      stormMode: false,
+      currentPrecipitation: false,
+      rainRisk: 0.05,
+      precipitationProbability: 5,
+      precipitationIntensityInPerHr: 0,
+      weatherCode: 1001,
+      upcomingPrecipitation: true,
+      nextPrecipitationWindow: {
+        time: "2026-07-09T00:00:00Z",
+        summary: "Thunderstorm",
+        rainRisk: 0.05,
+        precipitationProbability: 5,
+        precipitationIntensityInPerHr: 0,
+        weatherCode: 8000,
+      },
+    },
+    expected: {
+      label: "Storm Watch",
+      phase: "forecast",
+      severity: "storm",
+      forecastStormWatch: true,
+      forecastRainWatch: false,
+    },
+  },
+  {
+    // Weather code 8000 with no stormMode flag and no storm word anywhere.
+    name: "active weather code 8000 is a storm without stormMode or summary prose",
+    weather: {
+      ...baseWeather,
+      summary: "",
+      stormMode: false,
+      currentPrecipitation: true,
+      rainRisk: 0.5,
+      precipitationProbability: 50,
+      precipitationIntensityInPerHr: 0.2,
+      weatherCode: 8000,
+    },
+    expected: {
+      label: "Storm Smart Mode",
+      phase: "active",
+      severity: "storm",
+      activeStorm: true,
+      activeRain: true,
+      activeRainSeverity: "storm",
+    },
+  },
+  {
+    name: "active heavy rain is named heavy, not light and not a watch",
+    weather: {
+      ...baseWeather,
+      summary: "Heavy rain",
+      stormMode: false,
+      currentPrecipitation: true,
+      rainRisk: 0.5,
+      precipitationProbability: 50,
+      precipitationIntensityInPerHr: 0.4,
+      weatherCode: 4201,
+    },
+    expected: {
+      label: "Heavy Rain",
+      phase: "active",
+      severity: "heavy",
+      activeStorm: false,
+      activeRain: true,
+      activeRainSeverity: "heavy",
     },
   },
 ];
