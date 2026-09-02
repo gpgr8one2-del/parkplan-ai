@@ -360,7 +360,12 @@ describe("rain confirmation — the three answers", () => {
     const state = getRecommendationWeatherState(confirmed);
     expect(state.activeRain).toBe(true);
     expect(state.forecastRainWatch).toBe(false);
-    expect(state.label).toBe("Rain Active");
+    // DELIBERATELY CHANGED from "Rain Active". The active states now name what
+    // is happening — "Light Rain" / "Heavy Rain" — so a watch is never used for
+    // falling rain and a sprinkle is never dressed up as a downpour. A guest
+    // confirmation carries no intensity evidence, so light is the honest read.
+    expect(state.label).toBe("Light Rain");
+    expect(state.activeRainSeverity).toBe("light");
 
     // And the recommendations follow: rain-sensitive outdoor picks give way.
     const before = recommend(weather);
@@ -1004,9 +1009,8 @@ describe("rain confirmation — existing Rain Mode behaviour", () => {
   });
 
   test("confirmation does not claim a storm the guest never reported", () => {
-    // Storm class comes from the window's RISK, not from any storm word in the
-    // current display summary — the production shape where the display string
-    // stays "Rain possible soon". Confirming rain here must not invent thunder.
+    // The production shape where the display string stays "Rain possible soon".
+    // Confirming rain here must not invent thunder.
     const weather = rainWatchWeather({
       nextPrecipitationWindow: {
         time: "2026-06-27T18:00:00-04:00",
@@ -1016,7 +1020,16 @@ describe("rain confirmation — existing Rain Mode behaviour", () => {
         weatherCode: 4001,
       },
     });
-    expect(getRecommendationWeatherState(weather).forecastStormWatch).toBe(true);
+    // DELIBERATELY CHANGED from forecastStormWatch === true. This case used to
+    // be a Storm Watch solely because the window carried rainRisk 0.8, and the
+    // old comment here said so out loud: "Storm class comes from the window's
+    // RISK". That is the defect. The window says "Rain", weather code 4001 —
+    // ordinary rain — and no probability may promote that to a storm.
+    const forecastState = getRecommendationWeatherState(weather);
+    expect(forecastState.forecastStormWatch).toBe(false);
+    expect(forecastState.forecastRainWatch).toBe(true);
+    expect(forecastState.label).toBe("Rain Watch");
+
     const confirmed = applyRainConfirmationToWeather(
       weather,
       getActiveRainConfirmation({

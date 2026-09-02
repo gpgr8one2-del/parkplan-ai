@@ -1,12 +1,22 @@
 import { getWaterOptionsForLand } from "../parkAmenities";
+import {
+  WEATHER_LABELS,
+  WEATHER_PHASE,
+  WEATHER_SEVERITY,
+  classifyWeather,
+} from "./weatherClassification";
 
 /* -------------------------------------------------------------------------- */
 /* Current weather condition helpers                                          */
+/*                                                                            */
+/* Every question about what the weather IS now comes from the shared          */
+/* classifier in weatherClassification.js — the same one the recommendation    */
+/* engine reads. This file used to answer those questions itself, and the two  */
+/* answers drifted: a forecast became a STORM here at rainRisk >= 0.75 and in  */
+/* the engine at >= 0.7, so any value in between produced two different        */
+/* weather states in one product. Both thresholds are gone; probability can no */
+/* longer make anything a storm at any value.                                  */
 /* -------------------------------------------------------------------------- */
-
-function getWeatherSummary(weather) {
-  return String(weather?.summary || "").toLowerCase();
-}
 
 function getEffectiveTempF(weather) {
   return (
@@ -14,79 +24,6 @@ function getEffectiveTempF(weather) {
     weather?.heatIndexF ??
     weather?.tempF ??
     null
-  );
-}
-
-function isCurrentlyRaining(weather) {
-  if (weather?.currentPrecipitation === true ) return true;
-  if (weather?.currentPrecipitation === false) return false;
-
-  const summary = getWeatherSummary(weather);
-
-  return (
-    summary.includes("rain") ||
-    summary.includes("drizzle") ||
-    summary.includes("shower") ||
-    summary.includes("showers")
-  );
-}
-
-function isCurrentlyStorming(weather) {
-  const summary = getWeatherSummary(weather);
-
-  return (
-    weather?.stormMode === true ||
-    summary.includes("thunderstorm") ||
-    summary.includes("storm") ||
-    summary.includes("lightning")
-  );
-}
-
-function getUpcomingPrecipitationWindow(weather) {
-  const rainWindow = weather?.nextPrecipitationWindow;
-
-  if (!weather?.upcomingPrecipitation && !rainWindow) {
-    return null;
-  }
-
-  if (!rainWindow || typeof rainWindow !== "object") {
-    return weather?.upcomingPrecipitation ? {} : null;
-  }
-
-  const summary = String(rainWindow.summary || "").toLowerCase();
-  const rainRisk = Number(rainWindow.rainRisk || 0);
-  const probability = Number(rainWindow.precipitationProbability || 0);
-  const intensity = Number(rainWindow.precipitationIntensityInPerHr || 0);
-
-  if (
-    weather?.upcomingPrecipitation === true ||
-    intensity > 0 ||
-    probability >= 40 ||
-    rainRisk >= 0.4 ||
-    summary.includes("rain") ||
-    summary.includes("drizzle") ||
-    summary.includes("shower") ||
-    summary.includes("storm") ||
-    summary.includes("thunder") ||
-    summary.includes("lightning")
-  ) {
-    return rainWindow;
-  }
-
-  return null;
-}
-
-function isUpcomingStorming(rainWindow) {
-  const summary = String(rainWindow?.summary || "").toLowerCase();
-  const rainRisk = Number(rainWindow?.rainRisk || 0);
-
-  return (
-    rainRisk >= 0.75 ||
-    summary.includes("thunderstorm") ||
-    summary.includes("storm") ||
-    summary.includes("thunder") ||
-    summary.includes("lightning") ||
-    summary.includes("heavy rain")
   );
 }
 
@@ -102,48 +39,65 @@ function buildUpcomingPrecipitationMessage(rainWindow, upcomingStorm) {
   return `Rain may move near the park soon.${probabilityText} Keep your plan flexible, favor indoor or covered options nearby, and be careful before walking across the park for outdoor rides.`;
 }
 
+/**
+ * The user-facing weather state.
+ *
+ * `mode` is unchanged and stays the compatibility surface every existing
+ * consumer keys off. `label`, `phase` and `severity` are the honest part:
+ *
+ *   forecast light rain     -> Rain Watch          (forecast / light)
+ *   forecast storm          -> Storm Watch         (forecast / storm)
+ *   active light rain       -> Light Rain          (active   / light)
+ *   active heavy rain       -> Heavy Rain          (active   / heavy)
+ *   active thunderstorm     -> Storm Smart Mode    (active   / storm)
+ *
+ * Rain that is FALLING is never called a watch, and a light-rain forecast is
+ * never called a storm however likely it is.
+ */
 export function getWeatherMode(weather) {
   const effectiveTempF = getEffectiveTempF(weather);
-  const rainRisk = weather?.rainRisk ?? 0;
-  const stormMode = isCurrentlyStorming(weather);
-  const currentlyRaining = isCurrentlyRaining(weather);
-  const activeStormMode = stormMode && currentlyRaining;
-  const nearbyStormMode = stormMode && !currentlyRaining;
-  const upcomingRainWindow = getUpcomingPrecipitationWindow(weather);
-  const upcomingStorm = nearbyStormMode || isUpcomingStorming(upcomingRainWindow);
+  const classification = classifyWeather(weather);
 
-  if (activeStormMode) {
+  if (classification.activeStorm) {
     return {
       mode: "storm",
-      label: "Storm Smart Mode",
+      label: WEATHER_LABELS.STORM_ACTIVE,
+      phase: classification.phase,
+      severity: classification.severity,
       message:
         "Active storms or lightning may pause outdoor and mixed attractions. Stay indoors, avoid open paths and bodies of water, and wait the worst of it out before heading back out.",
     };
   }
 
-  if (currentlyRaining) {
+  if (classification.activeRain) {
+    const heavy = classification.severity === WEATHER_SEVERITY.HEAVY;
+
     return {
       mode: "rain",
-      label: "Rain Watch",
-      message:
-        "Rain is being reported at the park right now. Keep your plan flexible, lean on indoor options nearby, and be careful before walking across the park for outdoor rides.",
+      label: heavy ? WEATHER_LABELS.HEAVY_RAIN_ACTIVE : WEATHER_LABELS.LIGHT_RAIN_ACTIVE,
+      phase: classification.phase,
+      severity: classification.severity,
+      message: heavy
+        ? "Heavy rain is falling at the park right now. Outdoor and mixed attractions may pause, so lean on indoor options nearby and hold off on long exposed walks."
+        : "Light rain is falling at the park right now. Most attractions keep running — a poncho and a nearby or covered option are usually enough while it passes.",
     };
   }
 
-  if (upcomingRainWindow || nearbyStormMode) {
-    return {
-      mode: "rain",
-      label: upcomingStorm ? "Storm Watch" : "Rain Watch",
-      message: buildUpcomingPrecipitationMessage(upcomingRainWindow, upcomingStorm),
-    };
-  }
+  if (classification.forecastStormWatch || classification.forecastRainWatch) {
+    const upcomingStorm = classification.forecastStormWatch;
+    const rainWindow = classification.precipitationWindow;
 
-  if (rainRisk >= 0.55) {
+    // A watch carried only by an elevated current risk has no window to quote.
+    const message = rainWindow
+      ? buildUpcomingPrecipitationMessage(rainWindow, upcomingStorm)
+      : "Rain chances are elevated near the park. Outdoor rides may pause briefly. Keep your plan flexible and lean on indoor options nearby.";
+
     return {
       mode: "rain",
-      label: "Rain Watch",
-      message:
-        "Rain chances are elevated near the park. Outdoor rides may pause briefly. Keep your plan flexible and lean on indoor options nearby.",
+      label: upcomingStorm ? WEATHER_LABELS.STORM_WATCH : WEATHER_LABELS.RAIN_WATCH,
+      phase: classification.phase,
+      severity: classification.severity,
+      message,
     };
   }
 
@@ -151,6 +105,8 @@ export function getWeatherMode(weather) {
     return {
       mode: "extreme_heat",
       label: "Extreme Heat Mode",
+      phase: WEATHER_PHASE.NONE,
+      severity: WEATHER_SEVERITY.NONE,
       message:
         "It feels very hot out. A water stop, shade break, indoor attraction, or longer resort reset can help keep everyone feeling good.",
     };
@@ -160,6 +116,8 @@ export function getWeatherMode(weather) {
     return {
       mode: "hot",
       label: "Heat Smart Mode",
+      phase: WEATHER_PHASE.NONE,
+      severity: WEATHER_SEVERITY.NONE,
       message:
         "It feels warm enough to plan smarter. A quick water stop, shade break, or indoor attraction can help keep everyone feeling good.",
     };
@@ -169,6 +127,8 @@ export function getWeatherMode(weather) {
     return {
       mode: "warm",
       label: "Hydration Reminder",
+      phase: WEATHER_PHASE.NONE,
+      severity: WEATHER_SEVERITY.NONE,
       message:
         "It feels warm out. A quick water stop or indoor break between attractions can help keep the day smooth.",
     };
@@ -177,6 +137,8 @@ export function getWeatherMode(weather) {
   return {
     mode: "normal",
     label: "Good Conditions",
+    phase: WEATHER_PHASE.NONE,
+    severity: WEATHER_SEVERITY.NONE,
     message: "Weather looks manageable right now.",
   };
 }
@@ -720,7 +682,75 @@ function getStormSuggestions(parkId, currentLand) {
   return [...common, ...(byPark[parkId] || [])];
 }
 
-function getRainSuggestions(parkId, currentLand) {
+/**
+ * Rain advice, proportional to what is actually happening.
+ *
+ * Three distinct sets, because one set for all rain was the defect: a forecast
+ * watch produced "crossing the park through rain", "pack ponchos" and
+ * "rain-safe picks", telling a family to behave as though a downpour were
+ * underway when nothing had started.
+ *
+ * @param severity "forecast" | "light" | "heavy"
+ *   forecast — nothing is falling. Calm, preparatory only. It must never claim
+ *              the guest is walking through rain, that attractions are being
+ *              affected, or that a downpour is underway.
+ *   light    — a sprinkle. A modest nearby/covered lean, not severe-weather
+ *              behaviour. Also the conservative default whenever rain is
+ *              confirmed but its severity is unknown.
+ *   heavy    — the full indoor, exposure and shutdown-risk guidance.
+ *
+ * `forecast_storm` is the fourth: still nothing falling, so still preparatory,
+ * but a storm ahead is worth more caution than a shower ahead. It must not
+ * describe a storm as though it were overhead.
+ */
+function getForecastRainSuggestions(parkId, currentLand) {
+  return [
+    {
+      title: "Keep the plan flexible",
+      text: "Rain is in the forecast but nothing is falling yet. No need to change what you are doing — just keep the next hour loose in case a shower arrives.",
+    },
+    {
+      title: "Have rain gear handy",
+      text: "Ponchos are easier than umbrellas around queues. Worth having them where you can reach them rather than at the bottom of the bag.",
+    },
+    {
+      title: "Think twice about a long outdoor commitment",
+      text: "If a shower looks close, this is a good moment to favor something nearby rather than starting a long walk to an exposed attraction.",
+    },
+  ];
+}
+
+function getForecastStormSuggestions(parkId, currentLand) {
+  return [
+    {
+      title: "Storm risk ahead — not yet overhead",
+      text: "Thunderstorms are in the forecast but nothing has started. Nothing to change right now; it is just a good hour to stay where you can get under cover quickly.",
+    },
+    {
+      title: "Ponchos where you can reach them",
+      text: "Ponchos are easier than umbrellas around queues, and storms here arrive fast once they arrive.",
+    },
+    {
+      title: "Hold off on a long exposed walk",
+      text: "With a storm possible, favor something nearby over starting a long walk to an open-air attraction you may not get to finish.",
+    },
+  ];
+}
+
+function getLightRainSuggestions(parkId, currentLand) {
+  return [
+    {
+      title: "Light rain right now",
+      text: "It is sprinkling. Most attractions keep running, so there is no need to change the plan — a nearby or covered option is just an easy call while it passes.",
+    },
+    {
+      title: "Ponchos, not umbrellas",
+      text: "Umbrellas are awkward around queues and rides. A poncho keeps you moving without storage hassle.",
+    },
+  ];
+}
+
+function getHeavyRainSuggestions(parkId, currentLand) {
   const common = [
     {
       title: "Lean on indoor rides",
@@ -749,6 +779,14 @@ function getRainSuggestions(parkId, currentLand) {
   };
 
   return [...common, ...(byPark[parkId] || [])];
+}
+
+function getRainSuggestions(parkId, currentLand, severity = "heavy") {
+  if (severity === "forecast") return getForecastRainSuggestions(parkId, currentLand);
+  if (severity === "forecast_storm") return getForecastStormSuggestions(parkId, currentLand);
+  if (severity === "light") return getLightRainSuggestions(parkId, currentLand);
+
+  return getHeavyRainSuggestions(parkId, currentLand);
 }
 
 function getHeatSuggestions(parkId, severity, currentLand) {
@@ -818,6 +856,21 @@ function getWarmSuggestions(parkId, currentLand) {
   return suggestions;
 }
 
+/**
+ * Which advice set a "rain" weather mode should draw from.
+ *
+ * Read straight off the shared classification, so the advice on screen can
+ * never describe a different kind of weather than the ranking used. There is
+ * no local re-derivation here and no probability anywhere in it.
+ */
+function getRainAdviceSeverity(weatherMode) {
+  if (weatherMode?.phase !== WEATHER_PHASE.ACTIVE) {
+    return weatherMode?.severity === WEATHER_SEVERITY.STORM ? "forecast_storm" : "forecast";
+  }
+
+  return weatherMode?.severity === WEATHER_SEVERITY.HEAVY ? "heavy" : "light";
+}
+
 export function getRecoverySuggestions({ parkId, weather, currentLand }) {
   const weatherMode = getWeatherMode(weather);
 
@@ -825,7 +878,8 @@ export function getRecoverySuggestions({ parkId, weather, currentLand }) {
     case "storm":
       return getStormSuggestions(parkId, currentLand);
     case "rain":
-      return getRainSuggestions(parkId, currentLand);
+      // Structured evidence decides the severity, never probability.
+      return getRainSuggestions(parkId, currentLand, getRainAdviceSeverity(weatherMode));
     case "extreme_heat":
       return getHeatSuggestions(parkId, "extreme_heat", currentLand);
     case "hot":

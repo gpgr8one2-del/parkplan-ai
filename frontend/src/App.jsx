@@ -34,10 +34,12 @@ import { DataStatusBanner } from "./components/DataStatusBanner";
 import { getNextBestRides, getRecommendationWeatherState } from "./rideRecommendations";
 import {
   applyRainConfirmationToWeather,
+  applyRainNotYetToWeather,
   buildRainConfirmationRecord,
   canAskRainConfirmation,
   clearStoredRainConfirmation,
   getActiveRainConfirmation,
+  getActiveRainNotYet,
   getRainConfirmationEpisode,
   isRainConfirmationObsolete,
   readStoredRainConfirmation,
@@ -4104,12 +4106,29 @@ function App() {
     });
   }, [rainConfirmationEpisode, rainConfirmationRecord, locationFreshnessNow]);
 
-  // What the engine reasons about. Identical to `weather` unless the family has
-  // confirmed rain, and even then the forecast fields are carried through
-  // untouched — `weather` itself is never edited and stays the display source.
+  const activeRainNotYet = useMemo(() => {
+    return getActiveRainNotYet({
+      episode: rainConfirmationEpisode,
+      record: rainConfirmationRecord,
+      now: locationFreshnessNow,
+    });
+  }, [rainConfirmationEpisode, rainConfirmationRecord, locationFreshnessNow]);
+
+  // What every decision layer reasons about. Identical to `weather` unless the
+  // family has answered the rain prompt, and even then the forecast fields are
+  // carried through untouched — `weather` itself is never edited and stays the
+  // display source.
+  //
+  // Both answers land here. Only "yes" used to, which is why a "not yet"
+  // silenced the prompt and changed nothing else. The two are mutually
+  // exclusive by construction: one stored record carries one response.
   const weatherForDecisions = useMemo(() => {
-    return applyRainConfirmationToWeather(weather, activeRainConfirmation);
-  }, [weather, activeRainConfirmation]);
+    if (activeRainConfirmation) {
+      return applyRainConfirmationToWeather(weather, activeRainConfirmation);
+    }
+
+    return applyRainNotYetToWeather(weather, activeRainNotYet);
+  }, [weather, activeRainConfirmation, activeRainNotYet]);
 
   // Never during onboarding, without a real park, without a finished profile,
   // or before a plan has actually been generated.
@@ -4193,9 +4212,12 @@ function App() {
   // the recommendations memo it reads from.
   const planShowsSetupState = recommendations.needsLocation || !currentLand;
 
+  // Reads the decision weather so the copy on screen agrees with the ranking.
+  // Previously this read the raw forecast, which is why the Plan screen kept
+  // showing active-rain guidance after the guest said it was not raining.
   const weatherMode = useMemo(() => {
-    return getWeatherMode(weather);
-  }, [weather]);
+    return getWeatherMode(weatherForDecisions);
+  }, [weatherForDecisions]);
 
   const planningParkLiveRides = activePark === planningPark ? parkData?.rides || [] : [];
   const planningRecommendations = activePark === planningPark ? recommendations : {};
@@ -4327,13 +4349,14 @@ function App() {
     });
   }, [familyProfile?.tripContext, planningPark]);
 
+  // Same source as the ranking, so Plan recovery advice cannot disagree with it.
   const recoverySuggestions = useMemo(() => {
     return getRecoverySuggestions({
       parkId: activePark,
-      weather,
+      weather: weatherForDecisions,
       currentLand,
     });
-  }, [activePark, weather, currentLand]);
+  }, [activePark, weatherForDecisions, currentLand]);
 
   const closeTimeLabel = useMemo(() => {
     return formatCloseTimeLabel(activePark);
@@ -5645,7 +5668,9 @@ function App() {
           tripPlan: tripPlanState,
           mustDoExperiences: tripPlanState?.mustDoExperiences || [],
           dayGamePlan,
-          weather,
+          // The decision weather, so TOHI answers about the same conditions the
+          // cards were ranked against. The forecast fields ride along untouched.
+          weather: weatherForDecisions,
           weatherMode,
           recommendations,
           // Connection-status entries are app notices, not things TOHI said, so

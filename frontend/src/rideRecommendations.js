@@ -69,6 +69,12 @@ import {
   getLandDistance,
 } from "./parkProximity";
 import { getParkCloseTime, getParkHoursForDate } from "./parkHours";
+import {
+  WEATHER_SEVERITY,
+  classifyWeather,
+  isPrecipitationFalling,
+  isStormOverhead,
+} from "./utils/weatherClassification";
 
 const DEFAULT_POPULARITY = 40;
 const WALK_BUFFER_MINUTES = 15;
@@ -191,107 +197,99 @@ function getEffectiveTempF(weather) {
   );
 }
 
+/**
+ * Is precipitation ACTUALLY falling right now?
+ *
+ * Delegated to the shared classifier so this file and the weather-advice system
+ * cannot drift apart about what "raining" means. `currentPrecipitation` is
+ * authoritative in BOTH directions — it is also the field the guest's "yes" /
+ * "not yet" answer sets — and the display summary is consulted only when the
+ * provider sends no reading at all, because production emits "Rain possible
+ * soon" precisely when nothing is measured.
+ */
 function isCurrentlyRaining(weather) {
-  // `currentPrecipitation` is a direct reading of whether anything is falling
-  // right now, and it is authoritative in BOTH directions. weatherAdvice and
-  // homeArt already treat it that way; this helper looked only at the display
-  // summary, which is a forecast-facing string.
-  //
-  // That mattered because the provider mapping deliberately emits "Rain
-  // possible soon" / "Rain possible nearby" exactly when precipitation is NOT
-  // measured. Matching "rain" in those strings reported active rain during the
-  // precise state that is only a forecast watch.
-  //
-  // The summary fallback still applies when the field is absent or unknown, so
-  // providers that never send it behave as before, and an upcoming window is
-  // unaffected either way — forecast watches are derived from
-  // `nextPrecipitationWindow`, not from this helper.
-  if (weather?.currentPrecipitation === true) return true;
-  if (weather?.currentPrecipitation === false) return false;
-
-  const summary = getWeatherSummary(weather);
-
-  return (
-    summary.includes("rain") ||
-    summary.includes("drizzle") ||
-    summary.includes("shower") ||
-    summary.includes("showers")
-  );
+  return isPrecipitationFalling(weather);
 }
 
+/**
+ * Storm conditions over the park right now — the gate every outdoor-attraction
+ * safety rule below is hung on, unchanged except that the provider's own
+ * thunderstorm weather code (8000) now counts as storm evidence on its own.
+ * `stormMode` and the summary text can both be absent from a valid payload, and
+ * a thunderstorm must not go unrecognised because prose was missing.
+ */
 function isCurrentlyStorming(weather) {
-  const summary = getWeatherSummary(weather);
-
-  if (weather?.currentPrecipitation === false) {
-    return false;
-  }
-
-  return (
-    weather?.stormMode === true ||
-    summary.includes("thunderstorm") ||
-    summary.includes("storm") ||
-    summary.includes("lightning")
-  );
+  return isStormOverhead(weather);
 }
+
+/**
+ * Is precipitation ACTUALLY falling right now?
+ *
+ * Observation only. This used to read
+ * `isCurrentlyRaining(weather) || rainRisk >= 0.45`, which meant a forecast
+ * PROBABILITY created active rain: a provider reading of
+ * `currentPrecipitation: false` with `rainRisk: 0.99` produced active-rain
+ * scoring, recovery bonuses and walking penalties while nothing was falling.
+ *
+ * Probability measures likelihood, not observation. A 99% chance of rain is a
+ * Rain Watch, not rain. Forecast awareness is kept — and kept separate — in the
+ * structured `forecastRainWatch` / `forecastStormWatch` fields, which is where
+ * anything that should respond to a likely shower belongs.
+ *
+ * The evidence that DOES count: the provider reporting precipitation, or the
+ * guest confirming it. `isCurrentlyRaining` already honours both, in both
+ * directions.
+ */
 function isRainActive(weather) {
-  return isCurrentlyRaining(weather) || (weather?.rainRisk ?? 0) >= 0.45;
+  return isCurrentlyRaining(weather);
 }
 
-function getPrecipitationWindow(weather = {}) {
-  const window = weather?.nextPrecipitationWindow;
+/** Severity of rain that is actually falling. Never inferred from probability. */
+const RAIN_SEVERITY = WEATHER_SEVERITY;
 
-  if (window && typeof window === "object") {
-    return window;
-  }
-
-  return weather?.upcomingPrecipitation === true ? {} : null;
+/**
+ * How hard it is raining right now, from structured evidence only.
+ *
+ * Delegated to the shared classifier, which reads the thunderstorm code (8000),
+ * the heavy-rain code (4201) and explicit heavy-rain text. It previously asked
+ * `isCurrentlyStorming()`, which did not itself inspect code 8000, so a
+ * thunderstorm carrying only its code was scored as ordinary rain.
+ *
+ * Probability is deliberately not consulted: it says how LIKELY rain is, not
+ * how hard it falls. When rain is confirmed but severity is unknown — most
+ * importantly when the GUEST confirms it and the provider has no reading — the
+ * answer is LIGHT, the conservative default.
+ */
+function getActiveRainSeverity(weather) {
+  return classifyWeather(weather).activeRainSeverity;
 }
 
-function isStormyPrecipitationWindow(window = {}) {
-  const summary = getWeatherSummary(window);
-  const weatherCode = Number(window?.weatherCode);
-  const rainRisk = Number(window?.rainRisk);
-
-  return Boolean(
-    summary.includes("thunderstorm") ||
-      summary.includes("storm") ||
-      summary.includes("lightning") ||
-      summary.includes("heavy rain") ||
-      weatherCode === 8000 ||
-      weatherCode === 4201 ||
-      (Number.isFinite(rainRisk) && rainRisk >= 0.7)
-  );
-}
-
+/**
+ * The structured weather reading the whole engine shares with the UI.
+ *
+ * Every field comes from the one classifier in utils/weatherClassification.js,
+ * so the engine and the weather-advice system can no longer hold incompatible
+ * definitions of forecast-versus-active, rain-versus-storm, or light-versus-
+ * heavy. `label` is the same user-facing state name the Plan screen shows.
+ *
+ * `legacyRainActive` is kept for telemetry continuity only. It is now exactly
+ * "precipitation is falling"; it used to be `... || rainRisk >= 0.45`, which is
+ * what let a dry park collect active-rain scoring.
+ */
 export function getRecommendationWeatherState(weather = {}) {
-  const currentlyRaining = isCurrentlyRaining(weather);
-  const currentlyStorming = isCurrentlyStorming(weather);
-  const activePrecipitation = weather?.currentPrecipitation === true || currentlyRaining;
-  const activeStorm = currentlyStorming && activePrecipitation;
-  const activeRain = activePrecipitation;
-  const precipitationWindow = getPrecipitationWindow(weather);
-  const forecastStormWatch =
-    !activeStorm && !activeRain && Boolean(precipitationWindow) && isStormyPrecipitationWindow(precipitationWindow);
-  const forecastRainWatch =
-    !activeStorm && !activeRain && Boolean(precipitationWindow) && !forecastStormWatch;
-  const legacyRainActive = isRainActive(weather);
+  const classification = classifyWeather(weather);
 
   return {
-    activeStorm,
-    activeRain,
-    forecastStormWatch,
-    forecastRainWatch,
-    legacyRainActive,
-    hasUpcomingPrecipitation: Boolean(precipitationWindow),
-    label: activeStorm
-      ? "Storm Smart Mode"
-      : forecastStormWatch
-        ? "Storm Watch"
-        : forecastRainWatch
-          ? "Rain Watch"
-          : activeRain
-            ? "Rain Active"
-            : "Normal",
+    activeStorm: classification.activeStorm,
+    activeRain: classification.activeRain,
+    activeRainSeverity: classification.activeRainSeverity,
+    forecastStormWatch: classification.forecastStormWatch,
+    forecastRainWatch: classification.forecastRainWatch,
+    legacyRainActive: isRainActive(weather),
+    hasUpcomingPrecipitation: classification.hasUpcomingPrecipitation,
+    phase: classification.phase,
+    severity: classification.severity,
+    label: classification.label || "Normal",
   };
 }
 
@@ -353,26 +351,44 @@ const STORM_PREFERENCE_EXPOSED_LEAN = {
   we_handle_it: 0,
 };
 
-function hasStructuredRainOrStormConcern(weatherState) {
+/**
+ * Is precipitation actually falling, so an indoor preference is about NOW?
+ *
+ * Split from the forecast case below. Previously one predicate covered both,
+ * which is why a guest who said "not yet" still saw forecast-driven indoor
+ * preference reshaping the ranking: `forecastRainWatch` kept it true.
+ */
+function hasActiveRainOrStormConcern(weatherState) {
   if (!weatherState) return false;
 
-  // Every one of these is an existing field of the existing structured result.
-  // No new threshold is introduced: `legacyRainActive` is this file's own
-  // long-standing rainRisk determination, already used for slot filtering.
-  return Boolean(
-    weatherState.activeStorm ||
-      weatherState.activeRain ||
-      weatherState.forecastStormWatch ||
-      weatherState.forecastRainWatch ||
-      weatherState.legacyRainActive
-  );
+  return Boolean(weatherState.activeStorm || weatherState.activeRain);
 }
 
+/**
+ * Is rain merely FORECAST? A watch is worth a small lean toward not committing
+ * to something far and exposed — it is not a reason to reshape the day.
+ */
+function hasForecastRainOrStormConcern(weatherState) {
+  if (!weatherState) return false;
+
+  return Boolean(weatherState.forecastStormWatch || weatherState.forecastRainWatch);
+}
+
+/**
+ * Indoor/exposed lean while precipitation is actually falling.
+ *
+ * Gated on OBSERVED precipitation only. It previously also fired on
+ * forecastRainWatch / forecastStormWatch / legacyRainActive, so after a guest
+ * said "not yet" this kept reshaping the ranking for any family with a storm
+ * preference — a farther indoor attraction with a worse wait could still
+ * displace a closer, better one. Forecast awareness now lives in its own
+ * modifier below, with its own telemetry field.
+ */
 function getStormPreferenceModifier({ meta, familyProfile, weatherState }) {
   // Missing or malformed attraction data stays neutral rather than being guessed at.
   if (!meta) return 0;
 
-  if (!hasStructuredRainOrStormConcern(weatherState)) return 0;
+  if (!hasActiveRainOrStormConcern(weatherState)) return 0;
 
   const preference = familyProfile?.stormTolerance;
   if (typeof preference !== "string") return 0;
@@ -398,22 +414,86 @@ function getStormPreferenceModifier({ meta, familyProfile, weatherState }) {
   return Number.isFinite(lean) ? lean : 0;
 }
 
-function getLocalRainRecoveryModifier(meta, weather, currentLand, proximityModifier) {
-  const stormActive = isCurrentlyStorming(weather);
-  const rainActive = isRainActive(weather);
+/**
+ * A deliberately small lean while rain is only FORECAST.
+ *
+ * Kept separate from getStormPreferenceModifier so the two can never be
+ * confused: this one has its own telemetry field, and it is sized so it cannot
+ * reorder a ranking on its own. It exists so a family who has asked to avoid
+ * storms is not sent to commit to a distant exposed attraction with a shower
+ * approaching — nothing more.
+ *
+ * A quarter of the active lean, rounded toward zero, so it can break a genuine
+ * tie and little else.
+ */
+const FORECAST_PREFERENCE_DIVISOR = 4;
 
-  if (!stormActive && !rainActive) return 0;
-  if (!isRainRecoveryRide(meta)) return 0;
+function getForecastRainPreferenceModifier({ meta, familyProfile, weatherState }) {
+  if (!meta) return 0;
 
-  const local = isSameArea(meta, currentLand, proximityModifier);
+  // Active rain owns the decision; this never stacks on top of it.
+  if (hasActiveRainOrStormConcern(weatherState)) return 0;
+  if (!hasForecastRainOrStormConcern(weatherState)) return 0;
 
-  if (stormActive) {
-    if (local) return 28;
-    return 8;
+  const preference = familyProfile?.stormTolerance;
+  if (typeof preference !== "string") return 0;
+
+  const indoorFriendly = meta.environment === "indoor" || meta.hasAC === true;
+
+  if (indoorFriendly) {
+    const lean = STORM_PREFERENCE_INDOOR_LEAN[preference];
+    return Number.isFinite(lean) ? Math.trunc(lean / FORECAST_PREFERENCE_DIVISOR) : 0;
   }
 
-  if (local) return 22;
-  return 4;
+  const isExplicitlyExposed =
+    meta.environment === "outdoor" || meta.environment === "mixed";
+
+  if (!isExplicitlyExposed) return 0;
+
+  const lean = STORM_PREFERENCE_EXPOSED_LEAN[preference];
+  return Number.isFinite(lean) ? Math.trunc(lean / FORECAST_PREFERENCE_DIVISOR) : 0;
+}
+
+/**
+ * Indoor-recovery advantage while precipitation is actually falling.
+ *
+ * Two corrections over the previous version:
+ *
+ * 1. LOCALITY. It used isSameArea(), which treats any positive proximity
+ *    modifier as "same area" — an adjacent land scores +3, so a neighbouring
+ *    land collected the full same-area bonus. It now reads the structured
+ *    landDistance bucket, the same evidence the ranking and the explanation
+ *    text use, so only the guest's own area gets the same-area figure.
+ *
+ * 2. PROPORTION. It applied one figure to every kind of rain. A sprinkle now
+ *    earns a modest lean toward covered options; the strong indoor pull is
+ *    reserved for heavy rain and storms, where being outside genuinely costs
+ *    the family something.
+ *
+ * Zero unless rain is OBSERVED — a forecast, however likely, earns nothing here.
+ */
+const RAIN_RECOVERY_BY_SEVERITY = Object.freeze({
+  [RAIN_SEVERITY.STORM]: { same: 28, adjacent: 12, elsewhere: 8 },
+  [RAIN_SEVERITY.HEAVY]: { same: 22, adjacent: 10, elsewhere: 4 },
+  // A sprinkle is worth noticing, not worth reshaping the day around.
+  [RAIN_SEVERITY.LIGHT]: { same: 10, adjacent: 4, elsewhere: 0 },
+});
+
+function getLocalRainRecoveryModifier(meta, weather, currentLand, parkId) {
+  const severity = getActiveRainSeverity(weather);
+  if (severity === RAIN_SEVERITY.NONE) return 0;
+  if (!isRainRecoveryRide(meta)) return 0;
+
+  const weights = RAIN_RECOVERY_BY_SEVERITY[severity];
+  if (!weights) return 0;
+
+  const landDistance =
+    meta && currentLand ? getLandDistance(parkId, currentLand, meta.land) : null;
+
+  if (landDistance === "same") return weights.same;
+  if (landDistance === "adjacent") return weights.adjacent;
+
+  return weights.elsewhere;
 }
 
 /**
@@ -431,12 +511,12 @@ function getLocalRainRecoveryModifier(meta, weather, currentLand, proximityModif
  * falling and the low walking tolerance is set, so dry weather and other walking
  * tolerances keep their existing scores exactly.
  *
- * The gate reads the structured weatherState, not isRainActive(). That legacy
- * helper is true at rainRisk >= 0.45, which is a forecast signal: Rain Watch and
- * Storm Watch both carry legacyRainActive === true while nothing is falling yet.
- * Weighing a walk against rain that has not arrived would move recommendations
- * outside the active-rain case, and would let the card claim it is raining when
- * the app knows it is not. Only activeRain / activeStorm count here.
+ * The gate reads the structured weatherState, not forecast probability.
+ * legacyRainActive is now observation-only, so forecast-only Rain Watch and
+ * Storm Watch remain neutral for this walking weight. Weighing a walk against
+ * rain that has not arrived would move recommendations outside the active-rain
+ * case and let the card claim it is raining when the app knows it is not. Only
+ * observed or guest-confirmed activeRain / activeStorm count here.
  *
  * Values are deliberately smaller than a typical great-value wait advantage, so
  * a genuinely extreme wait gap can still win the walk.
@@ -2580,10 +2660,19 @@ export function getNextBestRides({
       waitValueStatus
     );
 
+    // Split out of the park-strategy sum so the severity classification is
+    // inspectable on its own. The total is unchanged.
+    const localRainRecoveryModifier = getLocalRainRecoveryModifier(
+      meta,
+      weather,
+      currentLand,
+      parkId
+    );
+
     const parkStrategyModifier =
       getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand) +
       getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand) +
-      getLocalRainRecoveryModifier(meta, weather, currentLand, proximityModifier);
+      localRainRecoveryModifier;
 
     const crossParkRealityModifier = getCrossParkRealityModifier({
       parkId,
@@ -2633,6 +2722,14 @@ export function getNextBestRides({
 
     // Applied exactly once, per attraction. Neutral (0) unless the structured
     // weather gate above is active.
+    // Forecast-only lean, named separately so it can never be mistaken for
+    // active-rain behaviour in telemetry or in a test.
+    const forecastRainPreferenceModifier = getForecastRainPreferenceModifier({
+      meta,
+      familyProfile,
+      weatherState,
+    });
+
     const stormPreferenceModifier = getStormPreferenceModifier({
       meta,
       familyProfile,
@@ -2698,6 +2795,7 @@ export function getNextBestRides({
       closestAnchorOpportunityModifier +
       mustDoModifier +
       stormPreferenceModifier +
+      forecastRainPreferenceModifier +
       rainKeepCloseWalkModifier +
       areaGravityModifier +
       crossParkSumCapAdjustment -
@@ -2739,6 +2837,11 @@ export function getNextBestRides({
       // Exposed alongside the existing per-attraction scoring information so the
       // real value is inspectable rather than inferred from the total.
       stormPreferenceModifier,
+      forecastRainPreferenceModifier,
+      // Exposed so the severity classification is inspectable rather than
+      // inferred from a total: probability must never change this value.
+      localRainRecoveryModifier,
+      activeRainSeverity: getActiveRainSeverity(weather),
       rainKeepCloseWalkModifier,
       rainKeepCloseActive,
       areaGravityModifier,
