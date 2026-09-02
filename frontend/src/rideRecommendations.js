@@ -448,6 +448,134 @@ const RAIN_KEEP_CLOSE_WALK_WEIGHT = {
   far: -40,
 };
 
+/**
+ * AREA GRAVITY — the touring cost of walking away from a good local option.
+ *
+ * The field case this exists for: a guest who had just ridden Space Mountain,
+ * with PeopleMover at 5 minutes and Buzz at 20 minutes in Tomorrowland, was
+ * sent to Fantasyland for a 5-minute Little Mermaid. Measured against the real
+ * engine, the scores were Little Mermaid 92, Buzz 88, PeopleMover 81.
+ *
+ * The only force opposing that walk was getProximityModifier's flat
+ * same = +10 / adjacent = +3. A 7-point differential is smaller than ordinary
+ * popularity-driven variation in base score between a filler-tier attraction
+ * and a headliner one land over, so geography lost to base score every time.
+ * That is park ping-pong: the walk cost the family more than the wait saved.
+ *
+ * WHAT THIS IS, precisely: a bounded advantage that a local attraction has to
+ * EARN. It applies only when the attraction is in the guest's own area AND its
+ * wait is genuinely good measured against that attraction's own normal range —
+ * the existing wait-value system, not a new database. Conditions that make
+ * walking expensive raise it, through the structured inputs the engine already
+ * reads.
+ *
+ * WHY A SAME-AREA BONUS RATHER THAN A CROSS-AREA PENALTY: when no local option
+ * is good enough, nothing is boosted, so cross-land recommendations behave
+ * exactly as they did before and a guest can never be trapped in a land. A
+ * penalty would have to know what else is on offer, and would push families
+ * away from a better area simply for being elsewhere.
+ */
+const AREA_GRAVITY = {
+  /**
+   * Same-area advantage by how good the local wait is for that attraction.
+   *
+   * Sized from two measured constraints, not chosen for feel.
+   *
+   * FLOOR: the field case measured a 4-point gap between the local great value
+   * (Buzz, 88) and the cross-land one (Little Mermaid, 92). GREAT_VALUE must
+   * clear that for the walk to stop being recommended.
+   *
+   * CEILING: it must stay well under MUST_DO_MODIFIERS.must_do (12), and under
+   * the margins the existing must-do contracts rely on. A goal the family chose
+   * must always outrank a touring-efficiency preference — verified by the
+   * must-do weighting suite, which fails outright at larger values.
+   *
+   * The result roughly doubles the geographic differential that existed before:
+   * same-area advantage goes from proximity's +10 (7 clear of an adjacent land)
+   * to +16, a 13-point lead. Enough to hold a family in a good area, small
+   * enough that it never becomes the deciding factor on its own.
+   *
+   * NORMAL is a nudge, not a decision: a local option merely inside its usual
+   * range should tip a close call, never override a real advantage elsewhere.
+   */
+  GREAT_VALUE: 6,
+  GOOD_VALUE: 4,
+  AT_OR_BELOW_NORMAL: 2,
+
+  /**
+   * Conditions that raise the real cost of an unnecessary walk. Each is small
+   * on its own; together they express "this family should not be crossing the
+   * park right now" without any one of them being decisive.
+   *
+   * Rain with "Keep choices nearby" is deliberately ABSENT: that case is
+   * already carried by RAIN_KEEP_CLOSE_WALK_WEIGHT, and counting it here too
+   * would double-weight the same preference.
+   */
+  HEAT: 3,
+  KEEP_IT_CLOSE: 4,
+  RELAXED_PACE: 2,
+
+  /**
+   * Ceiling on the whole modifier, conditions included.
+   *
+   * Chosen so that even with heat, Keep It Close and a relaxed pace all stacked,
+   * area gravity stays below MUST_DO_MODIFIERS.must_do (12). That is what keeps
+   * every escape valve genuine rather than nominal — a must-do, a closing-time
+   * play or a nearest-anchor opportunity all outrank it by construction — and it
+   * is verified by the must-do weighting suite rather than assumed.
+   */
+  MAX: 9,
+
+  /** Temperature at which walking starts costing a family real energy. */
+  HEAT_TEMP_F: 87,
+};
+
+/** Wait quality that makes a local option "good enough" to stay for. */
+const AREA_GRAVITY_BY_WAIT_STATUS = {
+  great_value: AREA_GRAVITY.GREAT_VALUE,
+  good_value: AREA_GRAVITY.GOOD_VALUE,
+  // Inside its usual range: no reason to walk away from it, but no bargain
+  // either. Above normal, bad value and plan-ahead earn nothing at all, which
+  // is what lets another area win when the local option has gone soft.
+  normal: AREA_GRAVITY.AT_OR_BELOW_NORMAL,
+};
+
+function getAreaGravityModifier({
+  landDistance,
+  waitValueStatus,
+  weather,
+  familyProfile,
+}) {
+  // No usable location means no area to have gravity toward.
+  //
+  // NOTE: gravity is deliberately NOT gated on whether the family has unfinished
+  // must-dos. An earlier version suppressed it whenever any must-do was pending,
+  // which meant a single saved attraction that was closed, missing from the live
+  // pool, height-ineligible, deferred for later or merely "nice if possible"
+  // switched off touring efficiency across the entire park. Must-dos are
+  // protected where they are actually at risk — at slot selection — not by
+  // blanking a scoring signal for every other attraction.
+  if (landDistance !== "same") return 0;
+
+  const base = AREA_GRAVITY_BY_WAIT_STATUS[waitValueStatus?.status];
+  if (!base) return 0;
+
+  let mod = base;
+
+  const effectiveTempF = getEffectiveTempF(weather);
+  const hotForThisFamily =
+    effectiveTempF != null &&
+    (effectiveTempF >= AREA_GRAVITY.HEAT_TEMP_F ||
+      (familyProfile?.heatSensitivity === "high" &&
+        effectiveTempF >= AREA_GRAVITY.HEAT_TEMP_F - 5));
+
+  if (hotForThisFamily) mod += AREA_GRAVITY.HEAT;
+  if (familyProfile?.walkingTolerance === "low") mod += AREA_GRAVITY.KEEP_IT_CLOSE;
+  if (familyProfile?.pace === "relaxed") mod += AREA_GRAVITY.RELAXED_PACE;
+
+  return Math.min(mod, AREA_GRAVITY.MAX);
+}
+
 function isRainKeepCloseActive(weatherState, familyProfile) {
   if (familyProfile?.walkingTolerance !== "low") return false;
   if (!weatherState) return false;
@@ -1459,7 +1587,15 @@ function getFirstUnusedRide(pool, usedIds) {
  * weather blocks are untouched, and must-dos held back for a better window are
  * excluded both by goNowPositivePool and by the explicit guard below.
  */
-function getMustDoPreferredBackup(pool, usedIds) {
+/**
+ * Picks from a pool while protecting an eligible must-do from being displaced.
+ *
+ * Used for BOTH immediate slots. Best Move needs it as much as Smart Backup:
+ * measured in the Adventureland case, area gravity lifted a non-must-do above a
+ * must-do for Best Move, which cascaded and pushed the second must-do off the
+ * shortlist entirely. Protecting only the backup slot left that untouched.
+ */
+function getMustDoPreferredPick(pool, usedIds) {
   const topPick = getFirstUnusedRide(pool, usedIds);
   if (!topPick) return null;
   if (topPick.mustDoModifier > 0) return topPick;
@@ -1474,9 +1610,42 @@ function getMustDoPreferredBackup(pool, usedIds) {
 
   if (!mustDoPick) return topPick;
 
-  const scoreGap = topPick.recommendationScore - mustDoPick.recommendationScore;
+  // Area gravity is a touring-efficiency preference, not a reason to lose a
+  // slot the must-do rules already earned. It is discounted from the COMPETITOR
+  // here so a nearby convenience cannot outbid a goal the family chose, while
+  // still counting everywhere else — including for a must-do that happens to be
+  // local, which keeps its own gravity.
+  //
+  // This replaces an earlier global suppression that switched gravity off for
+  // every non-must-do whenever any must-do was pending, however unavailable.
+  const competitorScore =
+    topPick.recommendationScore - (topPick.areaGravityModifier || 0);
+  const scoreGap = competitorScore - mustDoPick.recommendationScore;
 
   return scoreGap <= mustDoPick.mustDoModifier ? mustDoPick : topPick;
+}
+
+/**
+ * A same-area recovery option good enough to compete for an immediate slot.
+ *
+ * The field case: standing in Tomorrowland, PeopleMover at 5 minutes scored 87
+ * and never reached ANY slot, while Little Mermaid — the same 5-minute wait, a
+ * land away — took Best Move at 92. Equal wait, and the closer option vanished.
+ *
+ * The reason was pool ordering, not score: recovery attractions are held back
+ * from the primary pools so they cannot hijack a plan, and the backup slot only
+ * reached them after every primary. That protection is right in general and is
+ * kept for Best Move — a filler attraction still never leads. What it should
+ * not do is make a genuine local walk-on invisible.
+ *
+ * "Good enough" reuses the existing wait-value system: the wait must be better
+ * than this attraction's own normal range. A recovery option merely inside, or
+ * above, its usual range earns nothing here and stays deferred as before.
+ */
+function isStrongLocalRecoveryOption(ride) {
+  const status = ride?.waitValueStatus?.status;
+
+  return status === "great_value" || status === "good_value";
 }
 
 function isFillerOrRecovery(ride) {
@@ -2058,6 +2227,9 @@ function buildReason(ride, parts) {
   // to false when there is no usable location, matching the previous result for
   // that case (proximityModifier is 0 without a location).
   const isNearby = parts.landDistance === "same";
+  // Whether area gravity actually contributed, taken from the same value the
+  // score used rather than re-derived from the land label.
+  const areaGravityApplied = (parts.areaGravityModifier || 0) > 0;
   // Rain + "Keep choices nearby". These drive the ranking when active, so the
   // card should say so rather than leaving the walk unexplained.
   const keepCloseCostsAWalk =
@@ -2138,6 +2310,12 @@ function buildReason(ride, parts) {
     secondary = " Staying close makes sense while it's raining.";
   } else if (keepCloseCostsAWalk) {
     secondary = " This one would mean more walking in the rain.";
+  } else if (areaGravityApplied && !isCrosspark) {
+    // Says out loud the factor that actually decided the ranking: the walk is
+    // saved because this area still has something worth doing. Gated on the
+    // same landDistance the score used, so the card cannot claim proximity the
+    // ranking did not credit.
+    secondary = " Saves a walk while this area still has a good option.";
   } else if (isCrosspark && waitStatus !== "great_value") {
     secondary = " Requires crossing the park.";
   } else if (isModeratelyFar) {
@@ -2473,6 +2651,16 @@ export function getNextBestRides({
       landDistance,
     });
 
+    // Earned advantage for a good option in the guest's own area. Zero unless
+    // the attraction is same-area AND its wait is good for that attraction, so
+    // it cannot trap a family where nothing local is worth staying for.
+    const areaGravityModifier = getAreaGravityModifier({
+      landDistance,
+      waitValueStatus,
+      weather,
+      familyProfile,
+    });
+
     // V1.1: cross-park sum cap. Applied as a separate adjustment so individual
     // modifier values stay readable for telemetry.
     //
@@ -2511,6 +2699,7 @@ export function getNextBestRides({
       mustDoModifier +
       stormPreferenceModifier +
       rainKeepCloseWalkModifier +
+      areaGravityModifier +
       crossParkSumCapAdjustment -
       (heightWarning ? 16 : 0);
 
@@ -2552,6 +2741,7 @@ export function getNextBestRides({
       stormPreferenceModifier,
       rainKeepCloseWalkModifier,
       rainKeepCloseActive,
+      areaGravityModifier,
       landDistance,
       reason: buildReason(ride, {
         baseScore,
@@ -2561,6 +2751,7 @@ export function getNextBestRides({
         landDistance,
         rainKeepCloseWalkModifier,
         rainKeepCloseActive,
+        areaGravityModifier,
         waitValueStatus,
         familyProfileModifier,
         rawFamilyProfileModifier,
@@ -2672,10 +2863,17 @@ export function getNextBestRides({
         nearbySoftRecoveryRides
       );
 
-      const sameAreaPick = primarySameAreaRides[0] || null;
+      // Best Move goes through the same must-do protection Smart Backup uses,
+      // so area gravity can order the local field but cannot lift a convenience
+      // above a goal the family chose.
+      const noneUsed = new Set();
+      const sameAreaPick = getMustDoPreferredPick(primarySameAreaRides, noneUsed);
 
       const nearbyPick =
-        primaryNearbyRides.find((ride) => ride !== sameAreaPick) || null;
+        getMustDoPreferredPick(
+          primaryNearbyRides.filter((ride) => ride !== sameAreaPick),
+          noneUsed
+        ) || null;
 
       const usedBeforeSoftRecovery = getUsedRideIds(sameAreaPick, nearbyPick);
       const localSoftRecoveryPick = getFirstUnusedRide(
@@ -2704,11 +2902,30 @@ export function getNextBestRides({
 
       const usedAfterBest = getUsedRideIds(bestMove);
 
+      // A strong same-area recovery option competes for Smart Backup ON SCORE
+      // alongside the same-area primaries, rather than waiting behind every
+      // primary in the park. Ordering by score is what lets meaningful proximity
+      // break a tie: an equal-wait attraction a land away no longer wins simply
+      // because a closer one was classified as recovery.
+      //
+      // Ordering only — nothing is added to any score here, and a recovery
+      // option that is not genuinely good never enters this pool.
+      const strongLocalRecoveryRides = sameAreaSoftRecoveryRides.filter(
+        isStrongLocalRecoveryOption
+      );
+
+      const sameAreaBackupPool =
+        strongLocalRecoveryRides.length > 0
+          ? uniqueRidesById(primarySameAreaRides, strongLocalRecoveryRides).sort(
+              (a, b) => b.recommendationScore - a.recommendationScore
+            )
+          : primarySameAreaRides;
+
       const backup = needsLocation || blockGoNowForPreOpen
         ? null
         : (
-            getMustDoPreferredBackup(primarySameAreaRides, usedAfterBest) ||
-            getMustDoPreferredBackup(primaryNearbyRides, usedAfterBest) ||
+            getMustDoPreferredPick(sameAreaBackupPool, usedAfterBest) ||
+            getMustDoPreferredPick(primaryNearbyRides, usedAfterBest) ||
             getFirstUnusedRide(localSoftRecoveryRides, usedAfterBest) ||
             getFirstUnusedRide(primaryPositivePool, usedAfterBest) ||
             null
