@@ -587,25 +587,30 @@ describe("accuracy tiers behave as documented", () => {
     expect(state.landKey).toBe(GALAXYS_EDGE);
   });
 
-  test("an intermediate initial reading is confirmed before it establishes", () => {
-    // Usable, but imprecise enough to have landed in a neighbouring land. This
-    // is the distinction TRUSTED_ACCURACY_METERS exists to draw.
+  test("an intermediate initial reading establishes immediately", () => {
+    // Usable but imprecise. It used to be held for confirmation, which is what
+    // broke "Use My Location": that control takes exactly ONE reading, and
+    // ordinary in-park accuracy sits in this band, so the tap did nothing.
+    //
+    // With no established land there is nothing for confirmation to protect —
+    // holding buys no safety and costs the guest all location.
     const intermediate = T.TRUSTED_ACCURACY_METERS + 20;
     expect(intermediate).toBeLessThan(T.MAX_ACCURACY_METERS);
 
     const { state, decisions } = runSequence([
       reading(GALAXYS_EDGE, { accuracy: intermediate, at: 0, now: 0 }),
-      reading(GALAXYS_EDGE, { accuracy: intermediate, at: 4000, now: 4000 }),
     ]);
 
-    expect(decisions[0].action).toBe("hold");
-    expect(decisions[0].candidateLandKey).toBe(GALAXYS_EDGE);
-    expect(decisions[1].action).toBe("accept");
-    expect(decisions[1].reason).toBe("established");
+    expect(decisions[0].action).toBe("accept");
+    // The reason still records how firm the fix was.
+    expect(decisions[0].reason).toBe("established_intermediate");
     expect(state.landKey).toBe(GALAXYS_EDGE);
   });
 
-  test("two intermediate readings disagreeing establish nothing", () => {
+  test("a first intermediate reading at a border establishes and a change still waits", () => {
+    // The worst version of the regression: at a land border the proposed land
+    // alternates, so the pending counter reset on every sample and location
+    // could never establish at all.
     const intermediate = T.TRUSTED_ACCURACY_METERS + 20;
 
     const { state, actions } = runSequence([
@@ -613,8 +618,10 @@ describe("accuracy tiers behave as documented", () => {
       reading(TOY_STORY_LAND, { accuracy: intermediate, at: 4000, now: 4000 }),
     ]);
 
-    expect(actions).toEqual(["hold", "hold"]);
-    expect(state.landKey).toBeNull();
+    // Established on the first reading, and the disagreeing second one is a
+    // CHANGE — which still needs confirmation, exactly as designed.
+    expect(actions).toEqual(["accept", "hold"]);
+    expect(state.landKey).toBe(GALAXYS_EDGE);
   });
 
   test("an intermediate reading still refreshes an already-established land", () => {
