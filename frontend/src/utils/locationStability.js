@@ -59,9 +59,16 @@ export const LOCATION_STABILITY_THRESHOLDS = {
   // Beyond this uncertainty radius a reading cannot resolve neighbouring lands,
   // so it is not evidence about which land the guest is in.
   MAX_ACCURACY_METERS: 90,
-  // Within this radius a reading is precise enough to establish a land on its
-  // own. Between the two an "intermediate" reading is usable but must be
-  // confirmed before it establishes anything — see reduceLocationReading.
+  // Within this radius a reading is precise enough to be called a trusted fix.
+  // Between the two an "intermediate" reading is usable but less certain.
+  //
+  // What that distinction does NOT mean: an intermediate reading may establish
+  // the INITIAL location on its own when no trusted land exists yet, because
+  // there is nothing for confirmation to protect and holding would leave the
+  // guest with no location at all.
+  //
+  // Confirmation is required when a reading — intermediate or trusted —
+  // proposes CHANGING an already-established land. See reduceLocationReading.
   TRUSTED_ACCURACY_METERS: 40,
   // Fixes older than this are treated as history, not as "where you are now".
   // Chosen well above the watch's own maximumAge (5 s) so ordinary readings are
@@ -334,27 +341,40 @@ export function reduceLocationReading(state, reading, now = Date.now()) {
     };
   }
 
-  // Establishing the first land, with nothing to fall back to. A high-quality
-  // reading resolves immediately — that is what TRUSTED_ACCURACY_METERS is for,
-  // and it is what makes a fresh arrival (or a park change) resolve promptly.
-  // An intermediate reading is real but imprecise enough to have landed in a
-  // neighbouring land, so it is confirmed first rather than acted on alone.
+  // Establishing the first land, with nothing to fall back to.
+  //
+  // Any reading that has reached this point is already usable: it is inside
+  // MAX_ACCURACY_METERS, the detector backs it with high or medium confidence,
+  // it is fresh, and it is not out of order. With no established land there is
+  // nothing for confirmation to protect — so requiring a second reading here
+  // does not guard a good fix, it simply leaves the guest with NO location.
+  //
+  // That was the regression: "Use My Location" takes exactly one reading, and
+  // ordinary in-park accuracy is frequently between TRUSTED_ACCURACY_METERS and
+  // MAX_ACCURACY_METERS. Every such tap held, so the tap appeared to do nothing.
+  // Worse, at a land border the proposed land alternates, so pendingCount reset
+  // to 1 on every sample and location could never establish at all.
+  //
+  // Confirmation still governs land CHANGES below, which is the case it was
+  // written for: there, holding preserves something the guest can still use.
+  // The reason distinguishes the two qualities so a caller can tell how firm
+  // the first fix was.
   if (!current.landKey) {
-    if (isTrustedAccuracy) {
-      return {
-        state: {
-          ...current,
-          landKey: reading.landKey,
-          acceptedSampleAt: timestamp,
-          pendingLandKey: null,
-          pendingCount: 0,
-          pendingFirstAt: null,
-        },
-        decision: { action: "accept", reason: "established", landKey: reading.landKey },
-      };
-    }
-    // Falls through to the confirmation path below, which treats an unconfirmed
-    // land the same way whether it is the first one or a change.
+    return {
+      state: {
+        ...current,
+        landKey: reading.landKey,
+        acceptedSampleAt: timestamp,
+        pendingLandKey: null,
+        pendingCount: 0,
+        pendingFirstAt: null,
+      },
+      decision: {
+        action: "accept",
+        reason: isTrustedAccuracy ? "established" : "established_intermediate",
+        landKey: reading.landKey,
+      },
+    };
   }
 
   // A different land. One reading is not enough — this is the flip the field

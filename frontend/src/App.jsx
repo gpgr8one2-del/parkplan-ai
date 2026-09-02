@@ -3338,11 +3338,25 @@ function App() {
           String(err?.message || "").toLowerCase().includes("denied");
 
         if (!silent) {
-          setLocationError(
-            denied
-              ? "Location permission was denied. No problem — pick the closest area manually."
-              : "I could not get your location right now. Pick the closest area manually."
-          );
+          // Each browser failure gets guidance a guest can act on. A timeout is
+          // worth retrying where a denied permission is not, and saying so is
+          // the difference between a control that explains itself and one that
+          // looks like it did nothing.
+          let guidance =
+            "I could not get your location right now. Pick the closest area manually.";
+
+          if (denied) {
+            guidance =
+              "Location permission was denied. No problem — pick the closest area manually.";
+          } else if (err?.code === 3) {
+            guidance =
+              "Finding your location is taking longer than usual. Try again in a moment, or pick the closest area manually.";
+          } else if (err?.code === 2) {
+            guidance =
+              "Your location is not available right now. Move somewhere more open and try again, or pick the closest area manually.";
+          }
+
+          setLocationError(guidance);
         }
 
         if (denied) {
