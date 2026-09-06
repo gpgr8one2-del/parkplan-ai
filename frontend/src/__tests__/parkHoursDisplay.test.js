@@ -39,7 +39,7 @@ import {
   locationAtLand,
   mildWeather,
   neutralTimeContext,
-} from "./fixtures/testHelpers";
+} from "../testUtils/testHelpers";
 
 /* -------------------------------------------------------------------------- */
 /* Fixed instants — Orlando is UTC-4 in August (EDT), UTC-5 in January (EST)   */

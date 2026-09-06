@@ -17,7 +17,7 @@ import {
   locationAtLand,
   locationUnknown,
   neutralTimeContext,
-} from "./fixtures/testHelpers";
+} from "../testUtils/testHelpers";
 
 const PARK = "magic_kingdom";
 const STABLE_TEST_NOW = new Date("2026-01-15T15:00:00.000Z");

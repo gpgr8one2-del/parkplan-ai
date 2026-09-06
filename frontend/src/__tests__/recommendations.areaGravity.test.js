@@ -21,7 +21,7 @@ import {
   mildWeather,
   neutralTimeContext,
   stormWeather,
-} from "./fixtures/testHelpers";
+} from "../testUtils/testHelpers";
 
 const IN_TOMORROWLAND = () => gpsAtAnchor("tomorrowland", "Space Mountain");
 

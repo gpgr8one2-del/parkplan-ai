@@ -25,7 +25,7 @@ import {
   mildWeather,
   stormWeather,
   neutralTimeContext,
-} from "./fixtures/testHelpers";
+} from "../testUtils/testHelpers";
 
 const PARK = "magic_kingdom";
 const STABLE_TEST_NOW = new Date("2026-06-27T16:00:00-04:00");

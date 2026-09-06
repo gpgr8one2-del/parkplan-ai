@@ -5,7 +5,7 @@ import {
   locationAtLand,
   mildWeather,
   neutralTimeContext,
-} from "./fixtures/testHelpers";
+} from "../testUtils/testHelpers";
 
 const PRE_OPEN_NOW = new Date("2026-01-15T08:00:00-05:00");
 const EARLY_ENTRY_NOW = new Date("2026-01-15T08:40:00-05:00");

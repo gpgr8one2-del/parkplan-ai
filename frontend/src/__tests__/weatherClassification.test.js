@@ -36,7 +36,7 @@ import {
   adultOnlyFamily,
   gpsAtAnchor,
   neutralTimeContext,
-} from "./fixtures/testHelpers";
+} from "../testUtils/testHelpers";
 
 const PARK = "magic_kingdom";
 const LAND = "tomorrowland";

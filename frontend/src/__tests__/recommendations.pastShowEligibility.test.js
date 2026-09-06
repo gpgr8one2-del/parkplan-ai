@@ -61,7 +61,7 @@ import {
   mildWeather,
   stormWeather,
   neutralTimeContext,
-} from "./fixtures/testHelpers";
+} from "../testUtils/testHelpers";
 
 const PARK = "hollywood";
 

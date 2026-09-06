@@ -40,7 +40,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { getNextBestRides } from "../rideRecommendations";
 import { RecommendationCard } from "../components/RecommendationCard";
-import { adultOnlyFamily, mildWeather, locationAtLand, neutralTimeContext } from "./fixtures/testHelpers";
+import { adultOnlyFamily, mildWeather, locationAtLand, neutralTimeContext } from "../testUtils/testHelpers";
 
 const HEADS_UP = "Heads up: this one can get you wet";
 

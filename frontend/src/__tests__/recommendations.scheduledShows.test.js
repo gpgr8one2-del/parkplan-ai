@@ -6,7 +6,7 @@ import {
   locationAtLand,
   mildWeather,
   neutralTimeContext,
-} from "./fixtures/testHelpers";
+} from "../testUtils/testHelpers";
 
 const PARK = "hollywood";
 const SHOW_WINDOW_NOW = new Date("2026-01-15T16:15:00.000Z"); // 11:15 AM Orlando
