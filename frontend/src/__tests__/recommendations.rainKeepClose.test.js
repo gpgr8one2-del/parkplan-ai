@@ -21,7 +21,7 @@ import {
   adultOnlyFamily,
   locationAtLand,
   mildWeather,
-  neutralTimeContext,
+  timeContextAt,
 } from "../testUtils/testHelpers";
 
 const PARK = "magic_kingdom";
@@ -119,7 +119,7 @@ function recommend({ rides, weather, land, familyProfile }) {
     weather,
     locationContext: locationAtLand(land),
     familyProfile,
-    timeContext: neutralTimeContext(),
+    timeContext: timeContextAt(STABLE_TEST_NOW),
   });
 }
 

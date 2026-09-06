@@ -38,7 +38,7 @@ import {
   adultOnlyFamily,
   locationAtLand,
   mildWeather,
-  neutralTimeContext,
+  timeContextAt,
 } from "../testUtils/testHelpers";
 
 /* -------------------------------------------------------------------------- */
@@ -295,7 +295,10 @@ describe("the recommendation engine reads the same corrected hours", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("echo_lake"),
       familyProfile: adultOnlyFamily(),
-      timeContext: neutralTimeContext(),
+      // The scenario instant is whatever the test just set. Passing it as
+      // nowIso means the engine reads the declared instant rather than falling
+      // back to its own clock read.
+      timeContext: timeContextAt(Date.now()),
     });
   }
 
@@ -393,7 +396,7 @@ describe("the recommendation engine reads the same corrected hours", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("fantasyland"),
       familyProfile: adultOnlyFamily(),
-      timeContext: neutralTimeContext({ orlandoTotalMinutes: 8 * 60 }),
+      timeContext: timeContextAt(Date.now(), { orlandoTotalMinutes: 8 * 60 }),
     });
 
     expect(recs.parkOpenStatus?.isPreOpen).toBe(true);

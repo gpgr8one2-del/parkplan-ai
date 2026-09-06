@@ -60,7 +60,7 @@ import {
   locationAtLand,
   mildWeather,
   stormWeather,
-  neutralTimeContext,
+  timeContextAt,
 } from "../testUtils/testHelpers";
 
 const PARK = "hollywood";
@@ -140,7 +140,7 @@ function recommend(rides, over = {}) {
     weather: mildWeather(),
     locationContext: locationAtLand("echo_lake"),
     familyProfile: adultOnlyFamily(),
-    timeContext: neutralTimeContext(),
+    timeContext: timeContextAt(Date.now()),
     ...over,
   });
 }
@@ -345,7 +345,7 @@ describe("past scheduled shows are not recommendation-eligible", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("asia"),
       familyProfile: adultOnlyFamily(),
-      timeContext: neutralTimeContext(),
+      timeContext: timeContextAt(Date.now()),
     });
 
     expect(recs.planAhead?.name).toBe("Feathered Friends in Flight!");
@@ -421,7 +421,7 @@ describe("past scheduled shows are not recommendation-eligible", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("asia"),
       familyProfile: adultOnlyFamily(),
-      timeContext: neutralTimeContext(),
+      timeContext: timeContextAt(Date.now()),
     });
     expect(emptyRecs.planAhead?.name).toBe("Feathered Friends in Flight!");
 

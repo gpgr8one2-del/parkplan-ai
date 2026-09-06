@@ -2179,15 +2179,36 @@ function App() {
   // guest no matter which path delivered it.
   const locationStabilityRef = useRef(createLocationStabilityState());
 
-  // A coarse clock, purely so an accepted fix can EXPIRE without waiting for
-  // some unrelated state change to re-run the decision memo. Expiry is the half
-  // of the lifecycle that no incoming reading can trigger — when the app is
-  // backgrounded the watch stops delivering entirely, so nothing else would
-  // notice the fix ageing out.
+  // The app's coarse shared decision clock.
   //
-  // Ticks every 30 s against a 3-minute lifetime, and immediately on becoming
-  // visible again, which is precisely the "walked away with the app in my
-  // pocket" case from the field report.
+  // It began as location plumbing — so an accepted GPS fix could EXPIRE without
+  // waiting for some unrelated state change to re-run the decision memo. Expiry
+  // is the half of that lifecycle no incoming reading can trigger: when the app
+  // is backgrounded the watch stops delivering entirely, so nothing else would
+  // notice the fix ageing out. It still does that, and still expires rain
+  // confirmation the same way.
+  //
+  // It now also drives BOTH time contexts — the active one behind Right Now and
+  // the recommendation engine, and the planning one behind Plan state, park
+  // hours, trip status, nudges, the day game plan and packing. That is what
+  // makes the passage of time visible to the engine at all: it treats
+  // timeContext.nowIso as the one instant a pass runs at, and neither memo's
+  // other dependencies — the park and the family profile — advance on their own.
+  // Without this clock in both dependency lists a family could stand in the park
+  // watching an instant from whenever they last changed parks decide park open
+  // and close, Early Entry, showtimes and every time-based modifier.
+  //
+  // Both contexts read the same tick, so they can never describe different
+  // moments. A frozen planning context beside a live active one would have been
+  // visible to the family directly, since Plan and Right Now are one tab apart.
+  //
+  // Deliberately ONE timer for all of it. A second interval would let two parts
+  // of the app believe in two different "now"s, which is the exact class of bug
+  // the canonical-instant work exists to remove. 30 s is coarse enough to stay
+  // cheap and fine enough for a 3-minute location lifetime and for
+  // minute-resolution park time; it also ticks immediately on becoming visible
+  // again, which is precisely the "walked away with the app in my pocket" case
+  // from the field report.
   const [locationFreshnessNow, setLocationFreshnessNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -3085,12 +3106,28 @@ function App() {
   const isProfileIncomplete = !profileCompletion.isComplete;
   const homeGreeting = getTimeOfDayGreeting(familyProfileSummary?.preferredName);
 
+  // Built from the shared decision clock rather than from a bare `new Date()`
+  // inside getCurrentTimeContext. Both halves of that matter:
+  //
+  //   - `now` pins every derived field — nowIso, the Orlando date and time
+  //     labels, dayPhase, trip status — to one instant, so the ranking and the
+  //     copy beside it can never describe different moments.
+  //   - locationFreshnessNow in the dependency list is what makes this memo
+  //     recompute as time passes. activePark and familyProfileSummary do not
+  //     change on their own, so without it the whole object froze at whatever
+  //     instant the guest last switched parks or edited their profile — and
+  //     the engine, which now reads nowIso as canonical, would have been
+  //     ranking the park day against a stale clock.
+  //
+  // planningTimeContext below is built from the same tick, so the active and
+  // planning halves of the app always agree on what time it is.
   const timeContext = useMemo(() => {
     return getCurrentTimeContext({
       activePark,
       familyProfile: familyProfileSummary,
+      now: new Date(locationFreshnessNow),
     });
-  }, [activePark, familyProfileSummary]);
+  }, [activePark, familyProfileSummary, locationFreshnessNow]);
 
   const profilePlanningParkDecision = useMemo(() => {
     return getPlanningParkDecisionFromProfile(
@@ -3133,12 +3170,24 @@ function App() {
     }
   }, [manualPlanningParkOverride, profilePlanningParkDecision]);
 
+  // The planning half of the pair, and it must read the SAME tick as the active
+  // one above. Plan state, park hours and trip status, planning recommendations,
+  // Plan nudges, the day game plan, packing and the Plan/TOHI screen context all
+  // hang off this. If it stayed frozen on planningPark and the profile while the
+  // active context advanced every 30 seconds, two halves of the same app would
+  // disagree about the Orlando date, the time, the day phase, the trip status
+  // and whether the park is open — and the family would see it, because Plan and
+  // Right Now sit one tab apart.
+  //
+  // Same clock value, same dependency, so both contexts always describe one
+  // moment.
   const planningTimeContext = useMemo(() => {
     return getCurrentTimeContext({
       activePark: planningPark,
       familyProfile: familyProfileSummary,
+      now: new Date(locationFreshnessNow),
     });
-  }, [planningPark, familyProfileSummary]);
+  }, [planningPark, familyProfileSummary, locationFreshnessNow]);
 
   const planTabState = useMemo(() => {
     return buildPlanTabState({

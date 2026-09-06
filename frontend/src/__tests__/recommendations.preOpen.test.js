@@ -4,7 +4,7 @@ import {
   adultOnlyFamily,
   locationAtLand,
   mildWeather,
-  neutralTimeContext,
+  timeContextAt,
 } from "../testUtils/testHelpers";
 
 const PRE_OPEN_NOW = new Date("2026-01-15T08:00:00-05:00");
@@ -30,7 +30,7 @@ describe("pre-open recommendation gating", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("fantasyland"),
       familyProfile: adultOnlyFamily(),
-      timeContext: neutralTimeContext({ orlandoTotalMinutes: 8 * 60 }),
+      timeContext: timeContextAt(PRE_OPEN_NOW, { orlandoTotalMinutes: 8 * 60 }),
     });
 
     expect(recs.parkOpenStatus?.isPreOpen).toBe(true);
@@ -58,7 +58,10 @@ describe("pre-open recommendation gating", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("fantasyland"),
       familyProfile: adultOnlyFamily(),
-      timeContext: neutralTimeContext({ dayPhase: "early_entry", orlandoTotalMinutes: 8 * 60 + 40 }),
+      timeContext: timeContextAt(EARLY_ENTRY_NOW, {
+        dayPhase: "early_entry",
+        orlandoTotalMinutes: 8 * 60 + 40,
+      }),
     });
 
     expect(recs.parkOpenStatus?.isPreOpen).toBe(true);

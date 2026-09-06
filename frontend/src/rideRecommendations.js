@@ -115,7 +115,42 @@ function getOrlandoTimeParts(date = new Date()) {
   return { hour, minute, totalMinutes: hour * 60 + minute };
 }
 
-function isEarlyEntryWindow(parkId, date = new Date()) {
+/**
+ * The one instant a recommendation pass runs at.
+ *
+ * Every time-dependent helper below is handed this value instead of reading the
+ * clock itself. Previously getWetRideTimingModifier, getNextShowtimeInfo and the
+ * two park strategy modifiers each called getOrlandoTimeParts() with no
+ * argument, so a single pass could read the wall clock four separate times and
+ * straddle a minute — or an hour — between them. That is why identical inputs
+ * produced a different score on a different day while every exposed modifier
+ * stayed the same.
+ *
+ * timeContext.nowIso is the canonical instant in production: getCurrentTimeContext()
+ * derives every other field of that object from it, so reading it here is what
+ * makes the ranking agree with the time the rest of the app is already showing
+ * the family.
+ *
+ * The captured fallback covers callers that pass no timeContext — harnesses and
+ * older tests. It is read once, at the public entry point, so even that path
+ * cannot drift part-way through a pass.
+ */
+function resolveRecommendationNow(timeContext) {
+  const nowIso = timeContext?.nowIso;
+
+  if (typeof nowIso === "string" && nowIso.trim()) {
+    const fromContext = new Date(nowIso);
+    if (Number.isFinite(fromContext.getTime())) return fromContext;
+  }
+
+  return new Date();
+}
+
+// `date` is required from here down. The previous `= new Date()` defaults were
+// never exercised — every call site already threaded the pass instant — but
+// leaving them in place meant a future call site could silently reintroduce an
+// independent clock read. Omitting the argument is now a visible error instead.
+function isEarlyEntryWindow(parkId, date) {
   if (parkId !== "magic_kingdom") return false;
 
   const parkHours = getParkHoursForDate(parkId, date);
@@ -134,7 +169,7 @@ function isEarlyEntryWindow(parkId, date = new Date()) {
   return nowMs >= earlyEntryStartMs && nowMs < earlyEntryEndMs;
 }
 
-function isAllowedDuringEarlyEntry(parkId, meta, date = new Date()) {
+function isAllowedDuringEarlyEntry(parkId, meta, date) {
   if (!isEarlyEntryWindow(parkId, date)) return true;
 
   if (parkId === "magic_kingdom") {
@@ -144,7 +179,7 @@ function isAllowedDuringEarlyEntry(parkId, meta, date = new Date()) {
   return true;
 }
 
-function getParkOpenStatus(parkId, date = new Date()) {
+function getParkOpenStatus(parkId, date) {
   const parkHours = getParkHoursForDate(parkId, date);
   const openTime = parkHours?.open;
 
@@ -1329,11 +1364,11 @@ function getContextModifier(meta, weather, mode = "default") {
   return mod;
 }
 
-function getWetRideTimingModifier(meta, weather, waitValueStatus) {
+function getWetRideTimingModifier(meta, weather, waitValueStatus, now) {
   if (!meta?.getsWet) return 0;
 
   const effectiveTempF = getEffectiveTempF(weather);
-  const { hour } = getOrlandoTimeParts();
+  const { hour } = getOrlandoTimeParts(now);
   const stormActive = isCurrentlyStorming(weather);
   const rainActive = isRainActive(weather);
 
@@ -1429,9 +1464,9 @@ function parseShowtimeToMinutes(showtime) {
   return hour * 60 + minute;
 }
 
-function getNextShowtimeInfo(meta) {
+function getNextShowtimeInfo(meta, now) {
   const showtimes = meta?.showProfile?.showtimes || [];
-  const nowMinutes = getOrlandoTimeParts().totalMinutes;
+  const nowMinutes = getOrlandoTimeParts(now).totalMinutes;
 
   // Strictly future: a performance counts as upcoming only when it starts LATER
   // than the current park-local minute. `>=` used to admit a performance that
@@ -1487,7 +1522,7 @@ function getNextShowtimeInfo(meta) {
 // `showtimes: []` and `verifyDailySchedule: true`, and must stay recommendable
 // all day rather than vanishing because its schedule is not hard-coded. The
 // existing scoring behaviour for that case is left exactly as it was.
-function hasFinishedFinalPerformance(meta, now = new Date()) {
+function hasFinishedFinalPerformance(meta, now) {
   if (!isScheduledShowMeta(meta)) return false;
 
   const showtimes = meta?.showProfile?.showtimes;
@@ -1515,13 +1550,13 @@ function hasFinishedFinalPerformance(meta, now = new Date()) {
   return parsed.every((minutes) => minutes <= nowMinutes);
 }
 
-function getScheduledShowScoreModifier(meta, weather, proximityModifier) {
+function getScheduledShowScoreModifier(meta, weather, proximityModifier, now) {
   if (!isScheduledShowMeta(meta)) return 0;
 
   const effectiveTempF = getEffectiveTempF(weather);
   const stormActive = isCurrentlyStorming(weather);
   const rainActive = isRainActive(weather);
-  const nextShow = getNextShowtimeInfo(meta);
+  const nextShow = getNextShowtimeInfo(meta, now);
   const arrivalBuffer =
     effectiveTempF != null && effectiveTempF >= 87
       ? meta?.showProfile?.middayArrivalBufferMinutes ||
@@ -1556,10 +1591,10 @@ function getScheduledShowScoreModifier(meta, weather, proximityModifier) {
   return mod;
 }
 
-function getScheduledShowPlanPriority(meta, ride, currentLand, proximityModifier) {
+function getScheduledShowPlanPriority(meta, ride, currentLand, proximityModifier, now) {
   if (!isScheduledShowMeta(meta)) return 0;
 
-  const nextShow = getNextShowtimeInfo(meta);
+  const nextShow = getNextShowtimeInfo(meta, now);
   if (nextShow.isPastFinalShow) return -1000;
 
   const arrivalBuffer =
@@ -1589,8 +1624,8 @@ function getScheduledShowPlanPriority(meta, ride, currentLand, proximityModifier
   return priority;
 }
 
-function buildScheduledShowReason(meta) {
-  const nextShow = getNextShowtimeInfo(meta);
+function buildScheduledShowReason(meta, now) {
+  const nextShow = getNextShowtimeInfo(meta, now);
   const profile = meta?.showProfile || {};
   const verifyText = profile.verifyDailySchedule
     ? " Double-check My Disney Experience because showtimes can change."
@@ -1762,7 +1797,7 @@ function isSoftRecoveryOnlyCandidate(parkId, ride, weather) {
 /* Park-specific strategy modifiers (unchanged from V1)                       */
 /* -------------------------------------------------------------------------- */
 
-function getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand) {
+function getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand, now) {
   if (parkId !== "hollywood" || !meta) return 0;
 
   let mod = 0;
@@ -1825,7 +1860,7 @@ function getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStat
     mod -= 6;
   }
 
-  const { totalMinutes } = getOrlandoTimeParts();
+  const { totalMinutes } = getOrlandoTimeParts(now);
   if (
     meta.displayName === "Millennium Falcon: Smugglers Run" &&
     totalMinutes >= 18 * 60
@@ -2084,7 +2119,7 @@ function getCrossParkRealityModifier({
   return mod;
 }
 
-function getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand) {
+function getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand, now) {
   if (parkId !== "magic_kingdom" || !meta) return 0;
 
   let mod = 0;
@@ -2093,7 +2128,7 @@ function getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueS
   const stormActive = isCurrentlyStorming(weather);
   const tags = meta.tags || [];
   const category = meta?.planningProfile?.category;
-  const { totalMinutes } = getOrlandoTimeParts();
+  const { totalMinutes } = getOrlandoTimeParts(now);
 
   const weatherRecoveryActive =
     stormActive ||
@@ -2413,8 +2448,8 @@ function buildReason(ride, parts) {
   return `${primary}${secondary}`;
 }
 
-function buildPlanAheadReason(meta, ride, waitValueStatus) {
-  if (isScheduledShowMeta(meta)) return buildScheduledShowReason(meta);
+function buildPlanAheadReason(meta, ride, waitValueStatus, now) {
+  if (isScheduledShowMeta(meta)) return buildScheduledShowReason(meta, now);
 
   const strategy = meta?.planningProfile?.strategy;
   const label = waitValueStatus?.label;
@@ -2463,7 +2498,7 @@ export function getNextBestRides({
   // left exactly as they were, so no existing weather rule changes behaviour.
   const weatherState = getRecommendationWeatherState(weather);
 
-  const now = new Date();
+  const now = resolveRecommendationNow(timeContext);
   const closeTime = getParkCloseTime(parkId, now);
   const parkOpenStatus = getParkOpenStatus(parkId, now);
   const blockGoNowForPreOpen = parkOpenStatus.shouldBlockGoNow;
@@ -2651,13 +2686,15 @@ export function getNextBestRides({
     const scheduledShowModifier = getScheduledShowScoreModifier(
       meta,
       weather,
-      proximityModifier
+      proximityModifier,
+      now
     );
 
     const wetRideModifier = getWetRideTimingModifier(
       meta,
       weather,
-      waitValueStatus
+      waitValueStatus,
+      now
     );
 
     // Split out of the park-strategy sum so the severity classification is
@@ -2670,8 +2707,8 @@ export function getNextBestRides({
     );
 
     const parkStrategyModifier =
-      getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand) +
-      getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand) +
+      getHollywoodStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand, now) +
+      getMagicKingdomStrategyModifier(parkId, meta, ride, weather, waitValueStatus, currentLand, now) +
       localRainRecoveryModifier;
 
     const crossParkRealityModifier = getCrossParkRealityModifier({
@@ -3118,7 +3155,8 @@ export function getNextBestRides({
         meta,
         ride,
         currentLand,
-        proximityModifier
+        proximityModifier,
+        now
       );
 
       return {
@@ -3130,7 +3168,7 @@ export function getNextBestRides({
             getMustDoPlanAheadPriorityBoost(ride),
         planAheadReason: ride.shouldProtectLater
           ? ride.mustDoReason || "This is important, but the current conditions make it smarter to save for later."
-          : buildPlanAheadReason(meta, ride, waitValueStatus),
+          : buildPlanAheadReason(meta, ride, waitValueStatus, now),
       };
     })
     .sort((a, b) => b.planAheadPriority - a.planAheadPriority);

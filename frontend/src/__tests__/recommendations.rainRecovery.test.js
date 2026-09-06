@@ -3,7 +3,7 @@ import {
   MK,
   adultOnlyFamily,
   locationAtLand,
-  neutralTimeContext,
+  timeContextAt,
 } from "../testUtils/testHelpers";
 
 const PARK = "magic_kingdom";
@@ -45,7 +45,7 @@ describe("rain recovery recommendations", () => {
       weather: intenseRainWeather(),
       locationContext: locationAtLand("adventureland"),
       familyProfile: adultOnlyFamily(),
-      timeContext: neutralTimeContext(),
+      timeContext: timeContextAt(STABLE_TEST_NOW),
     });
 
     expect(recs.needsLocation).toBeFalsy();
@@ -70,7 +70,7 @@ describe("rain recovery recommendations", () => {
       weather: intenseRainWeather(),
       locationContext: locationAtLand("fantasyland"),
       familyProfile: adultOnlyFamily(),
-      timeContext: neutralTimeContext(),
+      timeContext: timeContextAt(STABLE_TEST_NOW),
     });
 
     const goNowNames = [

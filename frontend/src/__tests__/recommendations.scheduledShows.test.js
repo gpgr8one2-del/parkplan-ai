@@ -5,7 +5,7 @@ import {
   hotWeather,
   locationAtLand,
   mildWeather,
-  neutralTimeContext,
+  timeContextAt,
 } from "../testUtils/testHelpers";
 
 const PARK = "hollywood";
@@ -51,7 +51,7 @@ describe("scheduled show recommendation behavior", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("echo_lake"),
       familyProfile: adultOnlyFamily(),
-      timeContext: neutralTimeContext(),
+      timeContext: timeContextAt(SHOW_WINDOW_NOW),
     });
 
     expect(recs.bestMove?.name).not.toBe(
@@ -84,7 +84,7 @@ describe("scheduled show recommendation behavior", () => {
       weather: hotWeather(),
       locationContext: locationAtLand("fantasyland"),
       familyProfile: adultOnlyFamily(),
-      timeContext: neutralTimeContext(),
+      timeContext: timeContextAt(SHOW_WINDOW_NOW),
     });
 
     expect(recs.bestMove?.name).toBe("Mickey's PhilharMagic");

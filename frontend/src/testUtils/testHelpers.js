@@ -212,3 +212,20 @@ export function neutralTimeContext(over = {}) {
     ...over,
   };
 }
+
+/**
+ * A time context pinned to one explicit instant.
+ *
+ * getNextBestRides resolves its pass instant from timeContext.nowIso and only
+ * falls back to the wall clock when that is missing, so a test that means to
+ * run "at 8:40 AM Orlando" should say so here rather than relying on
+ * jest.setSystemTime reaching the fallback. Deliberately a separate helper:
+ * neutralTimeContext keeps no default nowIso, so every existing test that does
+ * lean on the system clock keeps behaving exactly as it did.
+ */
+export function timeContextAt(instant, over = {}) {
+  return neutralTimeContext({
+    nowIso: new Date(instant).toISOString(),
+    ...over,
+  });
+}
