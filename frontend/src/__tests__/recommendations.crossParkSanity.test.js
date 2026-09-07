@@ -15,16 +15,28 @@
  */
 
 import { getNextBestRides } from "../rideRecommendations";
+// The land each attraction actually sits in comes from the shipped metadata,
+// so "same land as the guest" is asserted against the real geography.
+import { getRideMeta } from "../rideMetadata";
 import {
   MK,
   adultOnlyFamily,
   peterPanMagnetFamily,
   mildWeather,
   locationAtLand,
-  neutralTimeContext,
+  timeContextAt,
 } from "../testUtils/testHelpers";
 
 const PARK = "magic_kingdom";
+
+// One explicit instant for every scenario below: 1:00 PM Orlando, mid-afternoon,
+// park open. These scenarios previously passed neutralTimeContext(), which
+// carries no nowIso, so the engine fell back to the wall clock and the caps
+// under test were measured against whatever hour the suite happened to run at —
+// the Peter Pan window (10:30 AM-5:00 PM) and the after-8:00 PM branch both move
+// these scores. Pinning the instant is what makes a failure here mean the cap
+// moved rather than the clock did.
+const SCENARIO_NOW = new Date("2026-06-27T13:00:00-04:00");
 
 describe("cross-park sanity", () => {
   test("Peter Pan at 30 min from Tomorrowland with Peter-Pan-magnet family does NOT win Best Move", () => {
@@ -42,7 +54,7 @@ describe("cross-park sanity", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("tomorrowland"),
       familyProfile: peterPanMagnetFamily(),
-      timeContext: neutralTimeContext(),
+      timeContext: timeContextAt(SCENARIO_NOW),
     });
 
     expect(recs.bestMove?.name).not.toBe("Peter Pan's Flight");
@@ -63,7 +75,7 @@ describe("cross-park sanity", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("fantasyland"),
       familyProfile: peterPanMagnetFamily(),
-      timeContext: neutralTimeContext(),
+      timeContext: timeContextAt(SCENARIO_NOW),
     });
 
     // At 30 min from Fantasyland, Peter Pan should at least appear somewhere.
@@ -89,16 +101,25 @@ describe("cross-park sanity", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("tomorrowland"),
       familyProfile: peterPanMagnetFamily(),
-      timeContext: neutralTimeContext(),
+      timeContext: timeContextAt(SCENARIO_NOW),
     });
 
     expect(recs.bestMove?.name).not.toBe("Jungle Cruise");
   });
 
   test("Haunted Mansion at 25 min from Adventureland does NOT win Best Move", () => {
-    // Haunted Mansion is adjacent to Adventureland (both are around the hub),
-    // so it can be a backup or worth-the-walk, but not Best Move on the
-    // single classic-low-cap-cross-park signal alone.
+    // Haunted Mansion is in Liberty Square — adjacent to Adventureland, both
+    // around the hub — so it can be a backup or worth-the-walk, but not Best
+    // Move on the single classic-low-cap-cross-park signal alone.
+    //
+    // This assertion used to name Pirates specifically, which tested something
+    // this file is not about. Pirates and Jungle Cruise are BOTH in
+    // Adventureland, the guest's own land, so which of them wins is an
+    // ordinary same-land wait-value contest and either outcome leaves the
+    // cross-park cap intact. Naming one made the test fail whenever the other
+    // won, reporting a cross-park regression that had not happened. The real
+    // contract is stated below: the adjacent-land attraction loses, and the
+    // guest is sent somewhere they are already standing.
     const rides = [
       MK.haunted({ waitTime: 25 }),
       MK.jungle({ waitTime: 30 }),
@@ -111,11 +132,18 @@ describe("cross-park sanity", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("adventureland"),
       familyProfile: peterPanMagnetFamily(),
-      timeContext: neutralTimeContext(),
+      timeContext: timeContextAt(SCENARIO_NOW),
     });
 
-    // Pirates is same-area; it should win over a cross-park classic.
-    expect(recs.bestMove?.name).toBe("Pirates of the Caribbean");
+    // The cross-park cap: the adjacent-land classic does not take Best Move.
+    expect(recs.bestMove).toBeTruthy();
+    expect(recs.bestMove.name).not.toBe("Haunted Mansion");
+
+    // And the winner is genuinely in the land the guest is standing in, read
+    // from the shipped metadata rather than from the fixture, so a metadata
+    // change cannot quietly make this pass for the wrong reason.
+    const winnerMeta = getRideMeta(PARK, recs.bestMove.name);
+    expect(winnerMeta?.land).toBe("adventureland");
   });
 
   test("when nothing clears the fallback quality gate, bestMove is null (not a forced pick)", () => {
@@ -134,7 +162,7 @@ describe("cross-park sanity", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("tomorrowland"),
       familyProfile: peterPanMagnetFamily(),
-      timeContext: neutralTimeContext(),
+      timeContext: timeContextAt(SCENARIO_NOW),
     });
 
     // None of the rides is same-area as Tomorrowland AND none has a rare
@@ -163,7 +191,7 @@ describe("cross-park sanity", () => {
         waterRidePreference: "yes",
         priorities: ["headliners"],
       }),
-      timeContext: neutralTimeContext(),
+      timeContext: timeContextAt(SCENARIO_NOW),
     });
 
     const allSurfaced = [
@@ -190,7 +218,7 @@ describe("cross-park sanity", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("tomorrowland"),
       familyProfile: peterPanMagnetFamily(),
-      timeContext: neutralTimeContext(),
+      timeContext: timeContextAt(SCENARIO_NOW),
     });
 
     // The ride object (whether surfaced or not) must have the cap field.

@@ -21,6 +21,9 @@ import {
   getNextBestRides,
   getRecommendationWeatherState,
 } from "../rideRecommendations";
+// Read from the shipped metadata rather than restating which attractions are
+// covered, so this stays true if an attraction's environment is ever corrected.
+import { getRideMeta } from "../rideMetadata";
 import {
   applyRainConfirmationToWeather,
   buildRainConfirmationRecord,
@@ -44,7 +47,7 @@ import {
   MK,
   adultOnlyFamily,
   locationAtLand,
-  neutralTimeContext,
+  timeContextAt,
 } from "../testUtils/testHelpers";
 
 const PARK = "magic_kingdom";
@@ -162,6 +165,18 @@ function answer(weather, response, now = NOW) {
   });
 }
 
+/**
+ * Every recommendation in this file runs at NOW — 4:00 PM Orlando on the trip
+ * date, the same instant the confirmation records and expiries above use.
+ *
+ * This used to pass neutralTimeContext(), which carries no nowIso, so the pass
+ * fell back to the wall clock and the scenario silently became "whatever hour
+ * the suite happened to run at". Tiana's wet-ride timing alone swings 22 points
+ * across the day, which is why the unconfirmed baseline stopped surfacing a
+ * rain-sensitive attraction and the headline assertion below began failing on
+ * its setup rather than on its claim. Pinning the instant is the whole repair:
+ * the ride mixture, the location and the family are unchanged.
+ */
 function recommend(weather, over = {}) {
   return getNextBestRides({
     parkId: PARK,
@@ -180,7 +195,7 @@ function recommend(weather, over = {}) {
     weather,
     locationContext: locationAtLand("liberty_square"),
     familyProfile: adultOnlyFamily(),
-    timeContext: neutralTimeContext(),
+    timeContext: timeContextAt(NOW),
     tripPlan: { mustDoExperiences: [] },
     ...over,
   });
@@ -356,6 +371,14 @@ describe("rain confirmation — the three answers", () => {
 
     const confirmed = applyRainConfirmationToWeather(weather, confirmation);
 
+    // The unconfirmed baseline is a WATCH, not active rain. Stated here rather
+    // than assumed, because the whole claim below is that answering "Yes" is
+    // what changes the recommendations — which means nothing before it may
+    // already be behaving as though rain were falling.
+    const watchState = getRecommendationWeatherState(weather);
+    expect(watchState.activeRain).toBe(false);
+    expect(watchState.forecastRainWatch).toBe(true);
+
     // The interpreted state flips to active rain using existing weather logic.
     const state = getRecommendationWeatherState(confirmed);
     expect(state.activeRain).toBe(true);
@@ -373,7 +396,15 @@ describe("rain confirmation — the three answers", () => {
 
     expect(goNowNames(before).some((name) => RAIN_SENSITIVE.has(name))).toBe(true);
     expect(goNowNames(after).every((name) => !RAIN_SENSITIVE.has(name))).toBe(true);
+
+    // The family is not left with nothing. A confirmed sprinkle should move them
+    // under cover, not empty the immediate slots — so Best Move must survive and
+    // must itself be a covered option rather than the outdoor pick it replaced.
     expect(after.bestMove).toBeTruthy();
+    expect(RAIN_SENSITIVE.has(after.bestMove.name)).toBe(false);
+
+    const bestMoveMeta = getRideMeta(PARK, after.bestMove.name);
+    expect(bestMoveMeta?.environment === "indoor" || bestMoveMeta?.hasAC === true).toBe(true);
   });
 
   test('"Yes" is bounded — it carries an expiry from the moment it was given', () => {
