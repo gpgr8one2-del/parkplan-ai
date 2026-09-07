@@ -3232,6 +3232,21 @@ function App() {
     return getResortOptions();
   }, []);
 
+  /**
+   * Loads waits and weather for the active park.
+   *
+   * Returns whether the refresh actually succeeded. It handles its own error —
+   * the guest keeps whatever data is already on screen and sees the error
+   * state, which is the right behaviour — but that left callers unable to tell
+   * a completed refresh from a failed one, because the promise resolved either
+   * way. The auto-refresh below then stamped "Waits/weather updated" onto a
+   * refresh that never landed, telling a family standing in a park that waits
+   * from twenty minutes ago were current.
+   *
+   * A boolean rather than a rethrow: the initial load and the Waits refresh
+   * button call this without awaiting, and turning a handled failure into an
+   * unhandled rejection would be a worse bug than the one being fixed.
+   */
   const loadData = useCallback(
     async (force = false) => {
       setLoading(true);
@@ -3245,8 +3260,13 @@ function App() {
 
         setParkData(park);
         setWeather(weatherData);
+        return true;
       } catch (err) {
+        // Deliberately does NOT clear parkData or weather. Usable data already
+        // on screen is better than an empty screen, and the error state says
+        // what happened.
         setError(err.message || "Could not load app data.");
+        return false;
       } finally {
         setLoading(false);
       }
@@ -3452,8 +3472,17 @@ function App() {
     const runAutoRefresh = async () => {
       if (document.visibilityState !== "visible") return;
 
-      await loadData(true);
-      setLastAutoUpdateAt(new Date().toISOString());
+      const refreshed = await loadData(true);
+
+      // The stamp describes a refresh, so only a refresh that happened may move
+      // it. On failure the previous successful time stays exactly as it was:
+      // the family sees when TOHI last genuinely had fresh waits, not the
+      // moment it last tried. This value is also read as clientLastUpdatedAt in
+      // the freshness context handed to chat, so a false stamp here would tell
+      // the assistant the data was current too.
+      if (refreshed) {
+        setLastAutoUpdateAt(new Date().toISOString());
+      }
 
       if (locationAutoEnabled) {
         await updateUserLocation({ silent: true });
