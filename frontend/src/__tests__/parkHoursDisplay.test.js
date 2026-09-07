@@ -288,6 +288,14 @@ describe("the recommendation engine reads the same corrected hours", () => {
     buildRide({ name: "Slinky Dog Dash", land: "toy_story_land", waitTime: 60 }),
   ];
 
+  /** Every attraction the engine actually offered, in any slot. */
+  function surfacedNames(recs) {
+    return ["bestMove", "backup", "worthTheWalk", "planAhead", "waitOnThis"]
+      .map((slot) => recs[slot])
+      .filter(Boolean)
+      .map((ride) => ride.name);
+  }
+
   function recommend() {
     return getNextBestRides({
       parkId: "hollywood",
@@ -323,8 +331,17 @@ describe("the recommendation engine reads the same corrected hours", () => {
 
     const recs = recommend();
 
-    expect(recs.bestMove?.name).toBe("The Twilight Zone Tower of Terror");
-    expect(recs.backup?.name).toBe("Star Tours – The Adventures Continue");
+    // The contract is that the 45-minute wait SURVIVES the filter and the
+    // backup slot is not left empty — the two things the field defect broke.
+    // Which slot it lands in is a geography decision, not an hours decision:
+    // the family is standing in Echo Lake with a 10-minute Star Tours, so the
+    // immediate move is local and the cross-land headliner is offered second.
+    // Asserting the slot names here used to pin the older behaviour where an
+    // attraction in another land could take Best Move outright.
+    const surfaced = surfacedNames(recs);
+    expect(surfaced).toContain("The Twilight Zone Tower of Terror");
+    expect(recs.backup).not.toBeNull();
+    expect(recs.bestMove).not.toBeNull();
   });
 
   test("the close-time filter still applies, against the real closing time", () => {
@@ -371,8 +388,12 @@ describe("the recommendation engine reads the same corrected hours", () => {
 
     const recs = recommend();
 
-    expect(recs.bestMove?.name).toBe("The Twilight Zone Tower of Terror");
-    expect(recs.backup?.name).toBe("Star Tours – The Adventures Continue");
+    // Same contract as above: with no verified close, nothing is dropped. Both
+    // long waits are still offered, and the backup slot is populated.
+    const surfaced = surfacedNames(recs);
+    expect(surfaced).toContain("The Twilight Zone Tower of Terror");
+    expect(surfaced).toContain("Slinky Dog Dash");
+    expect(recs.backup).not.toBeNull();
   });
 
   test("pre-open gating still reads the estimated opening time", () => {

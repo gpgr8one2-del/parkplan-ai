@@ -2955,6 +2955,11 @@ export function getNextBestRides({
     return !isScheduledShowMeta(meta);
   });
 
+  // Unchanged: "near enough to consider without it being a real walk". This
+  // breadth is what keeps an adjacent attraction eligible for Smart Backup and
+  // the later slots, which is correct — being one land over is a fine reason to
+  // be offered second, and a poor reason to be offered first. Best Move applies
+  // its own stricter definition below.
   const sameAreaRides = goNowPositivePool.filter((ride) => {
     const meta = getMetaForRide(parkId, ride);
     return isSameArea(meta, currentLand, ride.proximityModifier);
@@ -3003,21 +3008,67 @@ export function getNextBestRides({
         nearbySoftRecoveryRides
       );
 
+      // Best Move — and ONLY Best Move — uses the structured landDistance
+      // bucket for "the guest's own land", the same evidence the ranking and
+      // the explanation text already use.
+      //
+      // sameAreaRides above calls isSameArea(), which counts ANY positive
+      // proximity modifier as same-area. An adjacent land scores +3, so a
+      // neighbouring attraction arrived in that pool, took the immediate move
+      // ahead of everything the family could reach without leaving the land they
+      // were standing in, and never met the quality bar that exists for
+      // candidates further away. That breadth is right for the later slots and
+      // wrong for this one, so the correction is scoped here rather than applied
+      // to isSameArea() or to the shared pools.
+      const bestMoveLocalRides = primarySameAreaRides.filter((ride) => {
+        return ride.landDistance === "same";
+      });
+
+      // Anywhere other than the guest's own land has to earn its place here.
+      //
+      // A candidate a land away must clear the SAME bar the cross-park fallback
+      // already applies — a great_value wait and a score at or above the
+      // fallback floor. Nothing about that bar changes; it is simply applied one
+      // step earlier, to the adjacent lands that used to skip it entirely.
+      //
+      // Proximity matters but is not absolute, and this is where that holds.
+      // Once a candidate clears the bar it competes on the score it already
+      // carries, which is the escape valve: an explicit must-do a land away, at
+      // a wait that rarely appears, brings its must-do modifier into the
+      // comparison and can beat a merely convenient local option. An ordinary
+      // neighbour at equal or worse value cannot, because same-land candidates
+      // keep the proximity and area-gravity advantages they already earn — so
+      // the walk has to be worth something before it is ever suggested.
+      const qualifiedNonLocalRides = primaryNearbyRides.filter((ride) => {
+        if (ride.landDistance === "same") return false;
+        return isQualifiedFallbackBestMove(ride, parkId);
+      });
+
+      // One field, ordered by the score each candidate already has.
+      const bestMoveContenders = uniqueRidesById(
+        bestMoveLocalRides,
+        qualifiedNonLocalRides
+      ).sort((a, b) => b.recommendationScore - a.recommendationScore);
+
       // Best Move goes through the same must-do protection Smart Backup uses,
       // so area gravity can order the local field but cannot lift a convenience
       // above a goal the family chose.
       const noneUsed = new Set();
-      const sameAreaPick = getMustDoPreferredPick(primarySameAreaRides, noneUsed);
+      const bestMovePick = getMustDoPreferredPick(bestMoveContenders, noneUsed);
 
-      const nearbyPick =
-        getMustDoPreferredPick(
-          primaryNearbyRides.filter((ride) => ride !== sameAreaPick),
-          noneUsed
-        ) || null;
+      const usedBeforeSoftRecovery = getUsedRideIds(bestMovePick);
 
-      const usedBeforeSoftRecovery = getUsedRideIds(sameAreaPick, nearbyPick);
+      // Soft recovery can stand in for Best Move only from the guest's own
+      // land. A filler attraction one land over is not a reason to walk, and
+      // routing it through localSoftRecoveryRides — which includes adjacent
+      // lands — was a second way past the gate. It stays in the backup chain
+      // below, where being nearby is enough.
+      const bestMoveLocalSoftRecoveryRides = sameAreaSoftRecoveryRides.filter(
+        (ride) => ride.landDistance === "same"
+      );
+
       const localSoftRecoveryPick = getFirstUnusedRide(
-        localSoftRecoveryRides,
+        bestMoveLocalSoftRecoveryRides,
         usedBeforeSoftRecovery
       );
 
@@ -3026,10 +3077,7 @@ export function getNextBestRides({
       // Best Move just because they have a short posted wait.
       const fallbackCandidate =
         primaryPositivePool.find(
-          (ride) =>
-            ride !== sameAreaPick &&
-            ride !== nearbyPick &&
-            ride !== localSoftRecoveryPick
+          (ride) => ride !== bestMovePick && ride !== localSoftRecoveryPick
         ) || null;
 
       const fallbackPick = isQualifiedFallbackBestMove(fallbackCandidate, parkId)
@@ -3038,7 +3086,7 @@ export function getNextBestRides({
 
       const bestMove = needsLocation || blockGoNowForPreOpen
         ? null
-        : sameAreaPick || nearbyPick || localSoftRecoveryPick || fallbackPick;
+        : bestMovePick || localSoftRecoveryPick || fallbackPick;
 
       const usedAfterBest = getUsedRideIds(bestMove);
 
