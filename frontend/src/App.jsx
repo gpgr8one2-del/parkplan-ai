@@ -98,7 +98,7 @@ import {
   getTripPlanFreshnessStatus,
   updateTripPlanFreshnessContext,
 } from "./utils/tripPlan";
-import { getCurrentTimeContext } from "./utils/timeContext";
+import { getCurrentTimeContext, ORLANDO_TIME_ZONE } from "./utils/timeContext";
 import { buildAccessState } from "./utils/accessControl";
 import {
   PARKS,
@@ -580,11 +580,21 @@ function writeStoredParkPresence(presence) {
   }
 }
 
+/**
+ * A refresh time, always in the park's own timezone.
+ *
+ * The input is a true instant (new Date().toISOString()), so without an explicit
+ * timeZone this rendered in whatever zone the device happened to be in. A family
+ * planning from California saw "10:47 AM" for a refresh that happened at 1:47 PM
+ * in the park. Naming the zone rather than fixing an offset is what keeps it
+ * right across daylight saving.
+ */
 function formatAutoUpdateTime(isoString) {
   if (!isoString) return "";
 
   try {
     return new Intl.DateTimeFormat("en-US", {
+      timeZone: ORLANDO_TIME_ZONE,
       hour: "numeric",
       minute: "2-digit",
     }).format(new Date(isoString));
@@ -1417,11 +1427,24 @@ function getMinutesFromDateValue(value) {
   return date.getHours() * 60 + date.getMinutes();
 }
 
+/**
+ * A park open/close time, always in the park's own timezone.
+ *
+ * The input is the instant orlandoWallTimeToInstant() built from an Orlando
+ * wall-clock time, so formatting it back in Orlando round-trips to the time the
+ * schedule actually states. Without the explicit zone this rendered in the
+ * device's, which is invisible to a guest standing in the park and wrong for
+ * everyone planning from anywhere else — the pre-trip Plan screen told a
+ * Pacific-coast family the park opens at 6:00 AM.
+ *
+ * Matches formatCloseTimeLabel in parkHours.js, which already does this.
+ */
 function formatPlanTimeLabel(value) {
   if (!value) return "";
 
   try {
     return new Intl.DateTimeFormat("en-US", {
+      timeZone: ORLANDO_TIME_ZONE,
       hour: "numeric",
       minute: "2-digit",
     }).format(value);

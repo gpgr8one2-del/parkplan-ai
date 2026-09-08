@@ -1,8 +1,23 @@
+import { ORLANDO_TIME_ZONE } from "./timeContext";
+
+/**
+ * The moment data was fetched, always in the park's own timezone.
+ *
+ * fetchedAt is a true instant from the backend (new Date().toISOString()), so
+ * without an explicit timeZone this rendered in the device's zone — a freshness
+ * badge reading "Updated 10:47 AM" for data fetched at 1:47 PM in the park.
+ * The named zone, rather than a fixed offset, keeps it correct across daylight
+ * saving.
+ */
 export function formatFreshnessTime(fetchedAt, prefix = "Updated") {
   if (!fetchedAt) return null;
   const date = new Date(fetchedAt);
   if (Number.isNaN(date.getTime())) return null;
-  return `${prefix} ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+  return `${prefix} ${date.toLocaleTimeString("en-US", {
+    timeZone: ORLANDO_TIME_ZONE,
+    hour: "numeric",
+    minute: "2-digit",
+  })}`;
 }
 
 export function getFreshnessLabel(source, ageMs = 0, fetchedAt = null) {
