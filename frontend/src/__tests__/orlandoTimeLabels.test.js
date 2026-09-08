@@ -238,23 +238,28 @@ describe("the Plan screen's time labels render Orlando time", () => {
     jest.useRealTimers();
   });
 
-  test("the park opening and closing labels are Orlando times", async () => {
-    // formatPlanTimeLabel, via planTabState.parkOpenLabel / parkCloseLabel.
+  test("the park opening label is an Orlando time", async () => {
+    // formatPlanTimeLabel, via planTabState.parkOpenLabel.
     //
     // Read from the debug snapshot rather than the transportation briefing,
-    // deliberately: those two labels are built in buildPlanTabState's `base`,
-    // before any mode branch, so this surface holds under every device zone.
-    // The briefing sits behind Plan's morning-of mode, and mode selection goes
-    // through getMinutesFromDateValue, which still reads device-local hours —
-    // a separate finding, flagged rather than fixed here.
+    // deliberately: this label is built in buildPlanTabState's `base`, before
+    // any mode branch, so the surface holds under every device zone.
     //
-    // Magic Kingdom's schedule says 9:00 AM to 10:00 PM Orlando, so that is what
-    // must be shown no matter where the family is planning from.
+    // Magic Kingdom opens 9:00 AM Orlando, so that is what must be shown no
+    // matter where the family is planning from.
     await renderPlanScreen();
 
     expect(screenText()).toContain("parkOpen");
     expect(screenText()).toMatch(/parkOpen\s*9:00 AM/);
-    expect(screenText()).toMatch(/parkClose\s*10:00 PM/);
+
+    // This date carries no verified closing time — only the weekly estimate —
+    // so no closing time is stated at all, and the assertion that used to
+    // expect "10:00 PM" here was asserting the bug. Positive closing-label
+    // coverage, including its own timezone matrix, moved to
+    // verifiedCloseLabel.test.js, which runs it against genuinely verified
+    // dates rather than an estimate.
+    expect(screenText()).toMatch(/parkClose\s*—/);
+    expect(screenText()).not.toContain("10:00 PM");
   });
 
   test("the refresh label is the Orlando refresh time", async () => {
@@ -348,7 +353,7 @@ describeMatrix("the device timezone cannot change what the labels say", () => {
       // The child really ran this file's assertions rather than matching nothing:
       // all ten timezone-agnostic tests ran, and the two matrix tests were the
       // only ones skipped.
-      expect(output).toMatch(/the park opening and closing labels are Orlando times/);
+      expect(output).toMatch(/the park opening label is an Orlando time/);
       expect(output).toMatch(/Tests:\s+2 skipped, 10 passed, 12 total/);
     },
     180000

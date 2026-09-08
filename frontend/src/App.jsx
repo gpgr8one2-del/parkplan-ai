@@ -1481,7 +1481,15 @@ function buildPlanTabState({ activePark, timeContext = {} } = {}) {
     parkId: activePark || "",
     tripStatus: tripStatus.status || "unknown",
     parkOpenLabel: formatPlanTimeLabel(parkHours?.open),
-    parkCloseLabel: formatPlanTimeLabel(parkHours?.close),
+
+    // Only a closing time verified for THIS park on THIS Orlando date may be
+    // stated. formatPlanTimeLabel would happily render the weekly estimate,
+    // which turns "we have not checked tonight" into "the park closes at 10:00
+    // PM" — the exact claim parkHours.js withholds. formatCloseTimeLabel owns
+    // that rule and returns null when the date is unverified, so it is reused
+    // rather than re-implemented here, and it is handed the same instant this
+    // pass already resolved rather than reading the clock again.
+    parkCloseLabel: formatCloseTimeLabel(activePark, now),
     orlandoTimeLabel: timeContext?.orlandoTimeLabel || "",
     dayPhase: timeContext?.dayPhase || "",
     planningMode: timeContext?.planningMode || "",

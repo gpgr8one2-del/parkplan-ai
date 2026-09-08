@@ -300,8 +300,10 @@ describe("daylight saving and date boundaries", () => {
 
     expect(plan.mode).toBe("in_park");
     expect(plan.label).toBe("In park");
-    // The closing time the decision was made against, read from the screen.
-    expect(plan.text).toContain(CLOSE_LABEL);
+    // Corroboration that the Orlando-date lookup found this park's schedule.
+    // The closing time is no longer stated here — 2026-01-15 carries no
+    // verified close — so the opening label carries the check instead.
+    expect(plan.text).toContain(OPEN_LABEL);
   });
 
   test("just after Orlando midnight is before the same day's open", async () => {
@@ -338,8 +340,10 @@ describe("missing park hours", () => {
 
     expect(plan.mode).toBe("in_park");
     expect(plan.label).toBe("Park day wrap-up");
+    // The schedule was consulted: its opening label is on screen. The closing
+    // label is withheld on this unverified date, which is why the missing-hours
+    // case below discriminates on the OPENING label.
     expect(plan.text).toContain(OPEN_LABEL);
-    expect(plan.text).toContain(CLOSE_LABEL);
   });
 
   test("no schedule falls back to the day-phase branch, with no times shown", async () => {
@@ -369,7 +373,10 @@ describe("missing park hours", () => {
     // neighbours with no value between them.
     expect(plan.openLabel).toBeNull();
     expect(plan.text).toContain("parkOpenparkClose");
-    expect(plan.text).toContain("parkCloseisBeforeParkOpen");
+    // The closing row renders dbFmt's "no value" placeholder, as it does on any
+    // unverified date — so the OPENING label is the discriminator between the
+    // real schedule and no schedule at all.
+    expect(plan.text).toContain("parkClose\u2014isBeforeParkOpen");
     expect(plan.text).not.toContain(OPEN_LABEL);
     expect(plan.text).not.toContain(CLOSE_LABEL);
 
