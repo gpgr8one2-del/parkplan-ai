@@ -633,6 +633,32 @@ export function PlanRecommendations({
                 </button>
               </div>
 
+              {/* The same failure explanation the setup state above already
+                  renders. updateUserLocation writes a specific message for a
+                  denied permission, a timeout, an unavailable position and an
+                  unsupported browser, but this branch never displayed any of
+                  them — so a guest who tapped "Use My Location" from the normal
+                  Plan view watched the button say "Finding you..." and then go
+                  quiet, with no explanation and nothing to do next.
+
+                  Placed directly under the control that was tapped, and next to
+                  the area picker above it, which is the manual fallback every
+                  one of those messages points at. Same markup as the setup
+                  state so the two surfaces cannot drift. */}
+              {locationError && (
+                <p
+                  style={{
+                    margin: "8px 0 0",
+                    color: colors.error,
+                    fontSize: 12,
+                    lineHeight: 1.4,
+                    fontWeight: 800,
+                  }}
+                >
+                  {locationError}
+                </p>
+              )}
+
               {(reportedRideIssueIds.length > 0 || hiddenRideCount > 0) && (
                 <div
                   style={{
