@@ -98,7 +98,11 @@ import {
   getTripPlanFreshnessStatus,
   updateTripPlanFreshnessContext,
 } from "./utils/tripPlan";
-import { getCurrentTimeContext, ORLANDO_TIME_ZONE } from "./utils/timeContext";
+import {
+  getCurrentTimeContext,
+  getOrlandoMinutesOfDay,
+  ORLANDO_TIME_ZONE,
+} from "./utils/timeContext";
 import { buildAccessState } from "./utils/accessControl";
 import {
   PARKS,
@@ -1416,15 +1420,25 @@ function buildLiveParkContext({
     showNotice: false,
   };
 }
+/**
+ * Minutes since midnight for a park time, read in Orlando.
+ *
+ * This used to return date.getHours() * 60 + date.getMinutes(), which reads the
+ * DEVICE's zone. Its two callers feed openMinutes and closeMinutes into
+ * buildPlanTabState, where they are compared against timeContext's
+ * orlandoTotalMinutes — so the comparison mixed two different clocks and the
+ * Plan screen picked its mode from the phone's timezone rather than the park's.
+ *
+ * On a device in Los Angeles a 9:00 AM Orlando opening read as 6:00 AM, so at
+ * 7:33 AM Orlando the family was shown the in-park reference screen for a park
+ * that had not opened. On a UTC device the same opening read as 2:00 PM, so
+ * Plan stayed in morning-of mode for five hours after the gates opened.
+ *
+ * Delegates to the timeContext helper so both sides of that comparison come
+ * from one derivation rather than two that merely agree in Orlando.
+ */
 function getMinutesFromDateValue(value) {
-  if (!value) return null;
-
-  const date = value instanceof Date ? value : new Date(value);
-  const timeMs = date.getTime();
-
-  if (!Number.isFinite(timeMs)) return null;
-
-  return date.getHours() * 60 + date.getMinutes();
+  return getOrlandoMinutesOfDay(value);
 }
 
 /**

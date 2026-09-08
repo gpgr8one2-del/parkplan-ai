@@ -275,6 +275,27 @@ function getAiAccessContext({ tripStatus, planningPreferences = {} }) {
     reason: "Trip dates are missing, so AI remains available for setup/testing.",
   };
 }
+/**
+ * Minutes since midnight for an instant, read in Orlando.
+ *
+ * Exported so that anything comparing an instant against a park's operating
+ * window measures it the same way getCurrentTimeContext measures "now" —
+ * orlandoTotalMinutes comes from this same getZonedDateParts call. A caller
+ * that derived its own minutes from Date#getHours would be reading the device's
+ * zone and silently comparing two different clocks.
+ *
+ * Returns null for a missing or unparseable value, so callers can keep treating
+ * "no usable time" as its own case.
+ */
+export function getOrlandoMinutesOfDay(value) {
+  if (!value) return null;
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(date.getTime())) return null;
+
+  return getZonedDateParts(date, ORLANDO_TIME_ZONE).totalMinutes;
+}
+
 export function getCurrentTimeContext({
   activePark = null,
   familyProfile = null,
