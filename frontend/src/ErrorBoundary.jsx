@@ -13,13 +13,21 @@ import React from "react";
  * crash is not evidence of a network problem, and blaming the family's signal
  * would be a guess dressed as an explanation.
  *
+ * It also promises nothing it cannot know. It does not say reloading will fix
+ * this — a render crash is no evidence that it will recur or that it will not —
+ * and it does not say the family's trip details are safe: writeStoredFamilyProfile
+ * and writeStoredParkState both swallow storage failures with a console.warn and
+ * return no success signal, so from here that claim is unverifiable. "Please try
+ * reloading the app" is an offer, which is all this boundary is in a position to
+ * make.
+ *
  * The message is kept for diagnostics — componentDidCatch still logs the error
  * and its component stack to the console exactly as before. Nothing new is
  * logged, and nothing is sent anywhere.
  */
 const RECOVERY_COPY = {
   TITLE: "Something stopped working.",
-  BODY: "This screen ran into a problem. Reloading usually clears it, and your trip details are saved.",
+  BODY: "This screen ran into a problem. Please try reloading the app.",
   ACTION: "Reload app",
 };
 

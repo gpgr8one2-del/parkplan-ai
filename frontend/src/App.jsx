@@ -154,11 +154,11 @@ const AUTO_REFRESH_MS = 3 * 60 * 1000;
 /**
  * What a guest is told when app data fails to load.
  *
- * loadData keeps err.message for diagnostics, and it is genuinely useful there —
- * but it is built as `API /api/park-data?parkId=... -> 502: {"detail":...}`, so
- * showing it to a family put an HTTP status, an internal route and the upstream
- * provider's own response on the Home screen. These two replace it at the
- * presentation boundary.
+ * loadData keeps err.message in state, but it is built as
+ * `API /api/park-data?parkId=... -> 502: {"detail":...}`, so showing it to a
+ * family put an HTTP status, an internal route and the upstream provider's own
+ * response on the Home screen. These two replace it at the presentation
+ * boundary, and the raw string is no longer rendered anywhere.
  *
  * They are kept apart because the honest thing to say depends on whether
  * anything usable survived: promising "the last information we loaded" when
@@ -4027,8 +4027,9 @@ function App() {
   const waitsError = browsingAnotherPark ? browsedParkRequest.error : error;
 
   // Home's guest-facing version of the same failure. `error` itself is left
-  // exactly as it is: WaitsTab reads it for truthiness only, and the debug
-  // snapshot keeps the raw text where a field tester can still see it.
+  // exactly as it is — WaitsTab reads it for truthiness only — but the raw
+  // string is no longer rendered anywhere. It stays in state and in whatever
+  // the console already reports; nothing new displays it.
   //
   // Which message is honest depends on what survived. loadData deliberately
   // does not clear parkData or weather on failure, so after a successful load
@@ -6424,11 +6425,6 @@ function App() {
             {dbRow("lastAutoUpdateAt", lastAutoUpdateAt)}
             {locationMessage ? dbRow("locationMessage", locationMessage) : null}
             {locationError ? dbRow("locationError", locationError) : null}
-            {/* The raw loadData failure. It used to be readable on Home, which
-                is precisely the problem this fix addresses — but a field tester
-                still needs it, so it moves here rather than disappearing.
-                Same shape as locationError above; nothing is logged or sent. */}
-            {error ? dbRow("appDataError", error) : null}
           </div>
         </details>
 

@@ -16,17 +16,18 @@
  *    "Cannot read properties of undefined (reading 'landKey')".
  *
  * The fix is at the presentation boundary. `error` itself is unchanged —
- * WaitsTab reads it for truthiness only and the debug snapshot still carries the
- * raw text — and loadData's data-retention behaviour is untouched.
+ * WaitsTab reads it for truthiness only — and loadData's data-retention
+ * behaviour is untouched. The raw string is no longer rendered anywhere, in the
+ * guest surface or the debug panel.
  *
  * Which message is honest depends on what survived: after a successful load the
  * previous information really is still on screen, and on a first failure there
  * is nothing to fall back to. Both cases are asserted separately, because
  * promising a cache that does not exist would be a second, quieter lie.
  *
- * Every assertion reads guestText(), which strips the debug panel. The panel
- * renders the raw error too, so asserting against the whole container would let
- * a broken UI pass.
+ * Guest-facing assertions read guestText(), which strips the debug panel, so
+ * developer-only output can never satisfy a claim about what a family sees. The
+ * panel is asserted separately, and is required to be free of the raw text too.
  */
 
 import React, { act } from "react";
@@ -54,6 +55,10 @@ import { fetchParkData, fetchWeather } from "../api";
 /* -------------------------------------------------------------------------- */
 
 const NOW = "2026-05-10T18:00:00.000Z"; // 2:00 PM Orlando
+
+// Must match AUTO_REFRESH_MS in App.jsx. The automatic refresh is the only path
+// that stamps lastAutoUpdateAt; tapping Refresh never touches it.
+const AUTO_REFRESH_MS = 3 * 60 * 1000;
 
 // The shape api.js actually throws, verbatim in structure: internal route,
 // HTTP status, and the backend's own body echoed back.
@@ -159,9 +164,8 @@ function failWithRawApiError() {
 /**
  * What the guest can read, with the debug panel removed.
  *
- * The panel renders the raw error string of its own accord, so an assertion
- * against the raw container would be satisfied by developer-only output and
- * would pass with the bug still present.
+ * Debug output must never be able to satisfy a claim about what a family can
+ * read, so it is stripped here and asserted on separately.
  */
 function guestText() {
   if (!container) return "";
@@ -214,6 +218,35 @@ async function tapRefresh() {
   await act(async () => {
     button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
   });
+}
+
+/**
+ * Fire exactly one automatic refresh cycle that COMPLETES at `completesAt`.
+ *
+ * The interval fires after a full AUTO_REFRESH_MS of fake time, so the clock is
+ * wound back by that much first and the tick lands on the target instant. Same
+ * pattern as refreshFreshnessTruth.test.js.
+ */
+async function autoRefreshAt(completesAt) {
+  await act(async () => {
+    jest.setSystemTime(new Date(completesAt.getTime() - AUTO_REFRESH_MS));
+    jest.advanceTimersByTime(AUTO_REFRESH_MS);
+  });
+}
+
+/**
+ * The lastAutoUpdateAt debug row, read exactly and required to exist.
+ *
+ * An earlier version of this used a two-alternative regex but read only capture
+ * group 1, so when the second alternative matched the assertion degenerated to
+ * null === null and passed without checking anything. One anchored pattern, and
+ * a hard failure if the row is missing.
+ */
+function lastAutoUpdateAtValue() {
+  const match = debugText().match(/lastAutoUpdateAt(.*?)Time \/ Park State/);
+  expect(match).toBeTruthy();
+  // The section heading that bounds the capture carries a leading space.
+  return match[1].trim();
 }
 
 function expectNoRawInternals(text) {
@@ -315,14 +348,24 @@ describe("raw internals never reach the guest", () => {
     expect(guestText()).toContain(RETAINED_MESSAGE);
   });
 
-  test("diagnostics still keep the raw message where a tester can see it", async () => {
-    // The point of the fix is where the text is shown, not that it is
-    // destroyed. Losing it would cost a field tester the only clue they had.
+  test("the raw text is rendered nowhere, with the debug panel enabled", async () => {
     failWithRawApiError();
-    await renderHome();
+    await renderHome({ debug: true });
 
-    expect(debugText()).toContain("API /api/park-data");
-    expect(guestText()).not.toContain("API /api/park-data");
+    // Not in the guest surface, and not in the debug panel either: this fix
+    // removes the raw string from presentation rather than relocating it.
+    expectNoRawInternals(guestText());
+    expectNoRawInternals(debugText());
+    expect(debugText()).not.toContain("API /api/park-data");
+  });
+
+  test("the raw text is rendered nowhere, with the debug panel disabled", async () => {
+    failWithRawApiError();
+    await renderHome({ debug: false });
+
+    expect(container.querySelectorAll("details").length).toBe(0);
+    expectNoRawInternals(container.textContent || "");
+    expect(container.textContent).toContain(NO_DATA_MESSAGE);
   });
 });
 
@@ -391,7 +434,7 @@ describe("an unexpected rendering failure", () => {
 
     const text = container.textContent || "";
     expect(text).toContain("Something stopped working.");
-    expect(text).toContain("Reloading usually clears it");
+    expect(text).toContain("This screen ran into a problem.");
   });
 
   test("the fallback shows no exception text or stack", async () => {
@@ -403,6 +446,22 @@ describe("an unexpected rendering failure", () => {
     expect(text).not.toMatch(/\bat\s+\w+\s+\(/);
     // And it does not blame a cause it has no evidence for.
     expect(text).not.toMatch(/offline|internet|connection|network/i);
+  });
+
+  test("the fallback promises no saved data and no guaranteed recovery", async () => {
+    await renderBoundary(React.createElement(Boom));
+
+    const text = container.textContent || "";
+
+    // The boundary cannot know either of these. writeStoredFamilyProfile and
+    // writeStoredParkState both swallow storage failures with a console.warn
+    // and return no success signal, and a render crash is no evidence that a
+    // reload will clear its cause.
+    expect(text).not.toMatch(/saved|stored|persist|safe|kept/i);
+    expect(text).not.toMatch(/usually|will (?:be )?(?:fix|clear|work)|guarantee/i);
+
+    // What it does say is an offer, not a promise.
+    expect(text).toContain("Please try reloading the app.");
   });
 
   test("the recovery control is present and reloads the app", async () => {
@@ -467,20 +526,39 @@ describe("an unexpected rendering failure", () => {
 /* -------------------------------------------------------------------------- */
 
 describe("nothing next to this changed", () => {
-  test("a failed refresh still does not advance the freshness stamp", async () => {
+  test("the automatic refresh stamp still moves only on success", async () => {
     // The truthful-freshness rule lives beside this one and is easy to break
-    // from here, so it is pinned: the stamp still only moves on success.
+    // from here, so it is pinned end to end — and through the AUTOMATIC path,
+    // which is the only one that writes lastAutoUpdateAt. Tapping Refresh never
+    // touches that stamp, so a manual tap could not have tested this.
     succeed();
     await renderHome();
 
-    const stampBefore = (debugText().match(/lastAutoUpdateAt(.*?)locationMessage|lastAutoUpdateAt(.*?)$/) || [])[1] ?? null;
+    // Nothing has been stamped before the first automatic cycle.
+    expect(lastAutoUpdateAtValue()).toBe("");
 
+    // 1. A successful automatic refresh writes a known, non-empty timestamp.
+    const firstSuccess = new Date("2026-05-10T18:05:00.000Z");
+    await autoRefreshAt(firstSuccess);
+
+    const stampAfterSuccess = lastAutoUpdateAtValue();
+    expect(stampAfterSuccess).not.toBe("");
+    expect(stampAfterSuccess).toBe(firstSuccess.toISOString());
+
+    // 2. A later automatic refresh that FAILS leaves it exactly where it was.
     failWithRawApiError();
-    await tapRefresh();
+    await autoRefreshAt(new Date("2026-05-10T18:35:00.000Z"));
 
-    const stampAfter = (debugText().match(/lastAutoUpdateAt(.*?)locationMessage|lastAutoUpdateAt(.*?)$/) || [])[1] ?? null;
-    expect(stampAfter).toBe(stampBefore);
+    expect(lastAutoUpdateAtValue()).toBe(stampAfterSuccess);
     expect(guestText()).toContain(RETAINED_MESSAGE);
+
+    // 3. And a later automatic success advances it normally.
+    succeed();
+    const secondSuccess = new Date("2026-05-10T19:05:00.000Z");
+    await autoRefreshAt(secondSuccess);
+
+    expect(lastAutoUpdateAtValue()).toBe(secondSuccess.toISOString());
+    expect(lastAutoUpdateAtValue()).not.toBe(stampAfterSuccess);
   });
 
   test("the Waits screen keeps its own failure copy", async () => {
