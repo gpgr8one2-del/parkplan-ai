@@ -150,6 +150,26 @@ import { useMiniGames } from "./hooks/useMiniGames";
 
 const STORAGE_KEY = "parkplan.state";
 const AUTO_REFRESH_MS = 3 * 60 * 1000;
+
+/**
+ * What a guest is told when app data fails to load.
+ *
+ * loadData keeps err.message for diagnostics, and it is genuinely useful there —
+ * but it is built as `API /api/park-data?parkId=... -> 502: {"detail":...}`, so
+ * showing it to a family put an HTTP status, an internal route and the upstream
+ * provider's own response on the Home screen. These two replace it at the
+ * presentation boundary.
+ *
+ * They are kept apart because the honest thing to say depends on whether
+ * anything usable survived: promising "the last information we loaded" when
+ * nothing loaded would be a second, quieter lie.
+ */
+const APP_DATA_ERROR_COPY = {
+  REFRESH_FAILED_WITH_DATA:
+    "We couldn’t refresh right now. You’re seeing the last information we loaded. Please try again.",
+  LOAD_FAILED_NO_DATA:
+    "We couldn’t load park information right now. Please try again in a moment.",
+};
 const IN_LINE_TIMER_TICK_MS = 30 * 1000;
 const LOCATION_WATCH_OPTIONS = {
   enableHighAccuracy: true,
@@ -4006,6 +4026,24 @@ function App() {
   const waitsLoading = browsingAnotherPark ? browsedParkRequest.loading : loading;
   const waitsError = browsingAnotherPark ? browsedParkRequest.error : error;
 
+  // Home's guest-facing version of the same failure. `error` itself is left
+  // exactly as it is: WaitsTab reads it for truthiness only, and the debug
+  // snapshot keeps the raw text where a field tester can still see it.
+  //
+  // Which message is honest depends on what survived. loadData deliberately
+  // does not clear parkData or weather on failure, so after a successful load
+  // the previous information is still on screen and saying so is true. On a
+  // first load there is nothing to fall back to, and claiming otherwise would
+  // invent a cache the guest does not have.
+  const hasRetainedAppData =
+    (Array.isArray(parkData?.rides) && parkData.rides.length > 0) || Boolean(weather);
+
+  const appDataErrorMessage = !error
+    ? ""
+    : hasRetainedAppData
+    ? APP_DATA_ERROR_COPY.REFRESH_FAILED_WITH_DATA
+    : APP_DATA_ERROR_COPY.LOAD_FAILED_NO_DATA;
+
   function handleSelectPark(parkId) {
     trackAppEvent("park_selected", {
       source: "park_tabs",
@@ -6386,6 +6424,11 @@ function App() {
             {dbRow("lastAutoUpdateAt", lastAutoUpdateAt)}
             {locationMessage ? dbRow("locationMessage", locationMessage) : null}
             {locationError ? dbRow("locationError", locationError) : null}
+            {/* The raw loadData failure. It used to be readable on Home, which
+                is precisely the problem this fix addresses — but a field tester
+                still needs it, so it moves here rather than disappearing.
+                Same shape as locationError above; nothing is logged or sent. */}
+            {error ? dbRow("appDataError", error) : null}
           </div>
         </details>
 
@@ -6809,7 +6852,7 @@ function App() {
               closeTimeLabel={closeTimeLabel}
               currentActivity={currentActivity}
               currentActivityContext={currentActivityContext}
-              error={error}
+              error={appDataErrorMessage}
               homeGreeting={homeGreeting}
               liveParkContext={liveParkContext}
               loading={loading}
