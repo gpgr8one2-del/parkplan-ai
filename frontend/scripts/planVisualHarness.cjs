@@ -97,8 +97,23 @@ console.log("Weather + Comfort card");
 check("eyebrow present", planRecommendationsSource.includes("WEATHER + COMFORT"), true);
 check("uses real temperature state", planRecommendationsSource.includes("weather?.tempF != null ? ("), true);
 check(
-  "unavailable/loading fallback uses real summary",
-  planRecommendationsSource.includes('{weather?.summary || "Loading weather..."}'),
+  "unavailable/loading fallback uses real summary, then tells a finished failure from loading",
+  // A real summary always wins. Without one, "Loading weather..." is only for a
+  // request still in flight; a completed weather failure with no usable weather
+  // says so plainly instead of claiming it is still loading.
+  /\{weather\?\.summary \|\|\s*\(weatherUnavailable \? WEATHER_UNAVAILABLE_COPY : "Loading weather\.\.\."\)\}/.test(
+    planRecommendationsSource
+  ) &&
+    planRecommendationsSource.includes(
+      'const WEATHER_UNAVAILABLE_COPY = "Weather isn’t available right now.";'
+    ) &&
+    /\n  weatherUnavailable = false,\n/.test(planRecommendationsSource) &&
+    !planRecommendationsSource.includes('{weather?.summary || "Loading weather..."}'),
+  true
+);
+check(
+  "App passes the weather-unavailable state to the Plan weather card",
+  /<PlanRecommendations[\s\S]{0,3000}?weatherUnavailable=\{weatherUnavailable\}/.test(appSource),
   true
 );
 

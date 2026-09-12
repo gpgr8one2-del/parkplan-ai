@@ -7331,6 +7331,7 @@ function App() {
             handleUseMyLocation={handleUseMyLocation}
             formatAutoUpdateTime={formatAutoUpdateTime}
             weather={weather}
+            weatherUnavailable={weatherUnavailable}
             weatherMode={weatherMode}
             familyProfileSummary={familyProfileSummary}
             setActiveScreen={setActiveScreen}

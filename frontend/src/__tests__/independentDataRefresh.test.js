@@ -1269,3 +1269,91 @@ describe("Home's weather line tells loading apart from unavailable", () => {
     expect(guestText()).not.toContain(LOADING_WEATHER);
   });
 });
+
+/* -------------------------------------------------------------------------- */
+/* 16. The Plan screen's Weather + comfort card                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The visible Plan Weather + comfort card, required to exist exactly once.
+ *
+ * It lives in the Plan setup branch (no saved area), which is what these tests
+ * render: no land is seeded. Reading the card itself rather than the whole
+ * screen keeps Home's own weather line from satisfying a claim about Plan.
+ */
+function planWeatherCardText() {
+  const eyebrows = Array.from(container.querySelectorAll("div")).filter(
+    (node) => (node.textContent || "").trim() === "☀️ WEATHER + COMFORT"
+  );
+  expect(eyebrows).toHaveLength(1);
+  const card = eyebrows[0].parentElement;
+  expect(card).toBeTruthy();
+  expect(card.closest("details")).toBeNull();
+  return card.textContent || "";
+}
+
+describe("the Plan Weather + comfort card tells loading apart from unavailable", () => {
+  test("loading while in flight, unavailable after failure, loading on retry, weather on recovery", async () => {
+    const first = deferred();
+    serve("weather", "magic_kingdom", first.handler);
+    await renderApp();
+    await goToTab("Plan");
+
+    // Genuinely in flight.
+    expect(planWeatherCardText()).toContain(LOADING_WEATHER);
+    expect(planWeatherCardText()).not.toContain(WEATHER_UNAVAILABLE);
+
+    // A completed failure with no usable weather: not loading, and no invented
+    // reading or condition.
+    await settle(() => first.reject(new Error(RAW_WEATHER_ERROR)));
+    expect(planWeatherCardText()).toContain(WEATHER_UNAVAILABLE);
+    expect(planWeatherCardText()).not.toContain(LOADING_WEATHER);
+    expect(planWeatherCardText()).not.toMatch(/\d+°F|humidity|Partly cloudy|Sunny|Clear/);
+    expectNoRawInternals(planWeatherCardText());
+
+    // An automatic retry in flight is loading again.
+    const retry = deferred();
+    serve("weather", "magic_kingdom", retry.handler);
+    await autoRefreshAt("2026-05-08T17:03:00.000Z");
+    expect(planWeatherCardText()).toContain(LOADING_WEATHER);
+    expect(planWeatherCardText()).not.toContain(WEATHER_UNAVAILABLE);
+
+    // Recovery shows the returned weather.
+    await settle(() => retry.resolve(MK_WEATHER_V1()), "2026-05-08T17:03:10.000Z");
+    expect(planWeatherCardText()).toContain("81°F");
+    expect(planWeatherCardText()).toContain("Partly cloudy");
+    expect(planWeatherCardText()).not.toContain(LOADING_WEATHER);
+    expect(planWeatherCardText()).not.toContain(WEATHER_UNAVAILABLE);
+  });
+
+  test("a summary-only recovery shows that summary, not loading or unavailable", async () => {
+    serve("weather", "magic_kingdom", fail(RAW_WEATHER_ERROR));
+    await renderApp();
+    await goToTab("Plan");
+    expect(planWeatherCardText()).toContain(WEATHER_UNAVAILABLE);
+
+    serve(
+      "weather",
+      "magic_kingdom",
+      ok(() => ({ ...MK_WEATHER_V2(), tempF: null, feelsLikeF: null, summary: "Humid with a light breeze" }))
+    );
+    await autoRefreshAt("2026-05-08T17:03:00.000Z");
+    expect(planWeatherCardText()).toContain("Humid with a light breeze");
+    expect(planWeatherCardText()).not.toContain(WEATHER_UNAVAILABLE);
+    expect(planWeatherCardText()).not.toContain(LOADING_WEATHER);
+  });
+
+  test("retained weather after a failed refresh keeps its actual information", async () => {
+    await renderWithSuccessfulAutoRefresh();
+    await goToTab("Plan");
+    expect(planWeatherCardText()).toContain("81°F");
+
+    serve("weather", "magic_kingdom", fail(RAW_WEATHER_ERROR));
+    await autoRefreshAt("2026-05-08T17:10:00.000Z");
+
+    expect(planWeatherCardText()).toContain("81°F");
+    expect(planWeatherCardText()).toContain("Partly cloudy");
+    expect(planWeatherCardText()).not.toContain(WEATHER_UNAVAILABLE);
+    expect(planWeatherCardText()).not.toContain(LOADING_WEATHER);
+  });
+});

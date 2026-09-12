@@ -6,6 +6,11 @@ import { LAND_OPTIONS } from "../data/parkAreas";
 import { getRideArtwork } from "../data/rideArtManifest";
 import { TOHI_PICK_CLARIFICATION_ANSWERS } from "../utils/tohiPickClarification";
 
+// Shown once a weather request has finished without usable weather. It claims
+// no condition and no reading; "Loading weather..." is kept for a request that
+// is genuinely still in flight. Same wording as Home.
+const WEATHER_UNAVAILABLE_COPY = "Weather isn’t available right now.";
+
 export function PlanRecommendations({
   planNight,
   planTokens,
@@ -32,6 +37,7 @@ export function PlanRecommendations({
   handleUseMyLocation,
   formatAutoUpdateTime,
   weather,
+  weatherUnavailable = false,
   weatherMode,
   familyProfileSummary,
   setActiveScreen,
@@ -417,7 +423,8 @@ export function PlanRecommendations({
                   </div>
                 ) : (
                   <strong style={{ color: planTokens.title, fontSize: 15 }}>
-                    {weather?.summary || "Loading weather..."}
+                    {weather?.summary ||
+                      (weatherUnavailable ? WEATHER_UNAVAILABLE_COPY : "Loading weather...")}
                   </strong>
                 )}
 
