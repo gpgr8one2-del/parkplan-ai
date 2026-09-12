@@ -94,7 +94,7 @@ featureCheck(
 
 featureCheck(
   "the resolver is fed the DISPLAYED park's request state, never the other park's",
-  /const waitsLoading = browsingAnotherPark \? browsedParkRequest\.loading : loading;/.test(
+  /const waitsLoading = browsingAnotherPark \? browsedParkRequest\.loading : (?:loading|waitsPending);/.test(
     appCode
   ) &&
     /const waitsError = browsingAnotherPark \? browsedParkRequest\.error : (?:error|waitsLoadError);/.test(appCode) &&

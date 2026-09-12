@@ -217,9 +217,16 @@ function buildAppDataErrorMessage({ waitsFailed, weatherFailed, hasWaits, hasWea
 
 // One active-park data source (waits or weather), tagged with the park it was
 // loaded for. `error` is the raw failure kept for diagnostics only; it is never
-// rendered. `autoUpdatedAt` is when an automatic refresh last delivered this
-// source to the app.
-const EMPTY_ACTIVE_PARK_SOURCE = { parkId: "", data: null, error: "", autoUpdatedAt: "" };
+// rendered. `pending` is true while this source's latest request is in flight.
+// `autoUpdatedAt` is when an automatic refresh last delivered this source to
+// the app.
+const EMPTY_ACTIVE_PARK_SOURCE = {
+  parkId: "",
+  data: null,
+  error: "",
+  pending: false,
+  autoUpdatedAt: "",
+};
 const IN_LINE_TIMER_TICK_MS = 30 * 1000;
 const LOCATION_WATCH_OPTIONS = {
   enableHighAccuracy: true,
@@ -2272,6 +2279,14 @@ function App() {
   const weather = weatherSourceIsActive ? weatherSource.data : null;
   const waitsLoadError = waitsSourceIsActive ? waitsSource.error : "";
   const weatherLoadError = weatherSourceIsActive ? weatherSource.error : "";
+  const waitsPending = waitsSourceIsActive && waitsSource.pending;
+  const weatherPending = weatherSourceIsActive && weatherSource.pending;
+  // Home's combined Refresh stays busy while either request is in flight; the
+  // Waits screen reads waitsPending alone.
+  const loading = waitsPending || weatherPending;
+  // A finished weather failure with nothing usable to show — as opposed to a
+  // request still in flight, or retained weather from an earlier load.
+  const weatherUnavailable = !weather && !weatherPending && Boolean(weatherLoadError);
   const lastWaitsAutoUpdateAt = waitsSourceIsActive ? waitsSource.autoUpdatedAt : "";
   const lastWeatherAutoUpdateAt = weatherSourceIsActive ? weatherSource.autoUpdatedAt : "";
   // Both sources have been refreshed automatically at or after this instant:
@@ -2283,7 +2298,6 @@ function App() {
         ? lastWaitsAutoUpdateAt
         : lastWeatherAutoUpdateAt
       : "";
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
   const [chatLoading, setChatLoading] = useState(false);
@@ -3367,7 +3381,8 @@ function App() {
 
   // Monotonic generation for active-park loads. Only the newest load may write,
   // so a response that settles after a park change or after a newer refresh is
-  // dropped instead of overwriting current data, errors or freshness.
+  // dropped instead of overwriting current data, errors, pending state or
+  // freshness.
   const activeParkLoadIdRef = useRef(0);
 
   /**
@@ -3396,14 +3411,14 @@ function App() {
       activeParkLoadIdRef.current = loadId;
       const isCurrentLoad = () => activeParkLoadIdRef.current === loadId;
 
-      setLoading(true);
-
-      // Same park: keep data and freshness while the request runs, clearing only
-      // the previous failure (the same as before). Different park: start clean.
+      // Same park: keep data, freshness AND any outstanding failure while the
+      // request runs. A failure is cleared only when that source succeeds, so a
+      // retry cannot make retained data look healthy before recovery is known.
+      // Different park: start clean.
       const startSource = (current) =>
         current.parkId === parkId
-          ? { ...current, error: "" }
-          : { ...EMPTY_ACTIVE_PARK_SOURCE, parkId };
+          ? { ...current, pending: true }
+          : { ...EMPTY_ACTIVE_PARK_SOURCE, parkId, pending: true };
       setWaitsSource(startSource);
       setWeatherSource(startSource);
 
@@ -3416,6 +3431,7 @@ function App() {
               parkId,
               data,
               error: "",
+              pending: false,
               autoUpdatedAt: automatic
                 ? receivedAt
                 : current.parkId === parkId
@@ -3428,7 +3444,11 @@ function App() {
             if (!isCurrentLoad()) return false;
             setSource((current) =>
               current.parkId === parkId
-                ? { ...current, error: err?.message || "Could not load app data." }
+                ? {
+                    ...current,
+                    error: err?.message || "Could not load app data.",
+                    pending: false,
+                  }
                 : {
                     ...EMPTY_ACTIVE_PARK_SOURCE,
                     parkId,
@@ -3451,10 +3471,6 @@ function App() {
           new Promise((resolve) => resolve(fetchWeather({ parkId: activePark, force })))
         ),
       ]);
-
-      if (isCurrentLoad()) {
-        setLoading(false);
-      }
 
       return { waits, weather: weatherOk };
     },
@@ -4141,7 +4157,9 @@ function App() {
   const waitListParkData = browsingAnotherPark ? browsedParkData : parkData;
   // The displayed park's own request state. An active-park error is never read
   // while browsing, and vice versa.
-  const waitsLoading = browsingAnotherPark ? browsedParkRequest.loading : loading;
+  // The active park's Waits loading follows the waits request only; a slow
+  // weather request is not a waits refresh.
+  const waitsLoading = browsingAnotherPark ? browsedParkRequest.loading : waitsPending;
   // Waits only reflects the waits request: a weather failure is not a waits
   // failure.
   const waitsError = browsingAnotherPark ? browsedParkRequest.error : waitsLoadError;
@@ -6992,6 +7010,7 @@ function App() {
               scheduledParkForToday={scheduledParkForToday}
               todayPlannedParkLabel={todayPlannedParkLabel}
               weather={weather}
+              weatherUnavailable={weatherUnavailable}
               weatherMode={weatherMode}
               whileYouWaitContent={whileYouWaitContent}
               activeMiniGame={activeMiniGame}

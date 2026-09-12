@@ -147,6 +147,11 @@ const formatElapsedInLineBadge = (elapsedMinutes) => {
   return ` · About ${elapsedMinutes} min in line`;
 };
 
+// Shown once a weather request has finished without usable weather. It claims
+// no condition and no reading; "Loading weather..." is kept for a request that
+// is genuinely still in flight.
+const WEATHER_UNAVAILABLE_COPY = "Weather isn’t available right now.";
+
 function buildWeatherDisplay(weather, weatherMode = null) {
   if (!weather) return "Loading weather...";
 
@@ -206,6 +211,7 @@ export function HomeTab({
   scheduledParkForToday,
   todayPlannedParkLabel,
   weather,
+  weatherUnavailable = false,
   weatherMode,
   whileYouWaitContent,
 
@@ -644,6 +650,8 @@ export function HomeTab({
               >
                 {weather?.summary
                   ? weather.summary
+                  : weatherUnavailable
+                  ? WEATHER_UNAVAILABLE_COPY
                   : buildWeatherDisplay(weather)}
               </p>
               </div>

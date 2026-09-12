@@ -797,7 +797,7 @@ invariantCheck(
   "20. refresh routing still follows the DISPLAYED park",
   /function handleWaitsRefresh\(\) \{/.test(appCode) &&
     /loadData=\{handleWaitsRefresh\}/.test(appCode) &&
-    /const waitsLoading = browsingAnotherPark \? browsedParkRequest\.loading : loading;/.test(
+    /const waitsLoading = browsingAnotherPark \? browsedParkRequest\.loading : (?:loading|waitsPending);/.test(
       appCode
     ) &&
     /const waitsError = browsingAnotherPark \? browsedParkRequest\.error : (?:error|waitsLoadError);/.test(appCode),

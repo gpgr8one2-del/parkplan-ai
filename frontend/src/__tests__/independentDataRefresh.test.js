@@ -970,3 +970,302 @@ describe("browsing another park", () => {
     expect(debugValue("activePark")).toBe("magic_kingdom");
   });
 });
+
+/* -------------------------------------------------------------------------- */
+/* 14. In-flight retries: outstanding failures and per-source pending state   */
+/* -------------------------------------------------------------------------- */
+
+const WEATHER_UNAVAILABLE = "Weather isn’t available right now.";
+const LOADING_WEATHER = "Loading weather...";
+
+/** The current screen's Refresh control label, required to exist. */
+function refreshLabel() {
+  return refreshButton().textContent.trim();
+}
+
+/** Start a Home refresh whose requests stay open until the test settles them. */
+async function startDeferredHomeRefresh(at) {
+  const waits = deferred();
+  const weather = deferred();
+  serve("waits", "magic_kingdom", waits.handler);
+  serve("weather", "magic_kingdom", weather.handler);
+  await goToTab("Home");
+  await tapRefreshAt(at);
+  return { waits, weather };
+}
+
+/** Settle deferred responses, optionally with the clock pinned to `at`. */
+async function settle(fn, at) {
+  await act(async () => {
+    if (at) jest.setSystemTime(new Date(at));
+    fn();
+  });
+  await flush();
+}
+
+/** Successful 1:05 data, then a completed refresh in which both sources failed. */
+async function renderWithBothFailed() {
+  await renderWithSuccessfulAutoRefresh();
+  serve("waits", "magic_kingdom", fail(RAW_WAITS_ERROR));
+  serve("weather", "magic_kingdom", fail(RAW_WEATHER_ERROR));
+  await tapRefreshAt("2026-05-08T17:07:00.000Z");
+  expect(guestText()).toContain(COPY.BOTH_RETAINED);
+  expect(refreshLabel()).toBe("Refresh");
+}
+
+describe("a retry in flight keeps each outstanding failure until that source succeeds", () => {
+  test("waits recover first: weather's failure stays while weather is still pending", async () => {
+    await renderWithBothFailed();
+    const retry = await startDeferredHomeRefresh("2026-05-08T17:08:00.000Z");
+
+    // Nothing has settled: both failures are still true and still said.
+    expect(refreshLabel()).toBe("Loading");
+    expect(guestText()).toContain(COPY.BOTH_RETAINED);
+    expect(debugValue("waits.loadFailed")).toBe("true");
+    expect(debugValue("weather.loadFailed")).toBe("true");
+    await goToTab("Waits");
+    expect(guestText()).toContain(WAITS_COPY.ACTIVE_REFRESH_ERROR);
+    expect(guestText()).toContain("Big Thunder Mountain Railroad");
+    expect(refreshLabel()).toBe("Loading");
+
+    // Waits settle successfully; weather is still in flight.
+    await settle(() => retry.waits.resolve(MK_WAITS_V2()));
+
+    expect(guestText()).toContain("Space Mountain");
+    expect(guestText()).not.toContain(WAITS_COPY.ACTIVE_REFRESH_ERROR);
+    expect(refreshLabel()).toBe("Refresh");
+    expect(refreshButton().disabled).toBe(false);
+
+    await goToTab("Home");
+    expect(guestText()).toContain(COPY.WEATHER_RETAINED);
+    expect(guestText()).not.toContain(COPY.BOTH_RETAINED);
+    expect(guestText()).toContain("Partly cloudy");
+    expect(debugValue("waits.loadFailed")).toBe("false");
+    expect(debugValue("weather.loadFailed")).toBe("true");
+    // Home's combined refresh is still busy with weather.
+    expect(refreshLabel()).toBe("Loading");
+    // Manual refresh never moves the automatic stamps.
+    expect(debugValue("waits.lastAutoUpdateAt")).toBe("2026-05-08T17:05:00.000Z");
+    expect(debugValue("weather.lastAutoUpdateAt")).toBe("2026-05-08T17:05:00.000Z");
+
+    // Weather recovers too.
+    await settle(() => retry.weather.resolve(MK_WEATHER_V2()));
+    for (const copy of Object.values(COPY)) expect(guestText()).not.toContain(copy);
+    expect(guestText()).toContain("Sunny and humid");
+    expect(refreshLabel()).toBe("Refresh");
+  });
+
+  test("weather recovers first: the waits failure stays visible on Waits while waits are pending", async () => {
+    await renderWithBothFailed();
+    const retry = await startDeferredHomeRefresh("2026-05-08T17:08:00.000Z");
+    expect(guestText()).toContain(COPY.BOTH_RETAINED);
+
+    await settle(() => retry.weather.resolve(MK_WEATHER_V2()));
+
+    expect(guestText()).toContain("Sunny and humid");
+    expect(guestText()).toContain(COPY.WAITS_RETAINED);
+    expect(debugValue("waits.loadFailed")).toBe("true");
+    expect(debugValue("weather.loadFailed")).toBe("false");
+    expect(refreshLabel()).toBe("Loading");
+
+    await goToTab("Waits");
+    expect(guestText()).toContain(WAITS_COPY.ACTIVE_REFRESH_ERROR);
+    expect(guestText()).toContain("Big Thunder Mountain Railroad");
+    expect(refreshLabel()).toBe("Loading");
+    expect(refreshButton().disabled).toBe(true);
+
+    // Waits fail again: the failure is still true, and loading has ended.
+    await settle(() => retry.waits.reject(new Error(RAW_WAITS_ERROR)));
+    expect(guestText()).toContain(WAITS_COPY.ACTIVE_REFRESH_ERROR);
+    expect(refreshLabel()).toBe("Refresh");
+
+    await goToTab("Home");
+    expect(guestText()).toContain(COPY.WAITS_RETAINED);
+    expect(refreshLabel()).toBe("Refresh");
+    expectNoRawInternals(container.textContent);
+  });
+});
+
+describe("Waits loading follows the waits request, not weather", () => {
+  test("waits settle while weather is still pending", async () => {
+    await renderWithSuccessfulAutoRefresh();
+    const weather = deferred();
+    serve("waits", "magic_kingdom", ok(MK_WAITS_V2));
+    serve("weather", "magic_kingdom", weather.handler);
+    await tapRefreshAt("2026-05-08T17:08:00.000Z");
+
+    expect(refreshLabel()).toBe("Loading");
+
+    await goToTab("Waits");
+    expect(guestText()).toContain("Space Mountain");
+    expect(refreshLabel()).toBe("Refresh");
+    expect(refreshButton().disabled).toBe(false);
+
+    await settle(() => weather.resolve(MK_WEATHER_V2()));
+    await goToTab("Home");
+    expect(refreshLabel()).toBe("Refresh");
+    expect(guestText()).toContain("Sunny and humid");
+  });
+
+  test("weather settles while waits are still pending", async () => {
+    await renderWithSuccessfulAutoRefresh();
+    const waits = deferred();
+    serve("waits", "magic_kingdom", waits.handler);
+    serve("weather", "magic_kingdom", ok(MK_WEATHER_V2));
+    await tapRefreshAt("2026-05-08T17:08:00.000Z");
+
+    expect(guestText()).toContain("Sunny and humid");
+    expect(refreshLabel()).toBe("Loading");
+
+    await goToTab("Waits");
+    expect(refreshLabel()).toBe("Loading");
+    expect(refreshButton().disabled).toBe(true);
+    // Retained waits stay on screen during the refresh.
+    expect(guestText()).toContain("Big Thunder Mountain Railroad");
+
+    await settle(() => waits.resolve(MK_WAITS_V2()));
+    expect(refreshLabel()).toBe("Refresh");
+    expect(guestText()).toContain("Space Mountain");
+  });
+
+  test("an obsolete request cannot clear the latest request's pending state or write its outcome", async () => {
+    await renderWithSuccessfulAutoRefresh();
+    const older = await startDeferredHomeRefresh("2026-05-08T17:06:00.000Z");
+
+    // A newer automatic cycle starts before the older one settles.
+    const newerWaits = deferred();
+    const newerWeather = deferred();
+    serve("waits", "magic_kingdom", newerWaits.handler);
+    serve("weather", "magic_kingdom", newerWeather.handler);
+    await autoRefreshAt("2026-05-08T17:10:00.000Z");
+
+    await settle(() => {
+      older.waits.resolve(MK_WAITS_PROVIDER_STALE());
+      older.weather.reject(new Error(RAW_WEATHER_ERROR));
+    });
+
+    expect(refreshLabel()).toBe("Loading");
+    for (const copy of Object.values(COPY)) expect(guestText()).not.toContain(copy);
+    await goToTab("Waits");
+    expect(refreshLabel()).toBe("Loading");
+    expect(guestText()).not.toContain("Jungle Cruise");
+    expect(guestText()).toContain("Big Thunder Mountain Railroad");
+
+    await settle(() => newerWaits.resolve(MK_WAITS_V2()), "2026-05-08T17:10:20.000Z");
+    expect(refreshLabel()).toBe("Refresh");
+    expect(guestText()).toContain("Space Mountain");
+
+    await goToTab("Home");
+    expect(refreshLabel()).toBe("Loading");
+    await settle(() => newerWeather.resolve(MK_WEATHER_V2()), "2026-05-08T17:10:40.000Z");
+    expect(refreshLabel()).toBe("Refresh");
+    expect(guestText()).toContain("Sunny and humid");
+    // Each stamp is that source's own receipt time from the newer cycle.
+    expect(debugValue("waits.lastAutoUpdateAt")).toBe("2026-05-08T17:10:20.000Z");
+    expect(debugValue("weather.lastAutoUpdateAt")).toBe("2026-05-08T17:10:40.000Z");
+  });
+
+  test("a pending request from the previous park cannot end the new park's loading", async () => {
+    await renderWithSuccessfulAutoRefresh();
+    const mk = await startDeferredHomeRefresh("2026-05-08T17:06:00.000Z");
+
+    const epcotWaits = deferred();
+    const epcotWeather = deferred();
+    serve("waits", "epcot", epcotWaits.handler);
+    serve("weather", "epcot", epcotWeather.handler);
+
+    const card = Array.from(container.querySelectorAll("button[aria-pressed]")).find((node) =>
+      (node.textContent || "").includes("EPCOT")
+    );
+    await click(card);
+    // Browsing EPCOT issues its own browsed waits request; settle it so only
+    // active-park requests remain open.
+    await settle(() => epcotWaits.resolve(EPCOT_WAITS()));
+
+    // A separate open request for EPCOT's active-park waits.
+    const activeEpcotWaits = deferred();
+    serve("waits", "epcot", activeEpcotWaits.handler);
+    const confirm = Array.from(container.querySelectorAll("button")).find(
+      (node) => (node.textContent || "").trim() === "I’m here now"
+    );
+    await click(confirm);
+
+    await goToTab("Home");
+    expect(debugValue("activePark")).toBe("epcot");
+    expect(refreshLabel()).toBe("Loading");
+
+    // Magic Kingdom's older requests settle: neither EPCOT source may finish.
+    await settle(() => {
+      mk.waits.resolve(MK_WAITS_V2());
+      mk.weather.resolve(MK_WEATHER_V2());
+    });
+    expect(refreshLabel()).toBe("Loading");
+    expect(guestText()).not.toMatch(/Sunny and humid|Partly cloudy/);
+    expect(guestText()).toContain(LOADING_WEATHER);
+    await goToTab("Waits");
+    expect(refreshLabel()).toBe("Loading");
+    expect(guestText()).not.toMatch(/Space Mountain|Big Thunder Mountain Railroad/);
+
+    await settle(() => activeEpcotWaits.resolve(EPCOT_WAITS()));
+    expect(refreshLabel()).toBe("Refresh");
+    expect(guestText()).toContain("Test Track");
+
+    await goToTab("Home");
+    expect(refreshLabel()).toBe("Loading"); // EPCOT weather still pending
+    await settle(() => epcotWeather.resolve(EPCOT_WEATHER()));
+    expect(refreshLabel()).toBe("Refresh");
+    expect(guestText()).toContain("Breezy by the lagoon");
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* 15. Home's weather line after a completed weather failure                  */
+/* -------------------------------------------------------------------------- */
+
+describe("Home's weather line tells loading apart from unavailable", () => {
+  test("loading while in flight, unavailable after failure, loading on retry, weather on recovery", async () => {
+    const first = deferred();
+    serve("weather", "magic_kingdom", first.handler);
+    await renderApp();
+
+    // Genuinely in flight.
+    expect(guestText()).toContain(LOADING_WEATHER);
+    expect(guestText()).not.toContain(WEATHER_UNAVAILABLE);
+
+    // A completed failure with nothing usable: no loading, no invented reading.
+    await settle(() => first.reject(new Error(RAW_WEATHER_ERROR)));
+    expect(guestText()).not.toContain(LOADING_WEATHER);
+    expect(guestText()).toContain(WEATHER_UNAVAILABLE);
+    expect(guestText()).toContain(COPY.WEATHER_NO_DATA);
+    expect(guestText()).not.toMatch(/\d+°F|Partly cloudy|Sunny|Clear|Good Conditions/);
+    expectNoRawInternals(guestText());
+
+    // A retry in flight is loading again, and the failure copy stays honest.
+    const retry = deferred();
+    serve("weather", "magic_kingdom", retry.handler);
+    await tapRefreshAt("2026-05-08T17:02:00.000Z");
+    expect(guestText()).toContain(LOADING_WEATHER);
+    expect(guestText()).not.toContain(WEATHER_UNAVAILABLE);
+    expect(guestText()).toContain(COPY.WEATHER_NO_DATA);
+
+    // Recovery shows the real weather and nothing else.
+    await settle(() => retry.resolve(MK_WEATHER_V1()));
+    expect(guestText()).toContain("Partly cloudy");
+    expect(guestText()).toContain("81°F");
+    expect(guestText()).not.toContain(LOADING_WEATHER);
+    expect(guestText()).not.toContain(WEATHER_UNAVAILABLE);
+    for (const copy of Object.values(COPY)) expect(guestText()).not.toContain(copy);
+  });
+
+  test("retained weather after a failed refresh stays on screen, not replaced by unavailable", async () => {
+    await renderWithSuccessfulAutoRefresh();
+    serve("weather", "magic_kingdom", fail(RAW_WEATHER_ERROR));
+    await tapRefreshAt("2026-05-08T17:08:00.000Z");
+
+    expect(guestText()).toContain("Partly cloudy");
+    expect(guestText()).toContain("81°F");
+    expect(guestText()).toContain(COPY.WEATHER_RETAINED);
+    expect(guestText()).not.toContain(WEATHER_UNAVAILABLE);
+    expect(guestText()).not.toContain(LOADING_WEATHER);
+  });
+});
