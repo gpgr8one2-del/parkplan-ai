@@ -800,7 +800,7 @@ invariantCheck(
     /const waitsLoading = browsingAnotherPark \? browsedParkRequest\.loading : loading;/.test(
       appCode
     ) &&
-    /const waitsError = browsingAnotherPark \? browsedParkRequest\.error : error;/.test(appCode),
+    /const waitsError = browsingAnotherPark \? browsedParkRequest\.error : (?:error|waitsLoadError);/.test(appCode),
   true
 );
 

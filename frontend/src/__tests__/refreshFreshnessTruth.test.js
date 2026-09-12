@@ -133,10 +133,14 @@ function succeed() {
   fetchWeather.mockImplementation(() => Promise.resolve(weatherPayload()));
 }
 
-/** The park request fails; weather is irrelevant once Promise.all rejects. */
+/**
+ * The whole refresh fails: both requests reject. Waits and weather now load
+ * independently, so failing only one would be a partial success — that case is
+ * pinned in independentDataRefresh.test.js.
+ */
 function failNextRefresh(message = "API /api/park-data -> 502") {
   fetchParkData.mockImplementation(() => Promise.reject(new Error(message)));
-  fetchWeather.mockImplementation(() => Promise.resolve(weatherPayload()));
+  fetchWeather.mockImplementation(() => Promise.reject(new Error(message)));
 }
 
 async function renderApp() {
@@ -496,12 +500,16 @@ describe("the manual refresh path", () => {
       "utf8"
     );
 
-    const writers = source.match(/setLastAutoUpdateAt\s*\(/g) || [];
-    expect(writers).toHaveLength(1);
+    // The stamps are written per source inside loadData, and only for a load
+    // the automatic refresh marked as automatic — exactly one caller does.
+    expect(source.match(/automatic: true/g) || []).toHaveLength(1);
+    expect(source).toMatch(/await loadData\(true, \{ automatic: true \}\)/);
 
-    // And that one place is guarded by the refresh outcome.
+    // And each stamp is written only on that source's own success path.
+    const stampWrites = source.match(/autoUpdatedAt: automatic\s*\?\s*receivedAt/g) || [];
+    expect(stampWrites).toHaveLength(1);
     expect(source).toMatch(
-      /const refreshed = await loadData\(true\);[\s\S]{0,600}?if \(refreshed\) \{\s*setLastAutoUpdateAt\(/
+      /\(data\) => \{\s*if \(!isCurrentLoad\(\)\) return false;[\s\S]{0,300}?autoUpdatedAt: automatic\s*\?\s*receivedAt/
     );
   });
 });

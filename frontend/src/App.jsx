@@ -169,7 +169,57 @@ const APP_DATA_ERROR_COPY = {
     "We couldn’t refresh right now. You’re seeing the last information we loaded. Please try again.",
   LOAD_FAILED_NO_DATA:
     "We couldn’t load park information right now. Please try again in a moment.",
+  WAITS_REFRESH_FAILED_WITH_DATA:
+    "We couldn’t refresh wait times right now. You’re seeing the last wait times we loaded.",
+  WAITS_LOAD_FAILED_NO_DATA: "We couldn’t load wait times right now.",
+  WEATHER_REFRESH_FAILED_WITH_DATA:
+    "We couldn’t refresh the weather right now. You’re seeing the last weather we loaded.",
+  WEATHER_LOAD_FAILED_NO_DATA: "We couldn’t load the weather right now.",
+  TRY_AGAIN: "Please try again in a moment.",
 };
+
+/**
+ * Home's failure message, per source.
+ *
+ * Waits and weather load independently, so one can fail while the other
+ * refreshes. When both failed the same way, the original combined copy is
+ * still the honest summary. Otherwise each failed source is named on its own,
+ * and "the last … we loaded" is only said about a source that really has it.
+ */
+function buildAppDataErrorMessage({ waitsFailed, weatherFailed, hasWaits, hasWeather }) {
+  if (!waitsFailed && !weatherFailed) return "";
+
+  if (waitsFailed && weatherFailed && hasWaits === hasWeather) {
+    return hasWaits
+      ? APP_DATA_ERROR_COPY.REFRESH_FAILED_WITH_DATA
+      : APP_DATA_ERROR_COPY.LOAD_FAILED_NO_DATA;
+  }
+
+  const parts = [];
+  if (waitsFailed) {
+    parts.push(
+      hasWaits
+        ? APP_DATA_ERROR_COPY.WAITS_REFRESH_FAILED_WITH_DATA
+        : APP_DATA_ERROR_COPY.WAITS_LOAD_FAILED_NO_DATA
+    );
+  }
+  if (weatherFailed) {
+    parts.push(
+      hasWeather
+        ? APP_DATA_ERROR_COPY.WEATHER_REFRESH_FAILED_WITH_DATA
+        : APP_DATA_ERROR_COPY.WEATHER_LOAD_FAILED_NO_DATA
+    );
+  }
+  parts.push(APP_DATA_ERROR_COPY.TRY_AGAIN);
+
+  return parts.join(" ");
+}
+
+// One active-park data source (waits or weather), tagged with the park it was
+// loaded for. `error` is the raw failure kept for diagnostics only; it is never
+// rendered. `autoUpdatedAt` is when an automatic refresh last delivered this
+// source to the app.
+const EMPTY_ACTIVE_PARK_SOURCE = { parkId: "", data: null, error: "", autoUpdatedAt: "" };
 const IN_LINE_TIMER_TICK_MS = 30 * 1000;
 const LOCATION_WATCH_OPTIONS = {
   enableHighAccuracy: true,
@@ -2211,10 +2261,29 @@ function normalizeTripParkId(parkId) {
 
 function App() {
   const [activePark, setActivePark] = useState("magic_kingdom");
-  const [parkData, setParkData] = useState(null);
-  const [weather, setWeather] = useState(null);
+  // Waits and weather are held separately and tagged with their park. Anything
+  // loaded for a different park reads as absent, so one park's data, failure or
+  // freshness can never appear under another park's heading.
+  const [waitsSource, setWaitsSource] = useState(EMPTY_ACTIVE_PARK_SOURCE);
+  const [weatherSource, setWeatherSource] = useState(EMPTY_ACTIVE_PARK_SOURCE);
+  const waitsSourceIsActive = waitsSource.parkId === activePark;
+  const weatherSourceIsActive = weatherSource.parkId === activePark;
+  const parkData = waitsSourceIsActive ? waitsSource.data : null;
+  const weather = weatherSourceIsActive ? weatherSource.data : null;
+  const waitsLoadError = waitsSourceIsActive ? waitsSource.error : "";
+  const weatherLoadError = weatherSourceIsActive ? weatherSource.error : "";
+  const lastWaitsAutoUpdateAt = waitsSourceIsActive ? waitsSource.autoUpdatedAt : "";
+  const lastWeatherAutoUpdateAt = weatherSourceIsActive ? weatherSource.autoUpdatedAt : "";
+  // Both sources have been refreshed automatically at or after this instant:
+  // the older of the two stamps. A cycle in which only one source refreshed
+  // cannot move it, so it is never proof that both just refreshed.
+  const lastAutoUpdateAt =
+    lastWaitsAutoUpdateAt && lastWeatherAutoUpdateAt
+      ? lastWaitsAutoUpdateAt < lastWeatherAutoUpdateAt
+        ? lastWaitsAutoUpdateAt
+        : lastWeatherAutoUpdateAt
+      : "";
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
   const [chatLoading, setChatLoading] = useState(false);
@@ -2233,7 +2302,6 @@ function App() {
   const [locationMessage, setLocationMessage] = useState("");
   const [locationError, setLocationError] = useState("");
   const [locationAutoEnabled, setLocationAutoEnabled] = useState(false);
-  const [lastAutoUpdateAt, setLastAutoUpdateAt] = useState("");
   const [lastLocationUpdateAt, setLastLocationUpdateAt] = useState("");
   const [detectedLocationContext, setDetectedLocationContext] = useState(null);
 
@@ -3297,44 +3365,98 @@ function App() {
     return getResortOptions();
   }, []);
 
+  // Monotonic generation for active-park loads. Only the newest load may write,
+  // so a response that settles after a park change or after a newer refresh is
+  // dropped instead of overwriting current data, errors or freshness.
+  const activeParkLoadIdRef = useRef(0);
+
   /**
-   * Loads waits and weather for the active park.
+   * Loads waits and weather for the active park — independently.
    *
-   * Returns whether the refresh actually succeeded. It handles its own error —
-   * the guest keeps whatever data is already on screen and sees the error
-   * state, which is the right behaviour — but that left callers unable to tell
-   * a completed refresh from a failed one, because the promise resolved either
-   * way. The auto-refresh below then stamped "Waits/weather updated" onto a
-   * refresh that never landed, telling a family standing in a park that waits
-   * from twenty minutes ago were current.
+   * Each source applies its own success and records its own failure. They used
+   * to be awaited together through Promise.all, so a weather outage discarded
+   * wait times that had loaded fine (and the reverse), and the guest was told
+   * the whole refresh had failed.
    *
-   * A boolean rather than a rethrow: the initial load and the Waits refresh
-   * button call this without awaiting, and turning a handled failure into an
-   * unhandled rejection would be a worse bug than the one being fixed.
+   * A failure never clears that source's data: usable data for the same park is
+   * better than an empty screen, and the error state says what happened. Data
+   * and freshness for a different park are never carried over.
+   *
+   * `automatic` marks the automatic refresh, the only path that stamps
+   * autoUpdatedAt, and it stamps each source only when that source succeeded.
+   * The provider's own source, ageMs and fetchedAt are stored untouched.
+   *
+   * It never rejects — the initial load and the refresh buttons call it without
+   * awaiting — and resolves to { waits, weather } booleans for callers that care.
    */
   const loadData = useCallback(
-    async (force = false) => {
+    async (force = false, { automatic = false } = {}) => {
+      const parkId = activePark;
+      const loadId = activeParkLoadIdRef.current + 1;
+      activeParkLoadIdRef.current = loadId;
+      const isCurrentLoad = () => activeParkLoadIdRef.current === loadId;
+
       setLoading(true);
-      setError("");
 
-      try {
-        const [park, weatherData] = await Promise.all([
-          fetchParkData(activePark, { force }),
-          fetchWeather({ parkId: activePark, force }),
-        ]);
+      // Same park: keep data and freshness while the request runs, clearing only
+      // the previous failure (the same as before). Different park: start clean.
+      const startSource = (current) =>
+        current.parkId === parkId
+          ? { ...current, error: "" }
+          : { ...EMPTY_ACTIVE_PARK_SOURCE, parkId };
+      setWaitsSource(startSource);
+      setWeatherSource(startSource);
 
-        setParkData(park);
-        setWeather(weatherData);
-        return true;
-      } catch (err) {
-        // Deliberately does NOT clear parkData or weather. Usable data already
-        // on screen is better than an empty screen, and the error state says
-        // what happened.
-        setError(err.message || "Could not load app data.");
-        return false;
-      } finally {
+      const settleSource = (setSource, request) =>
+        request.then(
+          (data) => {
+            if (!isCurrentLoad()) return false;
+            const receivedAt = new Date().toISOString();
+            setSource((current) => ({
+              parkId,
+              data,
+              error: "",
+              autoUpdatedAt: automatic
+                ? receivedAt
+                : current.parkId === parkId
+                ? current.autoUpdatedAt
+                : "",
+            }));
+            return true;
+          },
+          (err) => {
+            if (!isCurrentLoad()) return false;
+            setSource((current) =>
+              current.parkId === parkId
+                ? { ...current, error: err?.message || "Could not load app data." }
+                : {
+                    ...EMPTY_ACTIVE_PARK_SOURCE,
+                    parkId,
+                    error: err?.message || "Could not load app data.",
+                  }
+            );
+            return false;
+          }
+        );
+
+      // new Promise(...) so a request that throws synchronously is handled as
+      // that source's failure rather than escaping the loader.
+      const [waits, weatherOk] = await Promise.all([
+        settleSource(
+          setWaitsSource,
+          new Promise((resolve) => resolve(fetchParkData(activePark, { force })))
+        ),
+        settleSource(
+          setWeatherSource,
+          new Promise((resolve) => resolve(fetchWeather({ parkId: activePark, force })))
+        ),
+      ]);
+
+      if (isCurrentLoad()) {
         setLoading(false);
       }
+
+      return { waits, weather: weatherOk };
     },
     [activePark]
   );
@@ -3537,17 +3659,13 @@ function App() {
     const runAutoRefresh = async () => {
       if (document.visibilityState !== "visible") return;
 
-      const refreshed = await loadData(true);
-
-      // The stamp describes a refresh, so only a refresh that happened may move
-      // it. On failure the previous successful time stays exactly as it was:
-      // the family sees when TOHI last genuinely had fresh waits, not the
-      // moment it last tried. This value is also read as clientLastUpdatedAt in
-      // the freshness context handed to chat, so a false stamp here would tell
-      // the assistant the data was current too.
-      if (refreshed) {
-        setLastAutoUpdateAt(new Date().toISOString());
-      }
+      // The stamps describe a refresh, so only a source that actually refreshed
+      // may move its own stamp; loadData applies that per source. On failure the
+      // previous successful time stays exactly as it was: the family sees when
+      // TOHI last genuinely had fresh data, not the moment it last tried. These
+      // are also read as clientLastUpdatedAt in the freshness context handed to
+      // chat, so a false stamp would tell the assistant the data was current too.
+      await loadData(true, { automatic: true });
 
       if (locationAutoEnabled) {
         await updateUserLocation({ silent: true });
@@ -4024,26 +4142,25 @@ function App() {
   // The displayed park's own request state. An active-park error is never read
   // while browsing, and vice versa.
   const waitsLoading = browsingAnotherPark ? browsedParkRequest.loading : loading;
-  const waitsError = browsingAnotherPark ? browsedParkRequest.error : error;
+  // Waits only reflects the waits request: a weather failure is not a waits
+  // failure.
+  const waitsError = browsingAnotherPark ? browsedParkRequest.error : waitsLoadError;
 
-  // Home's guest-facing version of the same failure. `error` itself is left
-  // exactly as it is — WaitsTab reads it for truthiness only — but the raw
-  // string is no longer rendered anywhere. It stays in state and in whatever
-  // the console already reports; nothing new displays it.
+  // Home's guest-facing version of the same failures. The raw error strings
+  // stay in state — WaitsTab reads its error for truthiness only — and are not
+  // rendered anywhere.
   //
-  // Which message is honest depends on what survived. loadData deliberately
-  // does not clear parkData or weather on failure, so after a successful load
-  // the previous information is still on screen and saying so is true. On a
-  // first load there is nothing to fall back to, and claiming otherwise would
+  // Which message is honest depends on what survived, per source. loadData
+  // does not clear a source's data on failure, so after a successful load that
+  // source's previous information is still on screen and saying so is true.
+  // Without it there is nothing to fall back to, and claiming otherwise would
   // invent a cache the guest does not have.
-  const hasRetainedAppData =
-    (Array.isArray(parkData?.rides) && parkData.rides.length > 0) || Boolean(weather);
-
-  const appDataErrorMessage = !error
-    ? ""
-    : hasRetainedAppData
-    ? APP_DATA_ERROR_COPY.REFRESH_FAILED_WITH_DATA
-    : APP_DATA_ERROR_COPY.LOAD_FAILED_NO_DATA;
+  const appDataErrorMessage = buildAppDataErrorMessage({
+    waitsFailed: Boolean(waitsLoadError),
+    weatherFailed: Boolean(weatherLoadError),
+    hasWaits: Array.isArray(parkData?.rides) && parkData.rides.length > 0,
+    hasWeather: Boolean(weather),
+  });
 
   function handleSelectPark(parkId) {
     trackAppEvent("park_selected", {
@@ -5755,14 +5872,14 @@ function App() {
           source: parkData?.source || "",
           ageMs: parkData?.ageMs ?? null,
           fetchedAt: parkData?.fetchedAt || "",
-          clientLastUpdatedAt: lastAutoUpdateAt || "",
+          clientLastUpdatedAt: lastWaitsAutoUpdateAt || "",
           hasData: Array.isArray(parkData?.rides) && parkData.rides.length > 0,
         },
         weather: {
           source: weather?.source || "",
           ageMs: weather?.ageMs ?? null,
           fetchedAt: weather?.fetchedAt || "",
-          clientLastUpdatedAt: lastAutoUpdateAt || "",
+          clientLastUpdatedAt: lastWeatherAutoUpdateAt || "",
           hasData: Boolean(weather),
         },
         tripPlan: {
@@ -6487,6 +6604,10 @@ function App() {
             {dbRow("weather.weatherTarget.lat", weather?.weatherTarget?.lat)}
             {dbRow("weather.weatherTarget.lon", weather?.weatherTarget?.lon)}
             {dbRow("stormMode", weather?.stormMode)}
+            {dbRow("waits.lastAutoUpdateAt", lastWaitsAutoUpdateAt)}
+            {dbRow("weather.lastAutoUpdateAt", lastWeatherAutoUpdateAt)}
+            {dbRow("waits.loadFailed", Boolean(waitsLoadError))}
+            {dbRow("weather.loadFailed", Boolean(weatherLoadError))}
             {dbRow("freshness.status", tripPlanFreshness?.status)}
             {dbRow("freshness.isStale", tripPlanFreshness?.isStale)}
             {dbRow("freshness.severity", tripPlanFreshness?.severity)}
@@ -7181,7 +7302,8 @@ function App() {
             locationLoading={locationLoading}
             locationError={locationError}
             locationMessage={locationMessage}
-            lastAutoUpdateAt={lastAutoUpdateAt}
+            lastWaitsAutoUpdateAt={lastWaitsAutoUpdateAt}
+            lastWeatherAutoUpdateAt={lastWeatherAutoUpdateAt}
             lastLocationUpdateAt={lastLocationUpdateAt}
             setCurrentLand={setCurrentLand}
             setDetectedLocationContext={setDetectedLocationContext}

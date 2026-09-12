@@ -458,8 +458,10 @@ console.log("22. App integration (static source checks)");
         !/setWeather\(/.test(loader) &&
         !/setError\(/.test(loader) &&
         !/setActivePark\(/.test(loader) &&
-        // the confirmed park's own loader is the only writer of parkData
-        (appSource.match(/setParkData\(/g) || []).length === 1
+        !/setWaitsSource|setWeatherSource/.test(loader) &&
+        // the confirmed park's own loader is the only writer of parkData (held
+        // per source as waitsSource since waits and weather load independently)
+        (appSource.match(/setParkData\(|setWaitsSource\(/g) || []).length === 1
       );
     })(),
     true

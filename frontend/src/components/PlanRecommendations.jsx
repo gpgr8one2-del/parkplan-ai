@@ -22,7 +22,8 @@ export function PlanRecommendations({
   locationLoading,
   locationError,
   locationMessage,
-  lastAutoUpdateAt,
+  lastWaitsAutoUpdateAt,
+  lastWeatherAutoUpdateAt,
   lastLocationUpdateAt,
   setCurrentLand,
   setDetectedLocationContext,
@@ -94,6 +95,22 @@ export function PlanRecommendations({
       ? null
       : renderedPlanSlots.find((slot) => String(slot.ride.id) === tohiPickRideId)?.key ||
         null;
+
+  // Waits and weather refresh independently, so each gets its own time. The
+  // combined wording is used only when both show the same minute.
+  const waitsUpdatedTime = lastWaitsAutoUpdateAt ? formatAutoUpdateTime(lastWaitsAutoUpdateAt) : "";
+  const weatherUpdatedTime = lastWeatherAutoUpdateAt
+    ? formatAutoUpdateTime(lastWeatherAutoUpdateAt)
+    : "";
+  const dataUpdateLabel =
+    waitsUpdatedTime && waitsUpdatedTime === weatherUpdatedTime
+      ? `Waits/weather updated ${waitsUpdatedTime}`
+      : [
+          waitsUpdatedTime ? `Waits updated ${waitsUpdatedTime}` : "",
+          weatherUpdatedTime ? `Weather updated ${weatherUpdatedTime}` : "",
+        ]
+          .filter(Boolean)
+          .join(" · ");
 
   return (
           <section
@@ -289,7 +306,7 @@ export function PlanRecommendations({
                   </span>
                 </div>
 
-                {(locationAutoEnabled || lastAutoUpdateAt || lastLocationUpdateAt) && (
+                {(locationAutoEnabled || dataUpdateLabel || lastLocationUpdateAt) && (
                   <p
                     style={{
                       margin: "8px 0 0",
@@ -298,10 +315,8 @@ export function PlanRecommendations({
                       lineHeight: 1.4,
                     }}
                   >
-                    {lastAutoUpdateAt
-                      ? `Waits/weather updated ${formatAutoUpdateTime(lastAutoUpdateAt)}`
-                      : ""}
-                    {lastAutoUpdateAt && lastLocationUpdateAt ? " · " : ""}
+                    {dataUpdateLabel}
+                    {dataUpdateLabel && lastLocationUpdateAt ? " · " : ""}
                     {lastLocationUpdateAt
                       ? `Location updated ${formatAutoUpdateTime(lastLocationUpdateAt)}`
                       : ""}
