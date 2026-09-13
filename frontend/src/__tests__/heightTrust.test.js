@@ -15,10 +15,18 @@ import {
   familyWithShortestHeight,
   mildWeather,
   locationAtLand,
-  neutralTimeContext,
+  timeContextAt,
 } from "../testUtils/testHelpers";
 
 const PARK = "magic_kingdom";
+
+// 1:00 PM Orlando on an ordinary operating day (Magic Kingdom 9 AM–10 PM, no
+// date override). The pass instant is explicit so these height rules are judged
+// while the park is open. Without it the engine falls back to the wall clock,
+// and before opening every positive slot is empty — the eligibility assertions
+// then fail, and the exclusion assertions pass without testing anything.
+const IN_PARK_NOW = "2026-06-27T13:00:00-04:00";
+const inParkTimeContext = () => timeContextAt(IN_PARK_NOW);
 
 // Helper: pull every ride that surfaced in any positive slot
 function allPositiveRideNames(recs) {
@@ -51,7 +59,7 @@ describe("height trust", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("fantasyland"),
       familyProfile: familyWithShortestHeight(36),
-      timeContext: neutralTimeContext(),
+      timeContext: inParkTimeContext(),
     });
 
     const surfaced = allPositiveRideNames(recs);
@@ -78,7 +86,7 @@ describe("height trust", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("fantasyland"),
       familyProfile: familyWithShortestHeight(36),
-      timeContext: neutralTimeContext(),
+      timeContext: inParkTimeContext(),
     });
 
     // The engine must still produce *something* — not falling back to a
@@ -100,7 +108,7 @@ describe("height trust", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("tomorrowland"),
       familyProfile: familyWithShortestHeight(48),
-      timeContext: neutralTimeContext(),
+      timeContext: inParkTimeContext(),
     });
 
     // At least one of the height-restricted rides should surface.
@@ -123,7 +131,7 @@ describe("height trust", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("tomorrowland"),
       familyProfile: adultOnlyFamily(),
-      timeContext: neutralTimeContext(),
+      timeContext: inParkTimeContext(),
     });
 
     expect(recs.bestMove || recs.backup).not.toBeNull();
@@ -143,7 +151,7 @@ describe("height trust", () => {
       familyProfile: familyWithShortestHeight(36, {
         wholeGroupRidesTogether: "rider_switch",
       }),
-      timeContext: neutralTimeContext(),
+      timeContext: inParkTimeContext(),
     });
 
     const surfaced = recs.bestMove || recs.backup;
@@ -168,7 +176,7 @@ describe("height trust", () => {
       weather: mildWeather(),
       locationContext: locationAtLand("fantasyland"),
       familyProfile: familyWithShortestHeight(36),
-      timeContext: neutralTimeContext(),
+      timeContext: inParkTimeContext(),
     });
 
     expect(recs.planAhead?.name).not.toBe("TRON Lightcycle / Run");

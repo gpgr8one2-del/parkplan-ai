@@ -19,9 +19,16 @@ import {
   gpsAtAnchor,
   hotWeather,
   mildWeather,
-  neutralTimeContext,
   stormWeather,
+  timeContextAt,
 } from "../testUtils/testHelpers";
+
+// 1:00 PM Orlando on an ordinary operating day (Magic Kingdom 9 AM–10 PM, no
+// date override). The pass instant is explicit so area gravity is measured
+// while the park is open; without it the engine reads the wall clock and, before
+// opening, fills no immediate slot at all.
+const IN_PARK_NOW = "2026-06-27T13:00:00-04:00";
+const inParkTimeContext = () => timeContextAt(IN_PARK_NOW);
 
 const IN_TOMORROWLAND = () => gpsAtAnchor("tomorrowland", "Space Mountain");
 
@@ -33,7 +40,7 @@ function recommend({
   locationContext = IN_TOMORROWLAND(),
   completedRideIds = [],
   tripPlan = null,
-  timeContext = neutralTimeContext(),
+  timeContext = inParkTimeContext(),
 }) {
   const result = getNextBestRides({
     parkId: "magic_kingdom",
@@ -608,7 +615,7 @@ describe("boundary tests for the documented constants", () => {
       weather: mildWeather(),
       familyProfile: adultOnlyFamily(),
       locationContext: null,
-      timeContext: neutralTimeContext(),
+      timeContext: inParkTimeContext(),
     });
 
     expect(result.needsLocation).toBe(true);

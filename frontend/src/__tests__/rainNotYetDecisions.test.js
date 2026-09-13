@@ -36,13 +36,18 @@ import {
   MK,
   adultOnlyFamily,
   gpsAtAnchor,
-  neutralTimeContext,
+  timeContextAt,
 } from "../testUtils/testHelpers";
 
 const PARK = "magic_kingdom";
 const TRIP_DATE = "2026-06-27";
 const NOW = new Date("2026-06-27T16:00:00-04:00").getTime();
 const MINUTE = 60 * 1000;
+
+// Recommendations run at the same instant the guest answers (4:00 PM Orlando,
+// Magic Kingdom 9 AM–10 PM). Without an explicit pass instant the engine reads
+// the wall clock and, before opening, fills no immediate slot to check.
+const inParkTimeContext = () => timeContextAt(NOW, { orlandoTotalMinutes: 16 * 60 });
 
 /**
  * A forecast-only Rain Watch: nothing is falling, but the probability is high
@@ -104,7 +109,7 @@ function recommend(weather) {
     weather,
     familyProfile: adultOnlyFamily(),
     locationContext: gpsAtAnchor("tomorrowland", "Space Mountain"),
-    timeContext: neutralTimeContext(),
+    timeContext: inParkTimeContext(),
   });
 }
 
@@ -181,7 +186,7 @@ describe("after Not Yet — still forecast-only, everywhere", () => {
         weather: decided,
         familyProfile: profile,
         locationContext: gpsAtAnchor("tomorrowland", "Space Mountain"),
-        timeContext: neutralTimeContext(),
+        timeContext: inParkTimeContext(),
       });
 
       [answered.bestMove, answered.backup, answered.worthTheWalk, answered.planAhead]
@@ -359,7 +364,7 @@ function productionCase({ weather, familyProfile }) {
     weather,
     familyProfile,
     locationContext: gpsAtAnchor("tomorrowland", "Space Mountain"),
-    timeContext: neutralTimeContext(),
+    timeContext: inParkTimeContext(),
   });
 }
 

@@ -35,11 +35,18 @@ import {
   MK,
   adultOnlyFamily,
   gpsAtAnchor,
-  neutralTimeContext,
+  timeContextAt,
 } from "../testUtils/testHelpers";
 
 const PARK = "magic_kingdom";
 const LAND = "tomorrowland";
+
+// 4:00 PM Orlando on the field-case day, two hours before the forecast rain
+// windows below (Magic Kingdom 9 AM–10 PM, no date override). The pass instant
+// is explicit so weather scoring is measured while the park is open; without it
+// the engine reads the wall clock and, before opening, returns no cards to
+// inspect.
+const IN_PARK_NOW = "2026-06-27T16:00:00-04:00";
 
 /* -------------------------------------------------------------------------- */
 /* Weather shapes                                                             */
@@ -146,7 +153,7 @@ function recommend(weather, familyProfile = adultOnlyFamily()) {
     weather,
     familyProfile,
     locationContext: gpsAtAnchor(LAND, "Space Mountain"),
-    timeContext: neutralTimeContext(),
+    timeContext: timeContextAt(IN_PARK_NOW, { orlandoTotalMinutes: 16 * 60 }),
   });
 }
 
