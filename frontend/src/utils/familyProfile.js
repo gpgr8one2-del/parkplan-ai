@@ -87,10 +87,49 @@ export const PARK_OPTIONS_BY_SYSTEM = {
 // do not need to change during the schema-only commit.
 export const DISNEY_PARK_OPTIONS = PARK_OPTIONS_BY_SYSTEM.disney_wdw;
 
-export function getAgeRangeId(age, system = DEFAULT_SYSTEM) {
-  const numericAge = Number(age);
+/**
+ * A child's age in whole years, or null when no usable age was given.
+ *
+ * The setup form collects age as a whole number from 0 (`type="number"`,
+ * `min="0"`), and it is stored exactly as entered — a number or a numeric
+ * string. Number() alone turned "", whitespace and null into 0, so a missing
+ * age read as a newborn. Blank, whitespace, null, undefined, malformed,
+ * negative and fractional values are not an age; an entered 0 is age zero.
+ */
+export function parseChildAge(value) {
+  const candidate = typeof value === "string" ? value.trim() : value;
 
-  if (!Number.isFinite(numericAge)) return "unknown";
+  if (candidate === "" || (typeof candidate !== "string" && typeof candidate !== "number")) {
+    return null;
+  }
+
+  const age = Number(candidate);
+
+  return Number.isInteger(age) && age >= 0 ? age : null;
+}
+
+/**
+ * A party count as given, or null when none was given. Numbers and numeric
+ * strings (the setup selects hand back strings) are read the same way; blank,
+ * malformed and fractional values are not a count. Range limits stay with the
+ * caller, exactly as before.
+ */
+function parseFamilyCount(value) {
+  const candidate = typeof value === "string" ? value.trim() : value;
+
+  if (candidate === "" || (typeof candidate !== "string" && typeof candidate !== "number")) {
+    return null;
+  }
+
+  const count = Number(candidate);
+
+  return Number.isInteger(count) ? count : null;
+}
+
+export function getAgeRangeId(age, system = DEFAULT_SYSTEM) {
+  const numericAge = parseChildAge(age);
+
+  if (numericAge === null) return "unknown";
 
   if (system === "disney_wdw" || system === "disney_dlr") {
     if (numericAge <= 2) return "under_3";
@@ -589,21 +628,27 @@ export function normalizeFamilyProfile(profile = {}) {
     1,
     Math.min(
       12,
-      Number(merged.adultCount) ||
+      parseFamilyCount(merged.adultCount) ||
         oldAdults.length ||
         Math.max(1, Number(merged.partySize || 0) - oldChildren.length) ||
         1
     )
   );
 
+  // An explicit child count is honoured, including 0. `Number(x) || fallback`
+  // treated 0 as missing and fell back to the previous children list, so a
+  // family could not go back to adults-only. Only a missing or unusable count
+  // falls back.
+  const explicitChildCount = parseFamilyCount(merged.childCount);
   const childCount = Math.max(
     0,
     Math.min(
       12,
-      Number(merged.childCount) ||
-        oldChildren.length ||
-        (Array.isArray(merged.children) ? merged.children.length : 0) ||
-        0
+      explicitChildCount !== null
+        ? explicitChildCount
+        : oldChildren.length ||
+            (Array.isArray(merged.children) ? merged.children.length : 0) ||
+            0
     )
   );
 

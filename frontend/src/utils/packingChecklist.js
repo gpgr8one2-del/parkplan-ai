@@ -1,3 +1,5 @@
+import { parseChildAge } from "./familyProfile";
+
 const CATEGORY_ORDER = ["essentials", "weather", "kids", "comfort", "attraction_specific"];
 const PRIORITY_ORDER = { must: 0, should: 1, nice_to_have: 2 };
 
@@ -92,7 +94,8 @@ function hasYoungKids(familyProfile = {}) {
 
   const children = Array.isArray(familyProfile.children) ? familyProfile.children : [];
   return children.some((child) => {
-    const age = getNumeric(child.age);
+    // A blank age is unknown, not a young kid.
+    const age = parseChildAge(child.age);
     return age != null && age <= 7;
   });
 }
