@@ -18,41 +18,6 @@ const PARK_CONFIG = {
   epic_universe: { name: "Epic Universe", queueTimesId: 334 },
 };
 
-function buildMockParkData(parkId) {
-  const park = PARK_CONFIG[parkId] || { name: parkId };
-
-  return {
-    parkId,
-    parkName: park.name,
-    rides: [
-      {
-        id: "mock-1",
-        name: "Popular Headliner",
-        waitTime: 45,
-        isOpen: true,
-        land: "Main Area",
-        outdoor: false,
-      },
-      {
-        id: "mock-2",
-        name: "Family Favorite",
-        waitTime: 25,
-        isOpen: true,
-        land: "Main Area",
-        outdoor: true,
-      },
-      {
-        id: "mock-3",
-        name: "Quick Ride",
-        waitTime: 10,
-        isOpen: true,
-        land: "Main Area",
-        outdoor: false,
-      },
-    ],
-  };
-}
-
 function normalizeRide(rawRide) {
   return {
     id: String(rawRide.id || rawRide.name || Math.random()),
@@ -71,8 +36,10 @@ async function fetchLiveParkData(parkId) {
     throw new Error(`Unknown parkId: ${parkId}`);
   }
 
+  // No provider means no real waits. Never substitute generated sample rides:
+  // they would be cached and served as this park's live data.
   if (!park.queueTimesId) {
-    return buildMockParkData(parkId);
+    throw new Error(`No wait-time provider for parkId: ${parkId}`);
   }
 
   const url = `https://queue-times.com/parks/${park.queueTimesId}/queue_times.json`;
@@ -140,13 +107,19 @@ async function getParkData(parkId, options = {}) {
         "force refresh failed, falling back to resilient cache"
       );
 
-      // If live force-refresh fails, fall back to cached/stale/mock instead of breaking the app.
+      // If live force-refresh fails, fall back to real cached data if there is
+      // any. With none, the request fails honestly.
     }
   }
 
   /**
    * Normal path:
    * Use resilient cache for page load, auto-refresh, and fallback behavior.
+   *
+   * There is deliberately no fallbackFn. When the provider fails and nothing
+   * real is cached for this park, the request fails and the route answers 502,
+   * so the app shows its unavailable state. Generated sample rides and waits
+   * must never stand in for a park's real data.
    */
   const result = await fetchWithResiliency(
     `park:${parkId}`,
@@ -155,7 +128,6 @@ async function getParkData(parkId, options = {}) {
       ttlMs: 3 * 60 * 1000,
       staleWhileRevalidate: true,
       timeoutMs: 10000,
-      fallbackFn: () => buildMockParkData(parkId),
     }
   );
 

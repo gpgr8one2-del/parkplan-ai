@@ -748,7 +748,7 @@ export async function fetchParkData(parkId, options = {}) {
     `/api/park-data?parkId=${encodeURIComponent(parkId)}` +
     (force ? "&force=true" : "");
 
-  return apiFetch(
+  const data = await apiFetch(
     path,
     { method: "GET" },
     {
@@ -757,6 +757,17 @@ export async function fetchParkData(parkId, options = {}) {
       dedupe: !force,
     }
   );
+
+  // Generated sample rides are not wait information. A backend that still
+  // answers an outage with them has failed to load waits, so the request fails
+  // here and callers keep their real data or show the unavailable state.
+  if (data?.source === "mock") {
+    const error = new Error(`API ${path} -> sample park data is not usable wait information`);
+    error.code = "PARK_DATA_SAMPLE";
+    throw error;
+  }
+
+  return data;
 }
 
 export async function fetchWeather(options = {}) {
