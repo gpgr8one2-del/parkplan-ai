@@ -67,7 +67,7 @@ const COMPLETE_PROFILE = {
     stayingOnProperty: "no",
     resortId: "",
     resortName: "",
-    offPropertyHotelName: "",
+    offPropertyHotelName: "Nearby hotel",
     transportationMode: "car",
   },
 };

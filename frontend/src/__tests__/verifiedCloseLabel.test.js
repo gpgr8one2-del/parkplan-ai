@@ -102,7 +102,7 @@ function profileFor(parkId, tripStartDate, tripEndDate) {
       stayingOnProperty: "no",
       resortId: "",
       resortName: "",
-      offPropertyHotelName: "",
+      offPropertyHotelName: "Nearby hotel",
       transportationMode: "car",
     },
   };

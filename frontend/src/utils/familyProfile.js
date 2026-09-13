@@ -514,7 +514,9 @@ export function getFamilyProfileCompletion(profile = {}) {
   }
 
   if (safeProfile.childCount > 0) {
-    const missingChildAge = safeProfile.children.some((child) => child.age === "");
+    // The same reading every age consumer uses: whitespace, negative, fractional
+    // and malformed ages are unknown, and an entered 0 is a real age.
+    const missingChildAge = safeProfile.children.some((child) => parseChildAge(child.age) === null);
     const missingChildHeight = safeProfile.children.some(
       (child) => child.heightInches === ""
     );
@@ -584,10 +586,12 @@ export function getFamilyProfileCompletion(profile = {}) {
   // because the schema moved faster than the UI.
   const compatibilityMissing = missing.filter((item) => item !== "trip dates");
 
-  const isComplete =
-    missing.length === 0 ||
-    safeProfile.isSetupComplete === true ||
-    compatibilityMissing.length === 0;
+  // Completion describes the profile as it is now. A stored isSetupComplete only
+  // records that setup was finished at some point; it used to short-circuit this
+  // check, so a family that later added a child without an age or height stayed
+  // "complete" and that child's height was never checked. The trip-dates
+  // compatibility exemption above is the only allowance.
+  const isComplete = missing.length === 0 || compatibilityMissing.length === 0;
 
   return {
     isComplete,

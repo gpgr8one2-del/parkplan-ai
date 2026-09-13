@@ -484,7 +484,7 @@ describe("the real setup form", () => {
     expect(await profileAgeMix()).toBe("0 under 3 · 0 Disney child · 2 Disney adult");
   });
 
-  test("Profile setup: a cleared age stays unknown through save, reload, Profile and chat", async () => {
+  test("Profile setup: a cleared age stays unknown through save, reload, Profile and the family context", async () => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(COMPLETE_PROFILE));
     await renderApp();
     await openSetupFromProfile();
@@ -495,17 +495,25 @@ describe("the real setup form", () => {
     expect(text()).toContain("4 guests · 0 under 3 · 1 Disney child · 2 Disney adult");
     await leaveSetup();
 
+    // A cleared age leaves setup unfinished, so the reload opens setup, which
+    // still shows the age as not set.
     await reload();
+    expect(container.querySelector("#child-count")).toBeTruthy();
+    expect(text()).toContain("Age not set");
     expect(stored().children.map((child) => child.age)).toEqual(["", 8]);
+    await leaveSetup();
     expect(await profileAgeMix()).toBe("0 under 3 · 1 Disney child · 2 Disney adult");
 
-    const call = await sentFamilyProfile();
-    const family = call[1].familyProfile;
+    // Chat stays locked until setup is finished, so the family context is built
+    // from the reloaded stored profile by the same summary builder App uses, and
+    // formatted by the real backend route.
+    const family = buildFamilyProfileSummary(stored());
     expect(family.ageSummary).toEqual({ under3Count: 0, childCount: 1, disneyAdultCount: 2 });
     expect(family.hasUnder3).toBe(false);
     expect(family.childCount).toBe(2);
     expect(family.partySize).toBe(4);
 
+    const call = ["is the wait for haunted mansion worth it", { activePark: "magic_kingdom", familyProfile: family }];
     expect(await modelFamilyContext(call)).toEqual([
       "- Party: 2 adults, 2 children, 4 total",
       "- Age summary: 0 under 3, 1 Disney children, 2 Disney adults",
