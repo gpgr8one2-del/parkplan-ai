@@ -91,25 +91,6 @@ function getWeatherTarget(parkId = DEFAULT_PARK_ID) {
   };
 }
 
-function buildMockWeather(parkId = DEFAULT_PARK_ID, providerConfig = getWeatherProviderConfig()) {
-  const target = getWeatherTarget(parkId);
-
-  return {
-    ...buildWeatherTargetMetadata(target, providerConfig),
-    parkId: target.parkId,
-    location: target.label,
-    summary: "Weather unavailable",
-    rawSummary: "Weather unavailable",
-    tempF: null,
-    feelsLikeF: null,
-    humidity: null,
-    rainRisk: null,
-    stormMode: false,
-    currentPrecipitation: false,
-    precipitationLastHourIn: 0,
-  };
-}
-
 function roundNullable(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) {
     return null;
@@ -190,8 +171,10 @@ async function fetchOpenWeather(parkId = DEFAULT_PARK_ID, providerConfig = getWe
   const key = process.env.OPENWEATHER_API_KEY;
   const target = getWeatherTarget(parkId);
 
+  // No credentials means no real weather. Never substitute a synthetic payload:
+  // it would be cached and served as this park's live weather.
   if (!key) {
-    return buildMockWeather(target.parkId, providerConfig);
+    throw new Error("Weather provider is not configured");
   }
 
   const url = `https://api.openweathermap.org/data/2.5/weather?lat=${target.lat}&lon=${target.lon}&appid=${key}&units=imperial`;
@@ -411,8 +394,10 @@ async function fetchTomorrowWeather(parkId = DEFAULT_PARK_ID, providerConfig = g
   const key = process.env.TOMORROW_API_KEY;
   const target = getWeatherTarget(parkId);
 
+  // No credentials means no real weather. Never substitute a synthetic payload:
+  // it would be cached and served as this park's live weather.
   if (!key) {
-    return buildMockWeather(target.parkId, providerConfig);
+    throw new Error("Weather provider is not configured");
   }
 
   const location = encodeURIComponent(`${target.lat},${target.lon}`);
@@ -524,10 +509,17 @@ async function getWeather(options = {}) {
         "weather force refresh failed, falling back to resilient cache"
       );
 
-      // If live force-refresh fails, fall back to cached/stale/mock instead of breaking the app.
+      // If live force-refresh fails, fall back to real cached weather if there
+      // is any. With none, the request fails honestly.
     }
   }
 
+  /**
+   * There is deliberately no fallbackFn. When the provider fails, times out or
+   * is not configured and nothing real is cached for this park, the request
+   * fails and the route answers 502, so the app shows its unavailable state.
+   * Synthetic weather must never stand in for a park's real conditions.
+   */
   const result = await fetchWithResiliency(
     `weather:${providerConfig.id}:${target.parkId}`,
     () => fetchLiveWeather(target.parkId, providerConfig),
@@ -535,7 +527,6 @@ async function getWeather(options = {}) {
       ttlMs: 5 * 60 * 1000,
       staleWhileRevalidate: true,
       timeoutMs: 8000,
-      fallbackFn: () => buildMockWeather(target.parkId, providerConfig),
     }
   );
 

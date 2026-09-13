@@ -793,7 +793,7 @@ export async function fetchWeather(options = {}) {
   const queryString = params.toString();
   const path = `/api/weather${queryString ? `?${queryString}` : ""}`;
 
-  return apiFetch(
+  const data = await apiFetch(
     path,
     { method: "GET" },
     {
@@ -802,6 +802,17 @@ export async function fetchWeather(options = {}) {
       dedupe: !force,
     }
   );
+
+  // Synthetic weather is not a reading of the park's conditions. A backend that
+  // still answers an outage with it has failed to load weather, so the request
+  // fails here and callers keep their real weather or show the unavailable state.
+  if (data?.source === "mock") {
+    const error = new Error(`API ${path} -> synthetic weather is not usable weather information`);
+    error.code = "WEATHER_SYNTHETIC";
+    throw error;
+  }
+
+  return data;
 }
 
 export async function sendTohiPickReview(reviewRequest) {
