@@ -39,6 +39,7 @@ import {
   buildRainConfirmationRecord,
   canAskRainConfirmation,
   clearStoredRainConfirmation,
+  describeGuestReportedRainMode,
   getActiveRainConfirmation,
   getActiveRainConfirmationWithoutProviderWeather,
   getActiveRainNotYet,
@@ -4376,8 +4377,18 @@ function App() {
   // Forget an answer once it expires, once the park or trip date moves on, or
   // once the provider reports precipitation itself. Reuses the existing
   // 30-second freshness tick rather than adding a timer.
+  // activePark starts as "magic_kingdom" and moves to the family's confirmed park
+  // only after restored park presence is applied, a render later. Judging a
+  // stored answer before then would read another park's answer against the
+  // default park and delete it. Until the park is settled nothing is cleared;
+  // the apply paths below still match park and episode, so nothing leaks.
+  const rainConfirmationParkSettled =
+    Boolean(parkPresence) &&
+    (!parkPresence.confirmedActivePark || parkPresence.confirmedActivePark === activePark);
+
   useEffect(() => {
     if (!rainConfirmationRecord) return;
+    if (!rainConfirmationParkSettled) return;
 
     if (
       isRainConfirmationObsolete({
@@ -4403,6 +4414,7 @@ function App() {
     weather,
     activePark,
     timeContext?.orlandoDate,
+    rainConfirmationParkSettled,
   ]);
 
   const activeRainConfirmation = useMemo(() => {
@@ -4547,7 +4559,9 @@ function App() {
   // Previously this read the raw forecast, which is why the Plan screen kept
   // showing active-rain guidance after the guest said it was not raining.
   const weatherMode = useMemo(() => {
-    return getWeatherMode(weatherForDecisions);
+    // A guest-only rain report keeps its rain mode for every decision, but is
+    // described as reported rain rather than a provider's light-rain reading.
+    return describeGuestReportedRainMode(getWeatherMode(weatherForDecisions), weatherForDecisions);
   }, [weatherForDecisions]);
 
   const planningParkLiveRides = activePark === planningPark ? parkData?.rides || [] : [];

@@ -399,26 +399,35 @@ async function run() {
       guestConfirmedRainExpiresAt: 1782595800000,
       providerWeatherUnavailable: true,
     };
-    const LIGHT_RAIN_MODE = {
+    // What an OLDER client still sends for this weather: the light-rain label and
+    // advice. The backend must not echo it. (The App's current "Rain Reported"
+    // mode is sent through this same route by
+    // frontend/src/__tests__/rainConfirmationOutageContinuity.test.js.)
+    const OLDER_CLIENT_MODE = {
       mode: "rain",
       label: "Light Rain",
-      message: "Light rain is falling at the park right now.",
+      message:
+        "Light rain is falling at the park right now. Most attractions keep running — a poncho and a nearby or covered option are usually enough while it passes.",
     };
     const { context } = await modelFacing(QUESTION, {
       ...base,
       weather: guestOnly,
-      weatherMode: LIGHT_RAIN_MODE,
+      weatherMode: OLDER_CLIENT_MODE,
       dataFreshness: NO_WEATHER_FRESHNESS,
     });
     const block = weatherBlock(context);
     check(
-      "10. guest-reported rain without provider weather: named as the guest's report, not a provider reading",
+      "10. guest-reported rain without provider weather: named as the guest's report, intensity unknown",
       block ===
         [
           "Weather: provider weather unavailable, so there is no temperature, rain-probability or storm reading. The guest reported that it is raining; this is their report, not a provider reading.",
-          "Weather mode: Light Rain (rain), from the guest's rain report",
-          "Weather advice: Light rain is falling at the park right now.",
+          "Weather mode: rain reported by the guest (rain). Rain intensity, lightning and whether attractions are operating normally are unknown.",
         ].join("\n"),
+      `weather block:\n${block}`
+    );
+    check(
+      "10. guest-reported rain without provider weather: an older client's light-rain label and advice are not echoed",
+      !/Light Rain|Light rain|keep running|Weather advice:/.test(context),
       `weather block:\n${block}`
     );
     check(

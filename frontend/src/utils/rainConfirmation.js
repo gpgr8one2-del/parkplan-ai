@@ -499,6 +499,41 @@ export function buildGuestReportedRainWeather(confirmation) {
   };
 }
 
+/** Whether decision weather is ONLY a guest's rain report, with no provider reading. */
+export function isGuestReportedRainOnly(decisionWeather) {
+  return (
+    decisionWeather?.providerWeatherUnavailable === true &&
+    decisionWeather?.guestConfirmedRain === true
+  );
+}
+
+export const GUEST_REPORTED_RAIN_LABEL = "Rain Reported";
+export const GUEST_REPORTED_RAIN_MESSAGE =
+  "You told us it’s raining. We’re favoring nearby indoor and covered options. Live weather details aren’t available.";
+
+/**
+ * How a guest-only rain report is described.
+ *
+ * The guest answered whether it is raining — not how hard, whether there is
+ * lightning, or whether attractions are running. Classification still treats
+ * it as falling rain, so every rain decision is unchanged; only the words
+ * shown and sent to chat stop claiming an intensity nobody reported. The
+ * internal severity is cleared for the same reason. Provider-backed modes are
+ * returned untouched.
+ */
+export function describeGuestReportedRainMode(weatherMode, decisionWeather) {
+  if (!weatherMode || weatherMode.mode !== "rain" || !isGuestReportedRainOnly(decisionWeather)) {
+    return weatherMode;
+  }
+
+  return {
+    ...weatherMode,
+    label: GUEST_REPORTED_RAIN_LABEL,
+    message: GUEST_REPORTED_RAIN_MESSAGE,
+    severity: null,
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Session persistence                                                        */
 /* -------------------------------------------------------------------------- */

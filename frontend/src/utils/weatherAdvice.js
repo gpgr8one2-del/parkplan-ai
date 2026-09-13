@@ -750,6 +750,15 @@ function getLightRainSuggestions(parkId, currentLand) {
   ];
 }
 
+function getReportedRainSuggestions() {
+  return [
+    {
+      title: "Ponchos, not umbrellas",
+      text: "Umbrellas are awkward around queues and rides. A poncho keeps you moving without storage hassle.",
+    },
+  ];
+}
+
 function getHeavyRainSuggestions(parkId, currentLand) {
   const common = [
     {
@@ -873,6 +882,17 @@ function getRainAdviceSeverity(weatherMode) {
 
 export function getRecoverySuggestions({ parkId, weather, currentLand }) {
   const weatherMode = getWeatherMode(weather);
+
+  // Only the guest's report that it is raining, with no provider reading: no
+  // intensity is known, so no light- or heavy-rain advice. The poncho tip holds
+  // whatever the rain is doing.
+  if (
+    weatherMode.mode === "rain" &&
+    weather?.providerWeatherUnavailable === true &&
+    weather?.guestConfirmedRain === true
+  ) {
+    return getReportedRainSuggestions();
+  }
 
   switch (weatherMode.mode) {
     case "storm":
