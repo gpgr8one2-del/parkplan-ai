@@ -499,3 +499,159 @@ describe("first-run setup uses the same rules", () => {
     expect(await profileStatus()).toEqual(COMPLETE_STATUS);
   });
 });
+
+/* -------------------------------------------------------------------------- */
+/* Child heights must be usable, exactly as the family summary reads them      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The family summary — the source of the shortest rider height that ride-height
+ * checks read — keeps a height only when it is a finite number above 0. Setup
+ * used to accept any height except "", so a zero, negative, whitespace or
+ * malformed height completed setup while that child contributed no height at
+ * all. Completion now requires the same usable height; nothing about ride-height
+ * rules or the summary itself changes.
+ */
+const HEIGHT_NOTE = "Enter a height above 0 inches.";
+
+describe("child heights: completion requires a usable height", () => {
+  const oneChild = (heightInches) => withChildren([{ id: "child_1", label: "Child 1", age: 6, heightInches }]);
+
+  test.each([
+    ["whitespace", "   "],
+    ["zero", 0],
+    ["zero string", "0"],
+    ["negative", -4],
+    ["negative string", "-4"],
+    ["malformed", "tall"],
+    ["null", null],
+    ["missing", undefined],
+    ["blank", ""],
+  ])("1: a %s height with a stale complete flag still needs child heights", (_label, heightInches) => {
+    const profile = oneChild(heightInches);
+    if (heightInches === undefined) delete profile.children[0].heightInches;
+    const result = getFamilyProfileCompletion(profile);
+    expect(result.isComplete).toBe(false);
+    expect(result.missing).toEqual(["child heights"]);
+  });
+
+  test.each([
+    ["true", true],
+    ["false", false],
+    ["an array", [42]],
+    ["an object", { inches: 42 }],
+    ["NaN", NaN],
+    ["Infinity", Infinity],
+  ])("2: %s is not a usable height", (_label, heightInches) => {
+    const result = getFamilyProfileCompletion(oneChild(heightInches));
+    expect(result.isComplete).toBe(false);
+    expect(result.missing).toEqual(["child heights"]);
+  });
+
+  test.each([
+    ["a whole number", 44],
+    ["a numeric string", "44"],
+    ["a padded numeric string", " 44 "],
+    ["a fractional number", 44.5],
+    ["a fractional string", "38.25"],
+  ])("3: %s is a usable height", (_label, heightInches) => {
+    expect(getFamilyProfileCompletion(oneChild(heightInches))).toEqual({
+      isComplete: true,
+      missing: [],
+      strictMissing: [],
+    });
+  });
+
+  test("3: an age-zero child with a positive height is complete", () => {
+    const result = getFamilyProfileCompletion(withChildren([{ id: "child_1", age: 0, heightInches: 24 }]));
+    expect(result.isComplete).toBe(true);
+  });
+
+  test.each([
+    ["missing", ""],
+    ["zero", "0"],
+    ["malformed", "tall"],
+  ])("4: one child's valid height does not conceal another child's %s height", (_label, heightInches) => {
+    const result = getFamilyProfileCompletion(
+      withChildren([
+        { id: "child_1", age: 6, heightInches: 46 },
+        { id: "child_2", age: 4, heightInches },
+      ])
+    );
+    expect(result.isComplete).toBe(false);
+    expect(result.missing).toEqual(["child heights"]);
+  });
+});
+
+describe("child heights in the real App", () => {
+  test.each([
+    ["an entered 0", "0"],
+    ["a cleared height", ""],
+  ])("5 + 6 + 7: %s keeps setup incomplete across a reload, and a valid height restores it", async (_label, value) => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(COMPLETE_PROFILE));
+    await renderApp();
+    expect(await profileStatus()).toEqual(COMPLETE_STATUS);
+
+    await openSetupFromProfile();
+    expect(heightInput(0).getAttribute("min")).toBe("1");
+    await setField(heightInput(0), value);
+    expect(await doneButtonLabel()).toBe("Finish Setup First");
+    if (value === "0") {
+      expect(text()).toContain(HEIGHT_NOTE);
+    } else {
+      expect(text()).not.toContain(HEIGHT_NOTE);
+    }
+    await viewBasicWaits();
+
+    expect(await profileStatus()).toEqual(NEEDED_STATUS);
+    expect(text()).toContain("child heights");
+    expect(text()).not.toContain('0" tall');
+    expect(text()).toContain("height not set");
+    expect(await planIsLocked()).toBe(true);
+    await goToTab("Waits");
+    expect(text()).toContain("TRON Lightcycle / Run");
+
+    await reload();
+    expect(onSetupScreen()).toBe(true);
+    expect(stored().children[0].heightInches).toBe(value);
+    await viewBasicWaits();
+    expect(await profileStatus()).toEqual(NEEDED_STATUS);
+    expect(unrelated(stored())).toEqual(EXPECTED_UNRELATED);
+
+    // A valid height, fractional included, restores completion.
+    await openSetupFromProfile();
+    await setField(heightInput(0), "40.5");
+    expect(text()).not.toContain(HEIGHT_NOTE);
+    expect(await doneButtonLabel()).toBe("Unlock My Family Plan");
+    await pressDone();
+    expect(onSetupScreen()).toBe(false);
+    expect(await profileStatus()).toEqual(COMPLETE_STATUS);
+    expect(await planIsLocked()).toBe(false);
+
+    await reload();
+    expect(onSetupScreen()).toBe(false);
+    expect(stored().children[0].heightInches).toBe("40.5");
+    expect(unrelated(stored())).toEqual(EXPECTED_UNRELATED);
+  });
+
+  test("a stored zero height with a stale complete flag opens as setup needed, and is not rewritten", async () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(
+        withChildren([
+          { id: "child_1", label: "Child 1", age: 6, heightInches: 46 },
+          { id: "child_2", label: "Child 2", age: 3, heightInches: "0" },
+        ])
+      )
+    );
+    await renderApp();
+
+    expect(onSetupScreen()).toBe(true);
+    expect(text()).toContain(HEIGHT_NOTE);
+    expect(await doneButtonLabel()).toBe("Finish Setup First");
+    await viewBasicWaits();
+    expect(await profileStatus()).toEqual(NEEDED_STATUS);
+    expect(await planIsLocked()).toBe(true);
+    expect(stored().children.map((child) => child.heightInches)).toEqual([46, "0"]);
+  });
+});

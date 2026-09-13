@@ -1,5 +1,6 @@
 import React from "react";
 import { getResortProfile } from "../resortProfiles";
+import { parseChildHeight } from "../utils/familyProfile";
 
 const BETA_DISABLED_PARK_IDS = new Set([
   "universal_sf",
@@ -823,7 +824,7 @@ export function OnboardingFlow({
                               Height in inches
                               <input
                                 type="number"
-                                min="0"
+                                min="1"
                                 max="72"
                                 value={child.heightInches}
                                 onChange={(e) =>
@@ -838,6 +839,15 @@ export function OnboardingFlow({
                           <p style={{ margin: "8px 0 0", color: palette.muted, fontSize: 12 }}>
                             {getDisneyAgeLabel(ageClass)}
                           </p>
+
+                          {/* Only for something entered that is not a height. A blank
+                              height is simply not answered yet. */}
+                          {String(child.heightInches ?? "").trim() !== "" &&
+                            parseChildHeight(child.heightInches) === null && (
+                              <p style={{ margin: "4px 0 0", color: palette.muted, fontSize: 12 }}>
+                                Enter a height above 0 inches.
+                              </p>
+                            )}
                         </div>
                       );
                     })}

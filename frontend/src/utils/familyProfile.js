@@ -109,6 +109,27 @@ export function parseChildAge(value) {
 }
 
 /**
+ * A child's height in inches, or null when no usable height was given.
+ *
+ * The same contract the family summary already applies when it picks the
+ * shortest rider: a finite number above 0. Numbers and numeric strings are read
+ * alike, and positive fractions are kept — heights are not whole years. Blank,
+ * whitespace, zero, negative, malformed text, and any non-number type (true,
+ * arrays, objects) are not a height.
+ */
+export function parseChildHeight(value) {
+  const candidate = typeof value === "string" ? value.trim() : value;
+
+  if (candidate === "" || (typeof candidate !== "string" && typeof candidate !== "number")) {
+    return null;
+  }
+
+  const height = Number(candidate);
+
+  return Number.isFinite(height) && height > 0 ? height : null;
+}
+
+/**
  * A party count as given, or null when none was given. Numbers and numeric
  * strings (the setup selects hand back strings) are read the same way; blank,
  * malformed and fractional values are not a count. Range limits stay with the
@@ -517,8 +538,11 @@ export function getFamilyProfileCompletion(profile = {}) {
     // The same reading every age consumer uses: whitespace, negative, fractional
     // and malformed ages are unknown, and an entered 0 is a real age.
     const missingChildAge = safeProfile.children.some((child) => parseChildAge(child.age) === null);
+    // A usable height, read the way the family summary reads it for ride-height
+    // checks. A zero, negative, whitespace or malformed height used to satisfy
+    // setup while that child contributed no height at all.
     const missingChildHeight = safeProfile.children.some(
-      (child) => child.heightInches === ""
+      (child) => parseChildHeight(child.heightInches) === null
     );
 
     if (missingChildAge) missing.push("child ages");

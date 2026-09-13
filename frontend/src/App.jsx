@@ -122,6 +122,7 @@ import {
   getParkLabel,
   getFamilyProfileCompletion,
   normalizeFamilyProfile,
+  parseChildHeight,
   buildFamilyProfileSummary,
   readStoredFamilyProfile,
   writeStoredFamilyProfile,
@@ -7834,8 +7835,9 @@ function App() {
                           {familyProfileSummary.children.map((child, index) => {
                             const ageClass = getDisneyAgeClass(child.age);
                             const hasAge = child.age !== "" && child.age != null;
-                            const hasHeight =
-                              child.heightInches !== "" && child.heightInches != null;
+                            // The usable height setup requires, so a 0 is never
+                            // shown as a height.
+                            const hasHeight = parseChildHeight(child.heightInches) !== null;
 
                             return (
                               <div
