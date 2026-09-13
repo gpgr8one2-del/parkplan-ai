@@ -2362,8 +2362,19 @@ function App() {
   // from the field report.
   const [locationFreshnessNow, setLocationFreshnessNow] = useState(() => Date.now());
 
+  // One writer for the shared clock. Timers call this with no argument; an
+  // accepted GPS fix supplies the handling instant so a render-clock tick can
+  // never lag behind the sample whose freshness it is about to judge.
+  const markLocationFreshnessNow = useCallback((minimumNow = 0) => {
+    const requestedNow = Number(minimumNow);
+
+    setLocationFreshnessNow((current) =>
+      Math.max(current, Date.now(), Number.isFinite(requestedNow) ? requestedNow : 0)
+    );
+  }, []);
+
   useEffect(() => {
-    const markNow = () => setLocationFreshnessNow(Date.now());
+    const markNow = () => markLocationFreshnessNow();
 
     const intervalId = setInterval(markNow, 30 * 1000);
     const handleVisibility = () => {
@@ -2376,7 +2387,7 @@ function App() {
       clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, []);
+  }, [markLocationFreshnessNow]);
   const [initialFamilyProfileState] = useState(() => {
     const storedProfile = readStoredFamilyProfile();
     const storedCompletion = getFamilyProfileCompletion(storedProfile);
@@ -3550,6 +3561,13 @@ function App() {
           return null;
         }
 
+        // locationFreshnessNow is a 30-second render clock. A real GPS fix can
+        // arrive between its ticks, so synchronize that clock with the instant
+        // this accepted sample is handled. Without this, the expiry effect sees
+        // the new fix as being "from the future" for the remainder of the tick
+        // and immediately clears the land that was just detected.
+        const acceptedAtMs = Date.now();
+
         const structuredLocation = {
           source: "gps",
           parkId: activePark,
@@ -3565,9 +3583,10 @@ function App() {
           // is already partly spent on arrival, and freshness must be measured
           // against the fix.
           fixedAtMs: position.timestamp,
-          updatedAt: new Date().toISOString(),
+          updatedAt: new Date(acceptedAtMs).toISOString(),
         };
 
+        markLocationFreshnessNow(acceptedAtMs);
         setDetectedLocationContext(structuredLocation);
 
         // Do not let low-confidence GPS yank families into the wrong land.
@@ -3682,6 +3701,7 @@ function App() {
       currentLand,
       devPreviewFullApp,
       familyProfileSummary,
+      markLocationFreshnessNow,
       profileCompletion.isComplete,
       timeContext,
     ]
@@ -3786,6 +3806,12 @@ function App() {
 
         if (stability.decision.action !== "accept") return;
 
+        // Keep the shared render clock at least as current as this accepted GPS
+        // callback. Otherwise a sample received between 30-second ticks is
+        // briefly newer than locationFreshnessNow and the expiry effect tears
+        // it down in the very next render.
+        const acceptedAtMs = Date.now();
+
         const structuredLocation = {
           source: "gps_watch",
           parkId: activePark,
@@ -3797,9 +3823,10 @@ function App() {
           distanceMeters: detectedZone.distanceMeters,
           confidence: detectedZone.confidence,
           fixedAtMs: position.timestamp,
-          updatedAt: new Date().toISOString(),
+          updatedAt: new Date(acceptedAtMs).toISOString(),
         };
 
+        markLocationFreshnessNow(acceptedAtMs);
         setDetectedLocationContext(structuredLocation);
         setLastLocationUpdateAt(structuredLocation.updatedAt);
         setLocationError("");
@@ -3829,7 +3856,7 @@ function App() {
       isActive = false;
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [activePark, locationAutoEnabled]);
+  }, [activePark, locationAutoEnabled, markLocationFreshnessNow]);
 
   useEffect(() => {
     isRestoringParkState.current = true;
