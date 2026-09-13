@@ -49,6 +49,30 @@ function sanitizeCandidate(candidate = {}) {
   };
 }
 
+const WEATHER_SOURCES = new Set(["live", "cached", "stale"]);
+
+// The reviewer may only be told about conditions TOHI actually has a reading
+// for. When the app says weather is unavailable, any supplied mode is discarded
+// — the app derives "normal" from absent weather, and passing it on would read
+// as known, storm-free conditions. A missing mode is "unknown", never "normal".
+// Older clients that send no availability keep their supplied mode.
+function sanitizeWeatherContext(context = {}) {
+  const available =
+    typeof context.weatherAvailable === "boolean" ? context.weatherAvailable : null;
+
+  if (available === false) {
+    return { weatherMode: "unavailable", weatherAvailable: false, weatherSource: null };
+  }
+
+  const source = cleanString(context.weatherSource, 20);
+
+  return {
+    weatherMode: cleanString(context.weatherMode, 40) || "unknown",
+    weatherAvailable: available,
+    weatherSource: source && WEATHER_SOURCES.has(source) ? source : null,
+  };
+}
+
 function sanitizeReviewPayload(payload = {}) {
   const topCandidate = sanitizeCandidate(payload.topCandidate);
   const shortlist = (Array.isArray(payload.shortlist) ? payload.shortlist : [])
@@ -63,7 +87,7 @@ function sanitizeReviewPayload(payload = {}) {
     context: {
       activePark: cleanString(context.activePark, 60),
       currentLand: cleanString(context.currentLand, 60),
-      weatherMode: cleanString(context.weatherMode, 40),
+      ...sanitizeWeatherContext(context),
       dayPhase: cleanString(context.dayPhase, 40),
       waitDataFreshness: cleanString(context.waitDataFreshness, 40),
       currentActivity:

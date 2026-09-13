@@ -54,6 +54,31 @@ function stableSerialize(value) {
     .join(",")}}`;
 }
 
+const WEATHER_SOURCES = new Set(["live", "cached", "stale"]);
+
+// Weather the review is told about. A mode is only a condition when a usable
+// weather reading exists: getWeatherMode(null) is "normal", so an unavailable or
+// missing reading must never reach the reviewer as known normal weather.
+//   - weatherAvailable === false  -> "unavailable", whatever mode was supplied
+//   - no usable mode              -> "unknown"
+//   - otherwise                   -> the supplied mode
+// weatherSource is the provider's own provenance, kept only for a usable reading.
+function sanitizeWeatherContext({ weatherMode, weatherAvailable, weatherSource } = {}) {
+  const available = typeof weatherAvailable === "boolean" ? weatherAvailable : null;
+
+  if (available === false) {
+    return { weatherMode: "unavailable", weatherAvailable: false, weatherSource: null };
+  }
+
+  const source = cleanString(weatherSource, 20);
+
+  return {
+    weatherMode: cleanString(weatherMode?.mode || weatherMode, 40) || "unknown",
+    weatherAvailable: available,
+    weatherSource: source && WEATHER_SOURCES.has(source) ? source : null,
+  };
+}
+
 // Freshness enters the signature as a coarse bucket so the aging clock alone
 // does not invalidate a verdict every minute.
 function getFreshnessBucket(waitDataFreshness) {
@@ -103,6 +128,11 @@ export function buildTohiPickReviewSignature(input = {}) {
       activePark: request.context.activePark,
       currentLand: request.context.currentLand,
       weatherMode: request.context.weatherMode,
+      // Unknown or unavailable weather must never share a cached verdict with
+      // known weather. Stale is kept apart from current weather; live and cached
+      // are equivalent, so an ordinary refresh does not re-trigger a review.
+      weatherAvailable: request.context.weatherAvailable,
+      weatherStale: request.context.weatherSource === "stale",
       dayPhase: request.context.dayPhase,
       freshnessBucket: getFreshnessBucket(request.context.waitDataFreshness),
       activity: request.context.currentActivity
@@ -160,6 +190,8 @@ export function sanitizeTohiPickReviewRequest({
   activePark,
   currentLand,
   weatherMode,
+  weatherAvailable,
+  weatherSource,
   dayPhase,
   waitAgeMinutes,
   currentActivity,
@@ -178,7 +210,7 @@ export function sanitizeTohiPickReviewRequest({
     context: {
       activePark: cleanString(activePark, 60),
       currentLand: cleanString(currentLand, 60),
-      weatherMode: cleanString(weatherMode?.mode || weatherMode, 40) || "normal",
+      ...sanitizeWeatherContext({ weatherMode, weatherAvailable, weatherSource }),
       dayPhase: cleanString(dayPhase, 40),
       waitDataFreshness: Number.isFinite(numericAge)
         ? `${Math.max(0, Math.round(numericAge))} min old`

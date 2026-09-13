@@ -6099,6 +6099,10 @@ function App() {
       activePark,
       currentLand,
       weatherMode,
+      // The pick's own usable-weather judgment. weatherMode alone cannot say
+      // whether a reading exists: getWeatherMode(null) is "normal".
+      weatherAvailable: tohiPickDebugPreview.eligibility?.signals?.weatherUsable === true,
+      weatherSource: weather?.source || null,
       dayPhase: timeContext?.dayPhase || null,
       waitAgeMinutes: Number.isFinite(Number(parkData?.ageMs))
         ? Number(parkData.ageMs) / 60000
@@ -6112,6 +6116,7 @@ function App() {
     activePark,
     currentLand,
     weatherMode,
+    weather,
     timeContext,
     parkData,
     currentActivity,
@@ -6134,6 +6139,8 @@ function App() {
     activePark,
     currentLand,
     weatherMode,
+    weatherAvailable: tohiPickDebugPreview.eligibility?.signals?.weatherUsable === true,
+    weatherSource: weather?.source || null,
     dayPhase: timeContext?.dayPhase || null,
     waitAgeMinutes: Number.isFinite(Number(parkData?.ageMs))
       ? Number(parkData.ageMs) / 60000
@@ -6181,6 +6188,8 @@ function App() {
         activePark: fireContext.activePark,
         currentLand: fireContext.currentLand,
         weatherMode: fireContext.weatherMode,
+        weatherAvailable: fireContext.weatherAvailable,
+        weatherSource: fireContext.weatherSource,
         dayPhase: fireContext.dayPhase,
         waitAgeMinutes: fireContext.waitAgeMinutes,
         currentActivity: fireContext.currentActivity,
