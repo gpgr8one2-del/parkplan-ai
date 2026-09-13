@@ -209,6 +209,23 @@ const REAL_WEATHER = {
 
 const base = { activePark: "magic_kingdom", activeParkLabel: "Magic Kingdom" };
 
+/** A guest confirmation layered over a real provider Rain Watch, as App builds it. */
+async function modelContextWithProviderRain() {
+  const { context } = await modelFacing(QUESTION, {
+    ...base,
+    weather: {
+      ...REAL_WEATHER,
+      summary: "Rain possible soon",
+      rainRisk: 0.6,
+      currentPrecipitation: true,
+      guestConfirmedRain: true,
+      forecastCurrentPrecipitation: false,
+    },
+    weatherMode: { mode: "rain", label: "Light Rain", message: "Light rain is falling at the park right now." },
+  });
+  return weatherBlock(context);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Scenarios                                                                  */
 /* -------------------------------------------------------------------------- */
@@ -368,6 +385,59 @@ async function run() {
       "8. guest rain report: no clear-weather or no-storm claim contradicts it",
       unsupportedClaims(context).length === 0 && weatherBlock(context) === "Weather: unavailable",
       `found ${unsupportedClaims(context).join(", ")}; weather block:\n${weatherBlock(context)}`
+    );
+  }
+
+  // 10. A stored "Yes, it's raining" still applying while provider weather is
+  //     unavailable: the decision weather carries only the guest's report.
+  {
+    const guestOnly = {
+      currentPrecipitation: true,
+      forecastCurrentPrecipitation: null,
+      guestConfirmedRain: true,
+      guestConfirmedRainAt: 1782590400000,
+      guestConfirmedRainExpiresAt: 1782595800000,
+      providerWeatherUnavailable: true,
+    };
+    const LIGHT_RAIN_MODE = {
+      mode: "rain",
+      label: "Light Rain",
+      message: "Light rain is falling at the park right now.",
+    };
+    const { context } = await modelFacing(QUESTION, {
+      ...base,
+      weather: guestOnly,
+      weatherMode: LIGHT_RAIN_MODE,
+      dataFreshness: NO_WEATHER_FRESHNESS,
+    });
+    const block = weatherBlock(context);
+    check(
+      "10. guest-reported rain without provider weather: named as the guest's report, not a provider reading",
+      block ===
+        [
+          "Weather: provider weather unavailable, so there is no temperature, rain-probability or storm reading. The guest reported that it is raining; this is their report, not a provider reading.",
+          "Weather mode: Light Rain (rain), from the guest's rain report",
+          "Weather advice: Light rain is falling at the park right now.",
+        ].join("\n"),
+      `weather block:\n${block}`
+    );
+    check(
+      "10. guest-reported rain without provider weather: no provider storm, temperature or probability claim",
+      !/provider storm signal|active storm mode|°F|rain risk: |temp unavailable/.test(block),
+      `weather block:\n${block}`
+    );
+    check(
+      "10. guest-reported rain without provider weather: freshness still says weather data is missing",
+      /^- Weather data: data missing;/.test(freshnessLine(context, "Weather data")),
+      freshnessLine(context, "Weather data")
+    );
+
+    // A confirmation over REAL provider weather keeps the existing format.
+    const overProvider = await modelContextWithProviderRain();
+    check(
+      "10. guest-confirmed rain over real provider weather: existing format unchanged",
+      overProvider.startsWith("Weather: 81°F · feels like 83°F · humidity: 70% · Rain possible soon · rain risk: 0.6 · provider storm signal: no · active storm mode: no"),
+      `weather block:\n${overProvider}`
     );
   }
 

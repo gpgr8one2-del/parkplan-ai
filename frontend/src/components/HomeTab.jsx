@@ -716,7 +716,10 @@ export function HomeTab({
                 }}
               >
                 You told us it is raining, so TOHI is favoring indoor and covered
-                moves for now. The forecast above is unchanged.
+                moves for now.{" "}
+                {weather
+                  ? "The forecast above is unchanged."
+                  : "Live weather isn’t available right now, so this is based on what you told us."}
               </p>
             )}
           </div>

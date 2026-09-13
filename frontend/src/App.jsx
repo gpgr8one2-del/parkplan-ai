@@ -35,10 +35,12 @@ import { getNextBestRides, getRecommendationWeatherState } from "./rideRecommend
 import {
   applyRainConfirmationToWeather,
   applyRainNotYetToWeather,
+  buildGuestReportedRainWeather,
   buildRainConfirmationRecord,
   canAskRainConfirmation,
   clearStoredRainConfirmation,
   getActiveRainConfirmation,
+  getActiveRainConfirmationWithoutProviderWeather,
   getActiveRainNotYet,
   getRainConfirmationEpisode,
   isRainConfirmationObsolete,
@@ -4383,6 +4385,11 @@ function App() {
         episode: rainConfirmationEpisode,
         weatherState: recommendationWeatherState,
         now: locationFreshnessNow,
+        // With no provider reading (loading after a reload, or failed with
+        // nothing retained) a missing episode is not the episode ending.
+        providerWeatherAvailable: Boolean(weather),
+        parkId: activePark,
+        tripDate: timeContext?.orlandoDate,
       })
     ) {
       clearStoredRainConfirmation();
@@ -4393,15 +4400,37 @@ function App() {
     rainConfirmationEpisode,
     recommendationWeatherState,
     locationFreshnessNow,
+    weather,
+    activePark,
+    timeContext?.orlandoDate,
   ]);
 
   const activeRainConfirmation = useMemo(() => {
+    // Provider weather present: the answer applies to its own forecast episode,
+    // exactly as before. Absent: it keeps applying for its park, trip date and
+    // effect window, because missing data is not evidence the rain stopped.
+    if (!weather) {
+      return getActiveRainConfirmationWithoutProviderWeather({
+        record: rainConfirmationRecord,
+        parkId: activePark,
+        tripDate: timeContext?.orlandoDate,
+        now: locationFreshnessNow,
+      });
+    }
+
     return getActiveRainConfirmation({
       episode: rainConfirmationEpisode,
       record: rainConfirmationRecord,
       now: locationFreshnessNow,
     });
-  }, [rainConfirmationEpisode, rainConfirmationRecord, locationFreshnessNow]);
+  }, [
+    weather,
+    activePark,
+    timeContext?.orlandoDate,
+    rainConfirmationEpisode,
+    rainConfirmationRecord,
+    locationFreshnessNow,
+  ]);
 
   const activeRainNotYet = useMemo(() => {
     return getActiveRainNotYet({
@@ -4421,7 +4450,12 @@ function App() {
   // exclusive by construction: one stored record carries one response.
   const weatherForDecisions = useMemo(() => {
     if (activeRainConfirmation) {
-      return applyRainConfirmationToWeather(weather, activeRainConfirmation);
+      // No provider reading to layer onto: decide from the guest's report alone,
+      // without inventing any provider measurement. `weather` stays null, so
+      // freshness, the rain prompt and TOHI Pick still see no provider weather.
+      return weather
+        ? applyRainConfirmationToWeather(weather, activeRainConfirmation)
+        : buildGuestReportedRainWeather(activeRainConfirmation);
     }
 
     return applyRainNotYetToWeather(weather, activeRainNotYet);

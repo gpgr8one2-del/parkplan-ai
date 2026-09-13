@@ -315,6 +315,23 @@ function buildWeatherContext(weather, weatherMode) {
     return "Weather: unavailable";
   }
 
+  const mode = weatherMode?.mode || "unknown";
+  const label = weatherMode?.label || "unknown";
+  const message = weatherMode?.message || "";
+
+  // Provider weather is unavailable, but the guest told TOHI it is raining. Say
+  // exactly that: no provider reading exists, so there is no temperature,
+  // probability or storm signal to report either way — not "storm signal: no".
+  if (weather.providerWeatherUnavailable === true && weather.guestConfirmedRain === true) {
+    return [
+      "Weather: provider weather unavailable, so there is no temperature, rain-probability or storm reading. The guest reported that it is raining; this is their report, not a provider reading.",
+      `Weather mode: ${label} (${mode}), from the guest's rain report`,
+      message ? `Weather advice: ${message}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
   const temp = weather?.tempF ? `${weather.tempF}°F` : "temp unavailable";
   const feelsLike =
     weather?.feelsLikeF !== undefined && weather?.feelsLikeF !== null
@@ -329,9 +346,6 @@ function buildWeatherContext(weather, weatherMode) {
     weather?.rainRisk !== undefined && weather?.rainRisk !== null
       ? `rain risk: ${weather.rainRisk}`
       : "rain risk unavailable";
-  const mode = weatherMode?.mode || "unknown";
-  const label = weatherMode?.label || "unknown";
-  const message = weatherMode?.message || "";
   const providerStormSignal = weather?.stormMode
     ? "provider storm signal: yes"
     : "provider storm signal: no";

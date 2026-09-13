@@ -214,6 +214,18 @@ function isRecordForEpisode(record, episode) {
   return Boolean(record && episode && record.episodeId === episode.episodeId);
 }
 
+/**
+ * The park and trip date an answer was given for, derived the same way the
+ * episode derives them. Used only while provider weather is unavailable, when
+ * the forecast window that completes an episode cannot be seen.
+ */
+function isRecordForScope(record, { parkId, tripDate } = {}) {
+  const safeParkId = cleanString(parkId);
+  if (!record || !safeParkId) return false;
+
+  return record.parkId === safeParkId && record.tripDate === (cleanString(tripDate) || "undated");
+}
+
 /** Past the absolute backstop on the stored record itself. */
 function isRecordExpired(record, now) {
   const time = toTimestamp(now);
@@ -310,6 +322,37 @@ export function getActiveRainConfirmation({ episode, record, now } = {}) {
 }
 
 /**
+ * The confirmation that should colour decisions while provider weather is
+ * unavailable, or null.
+ *
+ * A temporary absence of provider data is not evidence that the guest's report
+ * became false. The answer keeps applying for exactly the scope and lifetime it
+ * already had — same park, same trip date, its own effect window and backstop —
+ * and never longer. Only a confirmation qualifies: "not yet" and dismissals
+ * describe no rain and are never turned into one.
+ */
+export function getActiveRainConfirmationWithoutProviderWeather({
+  record,
+  parkId,
+  tripDate,
+  now,
+} = {}) {
+  const safeRecord = normalizeRainConfirmationRecord(record);
+
+  if (!safeRecord) return null;
+  if (safeRecord.response !== RAIN_CONFIRMATION_RESPONSES.CONFIRMED) return null;
+  if (!isRecordForScope(safeRecord, { parkId, tripDate })) return null;
+  if (isRecordExpired(safeRecord, now)) return null;
+
+  const time = toTimestamp(now);
+  if (time == null) return null;
+  if (safeRecord.effectExpiresAt == null) return null;
+  if (time >= safeRecord.effectExpiresAt) return null;
+
+  return safeRecord;
+}
+
+/**
  * The live "not yet" answer that should currently colour decisions, or null.
  *
  * Mirrors getActiveRainConfirmation for the opposite answer. Same episode
@@ -380,11 +423,22 @@ export function isRainConfirmationObsolete({
   episode,
   weatherState,
   now,
+  providerWeatherAvailable,
+  parkId,
+  tripDate,
 } = {}) {
   const safeRecord = normalizeRainConfirmationRecord(record);
   if (!safeRecord) return false;
 
   if (isRecordExpired(safeRecord, now)) return true;
+
+  // No provider reading — still loading after a reload, or a failed request with
+  // nothing retained. Missing data cannot end an episode or report rain of its
+  // own, so only what the record itself can still check applies: its backstop
+  // above, and the park and trip date it was given for.
+  if (providerWeatherAvailable === false) {
+    return !isRecordForScope(safeRecord, { parkId, tripDate });
+  }
 
   // The provider now reports precipitation itself. Its reading takes over, and
   // any earlier "not yet" must not survive to argue with it.
@@ -417,6 +471,31 @@ export function applyRainConfirmationToWeather(weather, confirmation) {
     guestConfirmedRainAt: confirmation.respondedAt,
     guestConfirmedRainExpiresAt: confirmation.effectExpiresAt,
     forecastCurrentPrecipitation: weather.currentPrecipitation ?? null,
+  };
+}
+
+/**
+ * Decision weather carrying ONLY the guest's rain report, for when there is no
+ * provider reading to layer it onto.
+ *
+ * Not a provider weather object: no temperature, humidity, probability,
+ * forecast window, storm signal, source or timestamp is invented.
+ * `currentPrecipitation` is the one field the guest actually answered, so every
+ * existing rain rule reacts exactly as it does to a confirmation over provider
+ * weather. A guest report is rain, never lightning — nothing here is storm
+ * evidence. `providerWeatherUnavailable` marks the provenance for anything that
+ * describes it.
+ */
+export function buildGuestReportedRainWeather(confirmation) {
+  if (!confirmation) return null;
+
+  return {
+    currentPrecipitation: true,
+    guestConfirmedRain: true,
+    guestConfirmedRainAt: confirmation.respondedAt,
+    guestConfirmedRainExpiresAt: confirmation.effectExpiresAt,
+    forecastCurrentPrecipitation: null,
+    providerWeatherUnavailable: true,
   };
 }
 
