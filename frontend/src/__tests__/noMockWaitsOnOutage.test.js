@@ -200,33 +200,6 @@ function installNetwork() {
 /* Harness                                                                    */
 /* -------------------------------------------------------------------------- */
 
-// Pre-existing, outside this fix: apiFetch's dedupe bookkeeping,
-// `requestPromise.finally(() => activeRequests.delete(key))`, derives a promise
-// nobody handles, so every failed de-duplicated request also surfaces as an
-// unhandled rejection. The app's loaders do handle the request's own rejection —
-// the tests below assert the resulting unavailable state. Only those API errors
-// are tolerated here, and only on `.finally`-derived promises; anything else is
-// re-raised as unhandled and still fails the run. The derived promise itself is
-// returned unchanged, so every awaiting caller sees the same rejection.
-const originalFinally = Promise.prototype.finally;
-
-beforeAll(() => {
-  // eslint-disable-next-line no-extend-native
-  Promise.prototype.finally = function finallyWithDedupeTolerance(onFinally) {
-    const derived = originalFinally.call(this, onFinally);
-    derived.catch((reason) => {
-      if (/^API \/api\/(park-data|weather)\?/.test(reason?.message || "")) return;
-      Promise.reject(reason);
-    });
-    return derived;
-  };
-});
-
-afterAll(() => {
-  // eslint-disable-next-line no-extend-native
-  Promise.prototype.finally = originalFinally;
-});
-
 let container = null;
 let root = null;
 

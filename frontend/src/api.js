@@ -96,7 +96,14 @@ async function apiFetch(path, options = {}, config = {}) {
 
   if (dedupe) {
     activeRequests.set(key, requestPromise);
-    requestPromise.finally(() => activeRequests.delete(key));
+    // Cleanup on both outcomes. `.then(cleanup, cleanup)` rather than
+    // `.finally(cleanup)`: this derived promise is never awaited, and a finally
+    // chain would re-reject on failure as an unhandled rejection. Callers still
+    // receive requestPromise itself, with its original result or rejection.
+    const cleanup = () => {
+      activeRequests.delete(key);
+    };
+    requestPromise.then(cleanup, cleanup);
   }
 
   return requestPromise;
