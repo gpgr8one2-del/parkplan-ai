@@ -307,7 +307,11 @@ function formatRideCard(label, ride) {
 }
 
 function buildWeatherContext(weather, weatherMode) {
-  if (!weather && !weatherMode) {
+  // No reading means no conditions to describe. A weather mode on its own is not
+  // evidence: the app derives "normal" / "Good Conditions" from absent weather,
+  // and rendering it would present missing data as favorable, no-storm
+  // conditions.
+  if (!weather || typeof weather !== "object") {
     return "Weather: unavailable";
   }
 

@@ -5968,7 +5968,9 @@ function App() {
           // The decision weather, so TOHI answers about the same conditions the
           // cards were ranked against. The forecast fields ride along untouched.
           weather: weatherForDecisions,
-          weatherMode,
+          // getWeatherMode(null) is "normal" / "Good Conditions". With no weather
+          // reading that is not a condition TOHI knows, so chat gets no mode.
+          weatherMode: weatherForDecisions ? weatherMode : null,
           recommendations,
           // Connection-status entries are app notices, not things TOHI said, so
           // they are filtered out before the history is sent. Replaying one would
