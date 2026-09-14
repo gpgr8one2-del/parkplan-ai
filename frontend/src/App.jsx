@@ -170,15 +170,15 @@ const AUTO_REFRESH_MS = 3 * 60 * 1000;
  */
 const APP_DATA_ERROR_COPY = {
   REFRESH_FAILED_WITH_DATA:
-    "We couldnât refresh right now. Youâre seeing the last information we loaded. Please try again.",
+    "We couldn’t refresh right now. You’re seeing the last information we loaded. Please try again.",
   LOAD_FAILED_NO_DATA:
-    "We couldnât load park information right now. Please try again in a moment.",
+    "We couldn’t load park information right now. Please try again in a moment.",
   WAITS_REFRESH_FAILED_WITH_DATA:
-    "We couldnât refresh wait times right now. Youâre seeing the last wait times we loaded.",
-  WAITS_LOAD_FAILED_NO_DATA: "We couldnât load wait times right now.",
+    "We couldn’t refresh wait times right now. You’re seeing the last wait times we loaded.",
+  WAITS_LOAD_FAILED_NO_DATA: "We couldn’t load wait times right now.",
   WEATHER_REFRESH_FAILED_WITH_DATA:
-    "We couldnât refresh the weather right now. Youâre seeing the last weather we loaded.",
-  WEATHER_LOAD_FAILED_NO_DATA: "We couldnât load the weather right now.",
+    "We couldn’t refresh the weather right now. You’re seeing the last weather we loaded.",
+  WEATHER_LOAD_FAILED_NO_DATA: "We couldn’t load the weather right now.",
   TRY_AGAIN: "Please try again in a moment.",
 };
 
@@ -188,7 +188,7 @@ const APP_DATA_ERROR_COPY = {
  * Waits and weather load independently, so one can fail while the other
  * refreshes. When both failed the same way, the original combined copy is
  * still the honest summary. Otherwise each failed source is named on its own,
- * and "the last â¦ we loaded" is only said about a source that really has it.
+ * and "the last … we loaded" is only said about a source that really has it.
  */
 function buildAppDataErrorMessage({ waitsFailed, weatherFailed, hasWaits, hasWeather }) {
   if (!waitsFailed && !weatherFailed) return "";
@@ -285,10 +285,10 @@ function writeDebugSnapshotEnabled(enabled) {
 }
 
 function dbFmt(v) {
-  if (v === null || v === undefined) return "â";
+  if (v === null || v === undefined) return "—";
   if (typeof v === "boolean") return v ? "true" : "false";
   if (Array.isArray(v)) return `[${v.length}]`;
-  if (typeof v === "object") return "{â¦}";
+  if (typeof v === "object") return "{…}";
   return String(v);
 }
 
@@ -372,7 +372,7 @@ const premiumBadge = {
 };
 
 /* -------------------------------------------------------------------------- */
-/* Profile display labels â presentation only                                 */
+/* Profile display labels — presentation only                                 */
 /* -------------------------------------------------------------------------- */
 
 // Stored profile values are internal ids. Profile previously rendered several of
@@ -452,8 +452,8 @@ const PROFILE_TRANSPORT_LABELS = {
 };
 
 const PROFILE_HOPPER_LABELS = {
-  yes: "Yes â planning to hop",
-  no: "No â one park per day",
+  yes: "Yes — planning to hop",
+  no: "No — one park per day",
   unknown: "Not decided yet",
 };
 
@@ -501,14 +501,14 @@ function formatProfileTripDates(tripContext = {}) {
   const endLabel = format(end);
 
   if (startLabel && endLabel) {
-    return startLabel === endLabel ? startLabel : `${startLabel} â ${endLabel}`;
+    return startLabel === endLabel ? startLabel : `${startLabel} – ${endLabel}`;
   }
 
   return startLabel || endLabel;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Profile night palette â presentation only                                   */
+/* Profile night palette — presentation only                                   */
 /* -------------------------------------------------------------------------- */
 
 // The approved night colour for every Profile surface, written beside the exact
@@ -522,8 +522,8 @@ function formatProfileTripDates(tripContext = {}) {
 // text, #B6C2E2 secondary text, #C4B5FD purple, #7DD3FC sky, #FCD34D amber,
 // #6EE7B7 success. No pure black, and no bright-white card left on the shell.
 const PROFILE_NIGHT = {
-  // Setup hero. Day carries a white â lavender â cream wash; night carries the
-  // same three-stop movement in navy â indigo â plum.
+  // Setup hero. Day carries a white → lavender → cream wash; night carries the
+  // same three-stop movement in navy → indigo → plum.
   heroBackground: "linear-gradient(150deg, #131C36 0%, #1B1A45 56%, #251F3F 100%)",
   heroBorder: "1px solid rgba(139, 92, 246, 0.40)", //  <- rgba(124, 58, 237, 0.22)
   heroShadow: "0 16px 38px rgba(2, 6, 23, 0.50)", //    <- rgba(91, 33, 182, 0.10)
@@ -766,7 +766,7 @@ function buildLocalChatFallback({
   const lines = [
     "TOHI Offline Help",
     "",
-    "Iâm having trouble reaching AI chat right now, so I do not want to pretend I fully understood the question.",
+    "I’m having trouble reaching AI chat right now, so I do not want to pretend I fully understood the question.",
     "",
     "Here is the safest read from the live app engine right now:",
   ];
@@ -923,9 +923,9 @@ function cleanAssistantReply(text = "", userMessage = "") {
 
 // 64B-2B. Approved connection-status copy, verbatim.
 const TOHI_CHAT_CONNECTION_FAILURE_COPY =
-  "TOHI couldnât connect right now. Your plan and recommendations havenât changed. You can try sending your question again.";
+  "TOHI couldn’t connect right now. Your plan and recommendations haven’t changed. You can try sending your question again.";
 
-// One construction path for BOTH failure kinds â a rejected request and a
+// One construction path for BOTH failure kinds — a rejected request and a
 // success whose reply is unusable. Having a single builder is what stops the
 // copy or the marker drifting apart between the two branches.
 //
@@ -1468,7 +1468,7 @@ function buildLiveParkContext({
       ...base,
       status: "viewing_second_park",
       label: "Viewing your second park",
-      guidance: `Youâre viewing ${activeParkLabel} live waits. Todayâs plan is ${planLabel}, and ${activeParkLabel} is the second park.${mustDoContext} Right Now moves are using ${activeParkLabel}.`,
+      guidance: `You’re viewing ${activeParkLabel} live waits. Today’s plan is ${planLabel}, and ${activeParkLabel} is the second park.${mustDoContext} Right Now moves are using ${activeParkLabel}.`,
       showNotice: true,
     };
   }
@@ -1478,7 +1478,7 @@ function buildLiveParkContext({
       ...base,
       status: "viewing_planned_park",
       label: "Viewing planned park",
-      guidance: `Youâre viewing ${activeParkLabel} live waits, which matches todayâs planning park. Right Now moves are using ${activeParkLabel}.`,
+      guidance: `You’re viewing ${activeParkLabel} live waits, which matches today’s planning park. Right Now moves are using ${activeParkLabel}.`,
       showNotice: false,
     };
   }
@@ -1488,7 +1488,7 @@ function buildLiveParkContext({
       ...base,
       status: "viewing_different_park",
       label: "Viewing a different live park",
-      guidance: `Youâre viewing ${activeParkLabel} live waits, while todayâs plan is ${planLabel}. Right Now moves are using ${activeParkLabel}; the Plan tab is still anchored to ${planningParkLabel}.`,
+      guidance: `You’re viewing ${activeParkLabel} live waits, while today’s plan is ${planLabel}. Right Now moves are using ${activeParkLabel}; the Plan tab is still anchored to ${planningParkLabel}.`,
       showNotice: true,
     };
   }
@@ -1507,7 +1507,7 @@ function buildLiveParkContext({
  * This used to return date.getHours() * 60 + date.getMinutes(), which reads the
  * DEVICE's zone. Its two callers feed openMinutes and closeMinutes into
  * buildPlanTabState, where they are compared against timeContext's
- * orlandoTotalMinutes â so the comparison mixed two different clocks and the
+ * orlandoTotalMinutes — so the comparison mixed two different clocks and the
  * Plan screen picked its mode from the phone's timezone rather than the park's.
  *
  * On a device in Los Angeles a 9:00 AM Orlando opening read as 6:00 AM, so at
@@ -1529,7 +1529,7 @@ function getMinutesFromDateValue(value) {
  * wall-clock time, so formatting it back in Orlando round-trips to the time the
  * schedule actually states. Without the explicit zone this rendered in the
  * device's, which is invisible to a guest standing in the park and wrong for
- * everyone planning from anywhere else â the pre-trip Plan screen told a
+ * everyone planning from anywhere else — the pre-trip Plan screen told a
  * Pacific-coast family the park opens at 6:00 AM.
  *
  * Matches formatCloseTimeLabel in parkHours.js, which already does this.
@@ -1566,7 +1566,7 @@ function buildPlanTabState({ activePark, timeContext = {} } = {}) {
     // Only a closing time verified for THIS park on THIS Orlando date may be
     // stated. formatPlanTimeLabel would happily render the weekly estimate,
     // which turns "we have not checked tonight" into "the park closes at 10:00
-    // PM" â the exact claim parkHours.js withholds. formatCloseTimeLabel owns
+    // PM" — the exact claim parkHours.js withholds. formatCloseTimeLabel owns
     // that rule and returns null when the date is unverified, so it is reused
     // rather than re-implemented here, and it is handed the same instant this
     // pass already resolved rather than reading the clock again.
@@ -1707,9 +1707,9 @@ function buildPlanTabState({ activePark, timeContext = {} } = {}) {
 //   "show" matched shower
 //   "rest" matched restaurant, forest
 //
-// That is why "The rain stopped and the weather clearedâwhere should we go now?"
+// That is why "The rain stopped and the weather cleared—where should we go now?"
 // routed as a specific question: "weather" contains "eat". The terms themselves
-// are fine and are kept exactly as they are â only the MATCHING is corrected, so
+// are fine and are kept exactly as they are — only the MATCHING is corrected, so
 // a term now has to appear as its own word or phrase.
 //
 // Boundaries are written as explicit character alternatives rather than \b
@@ -1747,7 +1747,7 @@ function hasSpecificRidePlaceOrActionInMessage(message = "") {
   // what a phone keyboard actually produces.
   const text = String(message || "")
     .toLowerCase()
-    .replace(/[â']/g, "'");
+    .replace(/[’']/g, "'");
 
   // "Where should we go to get AC/food/a break?" is not open-ended.
   // It has a clear goal, so send it to AI instead of re-asking the energy question.
@@ -1755,8 +1755,8 @@ function hasSpecificRidePlaceOrActionInMessage(message = "") {
     return true;
   }
 
-  // Same goal words, same intent â but matched as whole words, so "the weather
-  // clearedâwhere should we go now?" is no longer read as "where should we go â¦
+  // Same goal words, same intent — but matched as whole words, so "the weather
+  // cleared—where should we go now?" is no longer read as "where should we go …
   // to eat".
   const goalTerms = [
     "ac",
@@ -1875,7 +1875,7 @@ function isPlanningDepthQuestion(message = "") {
 //
 // The vocabulary mirrors utils/weatherAdvice.js, which already recognises these
 // conditions in forecast summaries. This predicate is the same vocabulary applied
-// to what the family typed. It decides ROUTING ONLY â it never asserts that
+// to what the family typed. It decides ROUTING ONLY — it never asserts that
 // weather is actually coming, and no advice is generated here. The AI answers
 // from the real forecast, which handleChatSubmit already sends.
 //
@@ -1897,7 +1897,7 @@ const WEATHER_CONDITION_PATTERNS = [
 ];
 
 // Negation must ATTACH to a specific condition. It is not enough for a negative
-// word to appear somewhere earlier â "I'm not sure if storms arrive later" is a
+// word to appear somewhere earlier — "I'm not sure if storms arrive later" is a
 // live storm question, and "No rain and extreme heat later" negates only the
 // rain.
 //
@@ -1911,7 +1911,7 @@ const WEATHER_CONDITION_PATTERNS = [
 // Anchoring is also what makes uncertainty safe without a separate rule. In
 // "not sure if storms", "don't know whether it will rain" and "uncertain whether
 // lightning is nearby", the text immediately before the condition ends in "if",
-// "will" and "whether" â none of which is a negation form â so the condition
+// "will" and "whether" — none of which is a negation form — so the condition
 // stays active. Uncertainty about weather is still a weather question.
 //
 // Anything the rules do not clearly recognise leaves the condition ACTIVE. The
@@ -1924,7 +1924,7 @@ const WEATHER_NEGATION_AFTER =
 function hasExplicitWeatherIntentInMessage(message = "") {
   const text = String(message || "")
     .toLowerCase()
-    .replace(/[â']/g, "'");
+    .replace(/[’']/g, "'");
 
   if (!text) return false;
 
@@ -1973,7 +1973,7 @@ const FAMILY_STATE_PATTERNS = [
 function hasExplicitFamilyStateInMessage(message = "") {
   const text = String(message || "")
     .toLowerCase()
-    .replace(/[â']/g, "'");
+    .replace(/[’']/g, "'");
 
   if (!text) return false;
 
@@ -1983,7 +1983,7 @@ function hasExplicitFamilyStateInMessage(message = "") {
 function isOpenEndedLiveStrategyQuestion(message = "") {
   const text = String(message || "")
     .toLowerCase()
-    .replace(/[â']/g, "'")
+    .replace(/[’']/g, "'")
     .replace(/[?.!]+$/g, "")
     .trim();
 
@@ -2020,7 +2020,7 @@ function isOpenEndedLiveStrategyQuestion(message = "") {
     "thoughts",
     "worth it",
     // 64C-1: a deliberate correction. Production sent this straight to the AI
-    // only because it matched no vague phrase â an accident, not a decision. It
+    // only because it matched no vague phrase — an accident, not a decision. It
     // is exactly as open-ended as "what should we do next", so it belongs here.
     "what would you recommend",
   ]);
@@ -2237,8 +2237,8 @@ function getLiveStateClarifyingQuestionForContext({
 
   if (dayPhase.includes("morning") || planningMode.includes("rope")) {
     return hasYoungKids
-      ? "How are the little ones doing â ready to hit something big, or do we need to ease in?"
-      : "How's everyone feeling â ready to hit something big, or do we need to ease in?";
+      ? "How are the little ones doing — ready to hit something big, or do we need to ease in?"
+      : "How's everyone feeling — ready to hit something big, or do we need to ease in?";
   }
 
   if (
@@ -2246,12 +2246,12 @@ function getLiveStateClarifyingQuestionForContext({
     planningMode.includes("evening") ||
     planningMode.includes("night")
   ) {
-    return "How's the crew feeling â ready for one more, or starting to wind down?";
+    return "How's the crew feeling — ready for one more, or starting to wind down?";
   }
 
   return hasYoungKids
-    ? "How are the little ones holding up â still going, or starting to fade?"
-    : "How's everyone's energy right now â still going, or starting to fade?";
+    ? "How are the little ones holding up — still going, or starting to fade?"
+    : "How's everyone's energy right now — still going, or starting to fade?";
 }
 
 function shouldAskFrontendLiveStateQuestion(message = "", chatHistory = []) {
@@ -2288,7 +2288,7 @@ function App() {
   // Home's combined Refresh stays busy while either request is in flight; the
   // Waits screen reads waitsPending alone.
   const loading = waitsPending || weatherPending;
-  // A finished weather failure with nothing usable to show â as opposed to a
+  // A finished weather failure with nothing usable to show — as opposed to a
   // request still in flight, or retained weather from an earlier load.
   const weatherUnavailable = !weather && !weatherPending && Boolean(weatherLoadError);
   const lastWaitsAutoUpdateAt = waitsSourceIsActive ? waitsSource.autoUpdatedAt : "";
@@ -2332,19 +2332,19 @@ function App() {
 
   // The app's coarse shared decision clock.
   //
-  // It began as location plumbing â so an accepted GPS fix could EXPIRE without
+  // It began as location plumbing — so an accepted GPS fix could EXPIRE without
   // waiting for some unrelated state change to re-run the decision memo. Expiry
   // is the half of that lifecycle no incoming reading can trigger: when the app
   // is backgrounded the watch stops delivering entirely, so nothing else would
   // notice the fix ageing out. It still does that, and still expires rain
   // confirmation the same way.
   //
-  // It now also drives BOTH time contexts â the active one behind Right Now and
+  // It now also drives BOTH time contexts — the active one behind Right Now and
   // the recommendation engine, and the planning one behind Plan state, park
   // hours, trip status, nudges, the day game plan and packing. That is what
   // makes the passage of time visible to the engine at all: it treats
   // timeContext.nowIso as the one instant a pass runs at, and neither memo's
-  // other dependencies â the park and the family profile â advance on their own.
+  // other dependencies — the park and the family profile — advance on their own.
   // Without this clock in both dependency lists a family could stand in the park
   // watching an instant from whenever they last changed parks decide park open
   // and close, Early Entry, showtimes and every time-based modifier.
@@ -2410,7 +2410,7 @@ function App() {
   /*                                                                         */
   /* This lives in App rather than TohiTab for two reasons: TohiTab is        */
   /* presentation-only by contract, and App does NOT unmount when the guest   */
-  /* leaves the TOHI tab â so the microphone teardown has to be owned by      */
+  /* leaves the TOHI tab — so the microphone teardown has to be owned by      */
   /* something that outlives the tab, or the iPhone recording indicator would */
   /* stay lit after navigating away.                                         */
   /*                                                                         */
@@ -2445,7 +2445,7 @@ function App() {
   // memoized, and handleChatSubmit is recreated every render over fresh chat,
   // park, family, weather, location, recommendation and freshness values. A
   // memoized callback that closed over handleChatSubmit directly would keep the
-  // FIRST render's handler forever â a later spoken turn would overwrite the
+  // FIRST render's handler forever — a later spoken turn would overwrite the
   // conversation with a stale `chat` array and send stale park-day context.
   //
   // Writing the ref during render (the same pattern TohiTab already uses for
@@ -2550,7 +2550,7 @@ function App() {
    * Runs after the recorder has stopped and produced its chunks.
    *
    * The FIRST thing this does is confirm its run is still the live one. Nothing
-   * shared is read, cleared or stopped before that check â an abandoned run
+   * shared is read, cleared or stopped before that check — an abandoned run
    * must be able to return without having touched anything.
    */
   const handleVoiceRecordingFinished = useCallback(
@@ -2575,8 +2575,8 @@ function App() {
         run.timerId = null;
       }
 
-      // Tracks are released the moment recording ends â before the upload, and
-      // before any bail-out below â so the microphone indicator clears whether
+      // Tracks are released the moment recording ends — before the upload, and
+      // before any bail-out below — so the microphone indicator clears whether
       // this recording is uploaded or refused.
       stopMediaStream(run.stream);
       run.stream = null;
@@ -2637,7 +2637,7 @@ function App() {
       }
 
       // Back to idle BEFORE submitting, so the composer is usable again and the
-      // chat's own latch â not the voice state â governs the turn.
+      // chat's own latch — not the voice state — governs the turn.
       teardownVoice();
       setVoiceStateBoth("idle");
       setVoiceNotice("");
@@ -2656,7 +2656,7 @@ function App() {
    *
    * The voice authority is moved OUT of the tappable "listening" state
    * synchronously, before stop() is called. Without that, a second fast Stop
-   * tap would still read "listening" â because onstop has not fired yet â and
+   * tap would still read "listening" — because onstop has not fired yet — and
    * would cancel the recording that is already on its way to being uploaded.
    * The `stopping` latch is belt and braces for the same race.
    */
@@ -2728,7 +2728,7 @@ function App() {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
       // A rejection that arrives AFTER the guest left TOHI, hid the page or
-      // started again must say nothing and change nothing â showing a stale
+      // started again must say nothing and change nothing — showing a stale
       // permission notice over a newer run would be wrong on both counts.
       if (voiceRunRef.current !== run) return;
 
@@ -2820,8 +2820,8 @@ function App() {
    *
    * Reads the synchronous ref, never the batched state, so rapid tapping can
    * never produce two recorders, two uploads or two chat turns. Taps arriving
-   * while a permission prompt is open or a transcript is being fetched â which
-   * now includes the instant after Stop â are ignored outright.
+   * while a permission prompt is open or a transcript is being fetched — which
+   * now includes the instant after Stop — are ignored outright.
    */
   const handleVoiceButtonPress = useCallback(() => {
     if (!voiceSupported) return;
@@ -2902,7 +2902,7 @@ function App() {
   /*                                                                         */
   /* NOT a conversation channel: no Realtime API, no WebSocket, no streaming  */
   /* session, no always-listening behaviour, and no browser speechSynthesis   */
-  /* â not even as a hidden fallback.                                        */
+  /* — not even as a hidden fallback.                                        */
   /*                                                                         */
   /* RUN ISOLATION, the same discipline the recorder uses: one run object per */
   /* spoken reply, held in speechRunRef. Async continuations act only while   */
@@ -2915,7 +2915,7 @@ function App() {
   const [speechNotice, setSpeechNotice] = useState("");
 
   // Defaults ON for the push-to-talk flow, as approved. Typed questions are
-  // unaffected either way â they never reach the speech path at all.
+  // unaffected either way — they never reach the speech path at all.
   const [voiceRepliesEnabled, setVoiceRepliesEnabled] = useState(true);
 
   // Read synchronously when a reply commits, so turning voice replies off while
@@ -3080,7 +3080,7 @@ function App() {
       if (!validated.ok) {
         // Preparation bounds the text to the provider limit, so this should not
         // happen. If it ever does, say so with the existing calm copy rather
-        // than going silent â the answer is already on screen either way.
+        // than going silent — the answer is already on screen either way.
         stopSpeech(SPEECH_COPY.failed);
         return;
       }
@@ -3180,8 +3180,8 @@ function App() {
     if (voiceNotice) return voiceNotice;
 
     // 64C-A3 shares the ONE status region rather than opening a second live
-    // region to compete with it. Microphone state always wins â it is the more
-    // urgent thing to know â and speech copy fills the region only when the
+    // region to compete with it. Microphone state always wins — it is the more
+    // urgent thing to know — and speech copy fills the region only when the
     // microphone has nothing to say.
     if (speechState === "speaking") return SPEECH_COPY.speaking;
     if (speechState === "blocked") return SPEECH_COPY.blocked;
@@ -3271,13 +3271,13 @@ function App() {
   // Built from the shared decision clock rather than from a bare `new Date()`
   // inside getCurrentTimeContext. Both halves of that matter:
   //
-  //   - `now` pins every derived field â nowIso, the Orlando date and time
-  //     labels, dayPhase, trip status â to one instant, so the ranking and the
+  //   - `now` pins every derived field — nowIso, the Orlando date and time
+  //     labels, dayPhase, trip status — to one instant, so the ranking and the
   //     copy beside it can never describe different moments.
   //   - locationFreshnessNow in the dependency list is what makes this memo
   //     recompute as time passes. activePark and familyProfileSummary do not
   //     change on their own, so without it the whole object froze at whatever
-  //     instant the guest last switched parks or edited their profile â and
+  //     instant the guest last switched parks or edited their profile — and
   //     the engine, which now reads nowIso as canonical, would have been
   //     ranking the park day against a stale clock.
   //
@@ -3338,7 +3338,7 @@ function App() {
   // hang off this. If it stayed frozen on planningPark and the profile while the
   // active context advanced every 30 seconds, two halves of the same app would
   // disagree about the Orlando date, the time, the day phase, the trip status
-  // and whether the park is open â and the family would see it, because Plan and
+  // and whether the park is open — and the family would see it, because Plan and
   // Right Now sit one tab apart.
   //
   // Same clock value, same dependency, so both contexts always describe one
@@ -3401,7 +3401,7 @@ function App() {
   const activeParkLoadIdRef = useRef(0);
 
   /**
-   * Loads waits and weather for the active park â independently.
+   * Loads waits and weather for the active park — independently.
    *
    * Each source applies its own success and records its own failure. They used
    * to be awaited together through Promise.all, so a weather outage discarded
@@ -3416,8 +3416,8 @@ function App() {
    * autoUpdatedAt, and it stamps each source only when that source succeeded.
    * The provider's own source, ageMs and fetchedAt are stored untouched.
    *
-   * It never rejects â the initial load and the refresh buttons call it without
-   * awaiting â and resolves to { waits, weather } booleans for callers that care.
+   * It never rejects — the initial load and the refresh buttons call it without
+   * awaiting — and resolves to { waits, weather } booleans for callers that care.
    */
   const loadData = useCallback(
     async (force = false, { automatic = false } = {}) => {
@@ -3526,7 +3526,7 @@ function App() {
         }
 
         // Same gate as the watch. A tap on "Use My Location" is an explicit
-        // request, but it still cannot make a poor fix trustworthy â the reading
+        // request, but it still cannot make a poor fix trustworthy — the reading
         // is only as good as its accuracy radius and its age.
         const stability = reduceLocationReading(
           locationStabilityRef.current,
@@ -3554,7 +3554,7 @@ function App() {
           }
 
           // The watch still starts. The guest asked to be located and this one
-          // fix was not good enough â later readings may well be, and the watch
+          // fix was not good enough — later readings may well be, and the watch
           // is how they arrive. Without this, one weak fix at the moment of
           // tapping would leave location switched off for the rest of the day.
           setLocationAutoEnabled(true);
@@ -3579,7 +3579,7 @@ function App() {
           distanceMeters: detectedZone.distanceMeters,
           confidence: detectedZone.confidence,
           // When the FIX was taken. Kept separate from updatedAt, which is only
-          // when this handler stored it â a context built from a cached sample
+          // when this handler stored it — a context built from a cached sample
           // is already partly spent on arrival, and freshness must be measured
           // against the fix.
           fixedAtMs: position.timestamp,
@@ -3648,7 +3648,7 @@ function App() {
 
           if (denied) {
             guidance =
-              "Location permission was denied. No problem â pick the closest area manually.";
+              "Location permission was denied. No problem — pick the closest area manually.";
           } else if (err?.code === 3) {
             guidance =
               "Finding your location is taking longer than usual. TOHI will keep trying while the app is open, or you can pick the closest area manually.";
@@ -3779,7 +3779,7 @@ function App() {
 
         // The stability gate. Readings that are too imprecise to tell
         // neighbouring lands apart, older than the fix already accepted, or
-        // proposing a land change on a single sample do not reach state at all â
+        // proposing a land change on a single sample do not reach state at all —
         // so the previously trusted location survives instead of being replaced.
         // This is what stops one border sample near Galaxy's Edge from moving
         // the guest to Toy Story Land and reshaping recommendation proximity.
@@ -3864,7 +3864,7 @@ function App() {
     const saved = readStoredParkState(activePark);
 
     // Only an explicitly recorded manual choice comes back. GPS-owned and
-    // source-less legacy state is dropped rather than guessed at â see
+    // source-less legacy state is dropped rather than guessed at — see
     // resolveRestoredLocationState. This also keeps the area picker empty
     // instead of leaving a land selected that nothing stands behind.
     const restored = resolveRestoredLocationState(saved);
@@ -3920,7 +3920,7 @@ function App() {
   const [parkPresence, setParkPresence] = useState(null);
   // 63B-3: the browsed park owns its own request state. Previously every
   // failure collapsed to null, which is indistinguishable from "not requested
-  // yet" â so a failed browse looked like an empty park. parkId tags the state
+  // yet" — so a failed browse looked like an empty park. parkId tags the state
   // so a late response can never land under a different park's heading, and so
   // the active park's error is never reused as the browsed park's error.
   const [browsedParkRequest, setBrowsedParkRequest] = useState({
@@ -3931,7 +3931,7 @@ function App() {
   });
   const browsedParkData = browsedParkRequest.data;
   // Monotonic request generation. Park identity alone cannot separate two
-  // in-flight requests for the SAME park â leave EPCOT, come back, refresh, and
+  // in-flight requests for the SAME park — leave EPCOT, come back, refresh, and
   // the older response would still match on parkId. Only the newest request may
   // write, so a stale response is dropped rather than overwriting fresh data.
   const browsedRequestIdRef = useRef(0);
@@ -4009,7 +4009,7 @@ function App() {
 
   // GPS is evidence only: stable arrival evidence registers the existing
   // detected_arrival prompt through 60C. Nothing here calls setActivePark or
-  // confirmActivePark â only the guest's confirmation moves the park.
+  // confirmActivePark — only the guest's confirmation moves the park.
   useEffect(() => {
     if (hasStableParkArrivalEvidence(parkArrivalTracker)) {
       const detectedParkId = parkArrivalTracker.candidateParkId;
@@ -4043,14 +4043,14 @@ function App() {
 
   const parkPresenceTheme = getTohiAppShellTheme();
 
-  // 61A Plan visual tokens â presentation only. Day: warm cream/white with
+  // 61A Plan visual tokens — presentation only. Day: warm cream/white with
   // restrained lavender. Night: deep navy with muted purple borders.
   const planNight = parkPresenceTheme.isNight;
 
   // 62A/62B-2F-2/63C-2/64B-2E-2/Profile night: the one explicit,
   // parent-controlled shell decision. The dark shell and dark navigation apply
   // while ANY converted tab is active. Home joined Plan in 62B-2F-2, Waits in
-  // 63C-2, TOHI in 64B-2E-2 and Profile in this phase â each only once every
+  // 63C-2, TOHI in 64B-2E-2 and Profile in this phase — each only once every
   // surface on that tab had a night presentation, because a dark shell behind
   // day surfaces would read as a bug. Plan Tools inherits true because it is a
   // sub-view of Plan: activeTab stays "plan" while it is open.
@@ -4208,7 +4208,7 @@ function App() {
   const waitsError = browsingAnotherPark ? browsedParkRequest.error : waitsLoadError;
 
   // Home's guest-facing version of the same failures. The raw error strings
-  // stay in state â WaitsTab reads its error for truthiness only â and are not
+  // stay in state — WaitsTab reads its error for truthiness only — and are not
   // rendered anywhere.
   //
   // Which message is honest depends on what survived, per source. loadData
@@ -4247,7 +4247,7 @@ function App() {
     // The park cards answer "show me this park", and the answer lives on Waits.
     // waitListParkId already resolves to the browsed park while browsing and to
     // the active park otherwise, so both branches above land on the park the
-    // guest just tapped â including when they tap the one already selected.
+    // guest just tapped — including when they tap the one already selected.
     setActiveTab("waits");
   }
 
@@ -4306,7 +4306,7 @@ function App() {
   // guest sees matches what the recommendation engine reasons over. Without
   // this, resolveLocationTrust below stops trusting the old fix while the area
   // picker still shows the old land and the card still reads "Near <old
-  // attraction>" â the engine and the interface disagreeing about where the
+  // attraction>" — the engine and the interface disagreeing about where the
   // family is.
   //
   // Automatic GPS is deliberately left enabled: the fix expired, the permission
@@ -4341,7 +4341,7 @@ function App() {
   const locationContextForDecisions = useMemo(() => {
     // An accepted fix does not stay true forever. Gating incoming readings
     // stops bad data arriving; this stops good data from outliving its own
-    // accuracy after the watch goes quiet â which is what happens the moment the
+    // accuracy after the watch goes quiet — which is what happens the moment the
     // app is backgrounded. Resolution is a pure helper so the whole lifecycle is
     // testable without rendering the app.
     //
@@ -4494,7 +4494,7 @@ function App() {
 
   // What every decision layer reasons about. Identical to `weather` unless the
   // family has answered the rain prompt, and even then the forecast fields are
-  // carried through untouched â `weather` itself is never edited and stays the
+  // carried through untouched — `weather` itself is never edited and stays the
   // display source.
   //
   // Both answers land here. Only "yes" used to, which is why a "not yet"
@@ -4838,7 +4838,7 @@ function App() {
 
   // 61D: leaving the Plan tab closes its sub-view, so the bottom nav never
   // lands the family inside Plan Tools instead of Plan. This only resets the
-  // new local flag â activeTab and activeScreen are not touched.
+  // new local flag — activeTab and activeScreen are not touched.
   useEffect(() => {
     if (activeTab !== "plan") {
       setPlanToolsOpen(false);
@@ -5017,7 +5017,7 @@ function App() {
     setSkippedRideIds((prev) => prev.filter((existingId) => existingId !== id));
     setReportedRideIssueIds((prev) => prev.filter((existingId) => existingId !== id));
 
-    // Home is where the queue lives â elapsed time, While You Wait, and the
+    // Home is where the queue lives — elapsed time, While You Wait, and the
     // queue mini-games. Joining a line from Plan or Waits left the guest on the
     // screen they started from, with the thing they just started one tab away.
     // Only reached for a newly created activity, so nothing here can disturb an
@@ -5250,8 +5250,8 @@ function App() {
   // One grouped Profile card. The eyebrow is a real heading so the screen can be
   // navigated by heading, which the previous flat run of <div> labels could not.
   //
-  // Night reads the shared parent-controlled `shellNight` decision â the same
-  // value the page background and BottomTabs read in this render â so a card can
+  // Night reads the shared parent-controlled `shellNight` decision — the same
+  // value the page background and BottomTabs read in this render — so a card can
   // never be dark on a day page or pale on the night shell. Every conditional
   // below resolves to the exact day value it had before when the flag is false,
   // which is what the day-parity guard pins.
@@ -5571,7 +5571,7 @@ function App() {
     // that do not pass it keep the existing padding, type, wrap, and labels.
     const compact = options.compact === true;
     // 63B-2: the approved Waits layout is a 2x2 grid with 48px actions and the
-    // full "Report Issue" label. Opt-in per surface, exactly like compact â the
+    // full "Report Issue" label. Opt-in per surface, exactly like compact — the
     // default presentation and Plan's compact presentation are untouched.
     const waits = options.variant === "waits";
     const themedActionButton = night
@@ -5666,7 +5666,7 @@ function App() {
           onClick={() => handleDone(ride.id)}
           style={{ ...sizedActionButton, color: night ? "#6EE7B7" : colors.success }}
         >
-          â Done
+          ✓ Done
         </button>
 
         <button
@@ -5707,7 +5707,7 @@ function App() {
 
     const night = options.night === true;
     // 63B-2: the approved Waits showtime panel. Same real showProfile data and
-    // the same verifyDailySchedule caution â only the presentation differs.
+    // the same verifyDailySchedule caution — only the presentation differs.
     // Every other caller keeps the existing panel below.
     const waits = options.variant === "waits";
 
@@ -5715,7 +5715,7 @@ function App() {
       // 63C-1 night tokens, measured off the approved blueprints: the sky panel
       // becomes a deep sky-navy, the pills a recessed navy, and the sky accent
       // moves onto the text. Still recognisably the "scheduled show" surface,
-      // and still without Best target or Arrival buffer â those stay on the
+      // and still without Best target or Arrival buffer — those stay on the
       // default renderer Plan uses.
       return (
         <div
@@ -5816,7 +5816,7 @@ function App() {
             fontWeight: 700,
           }}
         >
-          {showProfile.showtimes.join(" Â· ")}
+          {showProfile.showtimes.join(" · ")}
         </p>
 
         {showProfile.recommendedShowtimes?.length > 0 && (
@@ -5829,7 +5829,7 @@ function App() {
           <p style={{ margin: "6px 0 0", color: night ? "#B6C2E2" : colors.muted, fontSize: 12 }}>
             Arrival buffer:{" "}
             {showProfile.middayArrivalBufferMinutes
-              ? `${showProfile.arrivalBufferMinutes || 15}â${showProfile.middayArrivalBufferMinutes} min depending on heat/crowds`
+              ? `${showProfile.arrivalBufferMinutes || 15}–${showProfile.middayArrivalBufferMinutes} min depending on heat/crowds`
               : `${showProfile.arrivalBufferMinutes} min`}
           </p>
         )}
@@ -5846,8 +5846,8 @@ function App() {
 
   // 64C-A2: the ONE adjustment voice input needs from the chat authority.
   //
-  // `explicitText` lets a caller that already holds the question â today only
-  // the voice transcript â submit it directly. The form path is unchanged: it
+  // `explicitText` lets a caller that already holds the question — today only
+  // the voice transcript — submit it directly. The form path is unchanged: it
   // passes no second argument, so `message` is still the source, still trimmed
   // the same way, still discarded when blank.
   //
@@ -5871,8 +5871,8 @@ function App() {
     // 64C-A3: how the question's ORIGIN reaches the one chat authority.
     //
     // Declared explicitly by the caller rather than inferred from
-    // `explicitText` being a string. Inference would be free today â voice is
-    // the only caller passing text â but the first future caller that submits
+    // `explicitText` being a string. Inference would be free today — voice is
+    // the only caller passing text — but the first future caller that submits
     // explicit text (a suggested prompt, a retry control) would silently start
     // speaking. An explicit flag cannot drift that way.
     const isVoiceOrigin = options?.origin === "voice";
@@ -5880,14 +5880,14 @@ function App() {
     // Latch acquired BEFORE the user message, the tracking event and the
     // request, so a rapid second submit produces none of them. Everything after
     // this point runs inside a try/finally that always releases, including the
-    // clarification early-return and any throw while preparing context â the
+    // clarification early-return and any throw while preparing context — the
     // composer can never be left permanently locked.
     if (chatInFlightRef.current) return;
 
     // 64C-A3: a newly ACCEPTED question silences the previous answer.
     //
     // This runs for every accepted submission, typed or spoken, and it runs
-    // synchronously â before the latch, before the user message, before any
+    // synchronously — before the latch, before the user message, before any
     // await. Without it TOHI would keep reading the previous answer over a new
     // typed question, or a synthesis still in flight from the previous turn
     // would start speaking after it.
@@ -5917,7 +5917,7 @@ function App() {
       setChat(nextChat);
       setMessage("");
 
-      // One finalization path for BOTH failure kinds â a rejected request and a
+      // One finalization path for BOTH failure kinds — a rejected request and a
       // resolved one whose reply is unusable. Keeping the two actions together
       // here is what stops the marked entry and the restored question drifting
       // apart between branches.
@@ -5931,8 +5931,8 @@ function App() {
       /**
        * The ONE place a visible assistant reply is committed.
        *
-       * Both success sites â the QUICK CHECK clarification and the validated AI
-       * answer â go through here. The committed response remains authoritative;
+       * Both success sites — the QUICK CHECK clarification and the validated AI
+       * answer — go through here. The committed response remains authoritative;
        * speech may shorten or pronounce that same response for listening but
        * cannot replace it. Speech is started only for a voice-origin turn with
        * voice replies still enabled, and only AFTER the text is committed, so a
@@ -6345,7 +6345,7 @@ function App() {
 
   const tohiPickMvpCandidate = tohiPickAgreement.showPick ? tohiPickAgreement.candidate : null;
 
-  // 60E â bounded clarification. Session-only cache, no timers, no network.
+  // 60E — bounded clarification. Session-only cache, no timers, no network.
   const tohiPickClarificationCacheRef = useRef(new Map());
   const [tohiPickClarificationVersion, setTohiPickClarificationVersion] = useState(0);
 
@@ -6510,7 +6510,7 @@ function App() {
       if (!ride) {
         return (
           <div key={slotLabel} style={{ color: colors.muted, fontSize: 11, paddingLeft: 4, marginBottom: 4 }}>
-            {slotLabel}: â
+            {slotLabel}: —
           </div>
         );
       }
@@ -6564,7 +6564,7 @@ function App() {
 
       return {
         label: `parkDaySchedule.day${dayNumber}`,
-        value: `${day?.date || "No date"} Â· ${primaryParkLabel}${
+        value: `${day?.date || "No date"} · ${primaryParkLabel}${
           secondaryParkLabel ? ` + ${secondaryParkLabel}` : ""
         }`,
       };
@@ -6595,7 +6595,7 @@ function App() {
           <div>
             <strong style={{ fontSize: 13, color: colors.text }}>Debug Snapshot</strong>
             <div style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>
-              Field-test view â hidden unless debug mode is enabled.
+              Field-test view — hidden unless debug mode is enabled.
             </div>
           </div>
           <button
@@ -6733,7 +6733,7 @@ function App() {
               <div>
                 <span style={dbLabelStyle}>freshness.reasons</span>
                 {tripPlanFreshness.reasons.map((r, i) => (
-                  <div key={i} style={{ ...dbValStyle, paddingLeft: 8 }}>Â· {r}</div>
+                  <div key={i} style={{ ...dbValStyle, paddingLeft: 8 }}>· {r}</div>
                 ))}
               </div>
             )}
@@ -6753,7 +6753,7 @@ function App() {
             {completedRideIds.length > 0 && (
               <div style={{ paddingLeft: 8 }}>
                 {completedRideIds.map((id, i) => (
-                  <div key={i} style={dbValStyle}>Â· {id}</div>
+                  <div key={i} style={dbValStyle}>· {id}</div>
                 ))}
               </div>
             )}
@@ -6761,7 +6761,7 @@ function App() {
             {skippedRideIds.length > 0 && (
               <div style={{ paddingLeft: 8 }}>
                 {skippedRideIds.map((id, i) => (
-                  <div key={i} style={dbValStyle}>Â· {id}</div>
+                  <div key={i} style={dbValStyle}>· {id}</div>
                 ))}
               </div>
             )}
@@ -6769,7 +6769,7 @@ function App() {
             {reportedRideIssueIds.length > 0 && (
               <div style={{ paddingLeft: 8 }}>
                 {reportedRideIssueIds.map((id, i) => (
-                  <div key={i} style={dbValStyle}>Â· {id}</div>
+                  <div key={i} style={dbValStyle}>· {id}</div>
                 ))}
               </div>
             )}
@@ -6777,7 +6777,7 @@ function App() {
             {activityLog.length > 0 && (
               <div style={{ paddingLeft: 8 }}>
                 {activityLog.map((entry, i) => (
-                  <div key={i} style={dbValStyle}>Â· {entry.rideName || entry.rideId}</div>
+                  <div key={i} style={dbValStyle}>· {entry.rideName || entry.rideId}</div>
                 ))}
               </div>
             )}
@@ -6795,7 +6795,7 @@ function App() {
             {Array.isArray(tripPlanState?.mustDoExperiences) && tripPlanState.mustDoExperiences.length > 0 && (
               <div style={{ paddingLeft: 8 }}>
                 {tripPlanState.mustDoExperiences.map((md, i) => (
-                  <div key={i} style={dbValStyle}>Â· {md.name} ({md.parkId}, {md.priority})</div>
+                  <div key={i} style={dbValStyle}>· {md.name} ({md.parkId}, {md.priority})</div>
                 ))}
               </div>
             )}
@@ -6870,7 +6870,7 @@ function App() {
                 "aiReviewSignature",
                 tohiPickReviewSignature
                   ? `${tohiPickReviewSignature.slice(0, 140)}${
-                      tohiPickReviewSignature.length > 140 ? "â¦" : ""
+                      tohiPickReviewSignature.length > 140 ? "…" : ""
                     }`
                   : "none"
               )}
@@ -6941,7 +6941,7 @@ function App() {
               {dbRow(
                 "clarificationSignature",
                 tohiPickClarificationEvaluation.signature
-                  ? `${tohiPickClarificationEvaluation.signature.slice(0, 120)}â¦`
+                  ? `${tohiPickClarificationEvaluation.signature.slice(0, 120)}…`
                   : "none"
               )}
               {dbRow("sourceCount", tohiPickDebugPreview.sourceCount)}
@@ -6956,10 +6956,10 @@ function App() {
                 {tohiPickDebugPreview.candidates.length ? (
                   tohiPickDebugPreview.candidates.map((candidate, index) => (
                     <div key={`${candidate.rideId || candidate.name}-${candidate.sourceSlot}-${index}`} style={dbValStyle}>
-                      Â· {candidate.sourceLabel}: {candidate.name}
+                      · {candidate.sourceLabel}: {candidate.name}
                       {candidate.wait != null ? ` (${candidate.wait}m)` : " (wait n/a)"}
-                      {candidate.area ? ` Â· ${candidate.area}` : ""}
-                      {candidate.tags?.length ? ` Â· ${candidate.tags.join(", ")}` : ""}
+                      {candidate.area ? ` · ${candidate.area}` : ""}
+                      {candidate.tags?.length ? ` · ${candidate.tags.join(", ")}` : ""}
                     </div>
                   ))
                 ) : (
@@ -6971,9 +6971,9 @@ function App() {
                 {tohiPickDebugPreview.excludedCandidates.length ? (
                   tohiPickDebugPreview.excludedCandidates.map((candidate, index) => (
                     <div key={`excluded-${candidate.rideId || candidate.name}-${candidate.sourceSlot}-${index}`} style={dbValStyle}>
-                      Â· {candidate.sourceLabel}: {candidate.name}
+                      · {candidate.sourceLabel}: {candidate.name}
                       {candidate.exclusionReasons?.length
-                        ? ` â ${candidate.exclusionReasons.join(", ")}`
+                        ? ` — ${candidate.exclusionReasons.join(", ")}`
                         : ""}
                     </div>
                   ))
@@ -7161,7 +7161,7 @@ function App() {
               // 63C-2 activation: Waits now reads the same shell decision as
               // Home, Plan, the page background and BottomTabs, so all four flip
               // together in one render. 63C-1's temporary literal false is gone.
-              // No new night mechanism was added â this is the existing flag.
+              // No new night mechanism was added — this is the existing flag.
               night={shellNight}
               // WaitsTab owns the night value for this whole surface and passes
               // it back in, so the header and the cards can never disagree.
@@ -7178,7 +7178,7 @@ function App() {
           {activeTab === "plan" && (
             <>
 
-            {/* 61D Plan Tools â a secondary view subordinate to the Plan tab.
+            {/* 61D Plan Tools — a secondary view subordinate to the Plan tab.
                 It is not a router destination and not a sixth bottom-nav tab:
                 activeTab stays "plan" the whole time. The main Plan feed below
                 stays mounted and is only display-toggled, so nothing held in
@@ -7778,7 +7778,7 @@ function App() {
                     value: familyProfileSummary.tripContext?.selectedParks?.length
                       ? familyProfileSummary.tripContext.selectedParks
                           .map((park) => getParkLabel(park))
-                          .join(" Â· ")
+                          .join(" · ")
                       : null,
                   },
                   {
@@ -7841,15 +7841,15 @@ function App() {
                     {renderProfileRows([
                       {
                         label: "Your group",
-                        value: `${familyProfileSummary.partySize || 0} guests Â· ${
+                        value: `${familyProfileSummary.partySize || 0} guests · ${
                           familyProfileSummary.adultCount || 0
-                        } adults Â· ${familyProfileSummary.childCount || 0} kids`,
+                        } adults · ${familyProfileSummary.childCount || 0} kids`,
                       },
                       {
                         label: "Disney age mix",
-                        value: `${familyProfileSummary.ageSummary?.under3Count || 0} under 3 Â· ${
+                        value: `${familyProfileSummary.ageSummary?.under3Count || 0} under 3 · ${
                           familyProfileSummary.ageSummary?.childCount || 0
-                        } Disney child Â· ${
+                        } Disney child · ${
                           familyProfileSummary.ageSummary?.disneyAdultCount || 0
                         } Disney adult`,
                       },
@@ -7903,7 +7903,7 @@ function App() {
                                   Child {index + 1}
                                   {": "}
                                   {hasAge ? `age ${child.age}` : "age not set"}
-                                  {" Â· "}
+                                  {" · "}
                                   {hasHeight ? `${child.heightInches}" tall` : "height not set"}
                                 </strong>
                                 <span
@@ -8148,7 +8148,7 @@ function App() {
 
       {/* 64B-2C: the navigation is suppressed ONLY while the TOHI composer's
           software keyboard is open, so it cannot cover the field being typed
-          into. Both halves of the condition matter â the activeTab check keeps
+          into. Both halves of the condition matter — the activeTab check keeps
           this scoped to TOHI, and the flag is only ever true for that composer.
           Every other tab, and locked TOHI (which has no composer), keeps the
           navigation exactly as before. BottomTabs itself is unchanged: when the
