@@ -175,11 +175,13 @@ function getResortName(familyProfile = {}) {
 }
 
 function buildStartPlan({ preferences, familyProfile, activePark, timeContext, tripPlan }) {
+  // The park this day's plan is for. App passes today's planning park (the
+  // scheduled park for the Orlando date). The rope-drop card used to name
+  // tripContext.firstPark instead — the trip's first park, the same on every
+  // day — so Day 2 at another park still said "Treat Magic Kingdom like the
+  // day's first anchor."
   const parkLabel = PARK_LABELS[activePark] || "the park";
   const startStrategy = preferences.startStrategy || "moderate_morning";
-  const firstParkLabel = familyProfile.tripContext?.firstPark
-    ? PARK_LABELS[familyProfile.tripContext.firstPark] || familyProfile.tripContext.firstPark
-    : parkLabel;
   const activeParkMustDos = getMustDosForPark(tripPlan, activePark);
   const mustDoLabel = formatExperienceList(activeParkMustDos, 2);
   const openingSummary = getOpeningStrategySummary(activePark, activeParkMustDos);
@@ -230,8 +232,8 @@ function buildStartPlan({ preferences, familyProfile, activePark, timeContext, t
       eyebrow: "MORNING TARGET",
       title: mustDoLabel ? `Use the opening window for ${mustDoLabel}.` : "Make room for the first big move.",
       body: mustDoLabel
-        ? `Treat ${firstParkLabel} like the day’s first anchor. Because ${mustDoLabel} is marked as important, the first cool, lower-wait window should be used intentionally instead of wandering into whatever looks close.`
-        : `Treat ${firstParkLabel} like the day’s first anchor. Arrive early, do one high-value attraction before the park gets heavy, then slow the pace before the family burns out.`,
+        ? `Treat ${parkLabel} like the day’s first anchor. Because ${mustDoLabel} is marked as important, the first cool, lower-wait window should be used intentionally instead of wandering into whatever looks close.`
+        : `Treat ${parkLabel} like the day’s first anchor. Arrive early, do one high-value attraction before the park gets heavy, then slow the pace before the family burns out.`,
       priority: "must",
       detail:
         "This keeps the morning from turning into an all-day sprint. Win the first window, then keep energy in the day.",
